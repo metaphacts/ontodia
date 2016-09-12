@@ -1,0 +1,66 @@
+{
+  "name": "ontodia",
+  "version": "0.2.0",
+  "description": "Ontodia Library",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ontodia-org/ontodia.git"
+  },
+  "keywords": [
+    "owl",
+    "graph",
+    "rdf",
+    "owl2",
+    "sparql"
+  ],
+  "author": {
+    "name": "ontodia.org",
+    "url": "ontodia.org"
+  },
+  "license": "LGPL-2.1",
+  "bugs": {
+    "url": "https://github.com/ontodia-org/ontodia/issues"
+  },
+  "homepage": "https://github.com/ontodia-org/ontodia#readme",
+  "scripts": {
+    "build": "node ./node_modules/webpack/bin/webpack.js",
+    "demo": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --port 10444 --config webpack.demo.config.js --content-base dist/",
+    "typings-tsc": "node ./node_modules/typescript/bin/tsc --declaration --outDir dist/dts",
+    "typings-dts-bundle": "node ./node_modules/dts-bundle/lib/dts-bundle.js --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
+    "typings": "npm run typings-tsc && npm run typings-dts-bundle",
+    "prepublish": "npm run build && npm run typings"
+  },
+  "dependencies": {
+    "d3": "3.5.10",
+    "intro.js": "1.1.1",
+    "jointjs": "0.9.10",
+    "jquery": "2.2.1",
+    "lodash": "4.15.0",
+    "n3": "0.6.1",
+    "springy": "2.7.1"
+  },
+  "peerDependencies": {
+    "react": "^15.0.1",
+    "react-dom": "^15.0.1"
+  },
+  "devDependencies": {
+    "css-loader": "0.23.1",
+    "dts-bundle": "0.5.0",
+    "exports-loader": "0.6.3",
+    "expose-loader": "0.7.1",
+    "file-loader": "0.8.5",
+    "html-webpack-plugin": "2.22.0",
+    "json-loader": "0.5.4",
+    "jstree": "3.2.1",
+    "react": "^15.0.1",
+    "react-dom": "^15.0.1",
+    "style-loader": "0.13.1",
+    "ts-loader": "0.8.2",
+    "typescript": "2.0.0",
+    "url-loader": "0.5.7",
+    "webpack": "1.13.2",
+    "webpack-dev-server": "1.14.1"
+  },
+  "main": "dist/ontodia.js",
+  "typings": "dist/ontodia.d.ts"
+}

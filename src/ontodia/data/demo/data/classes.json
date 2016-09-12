@@ -1,0 +1,697 @@
+[
+  {
+    "id": "http://www.w3.org/2002/07/owl#Thing",
+    "label": {
+      "values": [
+        {
+          "text": "Thing",
+          "lang": "en"
+        },
+        {
+          "text": "Вещь",
+          "lang": "ru"
+        }
+      ]
+    },
+    "count": 8,
+    "children": [
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider",
+        "label": {
+          "values": [
+            {
+              "text": "ServiceProvider",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 2,
+        "children": []
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#SimpleProperty",
+        "label": {
+          "values": [
+            {
+              "text": "SimpleProperty",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": [
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Image",
+            "label": {
+              "values": [
+                {
+                  "text": "Image",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": []
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Speed",
+            "label": {
+              "values": [
+                {
+                  "text": "Speed",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#RTService",
+        "label": {
+          "values": [
+            {
+              "text": "RTService",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": []
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#Operation",
+        "label": {
+          "values": [
+            {
+              "text": "Operation",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": [
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Subscription",
+            "label": {
+              "values": [
+                {
+                  "text": "Subscription",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Unsubscribe",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Subscribe",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Contact",
+            "label": {
+              "values": [
+                {
+                  "text": "Contact",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff",
+                "label": {
+                  "values": [
+                    {
+                      "text": "TurnOff",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Connect",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Соединение",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Disconnect",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn",
+                "label": {
+                  "values": [
+                    {
+                      "text": "TurnOn",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Observe",
+            "label": {
+              "values": [
+                {
+                  "text": "Observe",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Disappear",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Disappear",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Appear",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Appear",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#Service",
+        "label": {
+          "values": [
+            {
+              "text": "Service",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 6,
+        "children": [
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel",
+            "label": {
+              "values": [
+                {
+                  "text": "TVChannel",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 1,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVChannel",
+                "label": {
+                  "values": [
+                    {
+                      "text": "DigitalTVChannel",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#AnalogueTVChannel",
+                "label": {
+                  "values": [
+                    {
+                      "text": "AnalogueTVChannel",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice",
+            "label": {
+              "values": [
+                {
+                  "text": "ServiceDevice",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Battery",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Battery",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Router",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Router",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": [
+                  {
+                    "id": "http://ailab.ifmo.ru/dialog/tv/schema#WiFiRouter",
+                    "label": {
+                      "values": [
+                        {
+                          "text": "WiFiRouter",
+                          "lang": ""
+                        }
+                      ]
+                    },
+                    "count": 0,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#CamModule",
+                "label": {
+                  "values": [
+                    {
+                      "text": "CamModule",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVSet",
+                "label": {
+                  "values": [
+                    {
+                      "text": "TVSet",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#ControlPanel",
+                "label": {
+                  "values": [
+                    {
+                      "text": "ControlPanel",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Cable",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Cable",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#SetTopBox",
+                "label": {
+                  "values": [
+                    {
+                      "text": "SetTopBox",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#All",
+            "label": {
+              "values": [
+                {
+                  "text": "All",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": []
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService",
+            "label": {
+              "values": [
+                {
+                  "text": "SubscribableService",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 5,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVService",
+                "label": {
+                  "values": [
+                    {
+                      "text": "TVService",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": [
+                  {
+                    "id": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVService",
+                    "label": {
+                      "values": [
+                        {
+                          "text": "DigitalTVService",
+                          "lang": ""
+                        }
+                      ]
+                    },
+                    "count": 0,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Internet",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Internet",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              },
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack",
+                "label": {
+                  "values": [
+                    {
+                      "text": "ChannelPack",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 5,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDesk",
+        "label": {
+          "values": [
+            {
+              "text": "ServiceDesk",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": []
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods",
+        "label": {
+          "values": [
+            {
+              "text": "PropertyAsGoods",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": [
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Home",
+            "label": {
+              "values": [
+                {
+                  "text": "Home",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#Flat",
+                "label": {
+                  "values": [
+                    {
+                      "text": "Flat",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "http://ailab.ifmo.ru/dialog/tv/schema#Phone",
+            "label": {
+              "values": [
+                {
+                  "text": "Phone",
+                  "lang": ""
+                }
+              ]
+            },
+            "count": 0,
+            "children": [
+              {
+                "id": "http://ailab.ifmo.ru/dialog/tv/schema#HomePhone",
+                "label": {
+                  "values": [
+                    {
+                      "text": "HomePhone",
+                      "lang": ""
+                    }
+                  ]
+                },
+                "count": 0,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#User",
+        "label": {
+          "values": [
+            {
+              "text": "User",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": []
+      },
+      {
+        "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceMan",
+        "label": {
+          "values": [
+            {
+              "text": "ServiceMan",
+              "lang": ""
+            }
+          ]
+        },
+        "count": 0,
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property",
+    "label": {
+      "values": [
+        {
+          "text": "Property",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 3,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "label": {
+      "values": [
+        {
+          "text": "Datatype",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 3,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#Class",
+    "label": {
+      "values": [
+        {
+          "text": "Class",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 44,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#Ontology",
+    "label": {
+      "values": [
+        {
+          "text": "Ontology",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 1,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#AnnotationProperty",
+    "label": {
+      "values": [
+        {
+          "text": "AnnotationProperty",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 1,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "label": {
+      "values": [
+        {
+          "text": "ObjectProperty",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 3,
+    "children": []
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "label": {
+      "values": [
+        {
+          "text": "DatatypeProperty",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 30,
+    "children": []
+  }
+]

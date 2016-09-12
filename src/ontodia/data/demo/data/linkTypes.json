@@ -1,0 +1,110 @@
+[
+  {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#own",
+    "label": {
+      "values": [
+        {
+          "text": "own",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 0
+  },
+  {
+    "id": "http://www.w3.org/2002/07/owl#disjointWith",
+    "label": {
+      "values": [
+        {
+          "text": "disjointWith",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 8
+  },
+  {
+    "id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "label": {
+      "values": [
+        {
+          "text": "type",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 93
+  },
+  {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#isClientOf",
+    "label": {
+      "values": [
+        {
+          "text": "isClientOf",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 0
+  },
+  {
+    "id": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "label": {
+      "values": [
+        {
+          "text": "domain",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 33
+  },
+  {
+    "id": "http://www.w3.org/2000/01/rdf-schema#subPropertyOf",
+    "label": {
+      "values": [
+        {
+          "text": "subPropertyOf",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 2
+  },
+  {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#rent",
+    "label": {
+      "values": [
+        {
+          "text": "rent",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 0
+  },
+  {
+    "id": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "label": {
+      "values": [
+        {
+          "text": "subClassOf",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 45
+  },
+  {
+    "id": "http://www.w3.org/2000/01/rdf-schema#range",
+    "label": {
+      "values": [
+        {
+          "text": "range",
+          "lang": ""
+        }
+      ]
+    },
+    "count": 33
+  }
+]
