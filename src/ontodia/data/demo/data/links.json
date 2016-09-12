@@ -1,0 +1,467 @@
+[
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#ortChannel",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Battery",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#rostelekom",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#problemStated",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#hdPremiumChannelPack",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#subscriberName",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#RTService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#subscriberName",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Name"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#encryptedSignal",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToAccounts",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TVService",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Contact"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Connect",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Contact"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Connect",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subPropertyOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#expressedBy"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#changedSpeed",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Speed"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#kinoChannelPack",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscription",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Operation"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#switchedOn",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Contact",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Operation"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#canHelp",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDesk"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subPropertyOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#expressedBy"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#inserted",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#CamModule"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#operational",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Router",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Contact"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Connect"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscription"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#CamModule",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscription"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Internet",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#sufficientFunds",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#suspended",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#serviceNumber",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#RTService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Disappear",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Observe"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Disappear",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Appear"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#WiFiRouter",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Router"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVChannel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#rent",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#rent",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#filedRequest",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#isClientOf",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#isClientOf",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#came",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceMan"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Observe",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Operation"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#modified",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Router"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#deviceModel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#popularChannelPack",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#canHangUp",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#canSolve",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDesk"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#userCanSwitchChannel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#rebooted",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#own",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#own",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVService",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TVService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#subscribed",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#baseChannelPack",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TVSet",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToInfoSupport",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#identified",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToSecondSupport",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#callsAgain",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#User"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#ControlPanel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#hasNetworkConnection",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Router"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Image",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SimpleProperty"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#phoneNumber",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Phone"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#phoneNumber",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PhoneNumber"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#deviceAppearance",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Contact"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#tvoeTV",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#HomePhone",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Phone"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#All",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Home",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Appear",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Observe"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Appear",
+    "linkTypeId": "http://www.w3.org/2002/07/owl#disjointWith",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Disappear"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Cable",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#homeAddress",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Home"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#homeAddress",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#range",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Address"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Flat",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Home"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#operationalBad",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#domain",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#AnalogueTVChannel",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Phone",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#Speed",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#SimpleProperty"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#Service"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#hdChannelPack",
+    "linkTypeId": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+  },
+  {
+    "sourceId": "http://ailab.ifmo.ru/dialog/tv/schema#SetTopBox",
+    "linkTypeId": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+    "targetId": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice"
+  }
+]

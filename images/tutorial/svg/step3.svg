@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="step3.svg"
+   inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+   inkscape:export-xdpi="123.85524"
+   inkscape:export-ydpi="123.85524">
+  <defs
+     id="defs4">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4934">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1"
+         offset="0"
+         id="stop4936" />
+      <stop
+         id="stop4186"
+         offset="0.54258567"
+         style="stop-color:#ffffff;stop-opacity:1" />
+      <stop
+         id="stop5154"
+         offset="0.74613661"
+         style="stop-color:#ffffff;stop-opacity:0.81960785" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0.34117648"
+         offset="0.92194039"
+         id="stop5156" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0"
+         offset="1"
+         id="stop4938" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient4158"
+       osb:paint="solid">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop4160" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4934"
+       id="radialGradient4940"
+       cx="410.08255"
+       cy="437.54395"
+       fx="410.08255"
+       fy="437.54395"
+       r="407.63794"
+       gradientTransform="matrix(1.843064,0.0040934,7.7618646e-4,1.5234386,-366.84465,-177.82449)"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#900000"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.40906399"
+     inkscape:cx="-13.983644"
+     inkscape:cy="1029.7811"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-text-baseline="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1028"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="opacity:1;fill:url(#radialGradient4940);fill-opacity:1;stroke:none;stroke-opacity:1"
+       id="rect4932"
+       width="1521.7667"
+       height="1246.1036"
+       x="-371.57999"
+       y="-132.62633"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:48.72791672px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="533.64215"
+       y="67.891571"
+       id="text3342"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(0.99351325,1.0065291)"><tspan
+         sodipodi:role="line"
+         id="tspan3344"
+         x="533.64215"
+         y="67.891571" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:48.72791672px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       x="421.79053"
+       y="220.73242"
+       id="text3346"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(0.99351325,1.0065291)"><tspan
+         sodipodi:role="line"
+         id="tspan5602"
+         x="421.79053"
+         y="220.73242">Double </tspan><tspan
+         sodipodi:role="line"
+         x="421.79053"
+         y="270.73242"
+         id="tspan4818">  click</tspan></text>
+    <rect
+       style="fill:#0000ff;fill-opacity:0;fill-rule:evenodd;stroke:#000000;stroke-width:1.21819782px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0"
+       id="rect3356"
+       width="433.28589"
+       height="22.070728"
+       x="91.087082"
+       y="-87.267525"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <g
+       id="g4731"
+       style="fill:#ffffff;fill-opacity:1"
+       transform="matrix(1.2116935,0,0,0.67406189,-105.38889,82.869886)"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123">
+      <path
+         sodipodi:nodetypes="ccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4727"
+         d="m 180.81025,292.47862 c 0.13659,-16.71078 2.93307,-27.88343 22.82654,-27.63213 l 176.60535,0.0412 c 16.80003,-0.42359 23.82076,8.50275 23.42725,26.99018 l -1e-5,83.49709 c -0.0463,22.04299 -3.66423,31.70247 -19.22235,31.23632 l -183.55779,0.6028 c -15.28961,0.27442 -21.12186,-8.81812 -20.67969,-21.62725 z"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#2aaf21;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path4729"
+         d="m 180.5501,295.16813 c 223.05774,1.07342 223.05774,1.07342 223.05774,1.07342 l 0,0"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#18a225;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:43.76548004px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="119.75515"
+       y="338.04077"
+       id="text3346-7-3"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(1.0186183,0.98172196)"><tspan
+         sodipodi:role="line"
+         id="tspan5602-5-9"
+         x="119.75515"
+         y="338.04077">Implementation</tspan></text>
+    <path
+       style="fill:#00a600;fill-opacity:1;stroke:#18a225;stroke-width:0.30768517;stroke-opacity:1"
+       d="m 288.01862,290.01241 c -40.53796,-0.15733 -96.28564,-0.39942 -123.88374,-0.53762 l -50.17836,-0.25128 0.15026,-4.65441 c 0.0827,-2.55992 0.07,-8.40818 0.28423,-9.51412 1.72538,-8.90553 6.61907,-10.69802 15.81596,-12.72277 1.77009,-0.38974 24.15951,-0.48062 118.39084,-0.48062 111.9139,0 116.30758,0.0251 118.90446,0.68183 8.66285,2.19036 13.92945,4.95117 15.95664,13.04277 0.42306,1.68872 0.057,5.15018 0.15761,9.40723 l 0.12854,5.43736 -11.01052,-0.0609 c -6.05581,-0.0336 -44.17797,-0.18988 -84.71592,-0.34736 z"
+       id="path4812"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscsscscsscccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:29.77747345px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="98.646698"
+       y="351.58249"
+       id="text3346-7"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(1.2443163,0.80365416)"><tspan
+         sodipodi:role="line"
+         id="tspan5602-5"
+         x="98.646698"
+         y="351.58249">Any Class</tspan></text>
+    <path
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.21819782px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 407.3318,302.03975 c 43.78605,-0.77776 87.04285,0.94506 131.90587,-1.03597 2.46217,-0.19575 0.91719,-8.51078 0.007,-15.53966 9.95477,6.64317 19.12655,14.47617 26.73415,24.6862 -6.81648,8.35073 -14.85288,16.01182 -25.57844,22.37978 0.74985,-5.49019 1.51891,-9.50978 -0.13313,-11.82159 -44.36315,-1.86705 -88.72631,-0.13177 -133.08946,0.12783 1.44987,-6.78551 1.04766,-12.78442 0.15404,-18.79659 z"
+       id="path4814"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <g
+       id="g4731-8"
+       style="fill:#ffffff;fill-opacity:1"
+       transform="matrix(1.2116935,0,0,1.1829976,375.51278,-75.245415)"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123">
+      <path
+         sodipodi:nodetypes="ccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4727-2"
+         d="m 180.81025,292.47862 c 0.13659,-16.71078 2.93307,-27.88343 22.82654,-27.63213 l 176.60535,0.0412 c 16.80003,-0.42359 23.82076,8.50275 23.42725,26.99018 l -1e-5,83.49709 c -0.0463,22.04299 -3.66423,31.70247 -19.22235,31.23632 l -183.55779,0.6028 c -15.28961,0.27442 -21.12186,-8.81812 -20.67969,-21.62725 z"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#2aaf21;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path4729-1"
+         d="m 180.5501,295.16813 c 223.05774,1.07342 223.05774,1.07342 223.05774,1.07342 l 0,0"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#18a225;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:46.27297211px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="605.03949"
+       y="317.26917"
+       id="text3346-7-3-2"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(0.99944492,1.0005554)"><tspan
+         sodipodi:role="line"
+         id="tspan5602-5-9-1"
+         x="605.03949"
+         y="317.26917">Implementation</tspan></text>
+    <path
+       style="fill:#00b300;fill-opacity:1;stroke:#18a225;stroke-width:0.35127068;stroke-opacity:1"
+       d="m 768.9285,275.46446 c -40.54645,-0.20502 -96.30581,-0.52049 -123.9097,-0.70058 l -50.18887,-0.32744 0.15029,-6.06518 c 0.0827,-3.33586 0.48596,-9.27096 0.70029,-10.71211 1.72575,-11.60485 6.20446,-15.62646 15.40328,-18.26492 1.77046,-0.50787 24.16457,-0.62629 118.41565,-0.62629 111.93735,0 116.33194,0.0327 118.92937,0.88849 8.66467,2.85428 13.93237,6.4519 15.95999,16.99611 0.42314,2.20058 0.057,6.71123 0.15764,12.25861 l 0.12857,7.08546 -11.01283,-0.0794 c -6.05708,-0.0438 -44.18723,-0.24743 -84.73368,-0.45265 z"
+       id="path4812-8"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscsscscsscccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:39.14643097px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="484.61102"
+       y="330.97928"
+       id="text3346-7-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(1.2473538,0.80169716)"><tspan
+         sodipodi:role="line"
+         id="tspan5602-5-1"
+         x="484.61102"
+         y="330.97928">Any Class</tspan></text>
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.21819782px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 604.30137,334.53324 c 250.84877,1.68581 250.84877,1.68581 250.84877,1.68581 l 0,0"
+       id="path4856"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.10107803px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="628.81854"
+       y="366.48169"
+       id="text3346-7-3-2-0"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(0.98103042,1.0193364)"><tspan
+         sodipodi:role="line"
+         id="tspan5602-5-9-1-5"
+         x="628.81854"
+         y="366.48169">Any property</tspan></text>
+    <ellipse
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.21819782;stroke-opacity:1"
+       id="path4876"
+       cx="94.699799"
+       cy="242.23541"
+       rx="16.224051"
+       ry="15.593697"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#ffffff;stroke-width:1.21819782px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 83.437742,237.5396 5.211884,5.19579 -4.867071,5.75556 5.841916,5.29833 5.32472,-5.77374 5.425939,5.12364 4.95036,-5.5451 -5.21769,-5.38858 4.6414,-5.67758 -6.061804,-5.78012 -4.534373,5.71978 -5.639979,-5.36456 z"
+       id="path4878"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <path
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.21819782px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 373.21831,380.76015 0.36984,6.74427 15.16331,8.243 0.36984,12.36451 -4.80789,0 0.36985,4.87087 4.0682,0.37468 0,9.36705 6.28723,0 -0.36984,-27.72647 12.57446,-8.99236 0,-5.24555 z"
+       id="path4880"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <path
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.84577549px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 361.44993,413.73645 4.95865,0.14443 0.2107,5.38044 5.31822,-0.11134 0.008,-5.61442 5.03199,0.001 -0.0732,-5.31189 -5.04953,-0.24181 -0.28712,-5.2292 -5.64726,-0.0313 0.35951,5.19861 -5.2482,-0.0221 z"
+       id="path4878-8"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccccccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:48.72791672px;line-height:125%;font-family:'Buxton Sketch';-inkscape-font-specification:'Buxton Sketch, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       x="364.39554"
+       y="566.38123"
+       id="text3346-8"
+       sodipodi:linespacing="125%"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       transform="scale(0.99351325,1.0065291)"><tspan
+         sodipodi:role="line"
+         x="364.39554"
+         y="566.38123"
+         id="tspan4818-2">Click to search</tspan><tspan
+         sodipodi:role="line"
+         x="364.39554"
+         y="616.38123"
+         id="tspan4920">for related objects</tspan></text>
+    <path
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.6871891px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 332.72706,438.59783 c -28.80453,77.8693 -71.06388,153.08154 -145.69831,220.48566 -74.76217,66.62495 -162.741458,106.89472 -263.36002,117.2228 -28.42273,2.94486 -56.84546,4.26133 -85.26819,1.97012 -3.79457,-4.53667 -7.45557,-9.22574 0,-26.59675 -24.86371,12.54187 -43.63949,18.99625 -59.90361,35.46235 15.784,17.54841 34.10322,31.62618 55.58624,41.37275 -3.13668,-9.51634 -4.49838,-18.24775 2.15868,-22.65652 30.92321,1.98656 61.69379,4.11242 98.220353,0.98508 C 48.753714,792.61179 140.70476,749.78353 216.17104,685.68027 292.2065,616.06988 337.50658,546.06757 382.45361,451.91072 c -24.96156,-5.54899 -37.9436,-5.14596 -49.72655,-13.31289 z"
+       id="path4922"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccccc"
+       inkscape:export-filename="D:\projects\ONTODIA\ontodia\ontodia-core\src\main\resources\static\images\tutorial\step3.png"
+       inkscape:export-xdpi="123"
+       inkscape:export-ydpi="123" />
+  </g>
+</svg>

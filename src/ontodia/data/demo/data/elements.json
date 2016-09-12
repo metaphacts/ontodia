@@ -1,0 +1,2749 @@
+{
+  "http://ailab.ifmo.ru/dialog/tv/schema": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Ontology"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "schema",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2002/07/owl#versionInfo": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Created with TopBraid Composer",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ortChannel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ortChannel",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ortChannel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "орт",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Battery": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Battery",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Battery",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "батарейка",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#rostelekom": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#rostelekom",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "rostelekom",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "ростелеком",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#problemStated": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#problemStated",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "problemStated",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#hdPremiumChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#hdPremiumChannelPack",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "hdPremiumChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "эйчди-премиум",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#subscriberName": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#subscriberName",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "subscriberName",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Имя человека, на которого оформлен договор.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "оформлять",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#encryptedSignal": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#encryptedSignal",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "encryptedSignal",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "На экаране показывается, что сигнал зашифрован ил нет доступа",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToAccounts": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToAccounts",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "forwardedToAccounts",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#TVService": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVService",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "TVService",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Услуга телевидения. Пока нахождение на этом уровне определяется только необходимостью преобразования в онто-факты.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "телевидение",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Address": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Address",
+    "types": [
+      "http://www.w3.org/2000/01/rdf-schema#Datatype"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Address",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOff",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "TurnOff",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "выключать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVChannel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "TVChannel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Телевизионный канал.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "канал",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDevice",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ServiceDevice",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Устройство у пользователя, отвечающее за предоставление услуг",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Connect": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Connect",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Соединение",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "втыкать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "вставлять",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy",
+    "types": [
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "falseExpressedBy",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#changedSpeed": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#changedSpeed",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "changedSpeed",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "уменьшать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "увеличивать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "снижать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "поднимать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "изменять",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#kinoChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#kinoChannelPack",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "kinoChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "кино",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Subscription": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Subscription",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Subscription",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#switchedOn": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#switchedOn",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "switchedOn",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Включено ли устройство.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:TurnOff",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:TurnOn",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Contact": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Contact",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Contact",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#canHelp": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#canHelp",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "canHelp",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Система спрашивает 'Я могу еще чем-либо помочь?'",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy",
+    "types": [
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "trueExpressedBy",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#inserted": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#inserted",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "inserted",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Вставлен ли Cam-модуль в ТВ или приставку",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Disconnect",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Connect",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#operational": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#operational",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "operational",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Работает в смысле 'Не сломано и может выполняет основные фунции'",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Disappear",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "работать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "показывать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "включаться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "включать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Name": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Name",
+    "types": [
+      "http://www.w3.org/2000/01/rdf-schema#Datatype"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Name",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Router": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Router",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Router",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Роутер - устройство маршрутизации между сетями, компонент услуги предоставление доступа в интернет или интерактивного телевидения.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "роутер",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Disconnect",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Disconnect",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "извлекать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "вытаскивать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "вынимать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Unsubscribe",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Unsubscribe",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "отписываться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "отключать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "отказываться",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#CamModule": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#CamModule",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "CamModule",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Cam-модуль, отвечает за декодирование платных каналов DVB. Может вставляться в телевизор или в теле-приставку.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "к-модуль",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "cam-модуль",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Subscribe",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Subscribe",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "устанавливать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "подключать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "переходить",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "настраивать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Internet": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Internet",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Internet",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "интернет",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#sufficientFunds": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#sufficientFunds",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "sufficientFunds",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ServiceProvider",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Поставщик услуг.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#suspended": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#suspended",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "suspended",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Приостановлено ли предоставление услуги из-за отсутствия оплаты или еще каких причин.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "отключать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "заблокировать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#SimpleProperty": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#SimpleProperty",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "SimpleProperty",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#RTService": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#RTService",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "RTService",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Услуга ростелекома как элемент оплаты, биллинга, части договора.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "услуга",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#serviceNumber": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#serviceNumber",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "serviceNumber",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Номер услуги клиента. Используется для идентификации клиента.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "номер",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Disappear": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Disappear",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Disappear",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "отключаться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "пропадать",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "исчезать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Operation": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Operation",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Operation",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#WiFiRouter": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#WiFiRouter",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "WiFiRouter",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "WiFi",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Service": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Service",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Service",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Сервис, класс всех сущностей, ответственных за предоставление услуг клиентам.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVChannel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVChannel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "DigitalTVChannel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Цифровой телевизионный канал.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "цифровой",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#rent": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#rent",
+    "types": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "rent",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Арендовать указанное имущество",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "арендовать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDesk": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceDesk",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ServiceDesk",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Служба поддержки.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#filedRequest": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#filedRequest",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "filedRequest",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Пользователь оставил заявку",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#isClientOf": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#isClientOf",
+    "types": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "isClientOf",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Являться клиентом указанного оператора",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "клиент",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#came": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#came",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "came",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Был ли мастер у клиента.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "приходить",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Observe": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Observe",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Observe",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#PropertyAsGoods",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "PropertyAsGoods",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Собственность пользователя в виде материальных или нематериальных объектов.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#expressedBy": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#expressedBy",
+    "types": [
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "expressedBy",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#modified": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#modified",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "modified",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Перенастроено ли устройство, были ли изменены настройки.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "настраивать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "тариф",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "план",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "пакет",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#deviceModel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#deviceModel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "deviceModel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Название модели устройства.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "модель",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#popularChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#popularChannelPack",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "popularChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "популярный",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#canHangUp": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#canHangUp",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "canHangUp",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Можно ли клиенту повесить трубку и продложить решать проблему автономно.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#canSolve": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#canSolve",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "canSolve",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Может ли служба поддержки решить проблему пользователя. Нет - в случае неработающего телевизора, например.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#userCanSwitchChannel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#userCanSwitchChannel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "userCanSwitchChannel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "переключаться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "переключать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#rebooted": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#rebooted",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "rebooted",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Перезагружено ли устройство",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "перезагружать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#own": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#own",
+    "types": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "own",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Владеть указанным имуществом",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "есть",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "иметь",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "владеть",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVService": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#DigitalTVService",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "DigitalTVService",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Услуга цифрового телевидения.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "цифровой",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#PhoneNumber": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#PhoneNumber",
+    "types": [
+      "http://www.w3.org/2000/01/rdf-schema#Datatype"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "PhoneNumber",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#User": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#User",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "User",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Пользователь. Пока и клиент Ростелекома и позвонивший человек в одном лице.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "мы",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "я",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#subscribed": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#subscribed",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "subscribed",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Подписан ли пользователь на эту услугу.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Unsubscribe",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#trueExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Subscribe",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#baseChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#baseChannelPack",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "baseChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "стартовый",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "начальный",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "базовый",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#TVSet": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#TVSet",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "TVSet",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Телевизор. Может иметь возможность декодирования платных каналов услуги цифрового телевидения с использованием CAM-модуля.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "телевизор",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToInfoSupport": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToInfoSupport",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "forwardedToInfoSupport",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#lemma": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#lemma",
+    "types": [
+      "http://www.w3.org/2002/07/owl#AnnotationProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "lemma",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#identified": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#identified",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "identified",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToSecondSupport": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#forwardedToSecondSupport",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "forwardedToSecondSupport",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#callsAgain": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#callsAgain",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "callsAgain",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Пользователь обращается повторно",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ControlPanel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ControlPanel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ControlPanel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Пульт от телевизора",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "пульт",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#hasNetworkConnection": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#hasNetworkConnection",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "hasNetworkConnection",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Есть ли подключение к роутеру со стороны провайдера услуг.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Image": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Image",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Image",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "сигнал",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "картинка",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "изображение",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "видео",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#phoneNumber": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#phoneNumber",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "phoneNumber",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Номер телефона",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "номер",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#deviceAppearance": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#deviceAppearance",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "deviceAppearance",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Описание внешнего вида устройства.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "внешний вид",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#TurnOn",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "TurnOn",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "включать",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#tvoeTV": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#tvoeTV",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ServiceProvider"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "tvoeTV",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "твой интернет",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "твое тв",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#HomePhone": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#HomePhone",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "HomePhone",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Домашний телефон. Один из способов идентифицировать клиента. Другой - по номеру услуги.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "домашний",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "городской",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#All": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#All",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "All",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Концепт для обработки 'а потом все отвалилось'",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "всё",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Home": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Home",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Home",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Дом клиента в смысле места, где установлено такое оборудование, как роутер.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "дом",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Appear": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Appear",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Appear",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "появляться",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Cable": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Cable",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Cable",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Кабель - нужен для подключения кабельного телевидения.",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#homeAddress": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#homeAddress",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "homeAddress",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Домашний адрес",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "адрес",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Flat": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Flat",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Flat",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Квартира (уточнение дома).",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "квартира",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#operationalBad": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#operationalBad",
+    "types": [
+      "http://www.w3.org/2002/07/owl#DatatypeProperty"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "operationalBad",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#falseExpressedBy": [
+        {
+          "type": "string",
+          "value": {
+            "text": "tv:Disappear",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "тормозить",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "расползаться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "портиться",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "барахлить",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#AnalogueTVChannel": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#AnalogueTVChannel",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "AnalogueTVChannel",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Аналоговый телевизионный канал.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "аналоговый",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#ServiceMan": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#ServiceMan",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "ServiceMan",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Квалифицированный работник",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "мастер",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Phone": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Phone",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Phone",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Телефон. Здесь пока только для образование сущности 'домашний телефон'",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "телефон",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#Speed": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#Speed",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "Speed",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "скорость",
+            "lang": ""
+          }
+        },
+        {
+          "type": "string",
+          "value": {
+            "text": "производительность",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#SubscribableService",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "SubscribableService",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {}
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#hdChannelPack": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#hdChannelPack",
+    "types": [
+      "http://ailab.ifmo.ru/dialog/tv/schema#ChannelPack"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "hdChannelPack",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "эйчди",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  },
+  "http://ailab.ifmo.ru/dialog/tv/schema#SetTopBox": {
+    "id": "http://ailab.ifmo.ru/dialog/tv/schema#SetTopBox",
+    "types": [
+      "http://www.w3.org/2002/07/owl#Class"
+    ],
+    "label": {
+      "values": [
+        {
+          "text": "SetTopBox",
+          "lang": ""
+        }
+      ]
+    },
+    "properties": {
+      "http://www.w3.org/2000/01/rdf-schema#comment": [
+        {
+          "type": "string",
+          "value": {
+            "text": "Телеприставка, осуществляющая декодирование цифрового сигнала и подключаемая к телевизору.",
+            "lang": ""
+          }
+        }
+      ],
+      "http://ailab.ifmo.ru/dialog/tv/schema#lemma": [
+        {
+          "type": "string",
+          "value": {
+            "text": "приставка",
+            "lang": ""
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,99 @@
+.svguiTooltip {
+    position: absolute;
+    text-align: center;
+    /*min-width: 300px;*/
+    /*min-height: 30px;*/
+    color: #ffffff;
+    /*width: 60px;*/
+    padding: 4px;
+    font: 12px sans-serif;
+    font-weight: bold;
+    background: #7e85ae;
+    border: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10000;
+}
+.svguiLabelText {
+    font-family: "Andale Mono", sans-serif;
+    font-size: 15px;
+    fill: black;
+}
+.svguiPropertyTable {}
+.svgUIList {}
+.svguiPropertyTableGroupCaption {
+    font-family: "Andale Mono", sans-serif;
+    fill: black;
+    font-size: 15px;
+    font-weight: bold;
+}
+.indicatorText {
+    font-family: "Andale Mono", sans-serif;
+    font-size: 15px;
+}
+.svguiHyperlink {
+    fill: #0000bb;
+}
+.svguiHyperlink:hover {
+    text-decoration: underline;
+}
+.svguiHyperlink:active {
+    fill: orange;
+}
+.svguiHyperlink:visited {
+    fill: #000088;
+}
+.svguiExpander { }
+.svguiExpanderSplitter {
+    stroke: red;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+.svguiPaginator {}
+.paginatorBox > rect {
+    stroke-width: 2;
+    fill: white;
+}
+.paginatorText {
+    fill: black;
+    font-family: Helvetica, sans-serif;
+    font-size: 20px;
+    user-select: none;
+    -webkit-user-select: none; /* Chrome/Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE10+ */
+}
+.paginatorBox:hover .paginatorText {
+    font-weight: bolder;
+}
+.paginatorBox input {
+    text-align: center;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+    border-radius: 10px;
+    border-width: 0;
+    outline: 0;
+    font-family: Helvetica,sans-serif;
+    font-size: 20px;
+    background: transparent;
+}
+.paginatorButton > rect {
+    stroke-width: 1.5;
+    fill: white;
+}
+.paginatorButton > text {
+    font-family: "Times New Roman", Times, serif;
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none; /* Chrome/Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE10+ */
+}
+.svguiNamedBox {}
+.svguiNamedBox > rect.svguiBorder {}
+.svguiNamedBox > rect.svguiCaption {}
+.svguiNamedBoxCaption {
+    font-family: "Andale Mono", sans-serif;
+    fill: white;
+    font-size: 10px;
+}

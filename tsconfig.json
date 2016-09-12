@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "jsx": "react",
+        "lib": [
+            "dom",
+            "es2015",
+            "es2015.promise"
+        ]
+    },
+    "include": [
+        "./index.ts",
+        "./src/**/*.ts",
+        "./src/**/*.tsx",
+        "./typings/index.d.ts",
+        "./typings/local.d.ts"
+    ],
+    "compileOnSave": false
+}
