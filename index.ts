@@ -1,6 +1,4 @@
 require('intro.js/introjs.css');
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
 
 require('./styles/ontodia.css');
 require('./src/svgui/svgui.css');
