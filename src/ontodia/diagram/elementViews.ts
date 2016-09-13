@@ -13,11 +13,13 @@ export class UIElementView extends joint.dia.ElementView {
     private name: svgui.Label;
     private label: svgui.Label;
     private iri: svgui.Label;
+    private image: svgui.Image;
     private uiList: svgui.UIList;
     private expander: svgui.Expander;
     private box: svgui.NamedBox;
     private table: svgui.PropertyTable;
     private properties: Array<{ left: string; right: string; }>;
+
     initialize() {
         joint.dia.ElementView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'state:loaded', this.updateUI);
@@ -50,6 +52,13 @@ export class UIElementView extends joint.dia.ElementView {
         this.box = new svgui.NamedBox({
             parent: d3.select($root.get(0)),
             captionText: '<loading...>',
+        });
+        this.image = new svgui.Image({
+            parent: this.box.root,
+            size: { width: 100, height: 30 },
+            margin: {top: 5, right: 0, bottom: 0, left: 0},
+            padding: {top: 1, right: 1, bottom: 1, left: 1},
+            raze: false,
         });
         this.expander = new svgui.Expander({
             parent: this.box.root,
@@ -109,6 +118,7 @@ export class UIElementView extends joint.dia.ElementView {
         this.box.root.on('dblclick', () => {
             this.model.set('isExpanded', !this.model.get('isExpanded'));
         });
+        this.box.set('image', this.image);
         this.box.set('child', this.expander);
         this.box.update();
         this.updateUI();
@@ -127,6 +137,10 @@ export class UIElementView extends joint.dia.ElementView {
             this.updateUIList();
             this.updateProperties();
             this.expander.splitter.style('stroke', this.box.get('color'));
+            // 'http://www.britishmuseum.org/collectionimages/AN00230/AN00230714_001_l.jpg'
+            this.image.set('imageUrl', this.model.template.image);
+            this.image.set('borderColor', this.box.get('color'));
+            this.image.update();
         }
         this.layoutUI();
     }

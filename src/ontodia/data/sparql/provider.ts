@@ -9,6 +9,7 @@ import {
     getLinksInfo,
     getLinksTypesOf,
     getFilteredData,
+    getEnreachedElementsInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
 
@@ -16,6 +17,8 @@ const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
+
+const HAS_MAIN_REPRESENTATION_URI = 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation';
 
 export class SparqlDataProvider implements DataProvider {
     constructor(public endpointUrl: string) {}
@@ -77,7 +80,27 @@ export class SparqlDataProvider implements DataProvider {
             }}
         `;
         return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.endpointUrl, query).
-            then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds));
+            then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds)).
+            then(elementsInfo => this.enreachedElementsInfo(elementsInfo, [ HAS_MAIN_REPRESENTATION_URI ]));
+    }
+
+    private enreachedElementsInfo(
+        elementsInfo: Dictionary<ElementModel>,
+        types: string[]
+    ): Promise<Dictionary<ElementModel>> {
+        const ids: string = Object.keys(elementsInfo).map(escapeIri).join(', ');
+        const typesString: string = types.map(escapeIri).join(', ');
+
+        const query = DEFAULT_PREFIX + `
+            SELECT ?inst ?type ?inst2
+            WHERE {{
+                FILTER (?inst IN (${ids}))
+                FILTER (?type IN (${typesString}))
+                ?inst ?type ?inst2
+            }}
+        `;
+        return executeSparqlQuery<Sparql.ImageResponse>(this.endpointUrl, query).
+            then(imageResponce => getEnreachedElementsInfo(imageResponce, elementsInfo));
     }
 
     linksInfo(params: {
