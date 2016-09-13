@@ -3,8 +3,6 @@ import * as Backbone from 'backbone';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
 
-const IMAGE_MIN_SIZE: Vector = vector(100, 100);
-
 function removeAllChilds(node: Element) {
     while (node.firstChild) {
         node.removeChild(node.firstChild);
@@ -88,7 +86,7 @@ export interface Margin {
  *     height: number
  *     margin: svgui.Margin
  */
-export class UIElement extends Backbone.Model {
+export abstract class UIElement extends Backbone.Model {
     /** Root SVG element of this UIElement */
     public root: d3.Selection<any>;
     /** Measured size of the element. */
@@ -98,7 +96,7 @@ export class UIElement extends Backbone.Model {
     }
     defaults(): any {
         return {
-            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+            margin: {top: 0, right: 0, bottom: 0, left: 0},
         };
     }
     initialize(attributes?: any, options?: any) {
@@ -268,6 +266,7 @@ export class Image extends UIElement {
             borderColor: 'green',
             spacing: vector(10, 3),
             padding: undefined,
+            minSize: vector(100, 100),
         });
     }
     initialize() {
@@ -281,8 +280,8 @@ export class Image extends UIElement {
         this.image = this.root.append('image')
             .attr('x', 0)
             .attr('y', 0)
-            .attr('width', IMAGE_MIN_SIZE.x)
-            .attr('height', IMAGE_MIN_SIZE.y)
+            .attr('width', this.get('minSize').x)
+            .attr('height', this.get('minSize').y)
             .attr('href', this.get('imageUrl'));
     }
     update() {
@@ -298,8 +297,8 @@ export class Image extends UIElement {
     measure(maxSize: Vector) {
         if (this.get('imageUrl')) {
             return vector(
-                Math.max(maxSize.x , IMAGE_MIN_SIZE.x),
-                IMAGE_MIN_SIZE.y,
+                Math.max(maxSize.x , this.get('minSize').x),
+                this.get('minSize').y,
             );
         } else {
             return vector(0, 0);
