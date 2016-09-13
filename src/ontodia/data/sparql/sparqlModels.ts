@@ -46,8 +46,8 @@ export interface ConstructElement {
 
 export interface ImageLink {
     inst: Field;
-    type: Field;
-    inst2: Field;
+    linkType: Field;
+    image: Field;
 }
 
 export interface SparqlResponse {

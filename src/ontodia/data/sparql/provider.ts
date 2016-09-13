@@ -18,10 +18,9 @@ const DEFAULT_PREFIX =
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
 
-const HAS_MAIN_REPRESENTATION_URI = 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation';
-
 export class SparqlDataProvider implements DataProvider {
-    constructor(public endpointUrl: string) {}
+    constructor(public endpointUrl: string,
+                public imageClassUris?: string[]) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = DEFAULT_PREFIX + `
@@ -81,7 +80,7 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.endpointUrl, query).
             then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds)).
-            then(elementsInfo => this.enreachedElementsInfo(elementsInfo, [ HAS_MAIN_REPRESENTATION_URI ]));
+            then(elementsInfo => this.enreachedElementsInfo(elementsInfo, this.imageClassUris));
     }
 
     private enreachedElementsInfo(
@@ -92,11 +91,11 @@ export class SparqlDataProvider implements DataProvider {
         const typesString: string = types.map(escapeIri).join(', ');
 
         const query = DEFAULT_PREFIX + `
-            SELECT ?inst ?type ?inst2
+            SELECT ?inst ?linkType ?image
             WHERE {{
                 FILTER (?inst IN (${ids}))
-                FILTER (?type IN (${typesString}))
-                ?inst ?type ?inst2
+                FILTER (?linkType IN (${typesString}))
+                ?inst ?linkType ?image
             }}
         `;
         return executeSparqlQuery<Sparql.ImageResponse>(this.endpointUrl, query).

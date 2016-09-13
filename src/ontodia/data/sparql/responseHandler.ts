@@ -136,7 +136,7 @@ export function getEnreachedElementsInfo(
     const respElements: Sparql.ImageLink[] = response.results.bindings;
     for (const respEl of respElements) {
         if (elementsInfo[respEl.inst.value]) {
-            elementsInfo[respEl.inst.value].image = respEl.inst2.value;
+            elementsInfo[respEl.inst.value].image = respEl.image.value;
         }
     }
     return elementsInfo;
