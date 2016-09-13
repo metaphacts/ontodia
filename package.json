@@ -28,6 +28,7 @@
     "typings-tsc": "node ./node_modules/typescript/bin/tsc --declaration --outDir dist/dts",
     "typings-dts-bundle": "node ./node_modules/dts-bundle/lib/dts-bundle.js --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
     "typings": "npm run typings-tsc && npm run typings-dts-bundle",
+    "test": "npm run build && npm run typings",
     "prepublish": "npm run build && npm run typings"
   },
   "dependencies": {
