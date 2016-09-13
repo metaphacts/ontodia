@@ -3,6 +3,9 @@ import * as ReactDOM from 'react-dom';
 
 import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder } from '../../index';
 
+require('jointjs/css/layout.css');
+require('jointjs/css/themes/default.css');
+
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.createElement('div');
     container.id = 'root';

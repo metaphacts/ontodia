@@ -23,7 +23,9 @@ module.exports = {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
             {test: /\.css$/, loader: 'style-loader!css-loader'},
-            {test: /\.jpe?g$|\.gif$|\.png$/i, loader: 'file?name=images/[name].[ext]'},
+            {test: /\.jpe?g$/, loader: 'file?name=images/[name].[ext]'},
+            {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
+            {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
         ]
     },
     plugins: [
