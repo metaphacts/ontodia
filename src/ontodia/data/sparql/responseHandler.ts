@@ -129,6 +129,19 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
     return instancesMap;
 }
 
+export function getEnreachedElementsInfo(
+    response: Sparql.ImageResponse,
+    elementsInfo: Dictionary<ElementModel>
+): Dictionary<ElementModel> {
+    const respElements: Sparql.ImageLink[] = response.results.bindings;
+    for (const respEl of respElements) {
+        if (elementsInfo[respEl.inst.value]) {
+            elementsInfo[respEl.inst.value].image = respEl.inst2.value;
+        }
+    }
+    return elementsInfo;
+}
+
 export function getLinksInfo(response: Sparql.LinksInfoResponse): LinkModel[] {
     const sparqlLinks: Sparql.LinkInfo[] = response.results.bindings;
     return sparqlLinks.map((sLink: Sparql.LinkInfo) => getLinkInfo(sLink));

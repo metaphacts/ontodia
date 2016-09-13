@@ -3,6 +3,8 @@ import * as Backbone from 'backbone';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
 
+const IMAGE_MIN_SIZE: Vector = vector(100, 100);
+
 function removeAllChilds(node: Element) {
     while (node.firstChild) {
         node.removeChild(node.firstChild);
@@ -86,7 +88,7 @@ export interface Margin {
  *     height: number
  *     margin: svgui.Margin
  */
-export abstract class UIElement extends Backbone.Model {
+export class UIElement extends Backbone.Model {
     /** Root SVG element of this UIElement */
     public root: d3.Selection<any>;
     /** Measured size of the element. */
@@ -96,7 +98,7 @@ export abstract class UIElement extends Backbone.Model {
     }
     defaults(): any {
         return {
-            margin: {top: 0, right: 0, bottom: 0, left: 0},
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
         };
     }
     initialize(attributes?: any, options?: any) {
@@ -106,9 +108,9 @@ export abstract class UIElement extends Backbone.Model {
         super.initialize.apply(this, arguments);
     }
     /** Measures element without margin returning computed element size */
-    abstract measure(maxSize: Vector): Vector;
+    measure(maxSize: Vector): Vector { return vector(0); }
     /** Arranges element without margin by coordinates (x, y) using provided size */
-    abstract arrange(x: number, y: number, size: Vector): void;
+    arrange(x: number, y: number, size: Vector): void { /* do nothing */ }
 }
 
 /**
@@ -159,8 +161,9 @@ export class Label extends UIElement {
             this.textLines = splitIntoLines(
                 (i) => maxSize.x - (i === 0 ? this.iconSize : 0),
                 this.hyperlink.text, this.get('textClass'));
-            const lineHeightSum = this.textLines.length * (this.ti.offsetY + this.get('interline'));
-            let height = lineHeightSum - this.get('interline') + this.ti.baseLineHeight;
+            let height = (
+                this.textLines.length * (this.ti.offsetY + this.get('interline'))
+            ) - this.get('interline') + this.ti.baseLineHeight;
             let width = 0;
             for (let i = 0; i < this.textLines.length; i++) {
                 let lineWidth = textInfo(this.textLines[i], this.get('textClass')).width;
@@ -247,6 +250,68 @@ export class Pair extends UIElement {
             const rightY = y + (size.y - this.right.size.y) / 2;
             arrange(this.right, x, rightY);
         }
+    }
+}
+
+/*
+ * Image for element.
+ * Backbone properties:
+ *     imageUrl: string
+ */
+export class Image extends UIElement {
+    public image: d3.Selection<any>;
+    public imageRect: d3.Selection<any>;
+
+    defaults() {
+        return _.extend(super.defaults(), {
+            imageUrl: undefined,
+            borderColor: 'green',
+            spacing: vector(10, 3),
+            padding: undefined,
+        });
+    }
+    initialize() {
+        super.initialize.apply(this, arguments);
+        this.root.attr('class', 'svguiImage');
+        this.update();
+        this.imageRect = this.root.append('rect')
+            .attr('fill', '#e1e1e1')
+            .attr('stroke-width', '1')
+            .attr('stroke', this.get('borderColor'));
+        this.image = this.root.append('image')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', IMAGE_MIN_SIZE.x)
+            .attr('height', IMAGE_MIN_SIZE.y)
+            .attr('href', this.get('imageUrl'));
+    }
+    update() {
+        if (this.image) {
+            this.image.attr('href', this.get('imageUrl'));
+        }
+        if (this.imageRect) {
+            this.imageRect.attr('stroke', this.get('borderColor'));
+        }
+        return this;
+    }
+
+    measure(maxSize: Vector) {
+        if (this.get('imageUrl')) {
+            return vector(
+                Math.max(maxSize.x , IMAGE_MIN_SIZE.x),
+                IMAGE_MIN_SIZE.y,
+            );
+        } else {
+            return vector(0, 0);
+        }
+    }
+    arrange(x: number, y: number, size?: Vector) {
+        const padding = this.get('padding');
+        this.imageRect.attr('x', x).attr('y', y);
+        this.image.attr('x', x + padding.left).attr('y', y + padding.top);
+        this.imageRect.attr('width', size ? size.x : 0).attr('height', size ? size.y : 0);
+        this.image.attr('width', size ? size.x - padding.left - padding.right : 0)
+                  .attr('height', size ? size.y - padding.top - padding.bottom : 0);
     }
 }
 
@@ -498,12 +563,12 @@ export class Expander extends UIElement {
         return this;
     }
     measure(maxSize: Vector) {
-        const isExpanded: boolean = this.get('expanded');
-        const stringFirst = isExpanded ? 'expandedfirst' : 'first';
-        const firstSize = measure(this.get(stringFirst), maxSize);
+        let isExpanded: boolean = this.get('expanded');
+        let stringFirst = (isExpanded ? 'expandedfirst' : 'first');
+        let firstSize = measure(this.get(stringFirst), maxSize);
         if (this.get('expanded')) {
             maxSize.y = Math.max(maxSize.y - firstSize.y, 0);
-            const secondSize = measure(this.get('second'), maxSize);
+            let secondSize = measure(this.get('second'), maxSize);
             return vector(Math.max(firstSize.x, secondSize.x),
                     firstSize.y + secondSize.y + this.get('splitterMargin'));
         } else {
@@ -511,11 +576,11 @@ export class Expander extends UIElement {
         }
     }
     arrange(x: number, y: number, size: Vector) {
-        const isExpanded: boolean = this.get('expanded');
-        const stringFirst = isExpanded ? 'expandedfirst' : 'first';
+        let isExpanded: boolean = this.get('expanded');
+        let stringFirst = (isExpanded ? 'expandedfirst' : 'first');
         arrange(this.get(stringFirst), x, y);
         if (this.get('expanded')) {
-            const lineY = y + sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin') / 2;
+            let lineY = y + sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin') / 2;
             this.splitter.attr('x1', x).attr('x2', x + size.x)
                 .attr('y1', lineY).attr('y2', lineY);
             y += sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin');
@@ -559,12 +624,13 @@ export class Paginator extends UIElement {
         this.cornerRadius = 10;
         let textBox = this.root.append('g').attr('class', 'paginatorBox');
         this.rect = textBox.append('rect').attr('rx', this.cornerRadius).attr('ry', this.cornerRadius);
-        this.label = new Label({
-            parent: textBox,
-            raze: false,
-            textClass: 'paginatorText',
-            margin: {left: 5, right: 5, top: 3, bottom: 3},
-        });
+        this.label =
+            new Label({
+                parent: textBox,
+                raze: false,
+                textClass: 'paginatorText',
+                margin: { left: 5, right: 5, top: 3, bottom: 3 },
+            });
         textBox.on('mouseover', () => {
             this.rect.attr('stroke', <any>d3.rgb(this.get('color')).brighter());
         });
@@ -578,9 +644,10 @@ export class Paginator extends UIElement {
                 let bounds = (<SVGRectElement> this.rect.node()).getBBox();
                 form.attr('x', bounds.x).attr('y', bounds.y)
                     .attr('width', this.rect.attr('width')).attr('height', this.rect.attr('height'));
-                field.attr('style',
-                    'width: ' + this.rect.attr('width') + 'px; ' +
-                    'height: ' + this.rect.attr('height') + 'px;');
+                field.attr(
+                    'style',
+                    'width: ' + this.rect.attr('width') + 'px; height: ' + this.rect.attr('height') + 'px;'
+                );
                 this.label.root.style('display', 'none');
                 this.set('isEditing', true);
             }, (text) => {
@@ -706,6 +773,7 @@ export class NamedBox extends UIElement {
             captionText: '',
             borderThickness: 1,
             child: null,
+            image: null,
         });
     }
     initialize() {
@@ -734,25 +802,39 @@ export class NamedBox extends UIElement {
         return this;
     }
     measure(maxSize: Vector) {
-        let maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
+        const maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
         let labelSize = measure(this.label, vector(maxWidth, maxSize.y));
         labelSize.y = Math.max(labelSize.y, this.cornerRadius);
-        let maxChildHeight = maxSize.y - labelSize.y;
+
+        const maxChildHeight = maxSize.y - labelSize.y;
         let childSize = this.get('child') ? measure(this.get('child'), vector(maxWidth, maxChildHeight)) : vector(0);
         childSize.y = Math.max(childSize.y, this.cornerRadius);
-        if (labelSize.x > childSize.x) {
-            labelSize = measure(this.label, vector(childSize.x, labelSize.y));
+
+        const maxImageHeight = maxSize.y - labelSize.y - childSize.y;
+        let imageSize = this.get('image') && this.get('image').attributes.imageUrl ?
+            measure(this.get('image'), vector(Math.max(labelSize.x, childSize.x), maxImageHeight)) :
+            vector(0);
+
+        const minWidthForLabel = Math.max(imageSize.x, childSize.x);
+        if (labelSize.x > minWidthForLabel) {
+            labelSize = measure(this.label, vector(minWidthForLabel, labelSize.y));
         }
         return vector(
-                childSize.x + this.cornerRadius * 2,
-                labelSize.y + childSize.y);
+                minWidthForLabel + this.cornerRadius * 2,
+                labelSize.y + childSize.y + imageSize.y);
     }
     arrange(x: number, y: number, size: Vector) {
-        let captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
-        let child: UIElement = this.get('child');
+        const captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
+
+        const child: UIElement = this.get('child');
         let childHeight = child ? sizeWithMargin(child).y : 0;
         childHeight = Math.max(childHeight, this.cornerRadius);
-        let childWidth = size.x - this.get('borderThickness');
+        const childWidth = size.x - this.get('borderThickness');
+
+        const image: UIElement = this.get('image');
+        const isThereImage = image && image.attributes.imageUrl;
+        const imageHeightWithMargin = isThereImage ? Math.max(sizeWithMargin(image).y, this.cornerRadius) : 0;
+
         this.outerRect
             .attr('width', size.x).attr('height', size.y)
             .attr('x', x).attr('y', y);
@@ -763,8 +845,9 @@ export class NamedBox extends UIElement {
             .attr('width', childWidth).attr('height', childHeight - this.cornerRadius)
             .attr('x', x + this.get('borderThickness') / 2).attr('y', y + captionHeight);
         arrange(this.label, x + this.cornerRadius, 0);
+        arrange(image, x + this.cornerRadius, captionHeight);
         if (child) {
-            arrange(child, x + this.cornerRadius, y + captionHeight);
+            arrange(child, x + this.cornerRadius, y + captionHeight + imageHeightWithMargin);
         }
     }
 }
@@ -795,10 +878,10 @@ function makeEditableField(
                 form = null;
             }
         })
-        .on('keypress', function () {
+        .on('keypress', function() {
             if ((<any>d3.event).keyCode === 13) {
-                d3.event.stopPropagation();
-                d3.event.preventDefault();
+                (<any>d3.event).stopPropagation();
+                (<any>d3.event).preventDefault();
                 let text = (<any>field.node()).nodeValue;
                 onSubmit(text);
                 if (form) {
@@ -981,15 +1064,21 @@ function matchUrl(text: string) {
     function nullIfUndefined<T>(value: T = null): T {
         return value;
     }
-    let match = text.match(/^(http|ftp|https):\/\/([\w\-_]+(?:\.[\w\-_]+)+)([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/);
+    let match = text.match(
+        /^(http|ftp|https):\/\/([\w\-_]+(?:\.[\w\-_]+)+)([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/
+    );
     if (match) {
         return {protocol: match[1], host: match[2], path: nullIfUndefined(match[3])};
     }
-    match = text.match(/^([a-zA-Z]+[a-zA-Z-]*(?:\.[a-zA-Z]+[a-zA-Z-]*)+)(\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/);
+    match = text.match(
+        /^([a-zA-Z]+[a-zA-Z-]*(?:\.[a-zA-Z]+[a-zA-Z-]*)+)(\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/
+    );
     if (match) {
         return {protocol: null, host: match[1], path: nullIfUndefined(match[2])};
     }
-    match = text.match(/^(\.{0,2}\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])\s*$/);
+    match = text.match(
+        /^(\.{0,2}\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])\s*$/
+    );
     if (match) {
         return {protocol: null, host: null, path: nullIfUndefined(match[1])};
     }

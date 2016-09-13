@@ -11,6 +11,7 @@ export interface ElementModel {
     id: string;
     types: string[];
     label: { values: LocalizedString[] };
+    image?: string;
     properties: { [id: string]: Property[] };
 }
 
