@@ -106,9 +106,9 @@ export abstract class UIElement extends Backbone.Model {
         super.initialize.apply(this, arguments);
     }
     /** Measures element without margin returning computed element size */
-    measure(maxSize: Vector): Vector { return vector(0); }
+    abstract measure(maxSize: Vector): Vector;
     /** Arranges element without margin by coordinates (x, y) using provided size */
-    arrange(x: number, y: number, size: Vector): void { /* do nothing */ }
+    abstract arrange(x: number, y: number, size: Vector): void;
 }
 
 /**
@@ -159,9 +159,8 @@ export class Label extends UIElement {
             this.textLines = splitIntoLines(
                 (i) => maxSize.x - (i === 0 ? this.iconSize : 0),
                 this.hyperlink.text, this.get('textClass'));
-            let height = (
-                this.textLines.length * (this.ti.offsetY + this.get('interline'))
-            ) - this.get('interline') + this.ti.baseLineHeight;
+            const lineHeightSum = this.textLines.length * (this.ti.offsetY + this.get('interline'));
+            let height = lineHeightSum - this.get('interline') + this.ti.baseLineHeight;
             let width = 0;
             for (let i = 0; i < this.textLines.length; i++) {
                 let lineWidth = textInfo(this.textLines[i], this.get('textClass')).width;
@@ -255,6 +254,10 @@ export class Pair extends UIElement {
  * Image for element.
  * Backbone properties:
  *     imageUrl: string
+ *     background: string (color)
+ *     borderColor: string (color)
+ *     padding: {top: number, right: number, bottom: number, left: number}
+ *     minSize: {x:number, y:number}
  */
 export class Image extends UIElement {
     public image: d3.Selection<any>;
@@ -263,18 +266,17 @@ export class Image extends UIElement {
     defaults() {
         return _.extend(super.defaults(), {
             imageUrl: undefined,
+            background: '#e1e1e1',
             borderColor: 'green',
-            spacing: vector(10, 3),
-            padding: undefined,
+            padding: {top: 1, right: 1, bottom: 1, left: 1},
             minSize: vector(100, 100),
         });
     }
     initialize() {
         super.initialize.apply(this, arguments);
         this.root.attr('class', 'svguiImage');
-        this.update();
         this.imageRect = this.root.append('rect')
-            .attr('fill', '#e1e1e1')
+            .attr('fill', this.get('background'))
             .attr('stroke-width', '1')
             .attr('stroke', this.get('borderColor'));
         this.image = this.root.append('image')
@@ -283,14 +285,11 @@ export class Image extends UIElement {
             .attr('width', this.get('minSize').x)
             .attr('height', this.get('minSize').y)
             .attr('href', this.get('imageUrl'));
+        this.update();
     }
     update() {
-        if (this.image) {
-            this.image.attr('href', this.get('imageUrl'));
-        }
-        if (this.imageRect) {
-            this.imageRect.attr('stroke', this.get('borderColor'));
-        }
+        this.image.attr('href', this.get('imageUrl'));
+        this.imageRect.attr('stroke', this.get('borderColor'));
         return this;
     }
 
@@ -313,7 +312,6 @@ export class Image extends UIElement {
                   .attr('height', size ? size.y - padding.top - padding.bottom : 0);
     }
 }
-
 /**
  * Table with two columns and entry grouping.
  * Backbone properties:
@@ -562,12 +560,12 @@ export class Expander extends UIElement {
         return this;
     }
     measure(maxSize: Vector) {
-        let isExpanded: boolean = this.get('expanded');
-        let stringFirst = (isExpanded ? 'expandedfirst' : 'first');
-        let firstSize = measure(this.get(stringFirst), maxSize);
+        const isExpanded: boolean = this.get('expanded');
+        const stringFirst = isExpanded ? 'expandedfirst' : 'first';
+        const firstSize = measure(this.get(stringFirst), maxSize);
         if (this.get('expanded')) {
             maxSize.y = Math.max(maxSize.y - firstSize.y, 0);
-            let secondSize = measure(this.get('second'), maxSize);
+            const secondSize = measure(this.get('second'), maxSize);
             return vector(Math.max(firstSize.x, secondSize.x),
                     firstSize.y + secondSize.y + this.get('splitterMargin'));
         } else {
@@ -575,11 +573,11 @@ export class Expander extends UIElement {
         }
     }
     arrange(x: number, y: number, size: Vector) {
-        let isExpanded: boolean = this.get('expanded');
-        let stringFirst = (isExpanded ? 'expandedfirst' : 'first');
+        const isExpanded: boolean = this.get('expanded');
+        const stringFirst = isExpanded ? 'expandedfirst' : 'first';
         arrange(this.get(stringFirst), x, y);
         if (this.get('expanded')) {
-            let lineY = y + sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin') / 2;
+            const lineY = y + sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin') / 2;
             this.splitter.attr('x1', x).attr('x2', x + size.x)
                 .attr('y1', lineY).attr('y2', lineY);
             y += sizeWithMargin(this.get(stringFirst)).y + this.get('splitterMargin');
@@ -623,13 +621,12 @@ export class Paginator extends UIElement {
         this.cornerRadius = 10;
         let textBox = this.root.append('g').attr('class', 'paginatorBox');
         this.rect = textBox.append('rect').attr('rx', this.cornerRadius).attr('ry', this.cornerRadius);
-        this.label =
-            new Label({
-                parent: textBox,
-                raze: false,
-                textClass: 'paginatorText',
-                margin: { left: 5, right: 5, top: 3, bottom: 3 },
-            });
+        this.label = new Label({
+            parent: textBox,
+            raze: false,
+            textClass: 'paginatorText',
+            margin: {left: 5, right: 5, top: 3, bottom: 3},
+        });
         textBox.on('mouseover', () => {
             this.rect.attr('stroke', <any>d3.rgb(this.get('color')).brighter());
         });
@@ -643,10 +640,9 @@ export class Paginator extends UIElement {
                 let bounds = (<SVGRectElement> this.rect.node()).getBBox();
                 form.attr('x', bounds.x).attr('y', bounds.y)
                     .attr('width', this.rect.attr('width')).attr('height', this.rect.attr('height'));
-                field.attr(
-                    'style',
-                    'width: ' + this.rect.attr('width') + 'px; height: ' + this.rect.attr('height') + 'px;'
-                );
+                field.attr('style',
+                    'width: ' + this.rect.attr('width') + 'px; ' +
+                    'height: ' + this.rect.attr('height') + 'px;');
                 this.label.root.style('display', 'none');
                 this.set('isEditing', true);
             }, (text) => {
@@ -772,7 +768,6 @@ export class NamedBox extends UIElement {
             captionText: '',
             borderThickness: 1,
             child: null,
-            image: null,
         });
     }
     initialize() {
@@ -801,39 +796,25 @@ export class NamedBox extends UIElement {
         return this;
     }
     measure(maxSize: Vector) {
-        const maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
+        let maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
         let labelSize = measure(this.label, vector(maxWidth, maxSize.y));
         labelSize.y = Math.max(labelSize.y, this.cornerRadius);
-
-        const maxChildHeight = maxSize.y - labelSize.y;
+        let maxChildHeight = maxSize.y - labelSize.y;
         let childSize = this.get('child') ? measure(this.get('child'), vector(maxWidth, maxChildHeight)) : vector(0);
         childSize.y = Math.max(childSize.y, this.cornerRadius);
-
-        const maxImageHeight = maxSize.y - labelSize.y - childSize.y;
-        let imageSize = this.get('image') && this.get('image').attributes.imageUrl ?
-            measure(this.get('image'), vector(Math.max(labelSize.x, childSize.x), maxImageHeight)) :
-            vector(0);
-
-        const minWidthForLabel = Math.max(imageSize.x, childSize.x);
-        if (labelSize.x > minWidthForLabel) {
-            labelSize = measure(this.label, vector(minWidthForLabel, labelSize.y));
+        if (labelSize.x > childSize.x) {
+            labelSize = measure(this.label, vector(childSize.x, labelSize.y));
         }
         return vector(
-                minWidthForLabel + this.cornerRadius * 2,
-                labelSize.y + childSize.y + imageSize.y);
+                childSize.x + this.cornerRadius * 2,
+                labelSize.y + childSize.y);
     }
     arrange(x: number, y: number, size: Vector) {
-        const captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
-
-        const child: UIElement = this.get('child');
+        let captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
+        let child: UIElement = this.get('child');
         let childHeight = child ? sizeWithMargin(child).y : 0;
         childHeight = Math.max(childHeight, this.cornerRadius);
-        const childWidth = size.x - this.get('borderThickness');
-
-        const image: UIElement = this.get('image');
-        const isThereImage = image && image.attributes.imageUrl;
-        const imageHeightWithMargin = isThereImage ? Math.max(sizeWithMargin(image).y, this.cornerRadius) : 0;
-
+        let childWidth = size.x - this.get('borderThickness');
         this.outerRect
             .attr('width', size.x).attr('height', size.y)
             .attr('x', x).attr('y', y);
@@ -844,9 +825,8 @@ export class NamedBox extends UIElement {
             .attr('width', childWidth).attr('height', childHeight - this.cornerRadius)
             .attr('x', x + this.get('borderThickness') / 2).attr('y', y + captionHeight);
         arrange(this.label, x + this.cornerRadius, 0);
-        arrange(image, x + this.cornerRadius, captionHeight);
         if (child) {
-            arrange(child, x + this.cornerRadius, y + captionHeight + imageHeightWithMargin);
+            arrange(child, x + this.cornerRadius, y + captionHeight);
         }
     }
 }
@@ -877,10 +857,10 @@ function makeEditableField(
                 form = null;
             }
         })
-        .on('keypress', function() {
+        .on('keypress', function () {
             if ((<any>d3.event).keyCode === 13) {
-                (<any>d3.event).stopPropagation();
-                (<any>d3.event).preventDefault();
+                d3.event.stopPropagation();
+                d3.event.preventDefault();
                 let text = (<any>field.node()).nodeValue;
                 onSubmit(text);
                 if (form) {
@@ -1063,21 +1043,15 @@ function matchUrl(text: string) {
     function nullIfUndefined<T>(value: T = null): T {
         return value;
     }
-    let match = text.match(
-        /^(http|ftp|https):\/\/([\w\-_]+(?:\.[\w\-_]+)+)([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/
-    );
+    let match = text.match(/^(http|ftp|https):\/\/([\w\-_]+(?:\.[\w\-_]+)+)([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/);
     if (match) {
         return {protocol: match[1], host: match[2], path: nullIfUndefined(match[3])};
     }
-    match = text.match(
-        /^([a-zA-Z]+[a-zA-Z-]*(?:\.[a-zA-Z]+[a-zA-Z-]*)+)(\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/
-    );
+    match = text.match(/^([a-zA-Z]+[a-zA-Z-]*(?:\.[a-zA-Z]+[a-zA-Z-]*)+)(\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])?\s*$/);
     if (match) {
         return {protocol: null, host: match[1], path: nullIfUndefined(match[2])};
     }
-    match = text.match(
-        /^(\.{0,2}\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])\s*$/
-    );
+    match = text.match(/^(\.{0,2}\/[\w\-\.,@?^=%&amp;:/~\+#]*[\w\-@?^=%&amp;/~\+#])\s*$/);
     if (match) {
         return {protocol: null, host: null, path: nullIfUndefined(match[1])};
     }

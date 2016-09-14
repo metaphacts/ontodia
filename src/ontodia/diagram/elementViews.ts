@@ -57,7 +57,6 @@ export class UIElementView extends joint.dia.ElementView {
             parent: this.box.root,
             size: { width: 100, height: 30 },
             margin: {top: 5, right: 0, bottom: 0, left: 0},
-            padding: {top: 1, right: 1, bottom: 1, left: 1},
             raze: false,
         });
         this.expander = new svgui.Expander({
