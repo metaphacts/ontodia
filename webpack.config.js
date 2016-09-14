@@ -15,6 +15,10 @@ module.exports = {
             'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
         }
     },
+    node: {
+        fs: "empty" 
+    },
+    browser: { fs: false },
     module: {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},

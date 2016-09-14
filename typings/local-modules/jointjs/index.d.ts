@@ -53,6 +53,7 @@ namespace joint {
             remove(options?: any);
             toFront();
             toBack();
+            getBBox();
             embed(cell: Cell);
             unembed(cell: Cell);
             getEmbeddedCells(): Cell[];

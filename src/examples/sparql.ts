@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 model.importLayout({
                     dataProvider: new SparqlDataProvider({
                         endpointUrl: '/sparql-endpoint',
-                        imageClassUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
+                        imageClassUris: [
+                            'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
+                            'http://xmlns.com/foaf/0.1/img',
+                        ],
                     }),
                     preloadedElements: {},
                     preloadedLinks: [],

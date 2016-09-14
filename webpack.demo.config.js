@@ -10,8 +10,7 @@ module.exports = {
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
-        sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
-    },
+        sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),        styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),    },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
         alias: {
@@ -20,6 +19,10 @@ module.exports = {
             'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
         }
     },
+    node: {
+        fs: "empty" 
+    },
+    browser: { fs: false },
     module: {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
@@ -52,8 +55,12 @@ module.exports = {
             title: 'Ontodia SparQL RDF Graph Demo',
             chunks: ['sparqlRDFGraph'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
-        }),
-    ],
+        }),        new HtmlWebpackPlugin({
+            filename: 'styleCustomization.html',
+            title: 'Ontodia Style Customization Demo',
+            chunks: ['styleCustomization'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),    ],
     output: {
         path: path.join(__dirname, 'dist', 'examples'),
         filename: '[name].bundle.js',

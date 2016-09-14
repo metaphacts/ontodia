@@ -136,7 +136,7 @@ export class UIElementView extends joint.dia.ElementView {
     private updateUI() {
         if (this.model.template && this.view) {
             this.box.set('captionText', this.view.getElementTypeString(this.model.template));
-            const {h, c, l} = this.view.getElementColor(this.model.template);
+            const {h, c, l} = this.view.getElementStyle(this.model.template).color;
             this.box.set('color', d3.hcl(h, c, l));
             this.box.update();
             this.updateUIList();
@@ -237,11 +237,9 @@ export class LinkView extends joint.dia.LinkView {
 
         let style = getDefaultLinkStyle(this.model.layoutOnly);
 
-        if (this.view.options.customLinkStyle) {
-            const customStyle = this.view.options.customLinkStyle(this.model);
-            if (customStyle) {
-                style = merge(style, cloneDeep(customStyle));
-            }
+        const customStyle = this.view.getLinkStyle(this.model);
+        if (customStyle) {
+            style = merge(style, cloneDeep(customStyle));
         }
 
         let labelStyle;

@@ -7,3 +7,4 @@
 /// <reference path="local-modules/springy/index.d.ts" />
 /// <reference path="local-modules/underscore/index.d.ts" />
 /// <reference path="local-modules/n3/index.d.ts" />
+/// <reference path="local-modules/handlebars/index.d.ts" />

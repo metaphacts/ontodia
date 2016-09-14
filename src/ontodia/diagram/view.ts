@@ -16,12 +16,22 @@ import { printPaper } from '../viewUtils/printPaper';
 import {
     toSVG, toSVGOptions, toDataURL, toDataURLOptions,
 } from '../viewUtils/toSvg';
-import { UIElementView, LinkView } from './elementViews';
+import { LinkView } from './elementViews';
+import { TemplatedUIElementView, ElementViewTemplate } from './templatedElementView';
+import { TemplateResolver, DEFAULT_TEMPLATE_BUNDLE } from '../customization/templates/defaultTemplateBundle';
+import {
+    ElementStyleResolver,
+    ElementStyle,
+    DEFAULT_ELEMENT_STYLE_BUNDLE,
+} from '../customization/defaultElementStyleBundle';
+import { LinkStyleResolver, DEFAULT_LINK_STYLE_BUNDLE } from '../customization/defaultLinkStylesBundle';
 import { Halo } from '../viewUtils/halo';
 
+
 export interface DiagramViewOptions {
-    elementColor?: (elementModel: ElementModel) => string;
-    customLinkStyle?: (link: Link) => joint.dia.LinkAttributes;
+    linkStyleResolvers?: LinkStyleResolver[];
+    elementStyleResolvers?: ElementStyleResolver[];
+    templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
 }
 
@@ -30,6 +40,10 @@ export interface DiagramViewOptions {
  *     language: string
  */
 export class DiagramView extends Backbone.Model {
+    private templatesResolvers: TemplateResolver[];
+    private elementStyleResolvers: ElementStyleResolver[];
+    private linkStyleResolvers: LinkStyleResolver[];
+
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
     private halo: Halo;
@@ -68,7 +82,7 @@ export class DiagramView extends Backbone.Model {
         this.paper = new joint.dia.Paper({
             model: this.model.graph,
             gridSize: 1,
-            elementView: UIElementView,
+            elementView: TemplatedUIElementView,
             linkView: LinkView,
             width: 1500,
             height: 800,
@@ -78,6 +92,24 @@ export class DiagramView extends Backbone.Model {
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
         this.options = options || {};
+
+        if (this.options && this.options.elementStyleResolvers) {
+            this.elementStyleResolvers = this.options.elementStyleResolvers;
+        } else {
+            this.elementStyleResolvers = DEFAULT_ELEMENT_STYLE_BUNDLE;
+        }
+
+        if (this.options && this.options.templatesResolvers) {
+            this.templatesResolvers = this.options.templatesResolvers;
+        } else {
+            this.templatesResolvers = DEFAULT_TEMPLATE_BUNDLE;
+        }
+
+        if (this.options && this.options.linkStyleResolvers) {
+            this.linkStyleResolvers = this.options.linkStyleResolvers;
+        } else {
+            this.linkStyleResolvers = DEFAULT_LINK_STYLE_BUNDLE;
+        }
 
         this.setupTextSelectionPrevention();
         this.configureArea(rootElement);
@@ -192,7 +224,8 @@ export class DiagramView extends Backbone.Model {
 
     showIndicator(operation?: Promise<any>) {
         this.paperArea.center();
-        const svgElement: SVGElement = <any>this.paper.$('svg').get(0);
+        const convertToAny: any = this.paper.$('svg').get(0);
+        const svgElement: SVGElement = convertToAny;
         const svgBoundingRect = svgElement.getBoundingClientRect();
         this.indicator = WrapIndicator.wrap(d3.select(svgElement), {
             position: {
@@ -328,10 +361,11 @@ export class DiagramView extends Backbone.Model {
                         graphPoint.x -= size.width / 2;
                         graphPoint.y -= size.height / 2;
                     }
+                    const convertToAny: any = {ignoreCommandManager: true};
                     element.set('position', {
                         x: graphPoint.x + totalXOffset,
                         y: graphPoint.y,
-                    }, <any>{ignoreCommandManager: true});
+                    }, convertToAny);
                     totalXOffset += size.width + 20;
 
                     elementsToSelect.push(element);
@@ -386,15 +420,91 @@ export class DiagramView extends Backbone.Model {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
-        let color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
-
-        if (color) {
-            return d3.hcl(color);
+    public getElementStyle(elementModel: ElementModel): {
+        color: { h: number; c: number; l: number; },
+        icon?: string,
+    } {
+        let resolverResult: ElementStyle;
+        for (const resolver of this.elementStyleResolvers) {
+            const result = resolver(elementModel);
+            if (result) {
+                resolverResult = result;
+                break;
+            }
+        }
+        const result: any = {};
+        if (resolverResult) {
+            result.icon = resolverResult.icon;
+        }
+        if (resolverResult && resolverResult.color) {
+            result.color = d3.hcl(resolverResult.color);
         } else {
             // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
             const hue = getHueFromClasses(elementModel.types, this.colorSeed);
-            return {h: hue, c: 40, l: 75};
+            result.color = {h: hue, c: 40, l: 75};
+        }
+        return result;
+    }
+
+    public registerElementStyleResolver(resolver: ElementStyleResolver): ElementStyleResolver {
+        this.elementStyleResolvers.push(resolver);
+        return resolver;
+    }
+
+    public unregisterElementStyleResolver(resolver: ElementStyleResolver): ElementStyleResolver {
+        const index = this.elementStyleResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.elementStyleResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    public getElementTemplate(elementModel: ElementModel): ElementViewTemplate {
+        for (const resolver of this.templatesResolvers) {
+            const result = resolver(elementModel);
+            if (result) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
+    public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {
+        this.templatesResolvers.push(resolver);
+        return resolver;
+    }
+
+    public unregisterTemplateResolver(resolver: TemplateResolver): TemplateResolver {
+        const index = this.templatesResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.templatesResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    public getLinkStyle(linkModel: Link): joint.dia.LinkAttributes {
+        for (const resolver of this.linkStyleResolvers) {
+            const result = resolver(linkModel);
+            if (result) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
+    public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
+        this.linkStyleResolvers.push(resolver);
+        return resolver;
+    }
+
+    public unregisterLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
+        const index = this.linkStyleResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.linkStyleResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
         }
     }
 
@@ -411,10 +521,15 @@ export class DiagramView extends Backbone.Model {
 
     private getCanvasPageOffset(): svgui.Vector {
         const boundingBox = this.$svg.get(0).getBoundingClientRect();
-        const xScroll = (typeof window.pageXOffset !== 'undefined') ? window.pageXOffset
-            : (<any> document.documentElement || document.body.parentNode || document.body).scrollLeft;
-        const yScroll = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
-            : (<any> document.documentElement || document.body.parentNode || document.body).scrollTop;
+
+        const xS: any = (typeof window.pageXOffset !== 'undefined') ? window.pageXOffset
+            : (document.documentElement || document.body.parentNode || document.body);
+        const xScroll = xS.scrollLef;
+
+        const yS: any = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
+            : (document.documentElement || document.body.parentNode || document.body);
+        const yScroll = yS.scrollTop;
+
         return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
     }
 
