@@ -18,6 +18,10 @@ import {
 } from '../viewUtils/toSvg';
 import { UIElementView, LinkView } from './elementViews';
 
+export interface DiagramViewOptions {
+    elementColor?: (elementModel: ElementModel) => string;
+}
+
 /**
  * Properties:
  *     language: string
@@ -54,7 +58,9 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
-    constructor(public model: DiagramModel, rootElement: HTMLElement) {
+    private options: DiagramViewOptions;
+
+    constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
@@ -70,6 +76,7 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
+        this.options = options;
 
         this.setupTextSelectionPrevention();
         this.configureScroller(rootElement);
@@ -462,9 +469,19 @@ private setSelectedElement(cellView: joint.dia.CellView) {
     }
 
     public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
-        // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
-        const hue = getHueFromClasses(elementModel.types, this.colorSeed);
-        return {h: hue, c: 40, l: 75};
+        let color;
+
+        if (this.options) {
+            color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
+        }
+
+        if (color) {
+            return d3.hcl(color);
+        } else {
+            // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
+            const hue = getHueFromClasses(elementModel.types, this.colorSeed);
+            return {h: hue, c: 40, l: 75};
+        }
     }
 
     public getRandomPositionInViewport() {

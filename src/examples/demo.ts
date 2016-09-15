@@ -16,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const layout = workspace.getModel().exportLayout();
             console.log(layout);
         },
+        viewOptions: {
+            elementColor: elementModel => {
+                if (elementModel.types[0] === 'http://www.w3.org/2002/07/owl#DatatypeProperty') {
+                    return '#046380';
+                }
+            },
+        },
         ref: workspace => {
             // if you reuse this code you should check for workspace to be null on unmount
             if (workspace) {
