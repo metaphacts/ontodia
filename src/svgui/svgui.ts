@@ -768,6 +768,7 @@ export class NamedBox extends UIElement {
             captionText: '',
             borderThickness: 1,
             child: null,
+            image: null,
         });
     }
     initialize() {
@@ -796,25 +797,39 @@ export class NamedBox extends UIElement {
         return this;
     }
     measure(maxSize: Vector) {
-        let maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
+        const maxWidth = Math.max(maxSize.x - this.cornerRadius * 2, 0);
         let labelSize = measure(this.label, vector(maxWidth, maxSize.y));
         labelSize.y = Math.max(labelSize.y, this.cornerRadius);
-        let maxChildHeight = maxSize.y - labelSize.y;
+
+        const maxChildHeight = maxSize.y - labelSize.y;
         let childSize = this.get('child') ? measure(this.get('child'), vector(maxWidth, maxChildHeight)) : vector(0);
         childSize.y = Math.max(childSize.y, this.cornerRadius);
-        if (labelSize.x > childSize.x) {
-            labelSize = measure(this.label, vector(childSize.x, labelSize.y));
+
+        const maxImageHeight = maxSize.y - labelSize.y - childSize.y;
+        let imageSize = this.get('image') && this.get('image').attributes.imageUrl ?
+            measure(this.get('image'), vector(Math.max(labelSize.x, childSize.x), maxImageHeight)) :
+            vector(0);
+
+        const minWidthForLabel = Math.max(imageSize.x, childSize.x);
+        if (labelSize.x > minWidthForLabel) {
+            labelSize = measure(this.label, vector(minWidthForLabel, labelSize.y));
         }
         return vector(
-                childSize.x + this.cornerRadius * 2,
-                labelSize.y + childSize.y);
+                minWidthForLabel + this.cornerRadius * 2,
+                labelSize.y + childSize.y + imageSize.y);
     }
     arrange(x: number, y: number, size: Vector) {
-        let captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
-        let child: UIElement = this.get('child');
+        const captionHeight = Math.max(sizeWithMargin(this.label).y, this.cornerRadius);
+
+        const child: UIElement = this.get('child');
         let childHeight = child ? sizeWithMargin(child).y : 0;
         childHeight = Math.max(childHeight, this.cornerRadius);
-        let childWidth = size.x - this.get('borderThickness');
+        const childWidth = size.x - this.get('borderThickness');
+
+        const image: UIElement = this.get('image');
+        const isThereImage = image && image.attributes.imageUrl;
+        const imageHeightWithMargin = isThereImage ? Math.max(sizeWithMargin(image).y, this.cornerRadius) : 0;
+
         this.outerRect
             .attr('width', size.x).attr('height', size.y)
             .attr('x', x).attr('y', y);
@@ -825,8 +840,9 @@ export class NamedBox extends UIElement {
             .attr('width', childWidth).attr('height', childHeight - this.cornerRadius)
             .attr('x', x + this.get('borderThickness') / 2).attr('y', y + captionHeight);
         arrange(this.label, x + this.cornerRadius, 0);
+        arrange(image, x + this.cornerRadius, captionHeight);
         if (child) {
-            arrange(child, x + this.cornerRadius, y + captionHeight);
+            arrange(child, x + this.cornerRadius, y + captionHeight + imageHeightWithMargin);
         }
     }
 }
