@@ -23,12 +23,6 @@ export interface Props {
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
-    linkStyles?: {
-        link?: Object;
-        label?: Object;
-        router?: string;
-        connector?: string;
-    };
 }
 
 export class Workspace extends Component<Props, {}> {
@@ -40,7 +34,7 @@ export class Workspace extends Component<Props, {}> {
 
     constructor(props: Props) {
         super(props);
-        this.model = new DiagramModel(this.props.isViewOnly, this.props.linkStyles);
+        this.model = new DiagramModel(this.props.isViewOnly);
     }
 
     render(): ReactElement<any> {

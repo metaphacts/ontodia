@@ -53,16 +53,8 @@ export class Element extends UIElement {
  */
 export class Link extends joint.dia.Link {
     markup: string;
-    initialize(attributes?: {id: string}, customStyles?: {link?: Object; label?: Object; router?: string; connector?: string}) {
-        this.set('z', 0);
-        if (customStyles) {
-            this.set('attrs', customStyles.link || {'.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z'}});
-            this.set('customLabel', customStyles.label);
-            this.set('connector', {name: customStyles.connector || 'normal'});
-            if (customStyles.router) this.set('router', {name: customStyles.router});
-        } else {
-            this.set('attrs', {'.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z'}});
-        }
+    initialize(attributes?: {id: string}) {
+
     }
 }
 

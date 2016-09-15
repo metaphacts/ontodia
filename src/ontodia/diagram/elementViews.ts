@@ -227,16 +227,13 @@ export class LinkView extends joint.dia.LinkView {
             // if type model is missing => link will be deleted from diagram
             this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
         }
+        this.setStyle();
         this.updateLabel();
     }
     private updateLabel() {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
         if (typeModel && typeModel.get('showLabel')) {
-            let labelStyle = {position: 0.5},
-                customLabelStyle = this.model.get('customLabel');
-
-            this.model.label(0, customLabelStyle || labelStyle);
             this.model.label(0, {
                 attrs: {text: {
                     text: this.view.getLinkLabel(linkTypeId).text,
@@ -244,6 +241,16 @@ export class LinkView extends joint.dia.LinkView {
             });
         } else {
             this.model.set('labels', []);
+        }
+    }
+
+    private setStyle() {
+        const styles = this.view.getLinkStyle(this.model);
+
+        for (let key in styles) {
+            if (key !== 'id' && key !== 'typeId' && key !== 'source' && key !== 'target') {
+                this.model.set(key, styles[key]);
+            }
         }
     }
 }

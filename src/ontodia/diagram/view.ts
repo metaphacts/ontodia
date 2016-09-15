@@ -6,9 +6,9 @@ import * as joint from 'jointjs';
 import * as svgui from '../../svgui/svgui';
 import { Indicator, WrapIndicator } from '../../svgui/indicator';
 
-import { ElementModel, LocalizedString, ClassModel } from '../data/model';
+import { ElementModel, LocalizedString, ClassModel, LinkStyle } from '../data/model';
 
-import { Element } from './elements';
+import { Element, Link } from './elements';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 
 import { PaperArea } from '../viewUtils/paperArea';
@@ -20,6 +20,7 @@ import { UIElementView, LinkView } from './elementViews';
 
 export interface DiagramViewOptions {
     elementColor?: (elementModel: ElementModel) => string;
+    customLinkStyle?: (link: Link) => LinkStyle;
 }
 
 /**
@@ -94,7 +95,7 @@ export class DiagramView extends Backbone.Model {
                     this.model.graph.trigger('batch:start');
                     currentElement.remove();
                     this.model.graph.trigger('batch:stop');
-                } 
+                }
                 // else if(localThis.selectionView && localThis.selectionView.model){
                 //     var models = localThis.selectionView.model.models;
                 //     localThis.selectionView.cancelSelection();
@@ -503,6 +504,28 @@ private setSelectedElement(cellView: joint.dia.CellView) {
             : (<any> document.documentElement || document.body.parentNode || document.body).scrollTop;
         return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
     }
+
+    public getLinkStyle(link: Link): LinkStyle {
+        if (this.options) {
+            if (this.options.customLinkStyle) {
+                return this.options.customLinkStyle(link);
+            } else {
+                return {
+                    attrs: {
+                        '.marker-target': {
+                            d: 'M 10 0 L 0 5 L 10 10 z'
+                        }
+                    },
+                    labels: [
+                        {
+                            position: 0.5
+                        }
+                    ],
+                    z: 0
+                }
+            }
+        }
+    }
 }
 
 function getHueFromClasses(classes: string[], seed?: number): number {
@@ -520,7 +543,7 @@ function getHueFromClasses(classes: string[], seed?: number): number {
  * Ref.: http://isthe.com/chongo/tech/comp/fnv/
  *
  * @param {string} str the input value
- * @param {boolean} [asString=false] set to true to return the hash value as 
+ * @param {boolean} [asString=false] set to true to return the hash value as
  *     8-digit hex string instead of an integer
  * @param {integer} [seed] optionally pass the hash of the previous chunk
  * @returns {integer | string}
