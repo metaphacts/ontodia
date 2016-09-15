@@ -18,7 +18,7 @@ import {
 } from '../viewUtils/toSvg';
 import { UIElementView, LinkView } from './elementViews';
 
-export interface DiagramViewOptions extends Backbone.ViewOptions<any> {
+export interface DiagramViewOptions {
     elementColor?: (elementModel: ElementModel) => string;
 }
 
@@ -58,7 +58,7 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
-    private getCustomElementColor: (elementModel: ElementModel) => string;
+    private options: DiagramViewOptions;
 
     constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
@@ -76,10 +76,7 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-
-        if (options) {
-            this.getCustomElementColor = options.elementColor;
-        }
+        this.options = options;
 
         this.setupTextSelectionPrevention();
         this.configureScroller(rootElement);
@@ -473,17 +470,18 @@ private setSelectedElement(cellView: joint.dia.CellView) {
 
     public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
         let color;
-        const customColor = this.getCustomElementColor ? this.getCustomElementColor(elementModel) : undefined;
 
-        if (customColor) {
-            color = d3.hcl(customColor);
+        if (this.options) {
+            color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
+        }
+
+        if (color) {
+            return d3.hcl(color);
         } else {
             // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
             const hue = getHueFromClasses(elementModel.types, this.colorSeed);
-            color = {h: hue, c: 40, l: 75};
+            return {h: hue, c: 40, l: 75};
         }
-
-        return color;
     }
 
     public getRandomPositionInViewport() {
