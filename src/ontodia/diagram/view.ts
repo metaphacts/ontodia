@@ -18,6 +18,10 @@ import {
 } from '../viewUtils/toSvg';
 import { UIElementView, LinkView } from './elementViews';
 
+export interface DiagramViewOptions extends Backbone.ViewOptions<any> {
+    elementColor?: (elementModel: ElementModel) => string;
+}
+
 /**
  * Properties:
  *     language: string
@@ -54,9 +58,9 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
-    private getCustomElementColor: (elementModel: ElementModel) => {h: number; c: number; l: number;};
+    private getCustomElementColor: (elementModel: ElementModel) => string;
 
-    constructor(public model: DiagramModel, rootElement: HTMLElement, getCustomElementColor?: (elementModel: ElementModel) => {h: number; c: number; l: number;}) {
+    constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
@@ -72,7 +76,10 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-        this.getCustomElementColor = getCustomElementColor;
+
+        if (options) {
+            this.getCustomElementColor = options.elementColor;
+        }
 
         this.setupTextSelectionPrevention();
         this.configureScroller(rootElement);
@@ -466,10 +473,10 @@ private setSelectedElement(cellView: joint.dia.CellView) {
 
     public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
         let color;
-        const customColor = this.getCustomElementColor ? this.getCustomElementColor(elementModel) : false;
+        const customColor = this.getCustomElementColor ? this.getCustomElementColor(elementModel) : undefined;
 
         if (customColor) {
-            color = customColor;
+            color = d3.hcl(customColor);
         } else {
             // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
             const hue = getHueFromClasses(elementModel.types, this.colorSeed);
