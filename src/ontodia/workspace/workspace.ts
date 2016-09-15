@@ -2,6 +2,7 @@ import * as $ from 'jquery';
 import { Component, createElement, ReactElement } from 'react';
 import * as Springy from 'springy';
 
+import {ElementModel} from '../data/model';
 import DiagramModel from '../diagram/model';
 import DiagramView from '../diagram/view';
 import { ClassTree } from '../widgets/classTree';
@@ -22,6 +23,7 @@ export interface Props {
     isViewOnly?: boolean;
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
+    getCustomElementColor?: (elementModel: ElementModel) => {h: number; c: number; l: number;};
 }
 
 export class Workspace extends Component<Props, {}> {
@@ -64,7 +66,7 @@ export class Workspace extends Component<Props, {}> {
             }),
             ref: markup => {
                 if (markup) {
-                    this.diagram = new DiagramView(this.model, markup.chartPanel);
+                    this.diagram = new DiagramView(this.model, markup.chartPanel, this.props.getCustomElementColor);
                     if (!this.props.isViewOnly) {
                         this.filter = new FilterView({
                             model: new FilterModel(this.diagram.model),
