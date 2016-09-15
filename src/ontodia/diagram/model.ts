@@ -41,9 +41,10 @@ export class DiagramModel extends Backbone.Model {
     elements: { [id: string]: Element } = {};
     linksByType: { [type: string]: Link[] } = {};
 
-    constructor(isViewOnly = false) {
+    constructor(isViewOnly = false, linkStyles?: {link?: Object; label?: Object; router?: string; connector?: string}) {
         super();
         this.set('isViewOnly', isViewOnly);
+        this.set('linkStyles', linkStyles);
         this.initializeExternalAddRemoveSupport();
     }
 
@@ -252,7 +253,7 @@ export class DiagramModel extends Backbone.Model {
             if (cell.type === 'link') {
                 cell = _.pick(cell, DiagramModel.serializedCellProperties);
                 if (elements[cell.source.id] && elements[cell.target.id]) {
-                    const linkCellModel = new Link(cell);
+                    const linkCellModel = new Link(cell, this.get('linkStyles'));
                     this.registerLink(linkCellModel);
                     // mark link as only existing in layout
                     linkCellModel.set('layoutOnly', true);
@@ -381,13 +382,12 @@ export class DiagramModel extends Backbone.Model {
           existingLink.set('layoutOnly', false);
           return existingLink;
         }
-
         const link = new Link({
             id: _.uniqueId('link_'),
             typeId: linkModel.linkTypeId,
             source: { id: linkModel.sourceId },
             target: { id: linkModel.targetId },
-        });
+        }, this.get('linkStyles'));
 
         this.registerLink(link);
 

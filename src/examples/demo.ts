@@ -23,6 +23,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
         },
+        linkStyles: {
+            link: {
+                '.connection': {stroke: '#3c4260', 'stroke-width': 2},
+                '.marker-source': {fill: '#4b4a67', stroke: '#4b4a67', d: 'M0,3a3,3 0 1,0 6,0a3,3 0 1,0 -6,0'},
+                '.marker-target': {fill: '#4b4a67', stroke: '#4b4a67', d: 'M5.5,15.499,15.8,21.447,15.8,15.846,25.5,21.447,25.5,9.552,15.8,15.152,15.8,9.552z'}
+            },
+            label: {
+                position: 0.5,
+                attrs: {
+                    text: {fill: '#3c4260'}
+                }
+            },
+            router: 'orthogonal',
+            connector: 'rounded'
+        },
         ref: workspace => {
             // if you reuse this code you should check for workspace to be null on unmount
             if (workspace) {

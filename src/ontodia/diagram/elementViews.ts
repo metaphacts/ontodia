@@ -233,8 +233,11 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
         if (typeModel && typeModel.get('showLabel')) {
+            let labelStyle = {position: 0.5},
+                customLabelStyle = this.model.get('customLabel');
+
+            this.model.label(0, customLabelStyle || labelStyle);
             this.model.label(0, {
-                position: 0.5,
                 attrs: {text: {
                     text: this.view.getLinkLabel(linkTypeId).text,
                 }},
