@@ -25,6 +25,7 @@ UIElement.prototype.markup = '<g class="rotatable"><g class="nonscalable rootOfU
  *
  * Events:
  *     state:loaded
+ *     add-to-filter
  *     action:iriClick
  */
 export class Element extends UIElement {
@@ -41,6 +42,10 @@ export class Element extends UIElement {
             this.set('presentOnDiagram', false);
             this.unset('position');
         }
+    }
+
+    addToFilter() {
+        this.trigger('add-to-filter', this);
     }
 }
 

@@ -37,12 +37,15 @@ export class Workspace extends Component<Props, {}> {
         this.model = new DiagramModel(this.props.isViewOnly);
     }
 
+    protected onUndo?: () => void;
+    protected onRedo?: () => void;
+
     render(): ReactElement<any> {
         return createElement(WorkspaceMarkup, {
             isViewOnly: this.props.isViewOnly,
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                onUndo: () => {/* this.diagram.undo() */},
-                onRedo: () => {/* this.diagram.redo() */},
+                onUndo: this.onUndo, // () => {/* this.diagram.undo() */},
+                onRedo: this.onRedo, // () => {/* this.diagram.redo() */},
                 onZoomIn: () => this.diagram.zoomIn(),
                 onZoomOut: () => this.diagram.zoomOut(),
                 onZoomToFit: () => this.diagram.zoomToFit(),
