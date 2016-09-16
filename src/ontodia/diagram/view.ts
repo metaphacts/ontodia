@@ -6,7 +6,7 @@ import * as joint from 'jointjs';
 import * as svgui from '../../svgui/svgui';
 import { Indicator, WrapIndicator } from '../../svgui/indicator';
 
-import { ElementModel, LocalizedString, ClassModel, LinkStyle } from '../data/model';
+import { ElementModel, LocalizedString, ClassModel } from '../data/model';
 
 import { Element, Link } from './elements';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
@@ -16,7 +16,7 @@ import { printPaper } from '../viewUtils/printPaper';
 import {
     toSVG, toSVGOptions, toDataURL, toDataURLOptions,
 } from '../viewUtils/toSvg';
-import { UIElementView, LinkView } from './elementViews';
+import { UIElementView, LinkView, LinkStyle } from './elementViews';
 
 export interface DiagramViewOptions {
     elementColor?: (elementModel: ElementModel) => string;
@@ -59,8 +59,6 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
-    private options: DiagramViewOptions;
-
     constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
         this.setLanguage('en');
@@ -77,7 +75,7 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-        this.options = options;
+        this.set('options', options || {});
 
         this.setupTextSelectionPrevention();
         this.configureScroller(rootElement);
@@ -470,11 +468,7 @@ private setSelectedElement(cellView: joint.dia.CellView) {
     }
 
     public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
-        let color;
-
-        if (this.options) {
-            color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
-        }
+        let color = this.get('options').elementColor ? this.get('options').elementColor(elementModel) : undefined;
 
         if (color) {
             return d3.hcl(color);
@@ -503,28 +497,6 @@ private setSelectedElement(cellView: joint.dia.CellView) {
         const yScroll = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
             : (<any> document.documentElement || document.body.parentNode || document.body).scrollTop;
         return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
-    }
-
-    public getLinkStyle(link: Link): LinkStyle {
-        if (this.options) {
-            if (this.options.customLinkStyle) {
-                return this.options.customLinkStyle(link);
-            } else {
-                return {
-                    attrs: {
-                        '.marker-target': {
-                            d: 'M 10 0 L 0 5 L 10 10 z'
-                        }
-                    },
-                    labels: [
-                        {
-                            position: 0.5
-                        }
-                    ],
-                    z: 0
-                }
-            }
-        }
     }
 }
 

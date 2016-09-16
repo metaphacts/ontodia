@@ -1,11 +1,80 @@
 import * as joint from 'jointjs';
 import * as d3 from 'd3';
+import * as _ from 'lodash';
 
 import * as svgui from '../../svgui/svgui';
 import { ElementModel } from '../data/model';
 import { Element, Link, FatLinkType } from './elements';
 import { uri2name } from './model';
 import DiagramView from './view';
+
+const DEFAULT_STYLE = {
+    attrs: {
+        '.marker-target': {
+            d: 'M 10 0 L 0 5 L 10 10 z'
+        }
+    },
+    labels: [
+        {
+            position: 0.5
+        }
+    ],
+    z: 0
+};
+
+export interface LinkLabelStyle {
+    position?: number;
+    attrs?: {
+        rect?: {
+            fill?: string;
+            'stroke'?: string;
+            'stroke-width'?: number;
+        };
+        text?: {
+            fill?: string;
+            'stroke'?: string;
+            'stroke-width'?: number;
+        };
+    };
+}
+
+export interface LinkStyle {
+    attrs?: {
+        '.connection'?: {
+            fill?: string;
+            stroke?: string;
+            'stroke-width'?: number;
+        },
+        '.marker-source'?: {
+            fill?: string;
+            stroke?: string;
+            'stroke-width'?: number;
+            d?: string;
+        },
+        '.marker-target'?: {
+            fill?: string;
+            stroke?: string;
+            'stroke-width'?: number;
+            d?: string;
+        }
+    };
+    labels?: LinkLabelStyle[];
+    connector?: {
+        name?: string;
+        args?: {
+            radius?: number;
+        };
+    };
+    router?: {
+        name?: string;
+        args?: {
+            startDirections?: string[];
+            endDirections?: string[];
+            excludeTypes?: string[];
+        };
+    };
+    z?: number;
+}
 
 export class UIElementView extends joint.dia.ElementView {
     model: Element;
@@ -245,11 +314,15 @@ export class LinkView extends joint.dia.LinkView {
     }
 
     private setStyle() {
-        const styles = this.view.getLinkStyle(this.model);
+        const options = this.view.get('options');
+        let style = _.cloneDeep(DEFAULT_STYLE);
+        if (options.customLinkStyle) {
+            style = _.merge(style, options.customLinkStyle(this.model));
+        }
 
-        for (let key in styles) {
+        for (let key in style) {
             if (key !== 'id' && key !== 'typeId' && key !== 'source' && key !== 'target') {
-                this.model.set(key, styles[key]);
+                this.model.set(key, style[key]);
             }
         }
     }
