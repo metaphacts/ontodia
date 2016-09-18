@@ -29,7 +29,6 @@ export interface DiagramViewOptions {
  *     selectedElements: Element[] - currently selected elements
  * 
  * Events:
- *     action:cancelSelection
  *     extension:undo
  *     extension:redo
  *     extension:resetHistory
@@ -98,20 +97,12 @@ export class DiagramView extends Backbone.Model {
                 const elementsToRemove = this.selection.toArray();
                 if (elementsToRemove.length === 0) { return; }
 
+                this.cancelSelection();
                 this.model.graph.trigger('batch:start');
                 for (const element of elementsToRemove) {
                     element.remove();
                 }
                 this.model.graph.trigger('batch:stop');
-
-                // else if(localThis.selectionView && localThis.selectionView.model){
-                //     var models = localThis.selectionView.model.models;
-                //     localThis.selectionView.cancelSelection();
-                //     this.model.graph.trigger("batch:start");
-                //     for (var i = 0; i < models.length; i++) {
-                //         models[i].remove();
-                // }
-                // this.model.graph.trigger("batch:stop");
             }
         });
 
@@ -224,7 +215,7 @@ export class DiagramView extends Backbone.Model {
             operation.then(() => {
                 this.indicator.remove();
             }).catch(error => {
-                console.log(error);
+                console.error(error);
                 this.indicator.status('Unknown error occured');
                 this.indicator.error();
             });
@@ -247,7 +238,7 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    private preventTextSelection() {
+    preventTextSelection() {
         this.$documentBody.addClass('unselectable');
     }
 
@@ -275,112 +266,16 @@ export class DiagramView extends Backbone.Model {
 
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
-        // HACK: need to know whether halo is visible or not
-        // var superRemove = joint.ui.Halo.prototype['remove'];
-        // joint.ui.Halo.prototype['remove'] = function () {
-        //     var result = superRemove.apply(this, arguments);
-        //     this.trigger('halo-remove', this);
-        //     return result;
-        // };
 
-        this.paper.on('cell:pointerup', (cellView, evt) => {
+        this.paper.on('cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
             // We don't want a Halo for links.
             if (cellView.model instanceof joint.dia.Link) { return; }
             if (evt.ctrlKey || evt.metaKey) { return; }
-            this.setSelectedElement(cellView);
+            const element = cellView.model as Element;
+            this.selection.reset([element]);
+            element.addToFilter();
         });
     }
-
-private setSelectedElement(cellView: joint.dia.CellView) {
-        // var halo = new joint.ui.Halo({ graph: this.model.graph, paper: this.paper, cellView: cellView });
-        // halo.removeHandle('unlink');
-        // halo.addHandle({ name: 'add-to-filter', position: 'se', icon: 'images/icons/halo/add-to-filter.png' });
-
-        // const getExpandOrCollapseIconUri = (model: Backbone.Model) => cellView.model.get('isExpanded')
-        //     ? 'images/icons/halo/collapse-properties.png'
-        //     : 'images/icons/halo/expand-properties.png';
-        // halo.addHandle({ name: 'expand-properties', position: 's', icon: getExpandOrCollapseIconUri(cellView.model) });
-
-        // halo.on('action:add-to-filter:pointerdown', (evt) => {
-        //     evt.stopPropagation();
-        //     cellView.model.trigger('add-to-filter', cellView.model);
-        // });
-        // halo.on('action:expand-properties:pointerdown', (evt) => {
-        //     evt.stopPropagation();
-        //     cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
-        // });
-        // halo.on('halo-remove', (self: joint.ui.Halo) => {
-        //     this.set('elementWithHalo', null);
-        //     if (self.options.cellView) { this.stopListening(self.options.cellView.model); }
-        //     delete self.options.cellView;
-        // });
-        // halo.listenTo(cellView.model, 'change:isExpanded', (model: Backbone.Model, value: boolean) => {
-        //     halo.changeHandle('expand-properties', { position: 's', icon: getExpandOrCollapseIconUri(model) });
-        // });
-        // this.halo = halo;
-        const model = cellView.model as Element;
-        this.selection.reset([model]);
-        // halo.render();
-        model.addToFilter();
-    }
-
-    // private configureSelection() {
-    //     const selection = new Backbone.Collection<Element>();
-    //     this.selectionView = new joint.ui.SelectionView({
-    //         paper: this.paper,
-    //         graph: this.model.graph,
-    //         model: selection,
-    //     });
-
-    //     if (!this.model.isViewOnly()) {
-    //         this.paper.on('blank:pointerdown', (evt) => {
-    //             if (!evt.ctrlKey) {
-    //                 this.preventTextSelection();
-    //                 this.selectionView.startSelecting(evt);
-    //             }
-    //         });
-    //         this.paper.on('cell:pointerup', (cellView, evt) => {
-    //             const haloCellView = this.halo ? this.halo.options.cellView : null;
-    //             if ((evt.ctrlKey || evt.metaKey) &&
-    //                 !(cellView.model instanceof joint.dia.Link) &&
-    //                 cellView !== haloCellView
-    //             ) {
-    //                 selection.add(cellView.model);
-    //                 this.selectionView.createSelectionBox(cellView);
-    //                 if (selection.length === 1 && haloCellView) {
-    //                     this.halo.remove();
-    //                     selection.add(<Element>haloCellView.model);
-    //                     this.selectionView.createSelectionBox(haloCellView);
-    //                 }
-    //             }
-    //         });
-    //         this.selectionView.on('selection-box:pointerdown', (evt) => {
-    //             if (evt.ctrlKey || evt.metaKey) {
-    //                 const cell = selection.get($(evt.target).data('model'));
-    //                 if (cell) {
-    //                     selection.reset(selection.without(cell));
-    //                     this.selectionView.destroySelectionBox(this.paper.findViewByModel(cell));
-    //                 }
-    //             }
-    //         });
-    //         this.selectionView.on('selection-box:pointerup', () => { this.paperScroller.adjustPaper(); });
-    //     }
-    // }
-
-    // private configureCommandManager() {
-    //     this.commandManager = new joint.dia.CommandManager({
-    //         graph: this.model.graph,
-    //         cmdBeforeAdd: (cmdName: string, cell, graph, options) => {
-    //             const ignore = options && options.ignoreCommandManager;
-    //             return !cmdName.match(/^change:(?:size|selectedInFilter)$/) && !ignore;
-    //         },
-    //     });
-    // }
-
-    // private configureSnaplines() {
-    //     const snaplines = new joint.ui.Snaplines({ paper: this.paper });
-    //     snaplines.startListening();
-    // }
 
     private enableDragAndDropSupport() {
         const svg = this.$svg.get(0);
@@ -451,6 +346,9 @@ private setSelectedElement(cellView: joint.dia.CellView) {
             }
 
             this.selection.reset(elementsToSelect);
+            if (elementsToSelect.length === 1) {
+                elementsToSelect[0].addToFilter();
+            }
 
             this.storeBatchCommand();
         });
