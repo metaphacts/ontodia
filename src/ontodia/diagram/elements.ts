@@ -54,7 +54,7 @@ export class Element extends UIElement {
 export class Link extends joint.dia.Link {
     markup: string;
     initialize(attributes?: {id: string}) {
-
+        this.set('labels', [{position: 0.5}]);
     }
 }
 

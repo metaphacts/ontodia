@@ -59,6 +59,8 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
+    private options: DiagramViewOptions;
+
     constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
         this.setLanguage('en');
@@ -75,7 +77,7 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-        this.set('options', options || {});
+        this.options = options || {};
 
         this.setupTextSelectionPrevention();
         this.configureScroller(rootElement);
@@ -468,7 +470,7 @@ private setSelectedElement(cellView: joint.dia.CellView) {
     }
 
     public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
-        let color = this.get('options').elementColor ? this.get('options').elementColor(elementModel) : undefined;
+        let color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
 
         if (color) {
             return d3.hcl(color);
@@ -497,6 +499,10 @@ private setSelectedElement(cellView: joint.dia.CellView) {
         const yScroll = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
             : (<any> document.documentElement || document.body.parentNode || document.body).scrollTop;
         return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
+    }
+
+    public getOptions(): DiagramViewOptions {
+        return this.options;
     }
 }
 

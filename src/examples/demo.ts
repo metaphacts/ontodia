@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     labels: [
                         {
-                            position: 0.5,
                             attrs: {
                                 text: {
                                     fill: '#3c4260'
@@ -55,8 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     router: {
                         name: 'orthogonal',
-                    },
-                    z: 0
+                    }
                 };
             },
         },
