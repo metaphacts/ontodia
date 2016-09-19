@@ -214,12 +214,19 @@ namespace joint {
 
         /** Rappid only */
         class CommandManager extends Backbone.Model {
+            constructor(options?: CommandManagerOptions);
             initialize();
             undo();
             initBatchCommand();
             storeBatchCommand();
             redo();
             reset();
+        }
+
+        /** Rappid only */
+        interface CommandManagerOptions {
+            graph: Graph;
+            cmdBeforeAdd?: (cmdName: string, cell: Cell, graph: Graph, options: any) => boolean;
         }
     }
 

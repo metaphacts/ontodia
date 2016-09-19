@@ -26,19 +26,10 @@ export interface DiagramViewOptions {
 /**
  * Properties:
  *     language: string
- *     selectedElements: Element[] - currently selected elements
- * 
- * Events:
- *     extension:undo
- *     extension:redo
- *     extension:resetHistory
- *     extension:initBatchCommand
- *     extension:storeBatchCommand
  */
 export class DiagramView extends Backbone.Model {
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
-    // private commandManager: joint.dia.CommandManager;
 
     readonly selection = new Backbone.Collection<Element>();
 
@@ -87,24 +78,10 @@ export class DiagramView extends Backbone.Model {
 
         this.setupTextSelectionPrevention();
         this.configureArea(rootElement);
-        // this.configureCommandManager();
         this.configureSelection();
         this.enableDragAndDropSupport();
 
-        const DELETE_KEY_CODE = 46;
-        $('html').keyup(e => {
-            if (e.keyCode === DELETE_KEY_CODE) {
-                const elementsToRemove = this.selection.toArray();
-                if (elementsToRemove.length === 0) { return; }
-
-                this.cancelSelection();
-                this.model.graph.trigger('batch:start');
-                for (const element of elementsToRemove) {
-                    element.remove();
-                }
-                this.model.graph.trigger('batch:stop');
-            }
-        });
+        $('html').keyup(this.onKeyUp);
 
         let indicator: Indicator;
         const onLoaded = (elementCount?: number, error?: any) => {
@@ -142,27 +119,13 @@ export class DiagramView extends Backbone.Model {
             this.model.trigger('state:renderDone');
         });
         this.listenTo(model, 'state:dataLoaded', () => {
-            this.resetHistory();
+            this.model.resetHistory();
             this.zoomToFit();
         });
-
-        for (const event of ['add', 'remove', 'reset']) {
-            this.listenTo(this.selection, event, () => {
-                console.log(`New selection (${event}): `);
-                console.log(this.selection.map(element => element.id));
-                console.trace();
-            });
-        }
     }
 
     getLanguage(): string { return this.get('language'); }
     setLanguage(value: string) { this.set('language', value); }
-
-    undo() { this.trigger('extension:undo'); }
-    redo() { this.trigger('extension:redo'); }
-    resetHistory() { this.trigger('extension:resetHistory'); }
-    initBatchCommand() { this.trigger('extension:initBatchCommand'); }
-    storeBatchCommand() { this.trigger('extension:storeBatchCommand'); }
 
     cancelSelection() { this.selection.reset([]); }
 
@@ -219,6 +182,21 @@ export class DiagramView extends Backbone.Model {
                 this.indicator.status('Unknown error occured');
                 this.indicator.error();
             });
+        }
+    }
+
+    private onKeyUp = (e: KeyboardEvent) => {
+        const DELETE_KEY_CODE = 46;
+        if (e.keyCode === DELETE_KEY_CODE) {
+            const elementsToRemove = this.selection.toArray();
+            if (elementsToRemove.length === 0) { return; }
+
+            this.cancelSelection();
+            this.model.graph.trigger('batch:start');
+            for (const element of elementsToRemove) {
+                element.remove();
+            }
+            this.model.graph.trigger('batch:stop');
         }
     }
 
@@ -301,13 +279,7 @@ export class DiagramView extends Backbone.Model {
             }
             if (!elementIds) { return; }
 
-            this.initBatchCommand();
-
-            // this.selectionView.cancelSelection();
-            // if (this.halo) { this.halo.remove(); }
-            // var selection: Backbone.Collection<Element> = this.selectionView.model;
-
-            // if (this.get('elementWithHalo')) { this.set('elementWithHalo', null); }
+            this.model.initBatchCommand();
 
             let elementsToSelect: Element[] = [];
 
@@ -333,15 +305,6 @@ export class DiagramView extends Backbone.Model {
                     totalXOffset += size.width + 20;
 
                     elementsToSelect.push(element);
-
-                    // this.setSelectedElement(this.paper.findViewByModel(element));
-
-                    // if (elementIds.length > 1) {
-                    //     selection.add(element);
-                    //     this.selectionView.createSelectionBox(this.paper.findViewByModel(element));
-                    // } else {
-                    //     this.renderHalo(this.paper.findViewByModel(element));
-                    // }
                 }
             }
 
@@ -350,7 +313,7 @@ export class DiagramView extends Backbone.Model {
                 elementsToSelect[0].addToFilter();
             }
 
-            this.storeBatchCommand();
+            this.model.storeBatchCommand();
         });
     }
 

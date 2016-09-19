@@ -43,7 +43,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
     }
 
     public setLinkState(state: string, options?: {isFromHandler?: boolean}) {
-        this.view.initBatchCommand();
+        this.view.model.initBatchCommand();
         if (state === 'invisible') {
             this.model.set({visible: false, showLabel: false}, options);
         } else if (state === 'withoutLabels') {
@@ -51,7 +51,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
         } else if (state === 'allVisible') {
             this.model.set({visible: true, showLabel: true}, options);
         }
-        this.view.storeBatchCommand();
+        this.view.model.storeBatchCommand();
     }
 
     public render(): LinkInToolBox {
@@ -193,11 +193,11 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
                 .appendTo($buttonLabel);
             $('<span/>').attr('class', iconClass).appendTo($buttonLabel);
             $buttonLabel.on('click', () => {
-                this.view.initBatchCommand();
+                this.view.model.initBatchCommand();
                 _.each(this.views, function (link: LinkInToolBox) {
                     link.setLinkState(optionName, {isFromHandler: false});
                 });
-                this.view.storeBatchCommand();
+                this.view.model.storeBatchCommand();
             });
         }
 

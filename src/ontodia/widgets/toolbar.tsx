@@ -114,13 +114,13 @@ export class EditorToolbar extends React.Component<Props, State> {
                         <span className='glyphicon glyphicon-fullscreen'/>
                     </button>
                     {(nonEmbedded && this.props.onUndo) ? (
-                        <button type='button' className='btn btn-default'
+                        <button type='button' className='btn btn-default ontodia-toolbar__undo'
                             title='Undo' onClick={this.props.onUndo}>
                             <span className='glyphicon glyphicon-arrow-left'/>
                         </button>
                     ) : undefined}
                     {(nonEmbedded && this.props.onRedo) ? (
-                        <button type='button' className='btn btn-default'
+                        <button type='button' className='btn btn-default ontodia-toolbar__redo'
                             title='Redo' onClick={this.props.onRedo}>
                             <span className='glyphicon glyphicon-arrow-right'/>
                         </button>
