@@ -277,6 +277,7 @@ export class LinkView extends joint.dia.LinkView {
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'state:loaded', this.updateLabel);
+        this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
     }
     render(): LinkView {
         const result: any = super.render();
@@ -307,6 +308,15 @@ export class LinkView extends joint.dia.LinkView {
 
         if (this.view.getOptions().customLinkStyle) {
             style = _.merge(style, this.view.getOptions().customLinkStyle(this.model));
+        } else {
+            if (this.model.get('layoutOnly')) {
+                style = _.merge(style, {
+                    attrs: {
+                        '.connection': {'stroke-dasharray': '5,5'},
+                        '.marker-target': {'fill': 'white'},
+                    },
+                });
+            }
         }
 
         if (typeModel && typeModel.get('showLabel')) {
