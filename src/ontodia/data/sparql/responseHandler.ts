@@ -129,7 +129,7 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
     return instancesMap;
 }
 
-export function getEnreachedElementsInfo(
+export function getEnrichedElementsInfo(
     response: Sparql.ImageResponse,
     elementsInfo: Dictionary<ElementModel>
 ): Dictionary<ElementModel> {

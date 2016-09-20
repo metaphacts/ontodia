@@ -9,7 +9,7 @@ import {
     getLinksInfo,
     getLinksTypesOf,
     getFilteredData,
-    getEnreachedElementsInfo,
+    getEnrichedElementsInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
 
@@ -24,7 +24,7 @@ export interface SparqlDataProviderOptions {
 }
 
 export class SparqlDataProvider implements DataProvider {
-    constructor(public options: SparqlDataProviderOptions) {}
+    constructor(private options: SparqlDataProviderOptions) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = DEFAULT_PREFIX + `
@@ -102,8 +102,8 @@ export class SparqlDataProvider implements DataProvider {
                 ?inst ?linkType ?image
             }}
         `;
-        return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query).
-            then(imageResponce => getEnreachedElementsInfo(imageResponce, elementsInfo));
+        return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
+            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo));
     }
 
     linksInfo(params: {

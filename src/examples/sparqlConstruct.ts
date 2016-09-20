@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // if you reuse this code you should check for workspace to be null on unmount
             if (workspace) {
                 const model = workspace.getModel();
-                const endPointUrl = '/sparql-endpoint';
-                const sparqlDataProvider = new SparqlDataProvider(endPointUrl);
-                const graphBuilder = new GraphBuilder(sparqlDataProvider, endPointUrl);
+                const endpointUrl = '/sparql-endpoint';
+                const sparqlDataProvider = new SparqlDataProvider({endpointUrl});
+                const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
                 graphBuilder.getGraphFromConstrunct(
                     `CONSTRUCT {
