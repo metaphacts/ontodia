@@ -1,6 +1,6 @@
 # README #
 
-Ontodia is a JavaScript library that allows to visualize, navigate and explore the data in the form of an interactive graph based on underlying data sources. The library is a major front-end component in ontodia.org web application that provides semantic data visualization services.
+Ontodia is a JavaScript library that allows to visualize, navigate and explore the data in the form of an interactive graph based on underlying data sources. The library is a major front-end component in <a href="http://ontodia.org">ontodia.org</a> web application that provides semantic data visualization services.
 
 ### What is Ontodia for? ###
 
