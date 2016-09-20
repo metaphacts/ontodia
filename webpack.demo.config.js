@@ -10,6 +10,7 @@ module.exports = {
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
+        sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
@@ -44,6 +45,12 @@ module.exports = {
             filename: 'sparqlConstruct.html',
             title: 'Ontodia SparQL Construct Demo',
             chunks: ['sparqlConstruct'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'sparqlRDFGraph.html',
+            title: 'Ontodia SparQL RDF Graph Demo',
+            chunks: ['sparqlRDFGraph'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
     ],

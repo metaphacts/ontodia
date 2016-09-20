@@ -27,15 +27,20 @@ export class GraphBuilder {
         const query = DEFAULT_PREFIX + constructQuery;
         return executeSparqlQuery<Sparql.ConstructResponse>(this.endpointUrl, query)
             .then(this.normalizeResults)
-            .then(graphLayout => this.getConstructElements(graphLayout))
-            .then(({elementIds, linkIds}) => Promise.all<Dictionary<ElementModel>, LinkModel[]>([
-                this.dataProvider.elementInfo({elementIds}),
-                this.dataProvider.linksInfo({elementIds, linkTypeIds: linkIds}),
-            ])).then(([elementsInfo, linksInfo]) => ({
-                preloadedElements: elementsInfo,
-                preloadedLinks: linksInfo,
-                layout: this.getLayout(elementsInfo, linksInfo),
-            }));
+            .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
+    };
+
+    getGraphFromRDFGraph(graph: Sparql.ConstructElement[]): Promise<{
+        preloadedElements: any,
+        preloadedLinks: any[],
+        layout: LayoutData,
+    }> {
+        let {elementIds, links} = this.getConstructElements(graph);
+        return this.dataProvider.elementInfo({elementIds}).then(elementsInfo => ({
+            preloadedElements: elementsInfo,
+            preloadedLinks: links,
+            layout: this.getLayout(elementsInfo, links),
+        }));
     };
 
     private normalizeResults(result: any) {
@@ -64,19 +69,24 @@ export class GraphBuilder {
         });
     }
 
-    private getConstructElements(response: Sparql.ConstructResponse): {
-        elementIds: string[], linkIds: string[]
+    private getConstructElements(response: Sparql.ConstructElement[]): {
+        elementIds: string[], links: LinkModel[]
     } {
-        const sElements: Sparql.ConstructElement[] = response.results.bindings;
+        const sElements: Sparql.ConstructElement[] = response;
         const elements: Dictionary<boolean> = {};
-        const links: Dictionary<boolean> = {};
+        let links: LinkModel[] = [];
 
         for (const constructElement of sElements) {
             if (!elements[constructElement.subject.value]) { elements[constructElement.subject.value] = true; }
             if (!elements[constructElement.object.value])  { elements[constructElement.object.value]  = true; }
-            if (!links[constructElement.predicate.value])  { links[constructElement.predicate.value]  = true; }
+
+            links.push({
+                linkTypeId: constructElement.predicate.value,
+                sourceId: constructElement.subject.value,
+                targetId: constructElement.object.value,
+            });
         }
-        return { elementIds: Object.keys(elements), linkIds: Object.keys(links) };
+        return { elementIds: Object.keys(elements), links: links };
     }
 
     private getLayout(elementsInfo: Dictionary<ElementModel>, linksInfo: LinkModel[]): LayoutData {
