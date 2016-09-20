@@ -260,8 +260,8 @@ export class Pair extends UIElement {
  *     minSize: {x:number, y:number}
  */
 export class Image extends UIElement {
-    public image: d3.Selection<any>;
-    public imageRect: d3.Selection<any>;
+    private image: d3.Selection<any>;
+    private imageRect: d3.Selection<any>;
 
     defaults() {
         return _.extend(super.defaults(), {

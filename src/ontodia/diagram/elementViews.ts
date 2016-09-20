@@ -55,7 +55,7 @@ export class UIElementView extends joint.dia.ElementView {
         });
         this.image = new svgui.Image({
             parent: this.box.root,
-            size: { width: 100, height: 30 },
+            size: {width: 100, height: 30},
             margin: {top: 5, right: 0, bottom: 0, left: 0},
             raze: false,
         });
@@ -136,7 +136,6 @@ export class UIElementView extends joint.dia.ElementView {
             this.updateUIList();
             this.updateProperties();
             this.expander.splitter.style('stroke', this.box.get('color'));
-            // 'http://www.britishmuseum.org/collectionimages/AN00230/AN00230714_001_l.jpg'
             this.image.set('imageUrl', this.model.template.image);
             this.image.set('borderColor', this.box.get('color'));
             this.image.update();
