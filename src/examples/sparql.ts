@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider } from '../../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');

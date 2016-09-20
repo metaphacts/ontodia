@@ -5,7 +5,7 @@ var npmDir = path.join(__dirname, 'node_modules');
 
 module.exports = {
     entry: {
-        ontodia: path.join(__dirname, 'index.ts'),
+        ontodia: path.join(__dirname, 'src', 'index.ts'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
