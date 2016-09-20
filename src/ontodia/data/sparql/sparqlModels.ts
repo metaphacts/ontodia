@@ -44,6 +44,12 @@ export interface ConstructElement {
     object: Field;
 }
 
+export interface ImageLink {
+    inst: Field;
+    linkType: Field;
+    image: Field;
+}
+
 export interface SparqlResponse {
     head: { vars: string[] };
     results: { bindings: any };
@@ -75,4 +81,8 @@ export interface FilterResponse extends SparqlResponse  {
 
 export interface ConstructResponse extends SparqlResponse  {
     results: { bindings: ConstructElement[] };
+};
+
+export interface ImageResponse extends SparqlResponse  {
+    results: { bindings: ImageLink[] };
 };

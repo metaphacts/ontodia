@@ -7,7 +7,7 @@ const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
 export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
-    const sNodes: Sparql.TreeNode[] = response.results.bindings;
+    const sNodes = response.results.bindings;
     const tree: ClassModel[] = [];
     const createdTreeNodes: Dictionary<ClassModel> = {};
     const tempNodes: Dictionary<ClassModel> = {};
@@ -72,7 +72,7 @@ export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
 }
 
 export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
-    const sInst: Sparql.LinkType[] = response.results.bindings;
+    const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
     const instancesMap: Dictionary<LinkType> = {};
 
@@ -101,7 +101,7 @@ export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
 }
 
 export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: string[]): Dictionary<ElementModel> {
-    const sInstances: Sparql.ElementInfo[] = response.results.bindings;
+    const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {
@@ -129,18 +129,32 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
     return instancesMap;
 }
 
+export function getEnrichedElementsInfo(
+    response: Sparql.ImageResponse,
+    elementsInfo: Dictionary<ElementModel>
+): Dictionary<ElementModel> {
+    const respElements = response.results.bindings;
+    for (const respEl of respElements) {
+        const elementInfo = elementsInfo[respEl.inst.value];
+        if (elementInfo) {
+            elementInfo.image = respEl.image.value;
+        }
+    }
+    return elementsInfo;
+}
+
 export function getLinksInfo(response: Sparql.LinksInfoResponse): LinkModel[] {
-    const sparqlLinks: Sparql.LinkInfo[] = response.results.bindings;
+    const sparqlLinks = response.results.bindings;
     return sparqlLinks.map((sLink: Sparql.LinkInfo) => getLinkInfo(sLink));
 }
 
 export function getLinksTypesOf(response: Sparql.LinkTypesOfResponse): LinkType[] {
-    const sparqlLinkTypes: Sparql.LinkType[] = response.results.bindings;
+    const sparqlLinkTypes = response.results.bindings;
     return sparqlLinkTypes.map((sLink: Sparql.LinkType) => getLinkType(sLink));
 }
 
 export function getFilteredData(response: Sparql.FilterResponse): Dictionary<ElementModel> {
-    const sInstances: Sparql.ElementInfo[] = response.results.bindings;
+    const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {

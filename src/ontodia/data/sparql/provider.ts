@@ -9,6 +9,7 @@ import {
     getLinksInfo,
     getLinksTypesOf,
     getFilteredData,
+    getEnrichedElementsInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
 
@@ -17,8 +18,13 @@ const DEFAULT_PREFIX =
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
 
+export interface SparqlDataProviderOptions {
+    endpointUrl: string;
+    imageClassUris?: string[];
+}
+
 export class SparqlDataProvider implements DataProvider {
-    constructor(public endpointUrl: string) {}
+    constructor(private options: SparqlDataProviderOptions) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = DEFAULT_PREFIX + `
@@ -38,7 +44,7 @@ export class SparqlDataProvider implements DataProvider {
             }
         `;
         return executeSparqlQuery<Sparql.TreeResponse>(
-            this.endpointUrl, query).then(getClassTree);
+            this.options.endpointUrl, query).then(getClassTree);
     }
 
     linkTypes(): Promise<LinkType[]> {
@@ -59,7 +65,7 @@ export class SparqlDataProvider implements DataProvider {
             }
         `;
         return executeSparqlQuery<Sparql.LinkTypesResponse>(
-            this.endpointUrl, query).then(getLinkTypes);
+            this.options.endpointUrl, query).then(getLinkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
@@ -76,8 +82,28 @@ export class SparqlDataProvider implements DataProvider {
                 FILTER (isLiteral(?propValue)) }
             }}
         `;
-        return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.endpointUrl, query).
-            then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds));
+        return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
+            .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
+            .then(elementsInfo => this.enrichedenreachedElementsInfo(elementsInfo, this.options.imageClassUris));
+    }
+
+    private enrichedenreachedElementsInfo(
+        elementsInfo: Dictionary<ElementModel>,
+        types: string[]
+    ): Promise<Dictionary<ElementModel>> {
+        const ids = Object.keys(elementsInfo).map(escapeIri).join(', ');
+        const typesString = types.map(escapeIri).join(', ');
+
+        const query = DEFAULT_PREFIX + `
+            SELECT ?inst ?linkType ?image
+            WHERE {{
+                FILTER (?inst IN (${ids}))
+                FILTER (?linkType IN (${typesString}))
+                ?inst ?linkType ?image
+            }}
+        `;
+        return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
+            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo));
     }
 
     linksInfo(params: {
@@ -96,7 +122,7 @@ export class SparqlDataProvider implements DataProvider {
             }
         `;
         return executeSparqlQuery<Sparql.LinksInfoResponse>(
-            this.endpointUrl, query).then(getLinksInfo);
+            this.options.endpointUrl, query).then(getLinksInfo);
     }
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
@@ -110,7 +136,7 @@ export class SparqlDataProvider implements DataProvider {
             }} GROUP BY ?link
         `;
 
-        return executeSparqlQuery<Sparql.LinkTypesOfResponse>(this.endpointUrl, query).then(getLinksTypesOf);
+        return executeSparqlQuery<Sparql.LinkTypesOfResponse>(this.options.endpointUrl, query).then(getLinksTypesOf);
     };
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
@@ -165,7 +191,7 @@ export class SparqlDataProvider implements DataProvider {
         `;
 
         return executeSparqlQuery<Sparql.FilterResponse>(
-            this.endpointUrl, query).then(getFilteredData);
+            this.options.endpointUrl, query).then(getFilteredData);
     };
 };
 

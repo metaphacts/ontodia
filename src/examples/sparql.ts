@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(iri);
                 });
                 model.importLayout({
-                    dataProvider: new SparqlDataProvider('/sparql-endpoint'),
+                    dataProvider: new SparqlDataProvider({
+                        endpointUrl: '/sparql-endpoint',
+                        imageClassUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
+                    }),
                     preloadedElements: {},
                     preloadedLinks: [],
                     layoutData: undefined,

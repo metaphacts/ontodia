@@ -28,6 +28,14 @@ export function vector(x: number, y?: number): Vector {
     return {x: x, y: y};
 }
 
+export class SvguiError extends Error {
+    constructor(message?: string, public inner?: Error) {
+        super(message);
+    }
+}
+
+const DEBUG = false;
+
 /**
  * Measures UIElement using UIElement.measure() method taking
  * it's margin, width and height fields into consideration.
@@ -44,14 +52,23 @@ export function measure(element: UIElement, maxSize: Vector): Vector {
     let verticalMargin = m.top + m.bottom;
     if (width && width < maxSize.x) { maxSize.x = width; }
     if (height && height < maxSize.y) { maxSize.y = height; }
-    maxSize.x = Math.max(maxSize.x - m.left - m.right, 0);
-    maxSize.y = Math.max(maxSize.y - m.top - m.bottom, 0);
-    let size = element.measure(maxSize);
+    let maxX = Math.max(maxSize.x - m.left - m.right, 0);
+    let maxY = Math.max(maxSize.y - m.top - m.bottom, 0);
+    let size = element.measure(vector(maxX, maxY));
+    if (DEBUG && (!size ||
+        /* null */      size.x === null || size.y === null ||
+        /* undefined */ size.x === undefined || size.y === undefined ||
+        /* NaN */       size.x !== size.x || size.y !== size.y
+    )) {
+        const typeName = element.constructor ? element.constructor.name : undefined;
+        throw new SvguiError(`Invalid '${typeName}' measured size: ${JSON.stringify(size)}`);
+    }
     // element size should be greater or equal to (width, height) if they're set
     if (width && size.x < width) { size.x = width; }
     if (height && size.y < height) { size.y = height; }
+    if (size.x > maxX) { size.x = maxX; }
+    if (size.y > maxY) { size.y = maxY; }
     element.size = size;
-    if (height) { element.size.y = maxSize.y; }
     return vector(size.x + horizontalMargin, size.y + verticalMargin);
 }
 
@@ -63,6 +80,30 @@ export function arrange(element: UIElement, x: number, y: number, size?: Vector)
     if (typeof size === 'undefined') { size = element.size; }
     let m: Margin = element.get('margin');
     element.arrange(x + m.left, y + m.top, size);
+    if (DEBUG) {
+        let debugRect: d3.Selection<SVGRectElement> = element.get('DEBUG_RECT');
+        if (debugRect === undefined) {
+            debugRect = element.root.append('rect')
+                .attr('class', 'DEBUG_RECT')
+                .attr('fill', 'transparent')
+                .attr('stroke', 'red')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '2,2');
+            element.set('DEBUG_RECT', debugRect);
+        }
+        let debugRectInner: d3.Selection<SVGRectElement> = element.get('DEBUG_RECT_INNER');
+        if (debugRectInner === undefined) {
+            debugRectInner = element.root.append('rect')
+                .attr('class', 'DEBUG_RECT_INNER')
+                .attr('fill', 'rgba(0, 128, 0, 0.14)');
+            element.set('DEBUG_RECT_INNER', debugRectInner);
+        }
+        debugRect.attr('x', x).attr('y', y)
+            .attr('width', size.x).attr('height', size.y);
+        debugRectInner.attr('x', x + m.left).attr('y', y + m.top)
+            .attr('width', size.x + m.left + m.right)
+            .attr('height', size.y + m.top + m.bottom);
+    }
 }
 
 export function sizeWithMargin(element: UIElement): Vector {
@@ -79,6 +120,18 @@ export interface Margin {
     left: number;
 }
 
+export enum Alignment {
+    START, END, CENTER
+}
+
+export function align(alignment: Alignment, inner: number, outer: number): number {
+    switch (alignment) {
+        case Alignment.START: return 0;
+        case Alignment.END: return outer - inner;
+        case Alignment.CENTER: return (outer - inner) / 2;
+    }
+}
+
 /**
  * Base class of SVG UI elements.
  * Backbone properties:
@@ -88,9 +141,10 @@ export interface Margin {
  */
 export abstract class UIElement extends Backbone.Model {
     /** Root SVG element of this UIElement */
-    public root: d3.Selection<any>;
+    root: d3.Selection<any>;
+    get element() { return this.root.node() as Element; }
     /** Measured size of the element. */
-    public size: Vector;
+    size: Vector;
     constructor(attributes?, options?) {
         super(attributes, options);
     }
@@ -238,18 +292,76 @@ export class Pair extends UIElement {
     }
     arrange(x: number, y: number, size: Vector) {
         if (this.left) {
-            const leftY = y + (size.y - this.left.size.y) / 2;
+            const {x: width, y: height} = sizeWithMargin(this.left);
+            const leftY = y + (size.y - height) / 2;
             arrange(this.left, x, leftY);
-            x += this.left.size.x;
+            x += width;
         }
         x += this.spacing;
         if (this.right) {
-            const rightY = y + (size.y - this.right.size.y) / 2;
+            const height = sizeWithMargin(this.right).y;
+            const rightY = y + (size.y - height) / 2;
             arrange(this.right, x, rightY);
         }
     }
 }
 
+/*
+ * Centered in a rectangle image with border.
+ * Backbone properties:
+ *     imageUrl: string
+ *     background: string (color)
+ *     borderColor: string (color)
+ *     minSize: Vector
+ */
+export class Image extends UIElement {
+    private image: d3.Selection<any>;
+    private imageRect: d3.Selection<any>;
+    get imageUrl(): string { return this.get('imageUrl'); }
+    get background(): string { return this.get('background'); }
+    get borderColor(): string { return this.get('borderColor'); }
+    get minSize(): Vector { return this.get('minSize'); }
+    defaults() {
+        return _.extend(super.defaults(), {
+            imageUrl: undefined,
+            background: '#e1e1e1',
+            borderColor: 'green',
+        });
+    }
+    initialize() {
+        super.initialize.apply(this, arguments);
+        this.root.attr('class', 'svguiImage');
+        this.imageRect = this.root.append('rect');
+        this.image = this.root.append('image');
+        this.update();
+    }
+    update() {
+        this.image.attr('href', this.imageUrl);
+        this.imageRect
+            .attr('fill', this.background)
+            .attr('stroke', this.borderColor)
+            .attr('stroke-width', this.imageUrl === undefined ? 0 : 1);
+        return this;
+    }
+    measure(maxSize: Vector) {
+        const {
+            x: minX = Infinity,
+            y: minY = Infinity,
+        } = this.minSize;
+        return this.imageUrl === undefined
+            ? vector(0, 0) : vector(
+                Math.min(maxSize.x, minX),
+                Math.min(maxSize.y, minY));
+    }
+    arrange(x: number, y: number, size?: Vector) {
+        this.imageRect
+            .attr('x', x).attr('y', y)
+            .attr('width', size.x).attr('height', size.y);
+        this.image
+            .attr('x', x).attr('y', y)
+            .attr('width', size.x).attr('height', size.y);
+    }
+}
 /**
  * Table with two columns and entry grouping.
  * Backbone properties:
@@ -353,92 +465,52 @@ export class PropertyTable extends UIElement {
 }
 
 /**
- * Table with one columns and entry grouping.
+ * Vertical column of elements.
  * Backbone properties:
- *     content: {
- *         name: string
- *         val: string[]
- *     }[]
- *     captionClass: string
- *     elementsClass: UIElement
- *     indentBetweenLeftAndRight: number
- *     horIndent: number
- *     spacing: svgui.Vector
+ *     children: UIElement[]
+ *     alignment: Alignment
  */
-export class UIList extends UIElement {
-    private rendered: any;
-    private maxWidth: number;
-    private width: number;
+export class Stack extends UIElement {
+    get children(): UIElement[] { return this.get('children'); }
+    get alignment(): Alignment { return this.get('alignment'); }
     defaults() {
         return _.extend(super.defaults(), {
-            content: [],
-            captionClass: 'svguiPropertyTableGroupCaption',
-            horIndent: 10,
-            spacing: vector(10, 3),
+            children: [],
+            alignment: Alignment.CENTER,
         });
     }
     initialize() {
         super.initialize.apply(this, arguments);
-        this.root.attr('class', 'svgUIList');
+        this.root.attr('class', 'svguiStack');
         this.update();
     }
-     update() {
-        removeAllChilds(<Element>this.root.node());
-        this.rendered = [];
-        let content = this.get('content');
-        for (let i = 0; i < content.length; i++) {
-            let group = content[i];
-            let caption = new Label({
-                parent: this.root,
-                text: group.name,
-                raze: false,
-                textClass: this.get('captionClass'),
-            });
-            caption.update();
-            let elements = [];
-            for (let j = 0; j < group.val.length; j++) {
-                let element: UIElement = group.val[j];
-                setAsChild(<Element>this.root.node(), <Element>element.root.node(), true);
-                elements.push(element);
-            }
-            this.rendered.push({caption: caption, val: elements});
+    update() {
+        removeAllChilds(this.element);
+        for (const child of this.children) {
+            setAsChild(this.element, child.element, true);
         }
         return this;
     }
     measure(maxSize: Vector) {
-        maxSize.x = Math.max(maxSize.x - this.get('horIndent') - this.get('spacing').x, 0);
-        let height = 0;
-        let maxGroupWidth = 0;
-        this.maxWidth = 0;
-        this.width = maxSize.x;
-        for (let i = 0; i < this.rendered.length; i++) {
-            let group = this.rendered[i];
-            let captionSize = measure(group.caption, maxSize);
-            maxGroupWidth = Math.max(maxGroupWidth, captionSize.x);
-            maxSize.y = Math.max(maxSize.y - captionSize.y - this.get('spacing').y, 0);
-            height += captionSize.y + this.get('spacing').y;
-            for (let j = 0; j < group.val.length; j++) {
-                let element = group.val[j];
-                let size = measure(element, vector(this.width, maxSize.y));
-                let maxHeight = element.size.y;
-                this.maxWidth = Math.max(this.maxWidth, size.x);
-                maxSize.y = Math.max(maxSize.y - maxHeight - this.get('spacing').y, 0);
-                height += maxHeight + this.get('spacing').y;
-            }
+        if (this.children.length === 0) { return vector(0, 0); }
+
+        let totalHeight = 0;
+        let maxWidth = 0;
+
+        for (const child of this.children) {
+            const heightLeft = maxSize.y - totalHeight;
+            const childSize = measure(child, vector(maxSize.x, heightLeft));
+            totalHeight += childSize.y;
+            maxWidth = Math.max(maxSize.x, childSize.x);
         }
-        let totalWidth = this.maxWidth + this.get('horIndent') + this.get('spacing').x;
-        return vector(Math.max(totalWidth, maxGroupWidth), height);
+
+        return vector(Math.min(maxWidth, maxSize.x), totalHeight);
     }
     arrange(x: number, y: number, size: Vector) {
-        for (let i = 0; i < this.rendered.length; i++) {
-            let group = this.rendered[i];
-            arrange(group.caption, x, y);
-            y += group.caption.size.y + this.get('spacing').y;
-            for (let j = 0; j < group.val.length; j++) {
-                let element = group.val[j];
-                arrange(element, x + this.get('horIndent'), y, vector(this.maxWidth, element.size.y));
-                y += element.size.y + this.get('spacing').y;
-            }
+        const alignment = this.alignment;
+        for (const child of this.children) {
+            arrange(child, x + align(alignment, sizeWithMargin(child).x, size.x), y);
+            y += child.size.y;
         }
     }
 }
@@ -480,7 +552,7 @@ export class Expander extends UIElement {
             setAsChild(<Element>this.root.node(), <Element>second.root.node(), isExpanded);
         }
         let first: UIElement = this.get('first');
-        let expandedfirst: UIList = this.get('expandedfirst');
+        let expandedfirst: UIElement = this.get('expandedfirst');
 
         if (expandedfirst) {
             expandedfirst.root
@@ -502,10 +574,11 @@ export class Expander extends UIElement {
         const stringFirst = isExpanded ? 'expandedfirst' : 'first';
         const firstSize = measure(this.get(stringFirst), maxSize);
         if (this.get('expanded')) {
-            maxSize.y = Math.max(maxSize.y - firstSize.y, 0);
-            const secondSize = measure(this.get('second'), maxSize);
-            return vector(Math.max(firstSize.x, secondSize.x),
-                    firstSize.y + secondSize.y + this.get('splitterMargin'));
+            let totalHeight = firstSize.y + this.get('splitterMargin');
+            const heightLeft = Math.max(maxSize.y - totalHeight, 0);
+            const secondSize = measure(this.get('second'), vector(maxSize.x, heightLeft));
+            totalHeight += secondSize.y;
+            return vector(Math.max(firstSize.x, secondSize.x), totalHeight);
         } else {
             return firstSize;
         }

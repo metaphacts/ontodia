@@ -13,11 +13,12 @@ export class UIElementView extends joint.dia.ElementView {
     private name: svgui.Label;
     private label: svgui.Label;
     private iri: svgui.Label;
-    private uiList: svgui.UIList;
+    private image: svgui.Image;
     private expander: svgui.Expander;
     private box: svgui.NamedBox;
     private table: svgui.PropertyTable;
     private properties: Array<{ left: string; right: string; }>;
+
     initialize() {
         joint.dia.ElementView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'state:loaded', this.updateUI);
@@ -51,6 +52,7 @@ export class UIElementView extends joint.dia.ElementView {
             parent: d3.select($root.get(0)),
             captionText: '<loading...>',
         });
+
         this.expander = new svgui.Expander({
             parent: this.box.root,
             splitterMargin: 3,
@@ -60,19 +62,31 @@ export class UIElementView extends joint.dia.ElementView {
             .style('stroke', this.box.get('color'))
             .style('stroke-width', 1);
 
-        this.uiList = new svgui.UIList({
+        const expanderTopWhenExpanded = new svgui.Stack({
             parent: this.expander.root,
-            margin: {top: 5, right: 0, bottom: -4, left: 0},
-            horIndent: 0,
-            expanded: this.model.get('isExpanded'),
+            alignment: svgui.Alignment.START,
+        });
+
+        const expanderTop = new svgui.Stack({
+            parent: this.expander.root,
+            alignment: svgui.Alignment.START,
         });
 
         this.name = new svgui.Label({
-            parent: this.expander.root,
+            parent: expanderTop.root,
             raze: false,
             margin: {top: 5, right: 0, bottom: 5, left: 0},
             text: '<loading...>',
         });
+
+        this.image = new svgui.Image({
+            parent: expanderTop.root,
+            minSize: {y: 100},
+            margin: {top: 5, right: 0, bottom: 0, left: 0},
+        });
+
+        expanderTop.set('children', [this.name, this.image]);
+        expanderTop.update();
 
         this.label = new svgui.Label({text: '<loading...>'});
 
@@ -94,16 +108,16 @@ export class UIElementView extends joint.dia.ElementView {
         pair.set('right', this.iri);
         pair.update();
 
-        this.uiList.set('content', [{name: '', val: [this.label, pair]}]);
-        this.uiList.update();
+        expanderTopWhenExpanded.set('children', [this.label, pair]);
+        expanderTopWhenExpanded.update();
 
         this.table = new svgui.PropertyTable({
             parent: this.expander.root,
             margin: {top: 2, right: 0, bottom: 0, left: 0},
             horIndent: 0,
         });
-        this.expander.set('expandedfirst', this.uiList);
-        this.expander.set('first', this.name);
+        this.expander.set('expandedfirst', expanderTopWhenExpanded);
+        this.expander.set('first', expanderTop);
         this.expander.set('second', this.table);
         this.expander.update();
         this.box.root.on('dblclick', () => {
@@ -127,6 +141,9 @@ export class UIElementView extends joint.dia.ElementView {
             this.updateUIList();
             this.updateProperties();
             this.expander.splitter.style('stroke', this.box.get('color'));
+            this.image.set('imageUrl', this.model.template.image);
+            this.image.set('borderColor', this.box.get('color'));
+            this.image.update();
         }
         this.layoutUI();
     }
