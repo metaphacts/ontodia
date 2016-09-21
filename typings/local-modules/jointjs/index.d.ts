@@ -71,7 +71,61 @@ namespace joint {
         class Link extends Cell {
             defaults(): any;
             disconnect(): Link;
-            label(idx?: number, value?: any): any;   // @todo: returns either a label under idx or Link if both idx and value were passed
+            label(idx?: number, value?: LinkLabelAttributes): any;   // @todo: returns either a label under idx or Link if both idx and value were passed
+        }
+
+        export interface LinkLabelAttributes {
+            position?: number;
+            attrs?: {
+                rect?: {
+                    fill?: string;
+                    'stroke'?: string;
+                    'stroke-width'?: number;
+                };
+                text?: {
+                    fill?: string;
+                    'stroke'?: string;
+                    'stroke-width'?: number;
+                };
+            };
+        }
+
+        export interface LinkAttributes {
+            attrs?: {
+                '.connection'?: {
+                    fill?: string;
+                    stroke?: string;
+                    'stroke-width'?: number;
+                },
+                '.marker-source'?: {
+                    fill?: string;
+                    stroke?: string;
+                    'stroke-width'?: number;
+                    d?: string;
+                },
+                '.marker-target'?: {
+                    fill?: string;
+                    stroke?: string;
+                    'stroke-width'?: number;
+                    d?: string;
+                }
+            };
+            labels?: LinkLabelAttributes[];
+            connector?: {
+                name?: string;
+                args?: {
+                    radius?: number;
+                };
+            };
+            router?: {
+                name?: string;
+                args?: {
+                    startDirections?: string[];
+                    endDirections?: string[];
+                    excludeTypes?: string[];
+                };
+            };
+            z?: number;
         }
 
         interface IOptions {

@@ -381,7 +381,6 @@ export class DiagramModel extends Backbone.Model {
           existingLink.set('layoutOnly', false);
           return existingLink;
         }
-
         const link = new Link({
             id: _.uniqueId('link_'),
             typeId: linkModel.linkTypeId,

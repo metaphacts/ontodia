@@ -1,11 +1,20 @@
 import * as joint from 'jointjs';
 import * as d3 from 'd3';
+import { merge, cloneDeep } from 'lodash';
 
 import * as svgui from '../../svgui/svgui';
 import { ElementModel } from '../data/model';
 import { Element, Link, FatLinkType } from './elements';
 import { uri2name } from './model';
 import DiagramView from './view';
+
+const DEFAULT_LINK_STYLE: joint.dia.LinkAttributes = {
+    attrs: {
+        '.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z'},
+    },
+    labels: [{position: 0.5}],
+    z: 0,
+};
 
 export class UIElementView extends joint.dia.ElementView {
     model: Element;
@@ -208,6 +217,7 @@ export class LinkView extends joint.dia.LinkView {
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'state:loaded', this.updateLabel);
+        this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
     }
     render(): LinkView {
         const result: any = super.render();
@@ -232,15 +242,39 @@ export class LinkView extends joint.dia.LinkView {
     private updateLabel() {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
-        if (typeModel && typeModel.get('showLabel')) {
-            this.model.label(0, {
-                position: 0.5,
-                attrs: {text: {
-                    text: this.view.getLinkLabel(linkTypeId).text,
-                }},
+
+        let style = cloneDeep(DEFAULT_LINK_STYLE);
+
+        if (this.model.layoutOnly) {
+            style = merge(style, {
+                attrs: {
+                    '.connection': {'stroke-dasharray': '5,5'},
+                    '.marker-target': {'fill': 'white'},
+                },
             });
-        } else {
-            this.model.set('labels', []);
         }
+
+        if (this.view.options.customLinkStyle) {
+            const customStyle = this.view.options.customLinkStyle(this.model);
+            if (customStyle) {
+                style = merge(style, cloneDeep(customStyle));
+            }
+        }
+
+        let labelStyle;
+        if (typeModel && typeModel.get('showLabel')) {
+            labelStyle = {
+                labels: [{
+                    attrs: {text: {
+                        text: this.view.getLinkLabel(linkTypeId).text,
+                    }},
+                }],
+            };
+        } else {
+            labelStyle = {labels: []};
+        }
+
+        style = merge(style, labelStyle);
+        this.model.set(style);
     }
 }

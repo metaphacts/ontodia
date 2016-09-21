@@ -53,19 +53,9 @@ export class Element extends UIElement {
  */
 export class Link extends joint.dia.Link {
     markup: string;
+    get layoutOnly() { return this.get('layoutOnly'); }
     initialize(attributes?: {id: string}) {
-        this.set('z', 0);
-        this.set('attrs', {
-            '.marker-target': { d: 'M 10 0 L 0 5 L 10 10 z' },
-        });
-        this.listenTo(this, 'change:layoutOnly', this.onLayoutOnlyChanged);
-        this.onLayoutOnlyChanged(this, this.get('layoutOnly'));
-    }
-    onLayoutOnlyChanged(self: Link, value: boolean) {
-      this.attr({
-        '.connection': {'stroke-dasharray': value ? '5,5' : ''},
-        '.marker-target': {'fill': value ? 'white' : 'black'},
-      });
+        this.set('labels', [{position: 0.5}]);
     }
 }
 
