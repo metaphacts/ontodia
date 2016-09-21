@@ -108,7 +108,7 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
         let sInstTypeId: string = sInst.inst.value;
 
         if (instancesMap[sInstTypeId]) {
-            enreachElement(instancesMap[sInst.inst.value], sInst);
+            enrichElement(instancesMap[sInst.inst.value], sInst);
         } else {
             instancesMap[sInstTypeId] = getElementInfo(sInst);
         }
@@ -164,13 +164,13 @@ export function getFilteredData(response: Sparql.FilterResponse): Dictionary<Ele
         if (!instancesMap[sInst.inst.value]) {
             instancesMap[sInst.inst.value] = getElementInfo(sInst);
         } else {
-            enreachElement(instancesMap[sInst.inst.value], sInst);
+            enrichElement(instancesMap[sInst.inst.value], sInst);
         }
     };
     return instancesMap;
 }
 
-export function enreachElement(element: ElementModel, sInst: Sparql.ElementInfo) {
+export function enrichElement(element: ElementModel, sInst: Sparql.ElementInfo) {
     if (!element) {
         return;
     }

@@ -84,10 +84,12 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
-            .then(elementsInfo => this.enrichedenreachedElementsInfo(elementsInfo, this.options.imageClassUris));
+            .then(elementsInfo => (this.options.imageClassUris && this.options.imageClassUris.length > 0)
+                ? this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris)
+                : elementsInfo);
     }
 
-    private enrichedenreachedElementsInfo(
+    private enrichedElementsInfo(
         elementsInfo: Dictionary<ElementModel>,
         types: string[]
     ): Promise<Dictionary<ElementModel>> {
