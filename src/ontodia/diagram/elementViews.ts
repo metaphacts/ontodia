@@ -1,6 +1,6 @@
 import * as joint from 'jointjs';
 import * as d3 from 'd3';
-import * as _ from 'lodash';
+import { merge, cloneDeep } from 'lodash';
 
 import * as svgui from '../../svgui/svgui';
 import { ElementModel } from '../data/model';
@@ -8,73 +8,13 @@ import { Element, Link, FatLinkType } from './elements';
 import { uri2name } from './model';
 import DiagramView from './view';
 
-const DEFAULT_STYLE = {
+const DEFAULT_LINK_STYLE: joint.dia.LinkAttributes = {
     attrs: {
-        '.marker-target': {
-            d: 'M 10 0 L 0 5 L 10 10 z'
-        }
+        '.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z'},
     },
-    labels: [
-        {
-            position: 0.5
-        }
-    ],
-    z: 0
+    labels: [{position: 0.5}],
+    z: 0,
 };
-
-export interface LinkLabelStyle {
-    position?: number;
-    attrs?: {
-        rect?: {
-            fill?: string;
-            'stroke'?: string;
-            'stroke-width'?: number;
-        };
-        text?: {
-            fill?: string;
-            'stroke'?: string;
-            'stroke-width'?: number;
-        };
-    };
-}
-
-export interface LinkStyle {
-    attrs?: {
-        '.connection'?: {
-            fill?: string;
-            stroke?: string;
-            'stroke-width'?: number;
-        },
-        '.marker-source'?: {
-            fill?: string;
-            stroke?: string;
-            'stroke-width'?: number;
-            d?: string;
-        },
-        '.marker-target'?: {
-            fill?: string;
-            stroke?: string;
-            'stroke-width'?: number;
-            d?: string;
-        }
-    };
-    labels?: LinkLabelStyle[];
-    connector?: {
-        name?: string;
-        args?: {
-            radius?: number;
-        };
-    };
-    router?: {
-        name?: string;
-        args?: {
-            startDirections?: string[];
-            endDirections?: string[];
-            excludeTypes?: string[];
-        };
-    };
-    z?: number;
-}
 
 export class UIElementView extends joint.dia.ElementView {
     model: Element;
@@ -303,37 +243,38 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
 
-        let style = _.cloneDeep(DEFAULT_STYLE);
-        let labelStyle;
+        let style = cloneDeep(DEFAULT_LINK_STYLE);
 
-        if (this.view.getOptions().customLinkStyle) {
-            style = _.merge(style, this.view.getOptions().customLinkStyle(this.model));
-        } else {
-            if (this.model.get('layoutOnly')) {
-                style = _.merge(style, {
-                    attrs: {
-                        '.connection': {'stroke-dasharray': '5,5'},
-                        '.marker-target': {'fill': 'white'},
-                    },
-                });
+        if (this.model.layoutOnly) {
+            style = merge(style, {
+                attrs: {
+                    '.connection': {'stroke-dasharray': '5,5'},
+                    '.marker-target': {'fill': 'white'},
+                },
+            });
+        }
+
+        if (this.view.options.customLinkStyle) {
+            const customStyle = this.view.options.customLinkStyle(this.model);
+            if (customStyle) {
+                style = merge(style, cloneDeep(customStyle));
             }
         }
 
+        let labelStyle;
         if (typeModel && typeModel.get('showLabel')) {
             labelStyle = {
                 labels: [{
                     attrs: {text: {
                         text: this.view.getLinkLabel(linkTypeId).text,
                     }},
-                }]
+                }],
             };
         } else {
-            labelStyle = {
-                labels: []
-            };
+            labelStyle = {labels: []};
         }
 
-        style = _.merge(style, labelStyle);
+        style = merge(style, labelStyle);
         this.model.set(style);
     }
 }

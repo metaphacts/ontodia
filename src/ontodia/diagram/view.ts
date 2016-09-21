@@ -16,11 +16,11 @@ import { printPaper } from '../viewUtils/printPaper';
 import {
     toSVG, toSVGOptions, toDataURL, toDataURLOptions,
 } from '../viewUtils/toSvg';
-import { UIElementView, LinkView, LinkStyle } from './elementViews';
+import { UIElementView, LinkView } from './elementViews';
 
 export interface DiagramViewOptions {
     elementColor?: (elementModel: ElementModel) => string;
-    customLinkStyle?: (link: Link) => LinkStyle;
+    customLinkStyle?: (link: Link) => joint.dia.LinkAttributes;
 }
 
 /**
@@ -59,7 +59,7 @@ export class DiagramView extends Backbone.Model {
         ],
     };
 
-    private options: DiagramViewOptions;
+    readonly options: DiagramViewOptions;
 
     constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
         super();
