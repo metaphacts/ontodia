@@ -278,9 +278,9 @@ export class DiagramModel extends Backbone.Model {
                 // only keep link if it's type info exists
                 if (this.linkTypes[linkModel.linkTypeId]) {
                     const link = this.linkInstances(linkModel);
-                    link.trigger('state:loaded');
                     // link exists in underlying data, remove mark
                     link.set('layoutOnly', false);
+                    link.trigger('state:loaded');
                 }
             }
         }
@@ -378,7 +378,9 @@ export class DiagramModel extends Backbone.Model {
     private linkInstances(linkModel: LinkModel, options?: {ignoreCommandManager?: boolean}): Link {
         const existingLink = this.getLink(linkModel);
         if (existingLink) {
-          existingLink.set('layoutOnly', false);
+          if (existingLink.layoutOnly) {
+            existingLink.set('layoutOnly', false);
+          }
           return existingLink;
         }
         const link = new Link({

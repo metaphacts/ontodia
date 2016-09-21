@@ -50,6 +50,9 @@ export class Element extends UIElement {
  *     source: { id: string }
  *     target: { id: string }
  *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
+ * 
+ * Events:
+ *     state:loaded
  */
 export class Link extends joint.dia.Link {
     markup: string;

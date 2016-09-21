@@ -96,6 +96,7 @@ namespace joint {
                     fill?: string;
                     stroke?: string;
                     'stroke-width'?: number;
+                    'stroke-dasharray'?: string;
                 },
                 '.marker-source'?: {
                     fill?: string;

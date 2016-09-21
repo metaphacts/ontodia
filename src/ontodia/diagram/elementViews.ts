@@ -8,14 +8,6 @@ import { Element, Link, FatLinkType } from './elements';
 import { uri2name } from './model';
 import DiagramView from './view';
 
-const DEFAULT_LINK_STYLE: joint.dia.LinkAttributes = {
-    attrs: {
-        '.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z'},
-    },
-    labels: [{position: 0.5}],
-    z: 0,
-};
-
 export class UIElementView extends joint.dia.ElementView {
     model: Element;
     private view: DiagramView;
@@ -243,16 +235,7 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
 
-        let style = cloneDeep(DEFAULT_LINK_STYLE);
-
-        if (this.model.layoutOnly) {
-            style = merge(style, {
-                attrs: {
-                    '.connection': {'stroke-dasharray': '5,5'},
-                    '.marker-target': {'fill': 'white'},
-                },
-            });
-        }
+        let style = getDefaultLinkStyle(this.model.layoutOnly);
 
         if (this.view.options.customLinkStyle) {
             const customStyle = this.view.options.customLinkStyle(this.model);
@@ -277,4 +260,18 @@ export class LinkView extends joint.dia.LinkView {
         style = merge(style, labelStyle);
         this.model.set(style);
     }
+}
+
+function getDefaultLinkStyle(layoutOnly: boolean): joint.dia.LinkAttributes {
+    return {
+        attrs: {
+            '.marker-target': {
+                d: 'M 10 0 L 0 5 L 10 10 z',
+                'fill': layoutOnly ? 'white' : null,
+            },
+            '.connection': {'stroke-dasharray': layoutOnly ? '5,5' : null},
+        },
+        labels: [{position: 0.5}],
+        z: 0,
+    };
 }
