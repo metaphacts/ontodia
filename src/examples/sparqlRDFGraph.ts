@@ -6,6 +6,65 @@ import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder } from '../
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
 
+const GRAPH = [
+    {
+        subject: {
+            "type": "uri",
+            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
+        },
+        predicate: {
+            "type": "uri",
+            "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+        },
+        object: {
+            "type": "uri",
+            "value": "http://www.cidoc-crm.org/cidoc-crm/E22_Man-Made_Object"
+        }
+    },
+    {
+        subject: {
+            "type": "uri",
+            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
+        },
+        predicate: {
+            "type": "uri",
+            "value": "http://www.cidoc-crm.org/cidoc-crm/P43_has_dimension"
+        },
+        object: {
+            "type": "uri",
+            "value": "http://collection.britishmuseum.org/id/object/JCF8939/height/1"
+        }
+    },
+    {
+        subject: {
+            "type": "uri",
+            "value": "http://www.britishmuseum.org/collectionimages/AN00230/AN00230739_001_l.jpg/digiprocess"
+        },
+        predicate: {
+            "type": "uri",
+            "value": "http://www.ics.forth.gr/isl/CRMdig/L1_digitized"
+        },
+        object: {
+            "type": "uri",
+            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
+        }
+    },
+    {
+        subject: {
+            "type": "uri",
+            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
+        },
+        predicate: {
+            "type": "uri",
+            "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+        },
+        object: {
+            "type": "uri",
+            "value": "http://www.researchspace.org/ontology/Thing"
+        }
+    }
+];
+
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.createElement('div');
     container.id = 'root';
@@ -27,66 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
-                let graph = [
-                    {
-                        subject: {
-                            "type": "uri",
-                            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
-                        },
-                        predicate: {
-                            "type": "uri",
-                            "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-                        },
-                        object: {
-                            "type": "uri",
-                            "value": "http://www.cidoc-crm.org/cidoc-crm/E22_Man-Made_Object"
-                        }
-                    },
-                    {
-                        subject: {
-                            "type": "uri",
-                            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
-                        },
-                        predicate: {
-                            "type": "uri",
-                            "value": "http://www.cidoc-crm.org/cidoc-crm/P43_has_dimension"
-                        },
-                        object: {
-                            "type": "uri",
-                            "value": "http://collection.britishmuseum.org/id/object/JCF8939/height/1"
-                        }
-                    },
-                    {
-                        subject: {
-                            "type": "uri",
-                            "value": "http://www.britishmuseum.org/collectionimages/AN00230/AN00230739_001_l.jpg/digiprocess"
-                        },
-                        predicate: {
-                            "type": "uri",
-                            "value": "http://www.ics.forth.gr/isl/CRMdig/L1_digitized"
-                        },
-                        object: {
-                            "type": "uri",
-                            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
-                        }
-                    },
-                    {
-                        subject: {
-                            "type": "uri",
-                            "value": "http://collection.britishmuseum.org/id/object/JCF8939"
-                        },
-                        predicate: {
-                            "type": "uri",
-                            "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-                        },
-                        object: {
-                            "type": "uri",
-                            "value": "http://www.researchspace.org/ontology/Thing"
-                        }
-                    }
-                ];
-
-                graphBuilder.getGraphFromRDFGraph(graph).then(response => model.importLayout({
+                graphBuilder.getGraphFromRDFGraph(GRAPH).then(response => model.importLayout({
                     dataProvider: sparqlDataProvider,
                     preloadedElements: response.preloadedElements,
                     preloadedLinks: response.preloadedLinks,

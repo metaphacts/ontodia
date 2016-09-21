@@ -74,7 +74,7 @@ export class GraphBuilder {
     } {
         const sElements: Sparql.ConstructElement[] = response;
         const elements: Dictionary<boolean> = {};
-        let links: LinkModel[] = [];
+        const links: LinkModel[] = [];
 
         for (const constructElement of sElements) {
             if (!elements[constructElement.subject.value]) { elements[constructElement.subject.value] = true; }
