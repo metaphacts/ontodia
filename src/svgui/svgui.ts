@@ -58,7 +58,8 @@ export function measure(element: UIElement, maxSize: Vector): Vector {
     if (DEBUG && (!size ||
         /* null */      size.x === null || size.y === null ||
         /* undefined */ size.x === undefined || size.y === undefined ||
-        /* NaN */       size.x !== size.x || size.y !== size.y
+        /* NaN */       size.x !== size.x || size.y !== size.y ||
+        /* negative */  size.x < 0 || size.y < 0
     )) {
         const typeName = element.constructor ? element.constructor.name : undefined;
         throw new SvguiError(`Invalid '${typeName}' measured size: ${JSON.stringify(size)}`);
@@ -220,7 +221,7 @@ export class Label extends UIElement {
                 let lineWidth = textInfo(this.textLines[i], this.get('textClass')).width;
                 if (lineWidth > width) { width = lineWidth; }
             }
-            return vector(width, height);
+            return vector(width, Math.max(height, 0));
         }
     }
     arrange(x: number, y: number, size: Vector) {
@@ -501,7 +502,7 @@ export class Stack extends UIElement {
             const heightLeft = maxSize.y - totalHeight;
             const childSize = measure(child, vector(maxSize.x, heightLeft));
             totalHeight += childSize.y;
-            maxWidth = Math.max(maxSize.x, childSize.x);
+            maxWidth = Math.max(maxWidth, childSize.x);
         }
 
         return vector(Math.min(maxWidth, maxSize.x), totalHeight);
