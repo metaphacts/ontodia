@@ -26,14 +26,12 @@ export interface DiagramViewOptions {
 /**
  * Properties:
  *     language: string
- *     elementWithHalo: Element - current element with Halo; if multiple elements selected then null
  */
 export class DiagramView extends Backbone.Model {
-    private paper: joint.dia.Paper;
-    private paperScroller: PaperArea;
-    // private halo: joint.ui.Halo;
-    // private selectionView: joint.ui.SelectionView;
-    // private commandManager: joint.dia.CommandManager;
+    readonly paper: joint.dia.Paper;
+    paperArea: PaperArea;
+
+    readonly selection = new Backbone.Collection<Element>();
 
     private $svg: JQuery;
     private $documentBody: JQuery;
@@ -65,7 +63,6 @@ export class DiagramView extends Backbone.Model {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
-            // TODO handle auto resize (or better: auto resize + scroll from Rappid)
             model: this.model.graph,
             gridSize: 1,
             elementView: UIElementView,
@@ -80,32 +77,11 @@ export class DiagramView extends Backbone.Model {
         this.options = options || {};
 
         this.setupTextSelectionPrevention();
-        this.configureScroller(rootElement);
-        // this.configureCommandManager();
-        // this.configureSnaplines();
+        this.configureArea(rootElement);
         this.configureSelection();
-        // this.configureHalo();
         this.enableDragAndDropSupport();
 
-        // Key handler (key=delete=46)
-        $('html').keyup(e => {
-            if (e.keyCode === 46) {
-                const currentElement = this.getElementWithHalo();
-                if (currentElement) {
-                    this.model.graph.trigger('batch:start');
-                    currentElement.remove();
-                    this.model.graph.trigger('batch:stop');
-                }
-                // else if(localThis.selectionView && localThis.selectionView.model){
-                //     var models = localThis.selectionView.model.models;
-                //     localThis.selectionView.cancelSelection();
-                //     this.model.graph.trigger("batch:start");
-                //     for (var i = 0; i < models.length; i++) {
-                //         models[i].remove();
-                // }
-                // this.model.graph.trigger("batch:stop");
-            }
-        });
+        $('html').keyup(this.onKeyUp);
 
         let indicator: Indicator;
         const onLoaded = (elementCount?: number, error?: any) => {
@@ -143,7 +119,7 @@ export class DiagramView extends Backbone.Model {
             this.model.trigger('state:renderDone');
         });
         this.listenTo(model, 'state:dataLoaded', () => {
-            // this.commandManager.reset();
+            this.model.resetHistory();
             this.zoomToFit();
         });
     }
@@ -151,12 +127,7 @@ export class DiagramView extends Backbone.Model {
     getLanguage(): string { return this.get('language'); }
     setLanguage(value: string) { this.set('language', value); }
 
-    getElementWithHalo(): Element { return this.get('elementWithHalo'); }
-
-    // undo() { this.commandManager.undo(); }
-    // redo() { this.commandManager.redo(); }
-    // initBatchCommand() { this.commandManager.initBatchCommand(); }
-    // storeBatchCommand() { this.commandManager.storeBatchCommand(); }
+    cancelSelection() { this.selection.reset([]); }
 
     print() {
         const $html = $(document.documentElement);
@@ -179,22 +150,22 @@ export class DiagramView extends Backbone.Model {
         });
     }
 
-    zoomIn() { this.paperScroller.zoom(0.2, { max: 2 }); }
-    zoomOut() { this.paperScroller.zoom(-0.2, { min: 0.2 }); }
+    zoomIn() { this.paperArea.zoom(0.2, { max: 2 }); }
+    zoomOut() { this.paperArea.zoom(-0.2, { min: 0.2 }); }
     zoomToFit() {
         if (this.model.graph.get('cells').length > 0) {
-            this.paperScroller.zoomToFit({
+            this.paperArea.zoomToFit({
                 minScale: 0.2,
                 maxScale: 2,
             });
-            this.paperScroller.zoom(-0.1, { min: 0.2 });
+            this.paperArea.zoom(-0.1, { min: 0.2 });
         } else {
-            this.paperScroller.center();
+            this.paperArea.center();
         }
     }
 
     showIndicator(operation?: Promise<any>) {
-        this.paperScroller.center();
+        this.paperArea.center();
         const svgElement: SVGElement = <any>this.paper.$('svg').get(0);
         const svgBoundingRect = svgElement.getBoundingClientRect();
         this.indicator = WrapIndicator.wrap(d3.select(svgElement), {
@@ -207,10 +178,25 @@ export class DiagramView extends Backbone.Model {
             operation.then(() => {
                 this.indicator.remove();
             }).catch(error => {
-                console.log(error);
+                console.error(error);
                 this.indicator.status('Unknown error occured');
                 this.indicator.error();
             });
+        }
+    }
+
+    private onKeyUp = (e: KeyboardEvent) => {
+        const DELETE_KEY_CODE = 46;
+        if (e.keyCode === DELETE_KEY_CODE) {
+            const elementsToRemove = this.selection.toArray();
+            if (elementsToRemove.length === 0) { return; }
+
+            this.cancelSelection();
+            this.model.graph.trigger('batch:start');
+            for (const element of elementsToRemove) {
+                element.remove();
+            }
+            this.model.graph.trigger('batch:stop');
         }
     }
 
@@ -230,140 +216,44 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    private preventTextSelection() {
+    preventTextSelection() {
         this.$documentBody.addClass('unselectable');
     }
 
-    private configureScroller(rootElement: HTMLElement) {
-        this.paperScroller = new PaperArea({paper: this.paper});
+    private configureArea(rootElement: HTMLElement) {
+        this.paperArea = new PaperArea({paper: this.paper});
         this.paper.on('blank:pointerdown', (evt) => {
             if (evt.ctrlKey || this.model.isViewOnly()) {
                 this.preventTextSelection();
-                // this.selectionView.cancelSelection();
-                this.paperScroller.startPanning(evt);
+                this.cancelSelection();
+                this.paperArea.startPanning(evt);
             }
         });
-        $(rootElement).append(this.paperScroller.render().el);
+        $(rootElement).append(this.paperArea.render().el);
 
         this.listenTo(this.paper, 'render:done', () => {
-            this.paperScroller.adjustPaper();
-            this.paperScroller.center();
+            this.paperArea.adjustPaper();
+            this.paperArea.center();
         });
 
         // automatic paper adjust on element dragged
         this.listenTo(this.paper, 'cell:pointerup', () => {
-            this.paperScroller.adjustPaper();
+            this.paperArea.adjustPaper();
         });
     }
 
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
-        // HACK: need to know whether halo is visible or not
-        // var superRemove = joint.ui.Halo.prototype['remove'];
-        // joint.ui.Halo.prototype['remove'] = function () {
-        //     var result = superRemove.apply(this, arguments);
-        //     this.trigger('halo-remove', this);
-        //     return result;
-        // };
 
-        this.paper.on('cell:pointerup', (cellView, evt) => {
+        this.paper.on('cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
             // We don't want a Halo for links.
             if (cellView.model instanceof joint.dia.Link) { return; }
             if (evt.ctrlKey || evt.metaKey) { return; }
-            // this.selectionView.cancelSelection();
-            this.setSelectedElement(cellView);
+            const element = cellView.model as Element;
+            this.selection.reset([element]);
+            element.addToFilter();
         });
     }
-
-private setSelectedElement(cellView: joint.dia.CellView) {
-        // var halo = new joint.ui.Halo({ graph: this.model.graph, paper: this.paper, cellView: cellView });
-        // halo.removeHandle('unlink');
-        // halo.addHandle({ name: 'add-to-filter', position: 'se', icon: 'images/icons/halo/add-to-filter.png' });
-
-        // const getExpandOrCollapseIconUri = (model: Backbone.Model) => cellView.model.get('isExpanded')
-        //     ? 'images/icons/halo/collapse-properties.png'
-        //     : 'images/icons/halo/expand-properties.png';
-        // halo.addHandle({ name: 'expand-properties', position: 's', icon: getExpandOrCollapseIconUri(cellView.model) });
-
-        // halo.on('action:add-to-filter:pointerdown', (evt) => {
-        //     evt.stopPropagation();
-        //     cellView.model.trigger('add-to-filter', cellView.model);
-        // });
-        // halo.on('action:expand-properties:pointerdown', (evt) => {
-        //     evt.stopPropagation();
-        //     cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
-        // });
-        // halo.on('halo-remove', (self: joint.ui.Halo) => {
-        //     this.set('elementWithHalo', null);
-        //     if (self.options.cellView) { this.stopListening(self.options.cellView.model); }
-        //     delete self.options.cellView;
-        // });
-        // halo.listenTo(cellView.model, 'change:isExpanded', (model: Backbone.Model, value: boolean) => {
-        //     halo.changeHandle('expand-properties', { position: 's', icon: getExpandOrCollapseIconUri(model) });
-        // });
-        // this.halo = halo;
-        this.set('elementWithHalo', cellView.model);
-        // halo.render();
-        cellView.model.trigger('add-to-filter', cellView.model);
-    }
-
-    // private configureSelection() {
-    //     const selection = new Backbone.Collection<Element>();
-    //     this.selectionView = new joint.ui.SelectionView({
-    //         paper: this.paper,
-    //         graph: this.model.graph,
-    //         model: selection,
-    //     });
-
-    //     if (!this.model.isViewOnly()) {
-    //         this.paper.on('blank:pointerdown', (evt) => {
-    //             if (!evt.ctrlKey) {
-    //                 this.preventTextSelection();
-    //                 this.selectionView.startSelecting(evt);
-    //             }
-    //         });
-    //         this.paper.on('cell:pointerup', (cellView, evt) => {
-    //             const haloCellView = this.halo ? this.halo.options.cellView : null;
-    //             if ((evt.ctrlKey || evt.metaKey) &&
-    //                 !(cellView.model instanceof joint.dia.Link) &&
-    //                 cellView !== haloCellView
-    //             ) {
-    //                 selection.add(cellView.model);
-    //                 this.selectionView.createSelectionBox(cellView);
-    //                 if (selection.length === 1 && haloCellView) {
-    //                     this.halo.remove();
-    //                     selection.add(<Element>haloCellView.model);
-    //                     this.selectionView.createSelectionBox(haloCellView);
-    //                 }
-    //             }
-    //         });
-    //         this.selectionView.on('selection-box:pointerdown', (evt) => {
-    //             if (evt.ctrlKey || evt.metaKey) {
-    //                 const cell = selection.get($(evt.target).data('model'));
-    //                 if (cell) {
-    //                     selection.reset(selection.without(cell));
-    //                     this.selectionView.destroySelectionBox(this.paper.findViewByModel(cell));
-    //                 }
-    //             }
-    //         });
-    //         this.selectionView.on('selection-box:pointerup', () => { this.paperScroller.adjustPaper(); });
-    //     }
-    // }
-
-    // private configureCommandManager() {
-    //     this.commandManager = new joint.dia.CommandManager({
-    //         graph: this.model.graph,
-    //         cmdBeforeAdd: (cmdName: string, cell, graph, options) => {
-    //             const ignore = options && options.ignoreCommandManager;
-    //             return !cmdName.match(/^change:(?:size|selectedInFilter)$/) && !ignore;
-    //         },
-    //     });
-    // }
-
-    // private configureSnaplines() {
-    //     const snaplines = new joint.ui.Snaplines({ paper: this.paper });
-    //     snaplines.startListening();
-    // }
 
     private enableDragAndDropSupport() {
         const svg = this.$svg.get(0);
@@ -372,8 +262,8 @@ private setSelectedElement(cellView: joint.dia.CellView) {
             e.dataTransfer.dropEffect = 'move';
             return false;
         });
-        svg.addEventListener('dragenter', function (e) {});
-        svg.addEventListener('dragleave', function (e) {});
+        svg.addEventListener('dragenter', function (e) { /* nothing */});
+        svg.addEventListener('dragleave', function (e) { /* nothing */ });
         svg.addEventListener('drop', (e: DragEvent) => {
             e.preventDefault();
             let elementIds: string[];
@@ -389,21 +279,18 @@ private setSelectedElement(cellView: joint.dia.CellView) {
             }
             if (!elementIds) { return; }
 
-            // this.initBatchCommand();
+            this.model.initBatchCommand();
 
-            // this.selectionView.cancelSelection();
-            // if (this.halo) { this.halo.remove(); }
-            // var selection: Backbone.Collection<Element> = this.selectionView.model;
-            if (this.get('elementWithHalo')) { this.set('elementWithHalo', null); }
+            let elementsToSelect: Element[] = [];
 
             let totalXOffset = 0;
             for (const elementId of elementIds) {
                 const element = this.getDragAndDropElement(elementId);
                 if (element) {
-                    const currentOffset = this.paperScroller.$el.offset();
+                    const currentOffset = this.paperArea.$el.offset();
                     const relX = e.pageX - currentOffset.left;
                     const relY = e.pageY - currentOffset.top;
-                    const graphPoint = this.paperScroller.toLocalPoint(relX, relY);
+                    const graphPoint = this.paperArea.toLocalPoint(relX, relY);
                     element.set('presentOnDiagram', true);
                     element.set('selectedInFilter', false);
                     const size: { width: number; height: number; } = element.get('size');
@@ -416,17 +303,17 @@ private setSelectedElement(cellView: joint.dia.CellView) {
                         y: graphPoint.y,
                     }, <any>{ignoreCommandManager: true});
                     totalXOffset += size.width + 20;
-                    this.setSelectedElement(this.paper.findViewByModel(element));
-                    // if (elementIds.length > 1) {
-                    //     selection.add(element);
-                    //     this.selectionView.createSelectionBox(this.paper.findViewByModel(element));
-                    // } else {
-                    //     this.renderHalo(this.paper.findViewByModel(element));
-                    // }
+
+                    elementsToSelect.push(element);
                 }
             }
 
-            // this.storeBatchCommand();
+            this.selection.reset(elementsToSelect);
+            if (elementsToSelect.length === 1) {
+                elementsToSelect[0].addToFilter();
+            }
+
+            this.model.storeBatchCommand();
         });
     }
 

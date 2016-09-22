@@ -211,9 +211,27 @@ namespace joint {
             getConnectionLength(): number;
             getPointAtLength(length: number): { x: number; y: number; };
         }
+
+        /** Rappid only */
+        class CommandManager extends Backbone.Model {
+            constructor(options?: CommandManagerOptions);
+            initialize();
+            undo();
+            initBatchCommand();
+            storeBatchCommand();
+            redo();
+            reset();
+        }
+
+        /** Rappid only */
+        interface CommandManagerOptions {
+            graph: Graph;
+            cmdBeforeAdd?: (cmdName: string, cell: Cell, graph: Graph, options: any) => boolean;
+        }
     }
 
     namespace ui {
+        /** Rappid only */
         class PaperScroller extends Backbone.View<Backbone.Model> {
             startPanning(evt): void;
             zoom(size: any, opts: any);
@@ -221,6 +239,73 @@ namespace joint {
             toLocalPoint(x: number, y: number): {x: number; y: number};
             center();
             adjustPaper(): void;
+        }
+
+        /** Rappid only */
+        interface SnaplinesOptions extends Backbone.ViewOptions<Backbone.Model> {
+            paper: joint.dia.Paper;
+        }
+
+        /** Rappid only */
+        class Snaplines extends Backbone.View<Backbone.Model> {
+            constructor(options: SnaplinesOptions);
+            startListening();
+        }
+
+        /** Rappid only */
+        interface SelectionViewOptions extends Backbone.ViewOptions<any> {
+            paper: joint.dia.Paper;
+            graph: joint.dia.Graph;
+        }
+        
+        /** Rappid only */
+        class SelectionView extends Backbone.View<any> {
+            constructor(options: SelectionViewOptions);
+            startSelecting(evt): void;
+            cancelSelection();
+            createSelectionBox(view: joint.dia.CellView);
+            destroySelectionBox(view: joint.dia.CellView);
+        }
+
+        /** Rappid only */
+        class Halo extends Backbone.View<Backbone.Model> {
+            constructor(options: HaloOptions);
+            options: HaloOptions;
+            addHandle(options: { name:string; position: string; icon: string; });
+            removeHandle(name: string): void;
+            changeHandle(name: string, options: { position: string; icon: string; }): void;
+        }
+
+        /** Rappid only */
+        interface HaloOptions {
+            graph: joint.dia.Graph;
+            paper: joint.dia.Paper;
+            cellView: joint.dia.CellView;
+            /**
+             * The preferred side for a self-loop link created from Halo ("top"|"bottom"|"left"|"right"), default is "top"
+             */
+            linkLoopPreferredSide?: string;
+            /**
+             * The self-loop link width in pixels, default is 40
+             */
+            linkLoopWidth?: number;
+            /**
+             * The angle increments the rotate action snaps to, default is 15
+             */
+            rotateAngleGrid?: number;
+            /**
+             * A function that returns an HTML string with the content that will be used in the information box below the element.
+             * Default is x,y,width,height coordinates and dimensions of the element.
+             */
+            boxContent?: boolean | ((cellView: joint.dia.CellView, boxDOMElement: HTMLElement) => string);
+            /**
+             * If set to true, the model position and dimensions will be used as a basis for the Halo tools position.
+             * By default, this is set to false which causes the Halo tools position be based on the bounding box of
+             * the element view. Sometimes though, your shapes can have certain SVG sub elements that stick out
+             * of the view and you don't want these sub elements to affect the Halo tools position.
+             * In this case, set the useModelGeometry to true.
+             */
+            useModelGeometry?: boolean;
         }
     }
 

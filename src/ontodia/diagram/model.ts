@@ -9,6 +9,8 @@ import { DataProvider } from '../data/provider';
 
 import { Element, Link, FatLinkType } from './elements';
 
+export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
+
 /**
  * Model of diagram.
  *
@@ -22,6 +24,12 @@ import { Element, Link, FatLinkType } from './elements';
  *     state:renderStart
  *     state:renderDone
  *     state:dataLoaded
+ *
+ *     history:undo
+ *     history:redo
+ *     history:reset
+ *     history:initBatchCommand
+ *     history:storeBatchCommand
  */
 export class DiagramModel extends Backbone.Model {
     private static serializedCellProperties = [
@@ -51,6 +59,12 @@ export class DiagramModel extends Backbone.Model {
 
     sourceOf(link: Link) { return this.elements[link.get('source').id]; }
     targetOf(link: Link) { return this.elements[link.get('target').id]; }
+
+    undo() { this.trigger('history:undo'); }
+    redo() { this.trigger('history:redo'); }
+    resetHistory() { this.trigger('history:reset'); }
+    initBatchCommand() { this.trigger('history:initBatchCommand'); }
+    storeBatchCommand() { this.trigger('history:storeBatchCommand'); }
 
     private initializeExternalAddRemoveSupport() {
         // override graph.addCell to support CommandManager's undo/redo
@@ -313,10 +327,10 @@ export class DiagramModel extends Backbone.Model {
         return this.createIfNeeded(elementModel, {requestData: true});
     }
 
-    initializeElement(element: Element, options?: {requestData?: boolean}) {
+    initializeElement(element: Element, options?: { requestData?: boolean }) {
         this.elements[element.id] = element;
 
-        element.on('change:presentOnDiagram', (self: Element, value: boolean, options: any) => {
+        element.on('change:presentOnDiagram', (self: Element, value: boolean, options: { isFromHandler?: boolean }) => {
             if (options.isFromHandler) { return; }
             const isPresentOnDiagram = element.get('presentOnDiagram');
             if (isPresentOnDiagram) {
@@ -367,7 +381,11 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private onLinkInfoLoaded(links: LinkModel[]) {
-        _.each(links, linkModel => this.linkInstances(linkModel, {ignoreCommandManager: true}));
+        this.initBatchCommand();
+        for (const linkModel of links) {
+            this.linkInstances(linkModel);
+        }
+        this.storeBatchCommand();
     }
 
     isSourceAndTargetVisible(link: Link) {
@@ -375,11 +393,11 @@ export class DiagramModel extends Backbone.Model {
             && this.targetOf(link).get('presentOnDiagram');
     }
 
-    private linkInstances(linkModel: LinkModel, options?: {ignoreCommandManager?: boolean}): Link {
+    private linkInstances(linkModel: LinkModel, options?: IgnoreCommandHistory): Link {
         const existingLink = this.getLink(linkModel);
         if (existingLink) {
           if (existingLink.layoutOnly) {
-            existingLink.set('layoutOnly', false);
+            existingLink.set('layoutOnly', false, {ignoreCommandManager: true} as IgnoreCommandHistory);
           }
           return existingLink;
         }

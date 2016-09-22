@@ -24,7 +24,7 @@ module.exports = {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
             {test: /\.css$/, loader: 'style-loader!css-loader'},
-            {test: /\.jpe?g$/, loader: 'file?name=images/[name].[ext]'},
+            {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
             {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
         ]

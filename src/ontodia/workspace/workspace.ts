@@ -26,6 +26,8 @@ export interface Props {
 }
 
 export class Workspace extends Component<Props, {}> {
+    private markup: WorkspaceMarkup;
+
     private model: DiagramModel;
     private diagram: DiagramView;
     private tree: ClassTree;
@@ -41,8 +43,8 @@ export class Workspace extends Component<Props, {}> {
         return createElement(WorkspaceMarkup, {
             isViewOnly: this.props.isViewOnly,
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                onUndo: () => {/* this.diagram.undo() */},
-                onRedo: () => {/* this.diagram.redo() */},
+                onUndo: () => this.model.undo(),
+                onRedo: () => this.model.redo(),
                 onZoomIn: () => this.diagram.zoomIn(),
                 onZoomOut: () => this.diagram.zoomOut(),
                 onZoomToFit: () => this.diagram.zoomToFit(),
@@ -63,49 +65,67 @@ export class Workspace extends Component<Props, {}> {
                 isEmbeddedMode: this.props.isViewOnly,
                 isDiagramSaved: this.props.isDiagramSaved,
             }),
-            ref: markup => {
-                if (markup) {
-                    this.diagram = new DiagramView(this.model, markup.chartPanel, this.props.viewOptions);
-                    if (!this.props.isViewOnly) {
-                        this.filter = new FilterView({
-                            model: new FilterModel(this.diagram.model),
-                            view: this.diagram,
-                            el: markup.filterPanel,
-                        }).render();
-
-                        this.tree = new ClassTree({
-                            model: new FilterModel(this.diagram.model),
-                            view: this.diagram,
-                            el: markup.classTreePanel,
-                        }).render();
-
-                        this.tree.on('action:classSelected', (classId: string) => {
-                            this.filter.model.filterByType(classId);
-                        });
-
-                        this.linksToolbox = new LinkTypesToolbox({
-                            model: new LinkTypesToolboxModel(this.model),
-                            view: this.diagram,
-                            el: markup.linkTypesPanel,
-                        });
-
-                        const panelRoot = $(markup.element);
-                        panelRoot.find('.filter-panel').each(resizePanel);
-                        panelRoot.find('.filter-item').each(resizeItem);
-
-                        $(window).resize(() => {
-                            if (!this.props.isViewOnly) {
-                                panelRoot.find('.filter-panel').each(setPanelHeight);
-                            }
-                        });
-
-                        if (!this.props.isViewOnly && !this.props.hideTutorial) {
-                            showTutorialIfNotSeen();
-                        }
-                    }
-                }
-            },
+            ref: markup => { this.markup = markup; },
         });
+    }
+
+    componentDidMount() {
+        this.diagram = new DiagramView(this.model, this.markup.chartPanel, this.props.viewOptions);
+        if (this.props.isViewOnly) { return; }
+
+        this.filter = new FilterView({
+            model: new FilterModel(this.diagram.model),
+            view: this.diagram,
+            el: this.markup.filterPanel,
+        }).render();
+
+        this.tree = new ClassTree({
+            model: new FilterModel(this.diagram.model),
+            view: this.diagram,
+            el: this.markup.classTreePanel,
+        }).render();
+
+        this.tree.on('action:classSelected', (classId: string) => {
+            this.filter.model.filterByType(classId);
+        });
+
+        this.linksToolbox = new LinkTypesToolbox({
+            model: new LinkTypesToolboxModel(this.model),
+            view: this.diagram,
+            el: this.markup.linkTypesPanel,
+        });
+
+        const panelRoot = $(this.markup.element);
+        panelRoot.find('.filter-panel').each(resizePanel);
+        panelRoot.find('.filter-item').each(resizeItem);
+
+        $(window).resize(this.onWindowResize);
+
+        if (!this.props.isViewOnly && !this.props.hideTutorial) {
+            showTutorialIfNotSeen();
+        }
+    }
+
+    componentWillUnmount() {
+        if (this.filter) {
+            this.filter.remove();
+        }
+
+        if (this.tree) {
+            this.tree.remove();
+        }
+
+        if (this.linksToolbox) {
+            this.linksToolbox.remove();
+        }
+
+        $(window).off('resize', this.onWindowResize);
+    }
+
+    private onWindowResize = () => {
+        if (this.markup && !this.props.isViewOnly) {
+            $(this.markup.element).find('.filter-panel').each(setPanelHeight);
+        }
     }
 
     public getModel() {

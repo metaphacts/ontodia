@@ -65,20 +65,6 @@ export class EditorToolbar extends React.Component<Props, State> {
             </button>
         );
 
-        // let btnUndo = (
-        //     <button type='button' className='btn btn-default'
-        //             title='Undo' onClick={this.props.onUndo}>
-        //         <span className='glyphicon glyphicon-arrow-left'/>
-        //     </button>
-        // );
-
-        // let btnRedo = (
-        //     <button type='button' className='btn btn-default'
-        //             title='Redo' onClick={this.props.onRedo}>
-        //         <span className='glyphicon glyphicon-arrow-right'/>
-        //     </button>
-        // );
-
         let btnShare = (
             <button type='button' className='btn btn-default'
                     title='Publish or share diagram' onClick={this.props.onShare}>
@@ -127,6 +113,18 @@ export class EditorToolbar extends React.Component<Props, State> {
                             title='Fit to Screen' onClick={this.props.onZoomToFit}>
                         <span className='glyphicon glyphicon-fullscreen'/>
                     </button>
+                    {(nonEmbedded && this.props.onUndo) ? (
+                        <button type='button' className='btn btn-default ontodia-toolbar__undo'
+                            title='Undo' onClick={this.props.onUndo}>
+                            <span className='glyphicon glyphicon-arrow-left'/>
+                        </button>
+                    ) : undefined}
+                    {(nonEmbedded && this.props.onRedo) ? (
+                        <button type='button' className='btn btn-default ontodia-toolbar__redo'
+                            title='Redo' onClick={this.props.onRedo}>
+                            <span className='glyphicon glyphicon-arrow-right'/>
+                        </button>
+                    ) : undefined}
                     <button type='button' className='btn btn-default'
                             title='Export diagram as PNG' onClick={this.onExportPNG}>
                         <span className='glyphicon glyphicon-picture'/> PNG

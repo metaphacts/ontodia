@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 import * as $ from 'jquery';
 
 import LinkTypesToolboxModel from './linksToolboxModel';
-import { Element, Link, FatLinkType } from '../diagram/elements';
+import { Element, FatLinkType } from '../diagram/elements';
 import DiagramView from '../diagram/view';
 
 export { LinkTypesToolboxModel };
@@ -43,7 +43,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
     }
 
     public setLinkState(state: string, options?: {isFromHandler?: boolean}) {
-        // this.view.initBatchCommand();
+        this.view.model.initBatchCommand();
         if (state === 'invisible') {
             this.model.set({visible: false, showLabel: false}, options);
         } else if (state === 'withoutLabels') {
@@ -51,7 +51,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
         } else if (state === 'allVisible') {
             this.model.set({visible: true, showLabel: true}, options);
         }
-        // this.view.storeBatchCommand();
+        this.view.model.storeBatchCommand();
     }
 
     public render(): LinkInToolBox {
@@ -153,14 +153,17 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
             this.render();
         });
         this.listenTo(this.view, 'change:language', this.updateGroupingOfLinkTypes);
-        this.listenTo(this.view, 'change:elementWithHalo', _.debounce((view: DiagramView, element: Element) => {
-            // this function is debounced to prevent excessive updates of toolbox when
-            // user rapidly clicks on elements, because 'elementWithHalo' sets to null
-            // when halo removed from one element and created on another
-            this.model.set('selectedElement', this.view.getElementWithHalo());
+        this.listenTo(this.view.selection, 'add remove reset', _.debounce(() => {
+            // this function is debounced to prevent excessive updates of toolbox
+            // when user rapidly clicks on elements
+            const single = this.view.selection.length === 1
+                ? this.view.selection.first() : null;
+            if (single !== this.model.get('selectedElement')) {
+                this.model.set('selectedElement', single);
+            }
         }, 50));
         this.listenTo(this.model, 'state:beginQuery', () => { this.$el.attr('data-state', 'querying'); });
-        this.listenTo(this.model, 'state:endQuery',   () => {
+        this.listenTo(this.model, 'state:endQuery', () => {
             if (this.model.connectionsOfSelectedElement) {
                 this.$el.attr('data-state', 'finished');
             } else {
@@ -190,11 +193,11 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
                 .appendTo($buttonLabel);
             $('<span/>').attr('class', iconClass).appendTo($buttonLabel);
             $buttonLabel.on('click', () => {
-                // this.view.initBatchCommand();
+                this.view.model.initBatchCommand();
                 _.each(this.views, function (link: LinkInToolBox) {
                     link.setLinkState(optionName, {isFromHandler: false});
                 });
-                // this.view.storeBatchCommand();
+                this.view.model.storeBatchCommand();
             });
         }
 

@@ -5,7 +5,7 @@ var npmDir = path.join(__dirname, 'node_modules');
 
 module.exports = {
     entry: {
-        ontodia: path.join(__dirname, 'index.ts'),
+        ontodia: path.join(__dirname, 'src', 'index.ts'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
@@ -19,7 +19,7 @@ module.exports = {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
             {test: /\.css$/, loader: 'style-loader!css-loader'},
-            {test: /\.jpe?g$/, loader: 'file?name=images/[name].[ext]'},
+            {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
             {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
         ]

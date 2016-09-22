@@ -23,13 +23,13 @@
   },
   "homepage": "https://github.com/ontodia-org/ontodia#readme",
   "scripts": {
-    "build": "node ./node_modules/webpack/bin/webpack.js",
+    "build": "npm run _webpack && npm run _typings",
     "demo": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --port 10444 --config webpack.demo.config.js --content-base dist/",
-    "typings-tsc": "node ./node_modules/typescript/bin/tsc --declaration --outDir dist/dts",
-    "typings-dts-bundle": "node ./node_modules/dts-bundle/lib/dts-bundle.js --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
-    "typings": "npm run typings-tsc && npm run typings-dts-bundle",
-    "test": "npm run build && npm run typings",
-    "prepublish": "npm run build && npm run typings"
+    "_typings-tsc": "node ./node_modules/typescript/bin/tsc --declaration --outDir dist/dts",
+    "_typings-dts-bundle": "node ./node_modules/dts-bundle/lib/dts-bundle.js --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
+    "_typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
+    "test": "npm run build",
+    "_webpack": "node ./node_modules/webpack/bin/webpack.js"
   },
   "dependencies": {
     "d3": "3.5.10",
