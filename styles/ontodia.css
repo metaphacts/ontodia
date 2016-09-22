@@ -565,3 +565,48 @@ html.print-ready, .print-ready body {
     fill: #969696;
     font-size: smaller;
 }
+
+
+/* Halo */
+
+.ontodia-halo {
+    position: absolute;
+    pointer-events: none;
+}
+
+.ontodia-halo__btn {
+    background-size: cover;
+    cursor: pointer;
+    opacity: 0.5;
+    pointer-events: auto;
+    position: absolute;
+    transition: opacity 0.3s;
+}
+
+.ontodia-halo__btn:hover {
+    opacity: 1;
+}
+
+.ontodia-halo__btn--delete {
+    background-image: url("../images/delete.png");
+    height: 16px;
+    top: -16px;
+    right: -16px;
+    width: 16px;
+}
+
+.ontodia-halo__btn--expand {
+    height: 16px;
+    bottom: -17px;
+    left: 50%;
+    margin-left: -8px;
+    width: 16px;
+}
+
+.ontodia-halo__btn--expand-open {
+    background-image: url("../images/expand-properties.png");
+}
+
+.ontodia-halo__btn--expand-close {
+    background-image: url("../images/collapse-properties.png");
+}

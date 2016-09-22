@@ -17,6 +17,7 @@ import {
     toSVG, toSVGOptions, toDataURL, toDataURLOptions,
 } from '../viewUtils/toSvg';
 import { UIElementView, LinkView } from './elementViews';
+import { Halo } from './halo/halo';
 
 export interface DiagramViewOptions {
     elementColor?: (elementModel: ElementModel) => string;
@@ -30,6 +31,7 @@ export interface DiagramViewOptions {
 export class DiagramView extends Backbone.Model {
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
+    private halo: Halo;
 
     readonly selection = new Backbone.Collection<Element>();
 
@@ -121,6 +123,34 @@ export class DiagramView extends Backbone.Model {
         this.listenTo(model, 'state:dataLoaded', () => {
             this.model.resetHistory();
             this.zoomToFit();
+        });
+        this.listenTo(this.selection, 'add remove reset', () => {
+            if (this.halo) {
+                this.halo.remove();
+                this.halo = undefined;
+            }
+
+            if (this.selection.length === 1) {
+                const cellView = this.paper.findViewByModel(this.selection.first());
+                this.halo = new Halo({
+                    paper: this.paper,
+                    cellView: cellView,
+                    onDelete: () => {
+                        const elementsToRemove = this.selection.toArray();
+                        if (elementsToRemove.length === 0) { return; }
+
+                        this.cancelSelection();
+                        this.model.graph.trigger('batch:start');
+                        for (const element of elementsToRemove) {
+                            element.remove();
+                        }
+                        this.model.graph.trigger('batch:stop');
+                    },
+                    onExpand: () => {
+                        cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                    },
+                });
+            }
         });
     }
 
