@@ -574,39 +574,46 @@ html.print-ready, .print-ready body {
     pointer-events: none;
 }
 
-.ontodia-halo__btn {
+.ontodia-halo__delete {
+    background-image: url("../images/delete.png");
     background-size: cover;
     cursor: pointer;
+    height: 16px;
     opacity: 0.5;
     pointer-events: auto;
     position: absolute;
-    transition: opacity 0.3s;
-}
-
-.ontodia-halo__btn:hover {
-    opacity: 1;
-}
-
-.ontodia-halo__btn--delete {
-    background-image: url("../images/delete.png");
-    height: 16px;
     top: -16px;
     right: -16px;
     width: 16px;
+    transition: opacity 0.3s;
 }
 
-.ontodia-halo__btn--expand {
+.ontodia-halo__delete:hover {
+    opacity: 1;
+}
+
+.ontodia-halo__expand {
+    background-size: cover;
+    cursor: pointer;
     height: 16px;
+    opacity: 0.5;
+    pointer-events: auto;
+    position: absolute;
     bottom: -17px;
     left: 50%;
     margin-left: -8px;
     width: 16px;
+    transition: opacity 0.3s;
 }
 
-.ontodia-halo__btn--expand-open {
+.ontodia-halo__expand:hover {
+    opacity: 1;
+}
+
+.ontodia-halo__expand--open {
     background-image: url("../images/expand-properties.png");
 }
 
-.ontodia-halo__btn--expand-close {
+.ontodia-halo__expand--closed {
     background-image: url("../images/collapse-properties.png");
 }
