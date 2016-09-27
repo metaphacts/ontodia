@@ -10,19 +10,20 @@ module.exports = {
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
-        sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),        styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),    },
+        sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
+        styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),
+    },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
         alias: {
             // Backbone provided by joint.js, to prevent module duplication which
             // causes errors when Ontodia uses Backbone models from joint.js
             'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
+            // awful and temporary workaround to reference browser bundle instead of node's, see:
+            // https://github.com/wycats/handlebars.js/issues/1102
+            'handlebars': path.join(npmDir, 'handlebars', 'dist', 'handlebars.min.js'),
         }
     },
-    node: {
-        fs: "empty" 
-    },
-    browser: { fs: false },
     module: {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
@@ -55,12 +56,14 @@ module.exports = {
             title: 'Ontodia SparQL RDF Graph Demo',
             chunks: ['sparqlRDFGraph'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
-        }),        new HtmlWebpackPlugin({
+        }),
+        new HtmlWebpackPlugin({
             filename: 'styleCustomization.html',
             title: 'Ontodia Style Customization Demo',
             chunks: ['styleCustomization'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
-        }),    ],
+        }),
+    ],
     output: {
         path: path.join(__dirname, 'dist', 'examples'),
         filename: '[name].bundle.js',

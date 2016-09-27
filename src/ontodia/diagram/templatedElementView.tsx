@@ -1,17 +1,15 @@
 import * as joint from 'jointjs';
-
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-
+import { hcl } from 'd3';
 import { compile as compileTemplate, registerHelper } from 'handlebars';
 
-import { hcl } from 'd3';
+import { Property } from '../data/model';
+import { getDefaultTemplate } from '../customization/templates/reactDefaultTemplate';
 
 import { Element } from './elements';
-import { Property } from '../data/model';
-
-import DiagramView from './view';
-import { getDefaultTemplate } from '../customization/templates/reactDefaultTemplate';
+import { uri2name } from './model';
+import { DiagramView } from './view';
 
 registerHelper('getProperty', function(props, id) {
     if (props && props[id] && props[id].length > 0) {
@@ -54,7 +52,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         if (this.foreignObject && this.customTemplate && typeof this.customTemplate !== 'string') {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
         }
-        return super.remove();
+        return super.remove() as this;
     }
 
     initialize() {
@@ -159,7 +157,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                 .map((key) => {
                     return {
                         id: key,
-                        name: getNameFromId(key),
+                        name: uri2name(key),
                         properties: this.model.template.properties[key],
                     };
                 });
@@ -210,9 +208,4 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         }
         return this.getTemplateFunction(this.getTemplateOptions());
     }
-}
-
-function getNameFromId(id: string): string {
-    const tokens = id.split('/');
-    return tokens[tokens.length - 1];
 }

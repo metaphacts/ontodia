@@ -39,7 +39,6 @@
 
 .ontodia-person-icon::after {
     content: "\1F464";
-    font-weight: bold;
     min-width: 10px;
     min-height: 10px;
     border-radius: 100px;
