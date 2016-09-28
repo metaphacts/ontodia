@@ -177,7 +177,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     }
     private getStyle(): {icon: string, color: any} {
         if (this.view) {
-            const result = this.view.getElementStyle(this.model.template);
+            const result = this.view.getElementStyle(this.model.template.types);
             const {h, c, l} = result.color;
             return {icon: (result.icon ? result.icon : 'ontodia-default-icon'), color: hcl(h, c, l)};
         } else {
@@ -189,7 +189,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         let template = undefined;
 
         if (this.view) {
-            template = this.view.getElementTemplate(this.model.template);
+            template = this.view.getElementTemplate(this.model.template.types);
             if (!template) {
                 template = getDefaultTemplate();
             }

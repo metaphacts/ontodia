@@ -29,7 +29,7 @@ const CUSTOM_LINK_STYLE = {
             fill: '#4b4a67',
             stroke: '#4b4a67',
             d: 'M5.5,15.499,15.8,21.447,15.8,15.846,25.5,21.447,25.5,9.552,15.8,15.152,15.8,9.552z',
-        }
+        },
     },
     labels: [{
         attrs: {
@@ -52,29 +52,29 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         viewOptions: {
             elementStyleResolvers: [
-                elementModel => {
-                    if (elementModel.types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
+                types => {
+                    if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                         return {icon: 'glyphicon glyphicon-certificate'};
                     }
                 },
-                elementModel => {
-                    if (elementModel.types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
+                types => {
+                    if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
                         return {icon: 'glyphicon glyphicon-certificate'};
                     }
                 },
-                elementModel => {
-                    if (elementModel.types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
+                types => {
+                    if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
                         return {icon: 'glyphicon glyphicon-cog'};
                     }
                 },
-                elementModel => {
-                    if (elementModel.types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
+                types => {
+                    if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
                         return {color: '#046380'};
                     }
                 },
             ],
             linkStyleResolvers: [
-                link => {
+                type => {
                     return CUSTOM_LINK_STYLE;
                 },
             ],

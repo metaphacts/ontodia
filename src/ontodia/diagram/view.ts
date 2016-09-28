@@ -314,7 +314,9 @@ export class DiagramView extends Backbone.Model {
             if (evt.ctrlKey || evt.metaKey) { return; }
             const element = cellView.model as Element;
             this.selection.reset([element]);
-            element.addToFilter();
+            if (!this.options.disableDefaultHalo) {
+                element.addToFilter();
+            }
         });
     }
 
@@ -373,7 +375,7 @@ export class DiagramView extends Backbone.Model {
             }
 
             this.selection.reset(elementsToSelect);
-            if (elementsToSelect.length === 1) {
+            if (elementsToSelect.length === 1 && !this.options.disableDefaultHalo) {
                 elementsToSelect[0].addToFilter();
             }
 
@@ -420,13 +422,13 @@ export class DiagramView extends Backbone.Model {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getElementStyle(elementModel: ElementModel): {
+    public getElementStyle(types: string[]): {
         color: { h: number; c: number; l: number; },
         icon?: string,
     } {
         let resolverResult: ElementStyle;
         for (const resolver of this.elementStyleResolvers) {
-            const result = resolver(elementModel);
+            const result = resolver(types);
             if (result) {
                 resolverResult = result;
                 break;
@@ -440,7 +442,7 @@ export class DiagramView extends Backbone.Model {
             result.color = d3.hcl(resolverResult.color);
         } else {
             // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
-            const hue = getHueFromClasses(elementModel.types, this.colorSeed);
+            const hue = getHueFromClasses(types, this.colorSeed);
             result.color = {h: hue, c: 40, l: 75};
         }
         return result;
@@ -460,9 +462,9 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    public getElementTemplate(elementModel: ElementModel): ElementViewTemplate {
+    public getElementTemplate(types: string[]): ElementViewTemplate {
         for (const resolver of this.templatesResolvers) {
-            const result = resolver(elementModel);
+            const result = resolver(types);
             if (result) {
                 return result;
             }
@@ -484,9 +486,9 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    public getLinkStyle(linkModel: Link): joint.dia.LinkAttributes {
+    public getLinkStyle(type: string): joint.dia.LinkAttributes {
         for (const resolver of this.linkStyleResolvers) {
-            const result = resolver(linkModel);
+            const result = resolver(type);
             if (result) {
                 return result;
             }

@@ -125,7 +125,7 @@ export const BIG_ICON_TEMPLATE = `
     <div class="ontodia-big-icon-template" 
         style="background-color: {{color}}">
         <div class="ontodia-big-icon-template_body">
-            <div>
+            <div style="flex-grow: 1;">
                 <label title="{{label}}" class="ontodia-big-icon-template_body__label">
                     {{label}}
                 </label>

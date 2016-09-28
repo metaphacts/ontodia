@@ -1,7 +1,6 @@
-import { Link } from '../diagram/elements';
 import * as joint from 'jointjs';
 
-export type LinkStyleResolver = (link: Link) => joint.dia.LinkAttributes;
+export type LinkStyleResolver = (type: string) => joint.dia.LinkAttributes;
 
 const LINK_SUB_CLASS_OF = {
     attrs: {
@@ -19,12 +18,12 @@ const LINK_SUB_CLASS_OF = {
 const LINK_DOMAIN = {
     attrs: {
         '.connection': {
-            stroke: '#61cba8',
+            stroke: '#34c7f3',
             'stroke-width': 2,
         },
         '.marker-target': {
-            fill: '#61cba8',
-            stroke: '#5da88f',
+            fill: '#34c7f3',
+            stroke: '#38b5db',
         },
     },
 };
@@ -32,12 +31,12 @@ const LINK_DOMAIN = {
 const LINK_RANGE = {
     attrs: {
         '.connection': {
-            stroke: '#61cba8',
+            stroke: '#34c7f3',
             'stroke-width': 2,
         },
         '.marker-target': {
-            fill: '#61cba8',
-            stroke: '#5da88f',
+            fill: '#34c7f3',
+            stroke: '#38b5db',
         },
     },
 };
@@ -56,29 +55,29 @@ const LINK_TYPE_OF = {
 };
 
 export const DEFAULT_LINK_STYLE_BUNDLE: LinkStyleResolver[] = [
-    link => {
-        if (link.get('typeId') === 'http://www.w3.org/2000/01/rdf-schema#subClassOf') {
+    type => {
+        if (type === 'http://www.w3.org/2000/01/rdf-schema#subClassOf') {
             return LINK_SUB_CLASS_OF;
         } else {
             return undefined;
         }
     },
-    link => {
-        if (link.get('typeId') === 'http://www.w3.org/2000/01/rdf-schema#domain') {
+    type => {
+        if (type === 'http://www.w3.org/2000/01/rdf-schema#domain') {
             return LINK_DOMAIN;
         } else {
             return undefined;
         }
     },
-    link => {
-        if (link.get('typeId') === 'http://www.w3.org/2000/01/rdf-schema#range') {
+    type => {
+        if (type === 'http://www.w3.org/2000/01/rdf-schema#range') {
             return LINK_RANGE;
         } else {
             return undefined;
         }
     },
-    link => {
-        if (link.get('typeId') === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
+    type => {
+        if (type === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
             return LINK_TYPE_OF;
         } else {
             return undefined;

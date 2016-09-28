@@ -136,7 +136,7 @@ export class UIElementView extends joint.dia.ElementView {
     private updateUI() {
         if (this.model.template && this.view) {
             this.box.set('captionText', this.view.getElementTypeString(this.model.template));
-            const {h, c, l} = this.view.getElementStyle(this.model.template).color;
+            const {h, c, l} = this.view.getElementStyle(this.model.template.types).color;
             this.box.set('color', d3.hcl(h, c, l));
             this.box.update();
             this.updateUIList();
@@ -235,9 +235,9 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.linkTypes[linkTypeId];
 
-        let style = getDefaultLinkStyle(this.model.layoutOnly);
+        let style: any = getDefaultLinkStyle(this.model.layoutOnly);
 
-        const customStyle = this.view.getLinkStyle(this.model);
+        const customStyle = this.view.getLinkStyle(this.model.get('typeId'));
         if (customStyle) {
             style = merge(style, cloneDeep(customStyle));
         }
@@ -246,6 +246,7 @@ export class LinkView extends joint.dia.LinkView {
         if (typeModel && typeModel.get('showLabel')) {
             labelStyle = {
                 labels: [{
+                    position: 0.5,
                     attrs: {text: {
                         text: this.view.getLinkLabel(linkTypeId).text,
                     }},
@@ -254,7 +255,7 @@ export class LinkView extends joint.dia.LinkView {
         } else {
             labelStyle = {labels: []};
         }
-
+        // this.model.set('labels', labelStyle.labels);
         style = merge(style, labelStyle);
         this.model.set(style);
     }
@@ -269,7 +270,6 @@ function getDefaultLinkStyle(layoutOnly: boolean): joint.dia.LinkAttributes {
             },
             '.connection': {'stroke-dasharray': layoutOnly ? '5,5' : null},
         },
-        labels: [{position: 0.5}],
         z: 0,
     };
 }
