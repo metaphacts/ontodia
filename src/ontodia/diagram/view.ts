@@ -6,26 +6,26 @@ import * as joint from 'jointjs';
 import * as svgui from '../../svgui/svgui';
 import { Indicator, WrapIndicator } from '../../svgui/indicator';
 
-import { ElementModel, LocalizedString, ClassModel } from '../data/model';
-
-import { Element } from './elements';
-import { DiagramModel, chooseLocalizedText, uri2name } from './model';
+import { DefaultTemplate } from '../customization/defaultTemplate';
+import { TemplateResolver, DEFAULT_TEMPLATE_BUNDLE } from '../customization/templates/defaultTemplateBundle';
+import {
+    ElementStyleResolver, ElementStyle, DEFAULT_ELEMENT_STYLE_BUNDLE,
+} from '../customization/defaultElementStyleBundle';
+import { LinkStyleResolver, DEFAULT_LINK_STYLE_BUNDLE } from '../customization/defaultLinkStylesBundle';
 
 import { PaperArea } from '../viewUtils/paperArea';
+import { Halo } from '../viewUtils/halo';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
+
+import { ElementModel, LocalizedString, ClassModel } from '../data/model';
+
+import { DiagramModel, chooseLocalizedText, uri2name } from './model';
+import { Element } from './elements';
+
 import { LinkView } from './elementViews';
 import { TemplatedUIElementView, ElementViewTemplate } from './templatedElementView';
-import { TemplateResolver, DEFAULT_TEMPLATE_BUNDLE } from '../customization/templates/defaultTemplateBundle';
-import {
-    ElementStyleResolver,
-    ElementStyle,
-    DEFAULT_ELEMENT_STYLE_BUNDLE,
-} from '../customization/defaultElementStyleBundle';
-import { LinkStyleResolver, DEFAULT_LINK_STYLE_BUNDLE } from '../customization/defaultLinkStylesBundle';
-import { Halo } from '../viewUtils/halo';
-
 
 export interface DiagramViewOptions {
     linkStyleResolvers?: LinkStyleResolver[];
@@ -451,7 +451,7 @@ export class DiagramView extends Backbone.Model {
                 return result;
             }
         }
-        return undefined;
+        return DefaultTemplate;
     }
 
     public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {
