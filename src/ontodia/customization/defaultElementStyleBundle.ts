@@ -34,7 +34,9 @@ export const DEFAULT_ELEMENT_STYLE_BUNDLE: ElementStyleResolver[] = [
         }
     },
     types => {
-        if (types.indexOf('http://schema.org/Organization') !== -1) {
+        if (types.indexOf('http://schema.org/Organization') !== -1 ||
+            types.indexOf('http://dbpedia.org/ontology/Organisation') !== -1 ||
+            types.indexOf('http://xmlns.com/foaf/0.1/Organisation') !== -1) {
             return {color: '#77ca98', icon: 'ontodia-organization-icon'};
         } else {
             return undefined;
