@@ -8,13 +8,12 @@ import { Indicator, WrapIndicator } from '../../svgui/indicator';
 
 import { ElementModel, LocalizedString, ClassModel } from '../data/model';
 
-import { Element, Link } from './elements';
+import { Element } from './elements';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 
 import { PaperArea } from '../viewUtils/paperArea';
-import { printPaper } from '../viewUtils/printPaper';
 import {
-    toSVG, toSVGOptions, toDataURL, toDataURLOptions,
+    toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 import { LinkView } from './elementViews';
 import { TemplatedUIElementView, ElementViewTemplate } from './templatedElementView';
@@ -57,21 +56,9 @@ export class DiagramView extends Backbone.Model {
 
     public dragAndDropElements: { [id: string]: Element };
 
-    private toSVGOptions: toSVGOptions = {
+    private toSVGOptions: ToSVGOptions = {
         elementsToRemoveSelector: '.link-tools, .marker-vertices',
-        blacklistedCssAttributes: [
-            '-webkit-column-rule-color',
-            '-webkit-tap-highlight-color',
-            '-webkit-text-emphasis-color',
-            '-webkit-text-fill-color',
-            '-webkit-text-stroke-color',
-            '-webkit-user-select',
-            'cursor',
-            'white-space',
-            'box-sizing',
-            'line-height',
-            'outline-color',
-        ],
+        convertImagesToDataUris: true,
     };
 
     readonly options: DiagramViewOptions;
@@ -188,24 +175,19 @@ export class DiagramView extends Backbone.Model {
     cancelSelection() { this.selection.reset([]); }
 
     print() {
-        const $html = $(document.documentElement);
-        printPaper(this.paper, {
-            beforePrint: () => $html.addClass('print-ready'),
-            afterPrint: () => $html.removeClass('print-ready'),
-            printFinished: () => this.zoomToFit(),
+        this.exportSVG().then(svg => {
+            const printWindow = window.open('', undefined, 'width=1280,height=720');
+            printWindow.document.write(svg);
+            printWindow.print();
         });
     }
     exportSVG(): Promise<string> {
-        return new Promise<string>(resolve => {
-            toSVG(this.paper, resolve, this.toSVGOptions);
-        });
+        return toSVG(this.paper, this.toSVGOptions);
     }
-    exportPNG(options?: toDataURLOptions): Promise<string> {
+    exportPNG(options?: ToDataURLOptions): Promise<string> {
         options = options || {};
         options.svgOptions = options.svgOptions || this.toSVGOptions;
-        return new Promise<string>(resolve => {
-            toDataURL(this.paper, resolve, options);
-        });
+        return toDataURL(this.paper, options);
     }
 
     zoomIn() { this.paperArea.zoom(0.2, { max: 2 }); }

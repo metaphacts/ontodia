@@ -1,209 +1,185 @@
 import * as _ from 'lodash';
-import * as $ from 'jquery';
 import * as joint from 'jointjs';
-import { V, g } from 'jointjs';
 
-export interface toSVGOptions {
+export interface ToSVGOptions {
     preserveDimensions?: boolean;
     convertImagesToDataUris?: boolean;
     blacklistedCssAttributes?: string[];
     elementsToRemoveSelector?: string;
 }
 
-export function toSVG(paper: joint.dia.Paper, callback: (svg: string) => void, opt?: toSVGOptions) {
-    opt = opt || {};
-    var viewportTransform = V(paper.viewport).attr("transform");
-    V(paper.viewport).attr("transform", "");
-    var viewportBbox = paper.getContentBBox();
-    var svgClone = <SVGElement>paper.svg.cloneNode(true);
-    V(paper.viewport).attr("transform", viewportTransform || "");
-    svgClone.removeAttribute("style");
-    if (opt.preserveDimensions) {
-        V(svgClone).attr({width: viewportBbox.width, height: viewportBbox.height})
-    } else {
-        V(svgClone).attr({width: "100%", height: "100%"})
-    }
-    V(svgClone).attr("viewBox", viewportBbox.x + " " + viewportBbox.y + " " + viewportBbox.width + " " + viewportBbox.height);
-    var styleSheetsCount = document.styleSheets.length;
-    var styleSheetsCopy: StyleSheet[] = [];
-    for (var i = styleSheetsCount - 1; i >= 0; i--) {
-        styleSheetsCopy[i] = document.styleSheets[i];
-        document.styleSheets[i].disabled = true
-    }
-    var defaultComputedStyles = {};
-    $(paper.svg).find("*").each(function (idx) {
-        var computedStyle = window.getComputedStyle(this, null);
-        var defaultComputedStyle: {[property: string]: string} = {};
-        _.each(computedStyle, function (property: string) {
-            defaultComputedStyle[property] = computedStyle.getPropertyValue(property);
-        });
-        defaultComputedStyles[idx] = defaultComputedStyle
-    });
-    if (styleSheetsCount != document.styleSheets.length) {
-        _.each(styleSheetsCopy, function (copy, i) {
-            document.styleSheets[i] = copy
-        })
-    }
-    for (var i = 0; i < styleSheetsCount; i++) {
-        document.styleSheets[i].disabled = false
-    }
-    var customStyles = {};
-    $(paper.svg).find("*").each(function (idx) {
-        var computedStyle = window.getComputedStyle(this, null);
-        var defaultComputedStyle = defaultComputedStyles[idx];
-        var customStyle = {};
-        _.each(computedStyle, function (property) {
-            if (computedStyle.getPropertyValue(property) !== defaultComputedStyle[property]) {
-                customStyle[property] = computedStyle.getPropertyValue(property);
-            }
-        });
-        if (opt.blacklistedCssAttributes) {
-            customStyle = _.omit(customStyle, opt.blacklistedCssAttributes);
-        }
-        var tagName = this.tagName.toLowerCase();
-        if (tagName !== 'text' && tagName !== 'tspan' && tagName !== 'textPath' && tagName !== 'tref') {
-            delete customStyle['font-family'];
-            delete customStyle['font-size'];
-        }
-        customStyles[idx] = customStyle;
-    });
-    
-    var $svgClone = $(svgClone);
-    $svgClone.find("*").each(function (idx) {
-        $(this).css(customStyles[idx]);
-    });
-    
-    if (opt.elementsToRemoveSelector) {
-        $svgClone.find(opt.elementsToRemoveSelector).remove();
-    }
-    
-    var images: SVGImageElement[] = [];
-    $svgClone.find("*").each(function () {
-        $(this).removeAttr('event').removeAttr('class');
-        if (this.tagName.toLowerCase() === "image") { images.push(this) }
-    });
-    
-    function serialize(): string {
-        return (new XMLSerializer).serializeToString(svgClone)
-    }
+type Bounds = { width: number; height: number; };
 
-    //var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf("Constructor") > 0;
-    if (opt.convertImagesToDataUris && images.length) {
-        const convertImages = (callback: () => void) => {
-            var image = images.shift();
-            if (!image) return callback();
-            joint.util.imageToDataUri(V(image).attr("href"), function (err, dataUri) {
-                V(image).attr("xlink:href", dataUri);
-                convertImages(callback);
-            })
-        }
-        convertImages(function () {
-            callback(serialize())
-        });
+export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
+    const viewportTransform = paper.viewport.getAttribute('transform');
+    paper.viewport.setAttribute('transform', '');
+
+    const bbox = paper.getContentBBox();
+    const svgClone = paper.svg.cloneNode(true) as SVGElement;
+
+    paper.viewport.setAttribute('transform', viewportTransform || '');
+
+    svgClone.removeAttribute('style');
+    if (opt.preserveDimensions) {
+        svgClone.setAttribute('width', bbox.width.toString());
+        svgClone.setAttribute('height', bbox.height.toString());
     } else {
-        return callback(serialize());
+        svgClone.setAttribute('width', '100%');
+        svgClone.setAttribute('height', '100%');
+    }
+    svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+
+    const imageBounds: { [path: string]: Bounds } = {};
+    foreachNode(paper.svg.querySelectorAll('img'), img => {
+        imageBounds[nodeRelativePath(img, paper.svg)] = {
+            width: img.clientWidth,
+            height: img.clientHeight,
+        };
+    });
+
+    const nodes = svgClone.querySelectorAll('img');
+    const convertImagesStartingAt = (index: number, done: () => void) => {
+        if (index >= nodes.length) {
+            done();
+            return;
+        }
+        const img = nodes[index];
+        const {width, height} = imageBounds[nodeRelativePath(img, svgClone)];
+        img.setAttribute('width', width.toString());
+        img.setAttribute('height', height.toString());
+        if (opt.convertImagesToDataUris) {
+            joint.util.imageToDataUri(img.src, (err, dataUri) => {
+                if (dataUri) { img.src = dataUri; }
+                convertImagesStartingAt(index + 1, done);
+            });
+        } else {
+            convertImagesStartingAt(index + 1, done);
+        }
+    };
+
+    return new Promise<void>(resolve => {
+        convertImagesStartingAt(0, () => resolve());
+    }).then(() => {
+        const cssRuleTexts: string[] = [];
+        for (let i = 0; i < document.styleSheets.length; i++) {
+            const rules = (document.styleSheets[i] as CSSStyleSheet).rules;
+            for (let j = 0; j < rules.length; j++) {
+                const rule = rules[j];
+                if (rule instanceof CSSStyleRule) {
+                    cssRuleTexts.push(rule.cssText);
+                }
+            }
+        }
+
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        defs.innerHTML = `<style>${cssRuleTexts.join('\n')}</style>`;
+        svgClone.insertBefore(defs, svgClone.firstChild);
+
+        if (opt.elementsToRemoveSelector) {
+            foreachNode(svgClone.querySelectorAll(opt.elementsToRemoveSelector),
+                node => node.remove());
+        }
+
+        return new XMLSerializer().serializeToString(svgClone);
+    });
+}
+
+function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T) => void) {
+    for (let i = 0; i < nodeList.length; i++) {
+        callback(nodeList[i]);
     }
 }
 
-export interface toDataURLOptions {
-    // "image/png" | "image/jpeg" | ...
+function nodeRelativePath(child: Node, parent: Node) {
+    const path: number[] = [];
+    let current = child;
+    while (current && current !== parent) {
+        let sibling = current;
+        let indexAtLevel = 0;
+        while (sibling = sibling.previousSibling) {
+            indexAtLevel++;
+        }
+        path.unshift(indexAtLevel);
+        current = current.parentNode;
+    }
+    return path.join(':');
+}
+
+export interface ToDataURLOptions {
+    /** 'image/png' | 'image/jpeg' | ... */
     type?: string;
     width?: number;
     height?: number;
     padding?: number;
     backgroundColor?: string;
     quality?: number;
-    svgOptions?: toSVGOptions;
+    svgOptions?: ToSVGOptions;
 }
 
-declare var canvg: any;
+export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): Promise<string> {
+    return new Promise((resolve, reject) => {
+        options = options || {};
+        options.type = options.type || 'image/png';
 
-export function toDataURL(paper: joint.dia.Paper, callback: (dataUrl: string) => void, options?: toDataURLOptions) {
-    options = options || {};
-    options.type = options.type || "image/png";
-    
-    var imageRect: {width: number; height: number},
-        contentHeight: number, contentWidth: number,
-        padding = options.padding || 0;
-    
-    var clientRect = paper.viewport.getBoundingClientRect();
-    imageRect = fitRectKeepingAspectRatio(
-        clientRect.width || 1, clientRect.height || 1,
-        options.width, options.height);
-    
-    padding = Math.min(padding, imageRect.width / 2 - 1, imageRect.height / 2 - 1);
-    contentWidth = imageRect.width - 2 * padding;
-    contentHeight = imageRect.height - 2 * padding;
-    
-    var img = new Image;
-    var svg;
-    img.onload = function () {
-        var dataURL: string, context: CanvasRenderingContext2D, canvas: HTMLCanvasElement;
+        let imageRect: Bounds;
+        let contentHeight: number;
+        let contentWidth: number;
+        let padding = options.padding || 0;
 
-        function createCanvas() {
-            canvas = document.createElement("canvas");
-            canvas.width = imageRect.width;
-            canvas.height = imageRect.height;
-            context = canvas.getContext("2d");
-            context.fillStyle = options.backgroundColor || "white";
-            context.fillRect(0, 0, imageRect.width, imageRect.height);
-        }
+        const clientRect = paper.viewport.getBoundingClientRect();
+        imageRect = fitRectKeepingAspectRatio(
+            clientRect.width || 1, clientRect.height || 1,
+            options.width, options.height);
 
-        createCanvas();
-        try {
-            context.drawImage(img, padding, padding, contentWidth, contentHeight);
-            dataURL = canvas.toDataURL(options.type, options.quality);
-            callback(dataURL)
-        } catch (e) {
-            if (typeof canvg === "undefined") {
-                return console.error("Canvas tainted. Canvg library required.");
+        padding = Math.min(padding, imageRect.width / 2 - 1, imageRect.height / 2 - 1);
+        contentWidth = imageRect.width - 2 * padding;
+        contentHeight = imageRect.height - 2 * padding;
+
+        const img = new Image();
+        let svg;
+        img.onload = function () {
+            let dataURL: string;
+            let context: CanvasRenderingContext2D;
+            let canvas: HTMLCanvasElement;
+
+            function createCanvas() {
+                canvas = document.createElement('canvas');
+                canvas.width = imageRect.width;
+                canvas.height = imageRect.height;
+                context = canvas.getContext('2d');
+                context.fillStyle = options.backgroundColor || 'white';
+                context.fillRect(0, 0, imageRect.width, imageRect.height);
             }
+
             createCanvas();
-            const replaceSVGImagesWithSVGEmbedded = (svg: string) => {
-                return svg.replace(/\<image[^>]*>/g, function (imageTag) {
-                    var href = imageTag.match(/href="([^"]*)"/)[1];
-                    var svgDataUriPrefix = "data:image/svg+xml";
-                    if (href.substr(0, svgDataUriPrefix.length) === svgDataUriPrefix) {
-                        var svg = decodeURIComponent(href.substr(href.indexOf(",") + 1));
-                        return svg.substr(svg.indexOf("<svg"));
-                    }
-                    return imageTag;
-                })
+            try {
+                context.drawImage(img, padding, padding, contentWidth, contentHeight);
+                dataURL = canvas.toDataURL(options.type, options.quality);
+                resolve(dataURL);
+            } catch (e) {
+                reject(e);
+                return;
             }
-
-            var canvgOpt = {ignoreDimensions: true, ignoreClear: true, offsetX: padding, offsetY: padding, useCORS: true};
-            canvg(canvas, svg, _.extend({}, canvgOpt, {renderCallback: function () {
-                try {
-                    dataURL = canvas.toDataURL(options.type, options.quality);
-                    callback(dataURL);
-                } catch (e) {
-                    svg = replaceSVGImagesWithSVGEmbedded(svg);
-                    createCanvas();
-                    canvg(canvas, svg, _.extend({}, canvgOpt, {renderCallback: function () {
-                        dataURL = canvas.toDataURL(options.type, options.quality);
-                        callback(dataURL);
-                    }}))
-                }
-            }}));
-            return;
-        }
-    }
-    var svgOptions = _.clone(options.svgOptions || { convertImagesToDataUris: true});
-    svgOptions.convertImagesToDataUris = true;
-    toSVG(paper, function (svgString) {
-        svg = svgString = svgString.replace('width="100%"', 'width="' + contentWidth + '"').replace('height="100%"', 'height="' + contentHeight + '"');
-        img.src = "data:image/svg+xml," + encodeURIComponent(svgString);
-    }, svgOptions);
+        };
+        const svgOptions = _.clone(options.svgOptions || {convertImagesToDataUris: true});
+        svgOptions.convertImagesToDataUris = true;
+        toSVG(paper, svgOptions).then(svgString => {
+            svg = svgString = svgString
+                .replace('width="100%"', 'width="' + contentWidth + '"')
+                .replace('height="100%"', 'height="' + contentHeight + '"');
+            img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
+        });
+    });
 }
 
 export function fitRectKeepingAspectRatio(
     sourceWidth: number, sourceHeight: number,
-    targetWidth: number, targetHeight: number): {width: number; height: number}
-{
+    targetWidth: number, targetHeight: number
+): { width: number; height: number; } {
     if (!targetWidth && !targetHeight) {
         return {width: sourceWidth, height: sourceHeight};
     }
-    var sourceAspectRatio = sourceWidth / sourceHeight;
+    const sourceAspectRatio = sourceWidth / sourceHeight;
     targetWidth = targetWidth || targetHeight * sourceAspectRatio;
     targetHeight = targetHeight || targetWidth / sourceAspectRatio;
     if (targetHeight * sourceAspectRatio <= targetWidth) {
@@ -220,25 +196,25 @@ export function fitRectKeepingAspectRatio(
   * @return {Blob} A blob representing the array buffer data.
   */
 export function dataURLToBlob(dataURL: string): Blob {
-    var BASE64_MARKER = ';base64,';
-    if (dataURL.indexOf(BASE64_MARKER) == -1) {
-        var parts = dataURL.split(',');
-        var contentType = parts[0].split(':')[1];
-        var raw = decodeURIComponent(parts[1]);
-        
+    const BASE64_MARKER = ';base64,';
+    if (dataURL.indexOf(BASE64_MARKER) === -1) {
+        const parts = dataURL.split(',');
+        const contentType = parts[0].split(':')[1];
+        const raw = decodeURIComponent(parts[1]);
+
         return new Blob([raw], {type: contentType});
     }
-    
-    var parts = dataURL.split(BASE64_MARKER);
-    var contentType = parts[0].split(':')[1];
-    var raw = window.atob(parts[1]);
-    var rawLength = raw.length;
-    
-    var uInt8Array = new Uint8Array(rawLength);
-    
-    for (var i = 0; i < rawLength; ++i) {
+
+    const parts = dataURL.split(BASE64_MARKER);
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+
+    const uInt8Array = new Uint8Array(rawLength);
+
+    for (let i = 0; i < rawLength; ++i) {
         uInt8Array[i] = raw.charCodeAt(i);
     }
-    
+
     return new Blob([uInt8Array], {type: contentType});
 }
