@@ -1,6 +1,7 @@
 var webpack = require('webpack');
 var path = require('path');
 
+var CommonsChunkPlugin = require("webpack/lib/optimize/CommonsChunkPlugin");
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 var npmDir = path.join(__dirname, 'node_modules');
@@ -36,33 +37,34 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             title: 'Ontodia Local Demo',
-            chunks: ['demo'],
+            chunks: ['commons', 'demo'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'sparql.html',
             title: 'Ontodia SparQL Demo',
-            chunks: ['sparql'],
+            chunks: ['commons', 'sparql'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'sparqlConstruct.html',
             title: 'Ontodia SparQL Construct Demo',
-            chunks: ['sparqlConstruct'],
+            chunks: ['commons', 'sparqlConstruct'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'sparqlRDFGraph.html',
             title: 'Ontodia SparQL RDF Graph Demo',
-            chunks: ['sparqlRDFGraph'],
+            chunks: ['commons', 'sparqlRDFGraph'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'styleCustomization.html',
             title: 'Ontodia Style Customization Demo',
-            chunks: ['styleCustomization'],
+            chunks: ['commons', 'styleCustomization', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
+        new CommonsChunkPlugin('commons', 'commons.chunk.js'),
     ],
     output: {
         path: path.join(__dirname, 'dist', 'examples'),
