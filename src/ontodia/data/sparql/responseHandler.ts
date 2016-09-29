@@ -121,7 +121,7 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
                 id: id,
                 label: { values: [getLocalizedString(undefined, id)] },
                 types: [THING_URI],
-                properties: {}
+                properties: {},
             };
         }
     };

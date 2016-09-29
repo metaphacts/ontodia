@@ -95,14 +95,15 @@ export class DiagramModel extends Backbone.Model {
         this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
             if (cell instanceof Element) {
                 cell.set('presentOnDiagram', false, <any>{ isFromHandler: true });
-            } else if (cell instanceof Link) {
-                const linkType = this.linkTypes[cell.get('typeId')];
-                if (linkType && linkType.get('visible')) {
-                    const mustSwitch = !_.some(this.graph.getLinks(),
-                        (link: Link) => link.get('typeId') === cell.get('typeId'));
-                    if (mustSwitch) { linkType.set('visible', false); }
-                }
             }
+            // else if (cell instanceof Link) {
+                // const linkType = this.linkTypes[cell.get('typeId')];
+                // if (linkType && linkType.get('visible')) {
+                //     const mustSwitch = !_.some(this.graph.getLinks(),
+                //         (link: Link) => link.get('typeId') === cell.get('typeId'));
+                //     if (mustSwitch) { linkType.set('visible', false); }
+                // }
+            // }
         });
         this.listenTo(this.graph, 'change:labels', (cell: joint.dia.Cell) => {
             if (cell instanceof Link) {
