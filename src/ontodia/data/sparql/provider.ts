@@ -20,6 +20,7 @@ const DEFAULT_PREFIX =
 
 export interface SparqlDataProviderOptions {
     endpointUrl: string;
+    prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
     imageClassUris?: string[];
 }
 
@@ -84,9 +85,15 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
-            .then(elementsInfo => (this.options.imageClassUris && this.options.imageClassUris.length > 0)
-                ? this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris)
-                : elementsInfo);
+            .then(elementsInfo => {
+                if (this.options.prepareImages) {
+                    return this.prepareElementsImage(elementsInfo);
+                } else if (this.options.imageClassUris && this.options.imageClassUris.length) {
+                    return this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris);
+                } else {
+                    return elementsInfo;
+                }
+            });
     }
 
     private enrichedElementsInfo(
@@ -106,6 +113,19 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
             .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo));
+    }
+
+    private prepareElementsImage(
+        elementsInfo: Dictionary<ElementModel>
+    ): Promise<Dictionary<ElementModel>> {
+        return this.options.prepareImages(elementsInfo).then(images => {
+            for (const key in images) {
+                if (images.hasOwnProperty(key) && elementsInfo[key]) {
+                    elementsInfo[key].image = images[key];
+                }
+            }
+            return elementsInfo;
+        });
     }
 
     linksInfo(params: {
