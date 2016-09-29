@@ -136,7 +136,7 @@ export class UIElementView extends joint.dia.ElementView {
     private updateUI() {
         if (this.model.template && this.view) {
             this.box.set('captionText', this.view.getElementTypeString(this.model.template));
-            const {h, c, l} = this.view.getElementStyle(this.model.template.types).color;
+            const {h, c, l} = this.view.getTypeStyle(this.model.template.types).color;
             this.box.set('color', d3.hcl(h, c, l));
             this.box.update();
             this.updateUIList();

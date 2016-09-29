@@ -1,15 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import {
-    Workspace,
-    WorkspaceProps,
-    SparqlDataProvider,
-    // getDefaultTemplate,
-    // LEFT_BAR_TEMPLATES,
-    // BIG_ICON_TEMPLATE,
-    // DEFAULT_ELEMENT_TEMPLATE,
-} from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -51,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(layout);
         },
         viewOptions: {
-            elementStyleResolvers: [
+            typeStyleResolvers: [
                 types => {
                     if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                         return {icon: 'glyphicon glyphicon-certificate'};

@@ -1,41 +1,39 @@
-import { ElementViewTemplate } from '../../diagram/templatedElementView';
-// import { getDefaultTemplate } from './reactDefaultTemplate';
-import { LEFT_BAR_TEMPLATE, BIG_ICON_TEMPLATE, PERSON_TEMPLATE, ORGANIZATION_TEMPLATE } from './stringTemplates';
+import { TemplateResolver } from '../props';
 
-export type TemplateResolver = (types: string[]) => ElementViewTemplate;
+import { LeftBarTemplate, BigIconTemplate, PersonTemplate, OrganizationTemplate } from './stringTemplates';
 
-export const DEFAULT_TEMPLATE_BUNDLE: TemplateResolver[] = [
+export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {
         if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
-            return BIG_ICON_TEMPLATE;
+            return BigIconTemplate;
         } else {
             return undefined;
         }
     },
     types => {
         if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
-            return BIG_ICON_TEMPLATE;
+            return BigIconTemplate;
         } else {
             return undefined;
         }
     },
     types => {
         if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
-            return LEFT_BAR_TEMPLATE;
+            return LeftBarTemplate;
         } else {
             return undefined;
         }
     },
     types => {
         if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
-            return LEFT_BAR_TEMPLATE;
+            return LeftBarTemplate;
         } else {
             return undefined;
         }
     },
     types => {
         if (types.indexOf('http://xmlns.com/foaf/0.1/Person') !== -1) {
-            return PERSON_TEMPLATE;
+            return PersonTemplate;
         } else {
             return undefined;
         }
@@ -45,7 +43,7 @@ export const DEFAULT_TEMPLATE_BUNDLE: TemplateResolver[] = [
             types.indexOf('http://dbpedia.org/ontology/Organisation') !== -1 ||
             types.indexOf('http://xmlns.com/foaf/0.1/Organisation') !== -1
         ) {
-            return ORGANIZATION_TEMPLATE;
+            return OrganizationTemplate;
         } else {
             return undefined;
         }

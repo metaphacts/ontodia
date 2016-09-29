@@ -1,6 +1,4 @@
-import * as joint from 'jointjs';
-
-export type LinkStyleResolver = (type: string) => joint.dia.LinkAttributes;
+import { LinkStyleResolver } from './props';
 
 const LINK_SUB_CLASS_OF = {
     attrs: {
@@ -54,33 +52,25 @@ const LINK_TYPE_OF = {
     },
 };
 
-export const DEFAULT_LINK_STYLE_BUNDLE: LinkStyleResolver[] = [
+export const DefaultLinkStyleBundle: LinkStyleResolver[] = [
     type => {
         if (type === 'http://www.w3.org/2000/01/rdf-schema#subClassOf') {
             return LINK_SUB_CLASS_OF;
-        } else {
-            return undefined;
         }
     },
     type => {
         if (type === 'http://www.w3.org/2000/01/rdf-schema#domain') {
             return LINK_DOMAIN;
-        } else {
-            return undefined;
         }
     },
     type => {
         if (type === 'http://www.w3.org/2000/01/rdf-schema#range') {
             return LINK_RANGE;
-        } else {
-            return undefined;
         }
     },
     type => {
         if (type === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
             return LINK_TYPE_OF;
-        } else {
-            return undefined;
         }
     },
 ];

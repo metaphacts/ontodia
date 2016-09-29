@@ -18,8 +18,6 @@ registerHelper('getProperty', function(props, id) {
     }
 });
 
-export type ElementViewTemplate = React.ComponentClass<TemplateProps> | string;
-
 export class TemplatedUIElementView extends joint.dia.ElementView {
     model: Element;
     private view: DiagramView;
@@ -86,7 +84,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                 body.removeEventListener('load', onImageLoad);
                 this.resizeContainer();
             };
-            body.addEventListener('load', onImageLoad);
+            body.addEventListener('load', onImageLoad, true);
         }
     }
 
@@ -145,10 +143,9 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     }
     private getStyle(): {icon: string, color: any} {
         if (this.view) {
-            const result = this.view.getElementStyle(this.model.template.types);
-            const {h, c, l} = result.color;
+            const {color: {h, c, l}, icon} = this.view.getTypeStyle(this.model.template.types);
             return {
-                icon: result.icon ? result.icon : 'ontodia-default-icon',
+                icon: icon ? icon : 'ontodia-default-icon',
                 color: hcl(h, c, l),
             };
         } else {

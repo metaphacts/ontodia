@@ -1,4 +1,4 @@
-export const DEFAULT_ELEMENT_TEMPLATE = `
+export const DefaultElementTemplate = `
 <div class="ontodia-default-template" style="background-color: {{color}};">
     <div class="ontodia-default-template_type-line">
         <div class="
@@ -59,7 +59,7 @@ export const DEFAULT_ELEMENT_TEMPLATE = `
 </div>
 `;
 
-export const LEFT_BAR_TEMPLATE = `
+export const LeftBarTemplate = `
     <div class="ontodia-left-bar-template"
     style="background-color: {{color}};">
         <div class="ontodia-left-bar-template_body">
@@ -120,7 +120,7 @@ export const LEFT_BAR_TEMPLATE = `
     </div>
 `;
 
-export const BIG_ICON_TEMPLATE = `
+export const BigIconTemplate = `
 <div class="ontodia-big-icon-container">
     <div class="ontodia-big-icon-template" 
         style="background-color: {{color}}">
@@ -187,7 +187,7 @@ export const BIG_ICON_TEMPLATE = `
 </div>  
 `;
 
-export const PERSON_TEMPLATE = `
+export const PersonTemplate = `
 <div class="ontodia-person-container">
     <div class="ontodia-person-template" 
         style="background-color: {{color}}">
@@ -273,7 +273,7 @@ export const PERSON_TEMPLATE = `
 </div>  
 `;
 
-export const ORGANIZATION_TEMPLATE = `
+export const OrganizationTemplate = `
 <div class="ontodia-organization-template" style="border-color: {{color}}">
     <div class="ontodia-organization-template_body">
         <div 

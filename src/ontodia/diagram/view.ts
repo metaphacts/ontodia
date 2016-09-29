@@ -3,15 +3,19 @@ import * as Backbone from 'backbone';
 import * as $ from 'jquery';
 import * as joint from 'jointjs';
 
-import * as svgui from '../../svgui/svgui';
 import { Indicator, WrapIndicator } from '../../svgui/indicator';
 
-import { DefaultTemplate } from '../customization/defaultTemplate';
-import { TemplateResolver, DEFAULT_TEMPLATE_BUNDLE } from '../customization/templates/defaultTemplateBundle';
 import {
-    ElementStyleResolver, ElementStyle, DEFAULT_ELEMENT_STYLE_BUNDLE,
-} from '../customization/defaultElementStyleBundle';
-import { LinkStyleResolver, DEFAULT_LINK_STYLE_BUNDLE } from '../customization/defaultLinkStylesBundle';
+    TypeStyleResolver,
+    LinkStyleResolver,
+    TemplateResolver,
+    CustomTypeStyle,
+    ElementTemplate,
+} from '../customization/props';
+import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
+import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
+import { DefaultTemplate } from '../customization/defaultTemplate';
+import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
 
 import { PaperArea } from '../viewUtils/paperArea';
 import { Halo } from '../viewUtils/halo';
@@ -25,13 +29,18 @@ import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element } from './elements';
 
 import { LinkView } from './elementViews';
-import { TemplatedUIElementView, ElementViewTemplate } from './templatedElementView';
+import { TemplatedUIElementView } from './templatedElementView';
 
 export interface DiagramViewOptions {
+    typeStyleResolvers?: TypeStyleResolver[];
     linkStyleResolvers?: LinkStyleResolver[];
-    elementStyleResolvers?: ElementStyleResolver[];
     templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
+}
+
+export interface TypeStyle {
+    color: { h: number; c: number; l: number; };
+    icon?: string;
 }
 
 /**
@@ -39,9 +48,9 @@ export interface DiagramViewOptions {
  *     language: string
  */
 export class DiagramView extends Backbone.Model {
-    private templatesResolvers: TemplateResolver[];
-    private elementStyleResolvers: ElementStyleResolver[];
+    private typeStyleResolvers: TypeStyleResolver[];
     private linkStyleResolvers: LinkStyleResolver[];
+    private templatesResolvers: TemplateResolver[];
 
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
@@ -63,7 +72,7 @@ export class DiagramView extends Backbone.Model {
 
     readonly options: DiagramViewOptions;
 
-    constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
+    constructor(public model: DiagramModel, rootElement: HTMLElement, options: DiagramViewOptions = {}) {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
@@ -78,25 +87,16 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-        this.options = options || {};
+        this.options = options;
 
-        if (this.options && this.options.elementStyleResolvers) {
-            this.elementStyleResolvers = this.options.elementStyleResolvers;
-        } else {
-            this.elementStyleResolvers = DEFAULT_ELEMENT_STYLE_BUNDLE;
-        }
+        this.typeStyleResolvers = options.typeStyleResolvers
+            ? options.typeStyleResolvers : DefaultTypeStyleBundle;
 
-        if (this.options && this.options.templatesResolvers) {
-            this.templatesResolvers = this.options.templatesResolvers;
-        } else {
-            this.templatesResolvers = DEFAULT_TEMPLATE_BUNDLE;
-        }
+        this.linkStyleResolvers = options.linkStyleResolvers
+            ? this.options.linkStyleResolvers : DefaultLinkStyleBundle;
 
-        if (this.options && this.options.linkStyleResolvers) {
-            this.linkStyleResolvers = this.options.linkStyleResolvers;
-        } else {
-            this.linkStyleResolvers = DEFAULT_LINK_STYLE_BUNDLE;
-        }
+        this.templatesResolvers = options.templatesResolvers
+            ? options.templatesResolvers : DefaultTemplateBundle;
 
         this.setupTextSelectionPrevention();
         this.configureArea(rootElement);
@@ -404,47 +404,45 @@ export class DiagramView extends Backbone.Model {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getElementStyle(types: string[]): {
-        color: { h: number; c: number; l: number; },
-        icon?: string,
-    } {
-        let resolverResult: ElementStyle;
-        for (const resolver of this.elementStyleResolvers) {
+    /**
+     * @param types Type signature, MUST BE sorted; see DiagramModel.normalizeData()
+     */
+    public getTypeStyle(types: string[]): TypeStyle {
+        let customStyle: CustomTypeStyle;
+        for (const resolver of this.typeStyleResolvers) {
             const result = resolver(types);
             if (result) {
-                resolverResult = result;
+                customStyle = result;
                 break;
             }
         }
-        const result: any = {};
-        if (resolverResult) {
-            result.icon = resolverResult.icon;
-        }
-        if (resolverResult && resolverResult.color) {
-            result.color = d3.hcl(resolverResult.color);
+
+        const icon = customStyle ? customStyle.icon : undefined;
+        let color;
+        if (customStyle && customStyle.color) {
+            color = d3.hcl(customStyle.color);
         } else {
-            // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
             const hue = getHueFromClasses(types, this.colorSeed);
-            result.color = {h: hue, c: 40, l: 75};
+            color = {h: hue, c: 40, l: 75};
         }
-        return result;
+        return {icon, color};
     }
 
-    public registerElementStyleResolver(resolver: ElementStyleResolver): ElementStyleResolver {
-        this.elementStyleResolvers.push(resolver);
+    public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
+        this.typeStyleResolvers.push(resolver);
         return resolver;
     }
 
-    public unregisterElementStyleResolver(resolver: ElementStyleResolver): ElementStyleResolver {
-        const index = this.elementStyleResolvers.indexOf(resolver);
+    public unregisterElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
+        const index = this.typeStyleResolvers.indexOf(resolver);
         if (index !== -1) {
-            return this.elementStyleResolvers.splice(index, 1)[0];
+            return this.typeStyleResolvers.splice(index, 1)[0];
         } else {
             return undefined;
         }
     }
 
-    public getElementTemplate(types: string[]): ElementViewTemplate {
+    public getElementTemplate(types: string[]): ElementTemplate {
         for (const resolver of this.templatesResolvers) {
             const result = resolver(types);
             if (result) {
@@ -490,31 +488,6 @@ export class DiagramView extends Backbone.Model {
         } else {
             return undefined;
         }
-    }
-
-    public getRandomPositionInViewport() {
-        const margin = { left: 100, top: 60, right: 100, bottom: 60 };
-        const offset = this.getCanvasPageOffset();
-        return {
-            x: offset.x + margin.left + Math.random() * (
-                this.$svg.width() - margin.left - margin.right),
-            y: offset.y + margin.top + Math.random() * (
-                this.$svg.height() - margin.top - margin.bottom),
-        };
-    }
-
-    private getCanvasPageOffset(): svgui.Vector {
-        const boundingBox = this.$svg.get(0).getBoundingClientRect();
-
-        const xS: any = (typeof window.pageXOffset !== 'undefined') ? window.pageXOffset
-            : (document.documentElement || document.body.parentNode || document.body);
-        const xScroll = xS.scrollLef;
-
-        const yS: any = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
-            : (document.documentElement || document.body.parentNode || document.body);
-        const yScroll = yS.scrollTop;
-
-        return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
     }
 
     public getOptions(): DiagramViewOptions {

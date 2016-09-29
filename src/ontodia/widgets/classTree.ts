@@ -92,11 +92,11 @@ export class ClassTree extends Backbone.View<FilterModel> {
         if (roots) {
             for (let i = 0; i < roots.length; i++) {
                 let element = roots[i];
-                const style = this.view.getElementStyle([element.id]);
+                const icon = this.view.getTypeStyle([element.id]).icon;
                 let iconId;
-                if (style && style.icon) {
+                if (icon) {
                     iconId = _.uniqueId('iconId');
-                    iconMap[iconId] = {icon: style.icon + ' ontodia-tree-icon'};
+                    iconMap[iconId] = {icon: icon + ' ontodia-tree-icon'};
                 }
 
                 if ('children' in element) {
