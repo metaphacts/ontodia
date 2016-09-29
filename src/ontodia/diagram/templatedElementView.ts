@@ -141,12 +141,13 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
             props: this.model.template.properties,
         };
     }
-    private getStyle(): {icon: string, color: any} {
+
+    private getStyle() {
         if (this.view) {
             const {color: {h, c, l}, icon} = this.view.getTypeStyle(this.model.template.types);
             return {
                 icon: icon ? icon : 'ontodia-default-icon',
-                color: hcl(h, c, l),
+                color: hcl(h, c, l).toString(),
             };
         } else {
             return {icon: 'ontodia-default-icon', color: 'green'};

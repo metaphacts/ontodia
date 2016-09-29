@@ -16,10 +16,10 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         let propertyTable: React.ReactNode;
         if (props.propsAsList && props.propsAsList.length > 0) {
             propertyTable = props.propsAsList.map(prop => {
-                const values = prop.properties.map(value =>
+                const values = prop.properties.map(({value}) =>
                     <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
-                        title={value.value.text}>
-                        {value.value.text}
+                        key={prop.id} title={value.text}>
+                        {value.text}
                     </div>
                 );
                 return (
