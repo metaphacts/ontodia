@@ -62,11 +62,14 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     }).then(() => {
         const cssRuleTexts: string[] = [];
         for (let i = 0; i < document.styleSheets.length; i++) {
-            const rules = (document.styleSheets[i] as CSSStyleSheet).rules;
-            for (let j = 0; j < rules.length; j++) {
-                const rule = rules[j];
-                if (rule instanceof CSSStyleRule) {
-                    cssRuleTexts.push(rule.cssText);
+            const cssSheet = document.styleSheets[i] as CSSStyleSheet;
+            const rules = cssSheet.cssRules || cssSheet.rules;
+            if (rules) {
+                for (let j = 0; j < rules.length; j++) {
+                    const rule = rules[j];
+                    if (rule instanceof CSSStyleRule) {
+                        cssRuleTexts.push(rule.cssText);
+                    }
                 }
             }
         }

@@ -39,15 +39,7 @@
     -ms-user-select: none;
     user-select: none;
 }
-html.print-ready, .print-ready body {
-    position: static !important;
-    overflow: hidden !important;
-}
-.print-ready .printarea {
-    padding-right: 10%;
-    margin-right: 0;
-    margin-bottom: 0;
-}
+
 .paper-area, .paper-scroller {
     cursor: default;
     overflow: auto;
@@ -283,7 +275,7 @@ html.print-ready, .print-ready body {
 }
 
 /* jsTree.css */
-.jstree-icon.default-tree-icon {
+.jstree-icon.default-tree-icon::after {
     content: url("../images/tree-leaf.png");
     max-width: 19px;
     max-height: 19px;
@@ -296,10 +288,9 @@ html.print-ready, .print-ready body {
     height: 1em;
     background-size: auto 100%;
     vertical-align: middle;
-    /*background-image: url('../images/ontodia-icon.svg');*/
 }
 
-.jstree-icon.parent-tree-icon {
+.jstree-icon.parent-tree-icon::after {
     content: url("../images/tree-leaf-folder.png");
     max-width: 19px;
     max-height: 19px;
