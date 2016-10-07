@@ -399,7 +399,7 @@ export class DiagramView extends Backbone.Model {
     }
 
     public getLinkLabel(linkTypeId: string): LocalizedString {
-        const type = this.model.linkTypes[linkTypeId];
+        const type = this.model.getLinkType(linkTypeId);
         const label = type ? this.getLocalizedText(type.label.values) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }

@@ -12,35 +12,28 @@ import {
     getEnrichedElementsInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
+import {executeSparqlQuery, sparqlExtractLabel, SparqlDataProviderOptions} from "./provider";
+import * as _ from 'lodash';
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+ PREFIX wd: <http://www.wikidata.org/entity/>
+ PREFIX bds: <http://www.bigdata.com/rdf/search#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
 
-export interface SparqlDataProviderOptions {
-    endpointUrl: string;
-    imageClassUris?: string[];
-}
 
-export class SparqlDataProvider implements DataProvider {
+export class WikidataDataProvider implements DataProvider {
     constructor(private options: SparqlDataProviderOptions) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = DEFAULT_PREFIX + `
-            SELECT ?class ?instcount ?label ?parent
-            WHERE {
-                {{
-                    SELECT ?class (count(?inst) as ?instcount)
-                    WHERE {
-                        ?inst a ?class.
-                    }
-                    GROUP BY ?class
-                }} UNION {
-                    ?class a owl:Class
-                }
-                OPTIONAL { ?class rdfs:label ?label.}
-                OPTIONAL {?class rdfs:subClassOf ?parent}
+            SELECT distinct ?class ?label ?parent ?instcount WHERE {
+              
+              ?class rdfs:label ?label.                            
+              ?class wdt:P279 wd:Q35120.     			  
+              BIND("" as ?instcount)
             }
         `;
         return executeSparqlQuery<Sparql.TreeResponse>(
@@ -51,17 +44,9 @@ export class SparqlDataProvider implements DataProvider {
         const query = DEFAULT_PREFIX + `
             SELECT ?link ?instcount ?label
             WHERE {
-                {{
-                    SELECT ?link (count(?link) as ?instcount)
-                    WHERE {
-                        [] ?link ?obj.
-                        filter (IsIRI(?obj))
-                    }
-                    GROUP BY ?link
-                }} UNION {
-                    ?link a owl:ObjectProperty
-                }
-                OPTIONAL {?link rdfs:label ?label}
+                  ?link wdt:P279* wd:Q18616576.
+                  ?link rdfs:label ?label.
+                  BIND("" as ?instcount)
             }
         `;
         return executeSparqlQuery<Sparql.LinkTypesResponse>(
@@ -69,38 +54,45 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
-        const ids: string = params.elementIds.map(escapeIri).join(', ');
-        const query = DEFAULT_PREFIX + `
+        return Promise.all(params.elementIds.map(element => {
+            const iri = escapeIri(element);
+            const query = DEFAULT_PREFIX + `
             SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {{
-                FILTER (?inst IN (${ids}))
-                OPTIONAL {?inst rdf:type ?class . }
-                OPTIONAL {?inst rdfs:label ?label}
-            } UNION {
-                FILTER (?inst IN (${ids}))
-                OPTIONAL {?inst ?propType ?propValue.
+            WHERE {
+                BIND(${iri} as ?inst)
+                            
+                OPTIONAL {${iri} wdt:P31 ?class . }
+                OPTIONAL {${iri} rdfs:label ?label}
+                            
+                OPTIONAL {${iri} ?propType ?propValue.
                 FILTER (isLiteral(?propValue)) }
-            }}
-        `;
-        return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
-            .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
-            .then(elementsInfo => (this.options.imageClassUris && this.options.imageClassUris.length > 0)
-                ? this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris)
-                : elementsInfo);
+            }
+            `;
+            return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
+                .then(elementsInfo => getElementsInfo(elementsInfo, [element]))
+                .then(elementsInfo => (this.options.imageClassUris && this.options.imageClassUris.length > 0)
+                    ? this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris)
+                    : elementsInfo);
+            }
+        )).then(results => {
+            return _.assign({}, results);
+        }
+        );
+
     }
 
     private enrichedElementsInfo(
         elementsInfo: Dictionary<ElementModel>,
         types: string[]
     ): Promise<Dictionary<ElementModel>> {
-        const ids = Object.keys(elementsInfo).map(escapeIri).join(', ');
-        const typesString = types.map(escapeIri).join(', ');
+        const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');;
+        const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');;
 
         const query = DEFAULT_PREFIX + `
             SELECT ?inst ?linkType ?image
             WHERE {{
-                FILTER (?inst IN (${ids}))
-                FILTER (?linkType IN (${typesString}))
+                VALUES (?inst) {${ids}}
+                VALUES (?linkType) {${typesString}} 
                 ?inst ?linkType ?image
             }}
         `;
@@ -112,15 +104,13 @@ export class SparqlDataProvider implements DataProvider {
         elementIds: string[];
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
-        const ids = params.elementIds.map(escapeIri).join(', ');
-        const types = params.linkTypeIds.map(escapeIri).join(', ');
+        const ids = params.elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = DEFAULT_PREFIX + `
             SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.
-                FILTER (?source in (${ids}))
-                FILTER (?target in (${ids}))
-                FILTER (?type in (${types}))
+                VALUES (?source) {${ids}}
+                VALUES (?target) {${ids}}                
             }
         `;
         return executeSparqlQuery<Sparql.LinksInfoResponse>(
@@ -166,29 +156,28 @@ export class SparqlDataProvider implements DataProvider {
         }
 
         const elementTypePart = params.elementTypeId
-            ? `?inst rdf:type ${escapeIri(params.elementTypeId)} . ${'\n'}` : '';
-        const textSearchPart = params.text ? (
-            ' OPTIONAL {?inst rdfs:label ?search1} \n' +
-            ' FILTER regex(COALESCE(str(?search1), str(?extractedLabel)), "' + params.text + '", "i")\n') : '';
+            ? `?inst wdt:P31 ?instType. ?instType wdt:P279* ${escapeIri(params.elementTypeId)} . ${'\n'}` : '';
+        const textSearchPart = params.text ?
+            ` ?inst rdfs:label ?searchLabel. 
+              SERVICE bds:search {
+                     ?searchLabel bds:search "${params.text}" ;  
+                                  bds:minRelevance '0.5';
+                                  bds:relevance ?score.
+              }
+            ` : '';
         let query = DEFAULT_PREFIX + `
             SELECT ?inst ?class ?label
             WHERE {
                 {
-                    SELECT distinct ?inst WHERE {
+                    SELECT distinct ?inst ?score WHERE {
                         ${elementTypePart}
                         ${refQueryPart}
                         ${textSearchPart}
-                    } ORDER BY ?sortLabel LIMIT ${params.limit} OFFSET ${params.offset}
+                    } LIMIT ${params.limit} OFFSET ${params.offset}
                 }
-                OPTIONAL {?inst rdf:type ?foundClass}
+                OPTIONAL {?inst wdt:P31 ?foundClass}
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}
-                OPTIONAL {?inst rdfs:label ?label1. 
-                    FILTER (langmatches(lang(?label1), "` + params.languageCode + `"))}
-                OPTIONAL {?inst rdfs:label ?label2. 
-                    FILTER (langmatches(lang(?label2), ""))}
-                    ${sparqlExtractLabel('?inst', '?extractedLabel')}
-                BIND (coalesce (?label1, ?label2, ?extractedLabel) as ?sortLabel)
+                OPTIONAL {?inst rdfs:label ?label}                
             }
         `;
 
@@ -201,33 +190,4 @@ function escapeIri(iri: string) {
     return `<${iri}>`;
 }
 
-export function sparqlExtractLabel(subject: string, label: string): string {
-    return  `
-        BIND ( str( ${subject} ) as ?uriStr)
-        BIND ( strafter(?uriStr, "#") as ?label3)
-        BIND ( strafter(strafter(?uriStr, "//"), "/") as ?label6) 
-        BIND ( strafter(?label6, "/") as ?label5)   
-        BIND ( strafter(?label5, "/") as ?label4)   
-        BIND (if (?label3 != "", ?label3, 
-            if (?label4 != "", ?label4, 
-            if (?label5 != "", ?label5, ?label6))) as ${label})
-    `;
-};
-
-export function executeSparqlQuery<T>(endpoint: string, query: string) {
-    return new Promise<T>((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: endpoint,
-            contentType: 'application/sparql-query',
-            headers: {
-                Accept: 'application/json, text/turtle',
-            },
-            data: query,
-            success: result => resolve(result),
-            error: (jqXHR, statusText, error) => reject(error || jqXHR),
-        });
-    });
-}
-
-export default SparqlDataProvider;
+export default WikidataDataProvider;
