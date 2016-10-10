@@ -30,9 +30,8 @@ export const DefaultElementTemplate = `
             </div>
             
             <hr class="ontodia-default-template_body_expander__hr">
-
-            <div class="ontodia-default-template_body_expander_property-table">
-                {{#if propsAsList.length}}
+            {{#if propsAsList.length}}
+                <div class="ontodia-default-template_body_expander_property-table">
                     {{#each propsAsList}}
                         <div  class="ontodia-default-template_body_expander_property-table_row">
                             <div class="ontodia-default-template_body_expander_property-table_row__key"
@@ -50,10 +49,10 @@ export const DefaultElementTemplate = `
                             </div>
                         </div>
                     {{/each}}
-                {{else}}
-                    no properties
-                {{/if}}
-            </div>
+                </div>
+            {{else}}
+                no properties
+            {{/if}}
         {{/if}}        
     </div>
 </div>
@@ -91,9 +90,8 @@ export const LeftBarTemplate = `
                 </div>
                 
                 <hr class="ontodia-default-template_body_expander__hr">
-
-                <div class="ontodia-default-template_body_expander_property-table">
-                    {{#if propsAsList.length}}
+                {{#if propsAsList.length}}
+                    <div class="ontodia-default-template_body_expander_property-table">
                         {{#each propsAsList}}
                             <div  class="ontodia-default-template_body_expander_property-table_row">
                                 <div class="ontodia-default-template_body_expander_property-table_row__key"
@@ -111,10 +109,10 @@ export const LeftBarTemplate = `
                                 </div>
                             </div>
                         {{/each}}
-                    {{else}}
-                        no properties
-                    {{/if}}
-                </div>
+                    </div>
+                {{else}}
+                    no properties
+                {{/if}}
             {{/if}}
         </div>
     </div>
@@ -157,9 +155,8 @@ export const BigIconTemplate = `
             </div>
             
             <hr class="ontodia-big-icon-template_property_content__hr">
-
-            <div class="ontodia-big-icon-template_property_content_property-table">
-                {{#if propsAsList.length}}
+            {{#if propsAsList.length}}
+                <div class="ontodia-big-icon-template_property_content_property-table">
                     {{#each propsAsList}}
                         <div  class="ontodia-big-icon-template_property_content_property-table_row">
                             <div class="ontodia-big-icon-template_property_content_property-table_row__key"
@@ -177,10 +174,10 @@ export const BigIconTemplate = `
                             </div>
                         </div>
                     {{/each}}
-                {{else}}
-                    no properties
-                {{/if}}
-            </div>
+                </div>
+            {{else}}
+                no properties
+            {{/if}}
         </div>
         </div>
     {{/if}}
@@ -243,9 +240,8 @@ export const PersonTemplate = `
             </div>
             
             <hr class="ontodia-person-template_property_content__hr">
-
-            <div class="ontodia-person-template_property_content_property-table">
-                {{#if propsAsList.length}}
+            {{#if propsAsList.length}}
+                <div class="ontodia-person-template_property_content_property-table">
                     {{#each propsAsList}}
                         <div  class="ontodia-person-template_property_content_property-table_row">
                             <div class="ontodia-person-template_property_content_property-table_row__key"
@@ -263,10 +259,10 @@ export const PersonTemplate = `
                             </div>
                         </div>
                     {{/each}}
-                {{else}}
-                    no properties
-                {{/if}}
-            </div>
+                </div>
+            {{else}}
+                no properties
+            {{/if}}
         </div>
         </div>
     {{/if}}
@@ -282,10 +278,8 @@ export const OrganizationTemplate = `
             style="color: {{color}};">
         </div>
         <div class="ontodia-organization-template_body_data">
-            <div title="{{types}}" class="ontodia-organization-template_body_data_types">
-                <div class="ontodia-organization-template_body_data_types__type-string">
-                    Organization
-                </div>
+            <div title="{{types}}" class="ontodia-organization-template_body_data__types">
+                Organization
             </div>
             {{#if (getProperty props "http://xmlns.com/foaf/0.1/name") }}
                 <label title="{{getProperty props "http://xmlns.com/foaf/0.1/name" }}" 
@@ -313,9 +307,8 @@ export const OrganizationTemplate = `
             </div>
             
             <hr class="ontodia-default-template_body_expander__hr">
-
-            <div class="ontodia-default-template_body_expander_property-table">
-                {{#if propsAsList.length}}
+            {{#if propsAsList.length}}
+                <div class="ontodia-default-template_body_expander_property-table">
                     {{#each propsAsList}}
                         <div  class="ontodia-default-template_body_expander_property-table_row">
                             <div class="ontodia-default-template_body_expander_property-table_row__key"
@@ -333,10 +326,10 @@ export const OrganizationTemplate = `
                             </div>
                         </div>
                     {{/each}}
-                {{else}}
-                    no properties
-                {{/if}}
-            </div>
+                </div>
+            {{else}}
+                no properties
+            {{/if}}
         {{/if}}
         </div>  
    </div>

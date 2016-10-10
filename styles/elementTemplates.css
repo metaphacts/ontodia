@@ -190,7 +190,7 @@ div.ontodia-default-template_type-line__icon {
     font-weight: 100;
     margin-bottom: 5px;
     max-height: 200px;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
 }
 
@@ -226,6 +226,7 @@ div.ontodia-default-template_type-line__icon {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: initial;
+    padding-right: 10px;
 }
 
 /*BIG ICON ELEMENT TEMPLATE*/
@@ -337,9 +338,8 @@ div.ontodia-default-template_type-line__icon {
 .ontodia-big-icon-template_property_content_property-table {
     font-size: 15px;
     font-weight: 100;
-    margin-bottom: 5px;
     max-height: 200px;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
 }
 
@@ -375,6 +375,7 @@ div.ontodia-default-template_type-line__icon {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: initial;
+    padding-right: 10px;
 }
 
 /*LEFT BAR ELEMENT TEMPLATE*/
@@ -467,7 +468,7 @@ div.ontodia-default-template_type-line__icon {
     font-weight: 100;
     margin-bottom: 5px;
     max-height: 200px;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
 }
 
@@ -503,6 +504,7 @@ div.ontodia-default-template_type-line__icon {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: initial;
+    padding-right: 10px;
 }
 
 /*PERSON TEMPLATE*/
@@ -634,9 +636,8 @@ div.ontodia-default-template_type-line__icon {
 .ontodia-person-template_property_content_property-table {
     font-size: 15px;
     font-weight: 100;
-    margin-bottom: 5px;
     max-height: 200px;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
 }
 
@@ -672,6 +673,7 @@ div.ontodia-default-template_type-line__icon {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: initial;
+    padding-right: 10px;
 }
 
 /*ORGANIZATION ELEMENT TEMPLATE*/
@@ -715,15 +717,11 @@ div.ontodia-default-template_type-line__icon {
 }
 
 .ontodia-organization-template_body_data__types {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	font-size: 11px;
-	font-weight: 100;
-}
-
-.ontodia-organization-template_body_data_types__type-string{
-	width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    font-weight: 100;
 }
 
 .ontodia-organization-template_body_data__label {

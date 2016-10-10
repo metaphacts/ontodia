@@ -23,6 +23,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                     </div>
                 );
                 return (
+                <div className='ontodia-default-template_body_expander_property-table'>
                     <div className='ontodia-default-template_body_expander_property-table_row'>
                         <div title={prop.id} className='ontodia-default-template_body_expander_property-table_row__key'>
                             {prop.name}
@@ -31,6 +32,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                             {values}
                         </div>
                     </div>
+                </div>
                 );
             });
         } else {
@@ -50,7 +52,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                     </div>
                 </div>
                 <hr className='ontodia-default-template_body_expander__hr'/>
-                <div className='ontodia-default-template_body_expander_property-table'>{propertyTable}</div>
+                {propertyTable}
             </div>
         ) : undefined;
 
