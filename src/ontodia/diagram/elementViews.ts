@@ -224,11 +224,14 @@ export class LinkView extends joint.dia.LinkView {
     private setView(view: DiagramView) {
         this.view = view;
         this.listenTo(this.view, 'change:language', this.updateLabel);
+
         const typeModel = this.getTypeModel();
         if (typeModel) {
             // if type model is missing => link will be deleted from diagram
             this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
+            this.listenTo(typeModel, 'change:label', this.updateLabel);
         }
+
         this.updateLabel();
     }
     private updateLabel() {

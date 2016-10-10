@@ -143,6 +143,11 @@ export function getEnrichedElementsInfo(
     return elementsInfo;
 }
 
+export function getLinkTypesInfo(response: Sparql.LinkTypesInfoResponse): LinkType[] {
+    const sparqlLinkTypes = response.results.bindings;
+    return sparqlLinkTypes.map((sLinkType: Sparql.LinkTypeInfo) => getLinkTypeInfo(sLinkType));
+}
+
 export function getLinksInfo(response: Sparql.LinksInfoResponse): LinkModel[] {
     const sparqlLinks = response.results.bindings;
     return sparqlLinks.map((sLink: Sparql.LinkInfo) => getLinkInfo(sLink));
@@ -269,6 +274,15 @@ export function getLinkInfo(sLinkInfo: Sparql.LinkInfo): LinkModel {
     return {
         linkTypeId: sLinkInfo.type.value,
         sourceId: sLinkInfo.source.value,
-        targetId: sLinkInfo.target.value
+        targetId: sLinkInfo.target.value,
+    };
+}
+
+export function getLinkTypeInfo(sLinkInfo: Sparql.LinkTypeInfo): LinkType {
+    if (!sLinkInfo) { return undefined; }
+    return {
+        id: sLinkInfo.typeId.value,
+        label: { values: [getLocalizedString(sLinkInfo.label, sLinkInfo.typeId.value)] },
+        count: getInstCount(sLinkInfo.instcount),
     };
 }

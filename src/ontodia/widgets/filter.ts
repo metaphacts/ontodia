@@ -55,7 +55,7 @@ class FilterCriterionView extends Backbone.View<FilterCriterion> {
             var elementLabel = getElementLabel(this.model.get('elementId'));
             var linkTypeId = this.model.get('linkTypeId');
             var linkType = this.view.model.getLinkType(linkTypeId);
-            var linkTypeLabel = linkType ? this.view.getLocalizedText(linkType.label.values).text : uri2name(linkTypeId)
+            var linkTypeLabel = linkType ? this.view.getLocalizedText(linkType.get('label').values).text : uri2name(linkTypeId)
             var span = $('<span>Connected to </span>')
                 .append($('<span class="element-label"></span>').text(elementLabel))
                 .append(" through ")

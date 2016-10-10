@@ -1,5 +1,3 @@
-import * as $ from 'jquery';
-
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 import {
@@ -10,9 +8,10 @@ import {
     getLinksTypesOf,
     getFilteredData,
     getEnrichedElementsInfo,
+    getLinkTypesInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
-import {executeSparqlQuery, sparqlExtractLabel, SparqlDataProviderOptions} from "./provider";
+import {executeSparqlQuery, SparqlDataProviderOptions} from './provider';
 import * as _ from 'lodash';
 
 const DEFAULT_PREFIX =
@@ -53,6 +52,20 @@ export class WikidataDataProvider implements DataProvider {
             this.options.endpointUrl, query).then(getLinkTypes);
     }
 
+    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?typeId ?label ?instcount
+            WHERE {
+                ?typeId rdfs:label ?label.
+                VALUES (?typeId) {${ids}}.
+                BIND("" as ?instcount)      
+            }
+        `;
+        return executeSparqlQuery<Sparql.LinkTypesInfoResponse>(
+            this.options.endpointUrl, query).then(getLinkTypesInfo);
+    }
+
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         return Promise.all(params.elementIds.map(element => {
             const iri = escapeIri(element);
@@ -75,9 +88,12 @@ export class WikidataDataProvider implements DataProvider {
                     : elementsInfo);
             }
         )).then(results => {
-            return _.assign({}, results);
-        }
-        );
+            let response = {};
+            for (const respElemInfo of results) {
+                response = _.assign({}, respElemInfo);
+            }
+            return response;
+        });
 
     }
 
@@ -85,8 +101,8 @@ export class WikidataDataProvider implements DataProvider {
         elementsInfo: Dictionary<ElementModel>,
         types: string[]
     ): Promise<Dictionary<ElementModel>> {
-        const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');;
-        const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');;
+        const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
 
         const query = DEFAULT_PREFIX + `
             SELECT ?inst ?linkType ?image

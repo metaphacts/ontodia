@@ -104,7 +104,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
 
     private updateText() {
         if (this.$span) {
-            this.$span.text(this.view.getLocalizedText(this.model.label.values).text);
+            this.$span.text(this.view.getLocalizedText(this.model.get('label').values).text);
         }
     }
 
@@ -276,7 +276,7 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
 
     private orderedViews(views: LinkInToolBox[]): LinkInToolBox[] {
         return _.sortBy(views, view => this.view.getLocalizedText(
-            view.model.label.values).text);
+            view.model.get('label').values).text);
     }
 }
 

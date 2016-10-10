@@ -10,6 +10,7 @@ import {
     getLinksTypesOf,
     getFilteredData,
     getEnrichedElementsInfo,
+    getLinkTypesInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
 
@@ -45,6 +46,20 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.TreeResponse>(
             this.options.endpointUrl, query).then(getClassTree);
+    }
+
+    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?type ?label ?instcount
+            WHERE {
+                ?type rdfs:label ?label.
+                VALUES (?type) {${ids}}.
+                BIND("" as ?instcount)      
+            }
+        `;
+        return executeSparqlQuery<Sparql.LinkTypesInfoResponse>(
+            this.options.endpointUrl, query).then(getLinkTypesInfo);
     }
 
     linkTypes(): Promise<LinkType[]> {

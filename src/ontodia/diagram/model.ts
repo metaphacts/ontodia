@@ -371,17 +371,29 @@ export class DiagramModel extends Backbone.Model {
         .catch(err => console.error(err));
     }
 
-    getLinkType(linkTypeId: string) : FatLinkType {
+    getLinkType(linkTypeId: string): FatLinkType {
         if (!this.linkTypes.hasOwnProperty(linkTypeId)) {
-            const linkType = new FatLinkType({
+            const defaultLabel = {values: [{text: uri2name(linkTypeId), lang: ''}]};
+            this.linkTypes[linkTypeId] = new FatLinkType({
                 linkType: {
-                    id: linkTypeId, count: 0,
-                    label: {values: [{text: uri2name(linkTypeId), lang: ""}]}
-                }, diagram: this
-                //
+                    id: linkTypeId,
+                    count: 0,
+                    label: defaultLabel,
+                },
+                diagram: this,
             });
-            linkType.set({visible: true, showLabel: true});
-            this.linkTypes[linkTypeId] = linkType;
+            this.linkTypes[linkTypeId].set({visible: true, showLabel: true});
+            this.dataProvider.linkTypesInfo({ linkTypeIds: [linkTypeId]}).then(linkTypesInfo => {
+                for (const lt of linkTypesInfo) {
+                    if (!this.linkTypes[lt.id]) { continue; }
+                    this.linkTypes[lt.id].set({
+                        label: lt.label,
+                        count: lt.count,
+                    });
+                    // linkType.set('label', lt.label);
+                    this.linkTypes[lt.id].set('label', lt.label);
+                }
+            });
         }
         return this.linkTypes[linkTypeId];
     }

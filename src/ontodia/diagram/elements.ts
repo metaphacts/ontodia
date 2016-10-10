@@ -74,7 +74,7 @@ export class Link extends joint.dia.Link {
  *     isNew?: boolean
  */
 export class FatLinkType extends Backbone.Model {
-    label: { values: LocalizedString[] };
+    // label: { values: LocalizedString[] };
     diagram: DiagramModel;
 
     constructor(params: {
@@ -82,7 +82,8 @@ export class FatLinkType extends Backbone.Model {
         diagram: DiagramModel;
     }) {
         super({id: params.linkType.id});
-        this.label = params.linkType.label;
+        // this.label = params.linkType.label;
+        this.set('label', params.linkType.label);
         this.diagram = params.diagram;
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }

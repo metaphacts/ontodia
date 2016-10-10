@@ -32,6 +32,12 @@ export interface ElementInfo {
     propValue?: TypedField;
 }
 
+export interface LinkTypeInfo {
+    typeId: Field;
+    label?: Label;
+    instcount?: TypedField;
+}
+
 export interface LinkInfo {
     source: Field;
     type: Field;
@@ -65,6 +71,10 @@ export interface LinkTypesResponse extends SparqlResponse {
 
 export interface ElementsInfoResponse extends SparqlResponse  {
     results: { bindings: ElementInfo[] };
+};
+
+export interface LinkTypesInfoResponse extends SparqlResponse  {
+    results: { bindings: LinkTypeInfo[] };
 };
 
 export interface LinksInfoResponse extends SparqlResponse  {
