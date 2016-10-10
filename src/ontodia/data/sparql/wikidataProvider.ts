@@ -31,7 +31,13 @@ export class WikidataDataProvider implements DataProvider {
             SELECT distinct ?class ?label ?parent ?instcount WHERE {
               
               ?class rdfs:label ?label.                            
-              ?class wdt:P279 wd:Q35120.     			  
+              { ?class wdt:P279 wd:Q35120. }
+                UNION 
+              { ?parent wdt:P279 wd:Q35120.
+                ?class wdt:P279 ?parent. }
+                UNION 
+              { ?parent wdt:P279/wdt:P279 wd:Q35120.
+                ?class wdt:P279 ?parent. }
               BIND("" as ?instcount)
             }
         `;
