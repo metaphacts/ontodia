@@ -4,6 +4,7 @@ import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 import {
     getClassTree,
+    getClassInfo,
     getLinkTypes,
     getElementsInfo,
     getLinksInfo,
@@ -46,6 +47,20 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.TreeResponse>(
             this.options.endpointUrl, query).then(getClassTree);
+    }
+
+    classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
+        const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?class ?label ?instcount
+            WHERE {
+                ?class rdfs:label ?label.
+                VALUES (?class) {${ids}}.
+                BIND("" as ?instcount)
+            }
+        `;
+        return executeSparqlQuery<Sparql.ClassInfoResponse>(
+            this.options.endpointUrl, query).then(getClassInfo);
     }
 
     linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {

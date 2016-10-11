@@ -7,7 +7,7 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
-import { Element, Link, FatLinkType } from './elements';
+import { Element, Link, FatLinkType, FatClassModel } from './elements';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
 
@@ -43,8 +43,8 @@ export class DiagramModel extends Backbone.Model {
     dataProvider: DataProvider;
 
     classTree: ClassTreeElement[];
-    classesById: { [id: string]: ClassModel } = {};
-    linkTypes: { [id: string]: FatLinkType };
+    private classesById: Dictionary<FatClassModel> = {};
+    private linkTypes: Dictionary<FatLinkType>;
 
     elements: { [id: string]: Element } = {};
     linksByType: { [type: string]: Link[] } = {};
@@ -192,7 +192,7 @@ export class DiagramModel extends Backbone.Model {
     private setClassTree(rootClasses: ClassModel[]) {
         this.classTree = rootClasses;
         const addClass = (cl: ClassTreeElement) => {
-            this.classesById[cl.id] = cl;
+            this.classesById[cl.id] = new FatClassModel(cl);
             _.each(cl.children, addClass);
         };
         _.each(rootClasses, addClass);
@@ -369,6 +369,29 @@ export class DiagramModel extends Backbone.Model {
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => console.error(err));
+    }
+
+    getClassesById(typeId): FatClassModel {
+        if (!this.classesById[typeId]) {
+            this.classesById[typeId] = new FatClassModel({
+                id: typeId,
+                label: { values: [{lang: '', text: uri2name(typeId)}] },
+                count: 0,
+                children: [],
+            });
+            this.dataProvider.classInfo({classIds: [typeId]}).then(classes => {
+                for (const cl of classes) {
+                    if (!this.classesById[cl.id]) { continue; }
+                    this.classesById[cl.id].set('label', cl.label);
+                    this.classesById[cl.id].set('count', cl.count);
+                }
+            });
+        }
+        return this.classesById[typeId];
+    }
+
+    getLinkTypes(): Dictionary<FatLinkType> {
+        return this.linkTypes;
     }
 
     getLinkType(linkTypeId: string): FatLinkType {

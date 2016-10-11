@@ -219,24 +219,21 @@ export class LinkView extends joint.dia.LinkView {
         return result;
     }
     getTypeModel(): FatLinkType {
-        return this.view.model.linkTypes[this.model.get('typeId')];
+        return this.view.model.getLinkType(this.model.get('typeId'));
     }
     private setView(view: DiagramView) {
         this.view = view;
         this.listenTo(this.view, 'change:language', this.updateLabel);
 
         const typeModel = this.getTypeModel();
-        if (typeModel) {
-            // if type model is missing => link will be deleted from diagram
-            this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
-            this.listenTo(typeModel, 'change:label', this.updateLabel);
-        }
+        this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
+        this.listenTo(typeModel, 'change:label', this.updateLabel);
 
         this.updateLabel();
     }
     private updateLabel() {
         const linkTypeId: string = this.model.get('typeId');
-        const typeModel = this.view.model.linkTypes[linkTypeId];
+        const typeModel = this.view.model.getLinkType(linkTypeId);
 
         let style: any = getDefaultLinkStyle(this.model.layoutOnly);
 

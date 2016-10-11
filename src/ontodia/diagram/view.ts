@@ -26,7 +26,7 @@ import {
 import { ElementModel, LocalizedString, ClassModel } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { Element } from './elements';
+import { Element, FatClassModel } from './elements';
 
 import { LinkView } from './elementViews';
 import { TemplatedUIElementView } from './templatedElementView';
@@ -388,13 +388,13 @@ export class DiagramView extends Backbone.Model {
 
     public getElementTypeString(elementModel: ElementModel): string {
         return elementModel.types.map((typeId: string) => {
-            const type = this.model.classesById[typeId];
-            return type ? this.getElementTypeLabel(type).text : uri2name(typeId);
+            const type = this.model.getClassesById(typeId);
+            return this.getElementTypeLabel(type).text;
         }).join(', ');
     }
 
-    public getElementTypeLabel(type: ClassModel): LocalizedString {
-        const label = this.getLocalizedText(type.label.values);
+    public getElementTypeLabel(type: FatClassModel): LocalizedString {
+        const label = this.getLocalizedText(type.get('label').values);
         return label ? label : { text: uri2name(type.id), lang: '' };
     }
 

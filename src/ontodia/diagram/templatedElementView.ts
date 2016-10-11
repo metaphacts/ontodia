@@ -26,7 +26,10 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
 
     initialize() {
         joint.dia.ElementView.prototype.initialize.apply(this, arguments);
-        this.listenTo(this.model, 'state:loaded', this.updateUI);
+        this.listenTo(this.model, 'state:loaded', () => {
+            this.subscribeOnTypesChanging();
+            this.updateUI();
+        });
         this.listenTo(this.model, 'change:isExpanded', () => {
             this.updateUI();
         });
@@ -47,6 +50,14 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
         }
         return super.remove() as this;
+    }
+
+    private subscribeOnTypesChanging() {
+        if (this.model.template && this.model.template.types) {
+            this.model.template.types.forEach(type => {
+                this.listenTo(this.view.model.getClassesById(type), 'change:label', this.updateUI);
+            });
+        }
     }
 
     private setView(view: DiagramView) {
@@ -123,7 +134,9 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     }
 
     private getTemplateOptions(): TemplateProps {
-        const types = (this.view ? this.view.getElementTypeString(this.model.template) : 'Thing');
+        const types = (this.view && this.model.template.types.length > 0 ?
+                        this.view.getElementTypeString(this.model.template) :
+                        'Thing');
         const label = (this.view ? this.view.getLocalizedText(this.model.template.label.values).text : '');
         let propTable = [];
         if (this.model.template.properties) {

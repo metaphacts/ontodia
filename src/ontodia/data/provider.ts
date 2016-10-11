@@ -5,6 +5,10 @@ import {
 export interface DataProvider {
     classTree(): Promise<ClassModel[]>;
 
+    classInfo(params: {
+        classIds: string[];
+    }): Promise<ClassModel[]>;
+
     linkTypes(): Promise<LinkType[]>;
 
     linkTypesInfo(params: {

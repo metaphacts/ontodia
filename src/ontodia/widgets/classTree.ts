@@ -62,8 +62,8 @@ export class ClassTree extends Backbone.View<FilterModel> {
                 'core': {'data': tree},
                 'types': iconMap,
                 'sort': function (firstClassId, secondClassId) {
-                    return model.classesById[firstClassId]['text'].localeCompare(
-                        model.classesById[secondClassId]['text']);
+                    return model.getClassesById(firstClassId).model['text'].localeCompare(
+                        model.getClassesById(secondClassId).model['text']);
                 },
                 'search': {
                     'case_insensitive': true,

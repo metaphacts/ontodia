@@ -199,7 +199,7 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
                 });
                 this.view.model.storeBatchCommand();
             });
-        }
+        };
 
         let linkState = this.getLinksState();
         createButton('invisible', linkState === 'invisible',
@@ -233,7 +233,7 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
             .append('<h4 class="links-heading">Other</h4>')
             .append(this.$notConnectedLinksList);
 
-        _.each(this.view.model.linkTypes, (link: FatLinkType) => {
+        _.each(this.view.model.getLinkTypes(), (link: FatLinkType) => {
             let elementView = new LinkInToolBox({model: link, view: this.view}).render();
             this.listenTo(elementView, 'filter-click', (linkType: FatLinkType) => {
                 let selectedElement: Element = this.model.get('selectedElement');

@@ -71,6 +71,11 @@ export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
     return tree;
 }
 
+export function getClassInfo(response: Sparql.ClassInfoResponse): ClassModel[] {
+    const sparqlClasses = response.results.bindings;
+    return sparqlClasses.map((sClass: Sparql.ClassInfo) => getClassModel(sClass));
+}
+
 export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
