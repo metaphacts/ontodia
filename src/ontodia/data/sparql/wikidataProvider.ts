@@ -95,7 +95,9 @@ export class WikidataDataProvider implements DataProvider {
             WHERE {
                 BIND(${iri} as ?inst)
                             
-                OPTIONAL {${iri} wdt:P31 ?class . }
+                OPTIONAL {
+                    {${iri} wdt:P31 ?class .} UNION {${iri} wdt:P31 ?realClass. ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class}
+                }
                 OPTIONAL {${iri} rdfs:label ?label}
                             
                 OPTIONAL {${iri} ?propType ?propValue.
