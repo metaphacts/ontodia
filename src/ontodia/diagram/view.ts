@@ -300,6 +300,10 @@ export class DiagramView extends Backbone.Model {
                 element.addToFilter();
             }
         });
+
+        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
+            this.selection.reset();
+        });
     }
 
     private enableDragAndDropSupport() {

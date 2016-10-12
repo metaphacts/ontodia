@@ -9,7 +9,7 @@ import DiagramView from '../diagram/view';
 
 export { LinkTypesToolboxModel };
 export interface LinkInToolBoxProps {
-    model: FatLinkType;
+    link: FatLinkType;
     onFilter?: (FatLinkType) => void;
 }
 
@@ -18,46 +18,18 @@ export interface LinkInToolBoxProps {
  *     filter-click(link: FatLinkType) - when filter button clicked
  */
 export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
-    private model: FatLinkType;
     connectedElementCount: number;
 
     constructor(props: LinkInToolBoxProps) {
         super(props);
-        this.model = props.model;
-        // this.listenTo(this.model, 'change:visible', this.onChangeLinkState);
-        // this.listenTo(this.model, 'change:showLabel', this.onChangeLinkState);
+        // this.listenTo(this.link, 'change:visible', this.onChangeLinkState);
+        // this.listenTo(this.link, 'change:showLabel', this.onChangeLinkState);
         // this.listenTo(this.view, 'change:language', this.updateText);
     }
 
-    public getLinkState(): string {
-        if (!this.model.get('visible')) {
-            return 'invisible';
-        } else if (!this.model.get('showLabel')) {
-            return 'withoutLabels';
-        } else {
-            return 'allVisible';
-        }
-    }
-
-    public setLinkState(state: string, options?: {isFromHandler?: boolean}) {
-        if (state === 'invisible') {
-            this.model.set({visible: false, showLabel: false}, options);
-        } else if (state === 'withoutLabels') {
-            this.model.set({visible: true, showLabel: false}, options);
-        } else if (state === 'allVisible') {
-            this.model.set({visible: true, showLabel: true}, options);
-        }
-    }
-
     render() {
-        let linkState = this.getLinkState();
-
-        const onButtonClick = () => {
-            this.setLinkState(this.model.id, {isFromHandler: true});
-        };
-
         let badgeContainer = '';
-        if (this.model.get('isNew')) {
+        if (this.props.link.get('isNew')) {
             badgeContainer = <div>
                 <span className='label label-warning'>new</span>
                 <span className='badge'>{this.getLinkCount()}</span>
@@ -66,38 +38,60 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
         const onFilter = () => {
             if (this.props.onFilter) {
-                this.props.onFilter(this.model);
+                this.props.onFilter(this.props.link);
             }
         };
 
+        const isChecked = (stateName): boolean => {
+            let curState;
+            if (!this.props.link.get('visible')) {
+                curState = 'invisible';
+            } else if (!this.props.link.get('showLabel')) {
+                curState = 'withoutLabels';
+            } else {
+                curState = 'allVisible';
+            }
+            return stateName === curState;
+        }
+
+        const onClickDisable = () => {
+            this.props.link.set({visible: false, showLabel: false});
+        };
+
+        const onClickNoLabels = () => {
+            this.props.link.set({visible: true, showLabel: false});
+        };
+
+        const onClickAll = () => {
+            this.props.link.set({visible: true, showLabel: true});
+        };
+
         return (
-            <li data-linkTypeId={this.model.id} className='list-group-item linkInToolBox clearfix'>
+            <li data-linkTypeId={this.props.link.id} className='list-group-item linkInToolBox clearfix'>
                 <span className='btn-group btn-group-xs' data-toggle='buttons'>
-                    <label className='btn btn-default'
+                    <label className={'btn btn-default' + (isChecked('invisible') ? ' active' : '')}
                         id='invisible'
                         title='Hide links and labels'
-                        onClick={onButtonClick}
+                        onClick={onClickDisable}
                     >
-                        <input type='radio' autoComplete='off' checked={linkState === 'invisible'}/>
-                        <span className={'glyphicon glyphicon-remove' + (linkState === 'invisible' ? ' active' : '')}/>
+                        <input type='radio' autoComplete='off' checked={isChecked('invisible')}/>
+                        <span className='glyphicon glyphicon-remove'/>
                     </label>
-                    <label className='btn btn-default'
+                    <label className={'btn btn-default' + (isChecked('withoutLabels') ? ' active' : '')}
                         id='withoutLabels'
                         title='Show links without labels'
-                        onClick={onButtonClick}
+                        onClick={onClickNoLabels}
                     >
-                        <input type='radio' autoComplete='off' checked={linkState === 'withoutLabels'}/>
-                        <span className={'glyphicon glyphicon-resize-horizontal'
-                                        + (linkState === 'withoutLabels' ? ' active' : '')}/>
+                        <input type='radio' autoComplete='off' checked={isChecked('withoutLabels')}/>
+                        <span className='glyphicon glyphicon-resize-horizontal'/>
                     </label>
-                    <label className='btn btn-default'
+                    <label className={'btn btn-default' + (isChecked('allVisible') ? ' active' : '')}
                         id='allVisible'
                         title='Show links with labels'
-                        onClick={onButtonClick}
+                        onClick={onClickAll}
                     >
-                        <input type='radio' autoComplete='off' checked={linkState === 'allVisible'}/>
-                        <span className={'glyphicon glyphicon-text-width'
-                                        + (linkState === 'allVisible' ? ' active' : '')}/>
+                        <input type='radio' autoComplete='off' checked={isChecked('allVisible')}/>
+                        <span className='glyphicon glyphicon-text-width'/>
                     </label>
                 </span>
                 <div className='link-title'>{this.getText()}</div>
@@ -108,7 +102,7 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private getText() {
-        return this.model.get('label').values[0].text;
+        return this.props.link.get('label').values[0].text;
     }
 
     private getLinkCount() {
@@ -120,25 +114,34 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
 export interface LinkTypesToolboxProps extends Backbone.ViewOptions<LinkTypesToolboxModel> {
     links: FatLinkType[];
+    dataState?: string;
+    selectedElementName?: string;
     filterCallback?: (FatLinkType) => void;
 }
 
 export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}> {
-    private links: FatLinkType[];
-    private views: LinkInToolBox[] = [];
-
     constructor(props: LinkTypesToolboxProps) {
         super(props);
-        this.links = props.links || [];
     }
 
     render() {
-        for (const link of this.links) {
-            this.views.push(<LinkInToolBox key={link.id} model={link} onFilter={this.props.filterCallback}/>);
+        const links = this.props.links || [];
+        const dataState = this.props.dataState || null;
+        const views = [];
+        for (const link of links) {
+            views.push(<LinkInToolBox key={link.id} link={link} onFilter={this.props.filterCallback}/>);
+        }
+
+        let selectedElementName = '';
+        if (this.props.selectedElementName) {
+            selectedElementName = <h4 className='links-heading'>
+                Connected to
+                <span>{this.props.selectedElementName}</span>
+            </h4>;
         }
 
         return (
-            <div className='link-types-toolbox stateBasedProgress'>
+            <div className='link-types-toolbox stateBasedProgress' data-state={dataState}>
                 <div className='link-types-toolbox-heading'>
                     <div className='btn-group btn-group-xs'>
                         <label className='btn btn-default' title='Hide links and labels'>
@@ -166,13 +169,8 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
                     </div>
                 </div>
                 <div className='link-lists'>
-                    <h4 className='links-heading'>
-                        Connected to
-                        <span></span>
-                    </h4>
-                    <ul className='list-group connected-links'>{this.views}</ul>
-                    <h4 className='links-heading'>Other</h4>
-                    <ul className='list-group'></ul>
+                    {selectedElementName}
+                    <ul className='list-group connected-links'>{views}</ul>
                 </div>
             </div>
         );
@@ -185,39 +183,33 @@ export interface LinkTypesToolboxShellProps extends Backbone.ViewOptions<LinkTyp
 
 export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> {
     private view: DiagramView;
+    private dataState: string;
     private filterCallback: (FatLinkType) => void;
     private linksOfElement: FatLinkType[] = [];
 
     constructor(public props: LinkTypesToolboxShellProps) {
-        super(_.extend({
-            tagName: 'div',
-            className: 'link-types-toolbox stateBasedProgress',
-        }, props));
-        this.$el.addClass(_.result(this, 'className') as string);
+        super(_.extend({ tagName: 'div' }, props));
+
         this.view = props.view;
-        this.listenTo(this.view.model, 'state:dataLoaded', () => {
-            this.render();
-        });
+
+        this.listenTo(this.view.model, 'state:dataLoaded', () => this.render());
         this.listenTo(this.view, 'change:language', this.updateLinks);
+
         this.listenTo(this.view.selection, 'add remove reset', _.debounce(() => {
             const single = this.view.selection.length === 1
                 ? this.view.selection.first() : null;
             if (single !== this.model.get('selectedElement')) {
                 this.model.set('selectedElement', single);
             }
+            this.updateLinks();
         }, 50));
-        this.listenTo(this.model, 'state:beginQuery', () => {
-            this.$el.attr('data-state', 'querying');
-        });
+
+        this.listenTo(this.model, 'state:beginQuery', () => { this.setDataState('querying'); });
+        this.listenTo(this.model, 'state:queryError', () => this.setDataState('error'));
         this.listenTo(this.model, 'state:endQuery', () => {
-            if (this.model.connectionsOfSelectedElement) {
-                this.$el.attr('data-state', 'finished');
-            } else {
-                this.$el.removeAttr('data-state');
-            }
+            this.setDataState(this.model.connectionsOfSelectedElement ? 'finished' : null);
             this.updateLinks();
         });
-        this.listenTo(this.model, 'state:queryError', () => this.$el.attr('data-state', 'error'));
 
         this.filterCallback = (linkType: FatLinkType) => {
             let selectedElement: Element = this.model.get('selectedElement');
@@ -225,17 +217,24 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         };
     }
 
+    private setDataState(dataState) {
+        this.dataState = dataState;
+        this.render();
+    }
+
     private updateLinks() {
+        if (this.linksOfElement) {
+            this.unsubscribeOnLinksEevents(this.linksOfElement);
+        }
+
         if (this.model.connectionsOfSelectedElement) {
             const linkTypeIds = _.keys(this.model.connectionsOfSelectedElement);
-            this.unsubscribeOnLinksEevents(this.linksOfElement);
             this.linksOfElement = linkTypeIds.map(id => {
                 return this.view.model.getLinkType(id);
             });
             this.subscribeOnLinksEevents(this.linksOfElement);
-            this.$('.links-heading').show();
         } else {
-            this.$('.links-heading').hide();
+           this.linksOfElement = null;
         }
         this.render();
     }
@@ -252,14 +251,19 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         };
     }
 
+    public getReactComponent() {
+        return React.createElement(LinkTypesToolbox, {
+            links: this.linksOfElement,
+            filterCallback: this.filterCallback,
+            dataState: this.dataState,
+        });
+    }
+
     public render(): LinkTypesToolboxShell {
-        this.$el.empty();
+        // this.$el.empty();
         ReactDOM.render(
-            React.createElement(LinkTypesToolbox, {
-                links: this.linksOfElement,
-                filterCallback: this.filterCallback,
-            }),
-            this.$el.get(0),
+            this.getReactComponent(),
+            this.el,
         );
         return this;
     }
