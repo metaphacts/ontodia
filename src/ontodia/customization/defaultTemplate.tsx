@@ -14,26 +14,27 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
 
         let propertyTable: React.ReactNode;
         if (props.propsAsList && props.propsAsList.length > 0) {
-            propertyTable = props.propsAsList.map(prop => {
-                const values = prop.properties.map(({value}) =>
-                    <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
-                        key={prop.id} title={value.text}>
-                        {value.text}
-                    </div>
-                );
-                return (
-                <div className='ontodia-default-template_body_expander_property-table'>
-                    <div className='ontodia-default-template_body_expander_property-table_row'>
-                        <div title={prop.id} className='ontodia-default-template_body_expander_property-table_row__key'>
-                            {prop.name}
+            propertyTable = <div className='ontodia-default-template_body_expander_property-table'>
+                {props.propsAsList.map(prop => {
+                    const values = prop.properties.map(({value}) =>
+                        <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
+                            key={prop.id} title={value.text}>
+                            {value.text}
                         </div>
-                        <div className='ontodia-default-template_body_expander_property-table_row_key_values'>
-                            {values}
+                    );
+                    return (
+                        <div className='ontodia-default-template_body_expander_property-table_row'>
+                            <div title={prop.id}
+                                className='ontodia-default-template_body_expander_property-table_row__key'>
+                                {prop.name}
+                            </div>
+                            <div className='ontodia-default-template_body_expander_property-table_row_key_values'>
+                                {values}
+                            </div>
                         </div>
-                    </div>
-                </div>
-                );
-            });
+                    );
+                })}
+            </div>;
         } else {
             propertyTable = <div>no properties</div>;
         }
