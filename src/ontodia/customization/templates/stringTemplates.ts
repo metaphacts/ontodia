@@ -60,8 +60,8 @@ export const DefaultElementTemplate = `
 
 export const LeftBarTemplate = `
     <div class="ontodia-left-bar-template"
-    style="background-color: {{color}};">
-        <div class="ontodia-left-bar-template_body">
+         style="background-color: {{color}}; border-color: {{color}}">
+        <div class="ontodia-left-bar-template_body" style="border-left-color: {{color}}">
             {{#if imgUrl}}
                 <img src="{{imgUrl}}" class="ontodia-left-bar-template_body__image"/>
             {{/if}}
@@ -121,8 +121,8 @@ export const LeftBarTemplate = `
 export const BigIconTemplate = `
 <div class="ontodia-big-icon-container">
     <div class="ontodia-big-icon-template" 
-        style="background-color: {{color}}">
-        <div class="ontodia-big-icon-template_body">
+        style="background-color: {{color}}; border-color: {{color}}">
+        <div class="ontodia-big-icon-template_body" style="border-left-color: {{color}}">
             <div style="flex-grow: 1;">
                 <label title="{{label}}" class="ontodia-big-icon-template_body__label">
                     {{label}}
@@ -187,8 +187,8 @@ export const BigIconTemplate = `
 export const PersonTemplate = `
 <div class="ontodia-person-container">
     <div class="ontodia-person-template" 
-        style="background-color: {{color}}">
-        <div class="ontodia-person-template_body">
+        style="background-color: {{color}}; border-color: {{color}}">
+        <div class="ontodia-person-template_body" style="border-left-color: {{color}}">
             {{#if imgUrl}}
                 <div class="ontodia-person-template_body_photo" aria-hidden="true" style="color: {{color}}">
                     <img 

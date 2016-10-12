@@ -5,12 +5,11 @@ import { TemplateProps } from './props';
 export class DefaultTemplate extends React.Component<TemplateProps, {}> {
     render() {
         const props = this.props;
-        const rootStyle = {backgroundColor: props.color};
-        const imageStyle = {borderBottomColor: props.color};
-        const iconClassName = props.icon + ' ontodia-default-template_type-line__icon';
 
+        const imageStyle: React.CSSProperties = {borderBottomColor: props.color};
         const image = props.imgUrl ? (
-            <img src={props.imgUrl} className='ontodia-default-template__image' style={imageStyle}/>
+            <img src={props.imgUrl} className='ontodia-default-template__image'
+                style={imageStyle} />
         ) : undefined;
 
         let propertyTable: React.ReactNode;
@@ -57,10 +56,12 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         ) : undefined;
 
         return (
-            <div className='ontodia-default-template' style={rootStyle}>
+            <div className='ontodia-default-template' style={{
+                backgroundColor: props.color,
+                borderColor: props.color,
+            }}>
                 <div className='ontodia-default-template_type-line' title={props.label}>
-                    <div className={iconClassName}
-                        aria-hidden='true'>
+                    <div className={`${props.icon} ontodia-default-template_type-line__icon`} aria-hidden='true'>
                     </div>
                     <div title={props.types} className='ontodia-default-template_type-line_text-container'>
                         <div className='ontodia-default-template_type-line_text-container__text'>
@@ -69,7 +70,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                     </div>
                 </div>
                 {image}
-                <div className='ontodia-default-template_body'>
+                <div className='ontodia-default-template_body' style={{borderColor: props.color}}>
                     <label className='ontodia-default-template_body__label' title={props.label}>
                         {props.label}
                     </label>

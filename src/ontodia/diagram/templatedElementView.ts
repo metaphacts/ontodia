@@ -90,8 +90,13 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
 
     private resizeContainer() {
         const body = this.foreignObject.firstChild as HTMLElement;
-        const width = body.clientWidth ? body.clientWidth : body.offsetWidth;
-        const height = body.clientHeight ? body.clientHeight : body.offsetHeight;
+        let width = body.offsetWidth ? body.offsetWidth : body.clientWidth;
+        let height = body.offsetHeight ? body.offsetHeight : body.clientHeight;
+
+        // HACK: fix sometimes missing bottom/right borders
+        width += 1;
+        height += 1;
+
         this.foreignObject.setAttribute('style', `width: ${width}px; height: ${height}px`);
         this.foreignObject.setAttribute('width', width.toString());
         this.foreignObject.setAttribute('height', height.toString());

@@ -101,8 +101,9 @@
 .ontodia-default-template {
     max-width: 350px;
     float: left;
-    padding: 1px;
     border-radius: 12px;
+    border-style: solid;
+    border-width: 1px;
 }
 
 .ontodia-default-template_type-line {
@@ -139,6 +140,8 @@ div.ontodia-default-template_type-line__icon {
 .ontodia-default-template_body {
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
+    border-top-style: solid;
+    border-top-width: 1px;
     background: white;
     padding: 7px 10px 8px 10px;
     overflow: hidden;
@@ -237,9 +240,9 @@ div.ontodia-default-template_type-line__icon {
 }
 
 .ontodia-big-icon-template {
-    padding: 1px;
-    padding: 1px;
     border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
 }
 
 .ontodia-big-icon-template_body {
@@ -248,6 +251,8 @@ div.ontodia-default-template_type-line__icon {
     border-radius: 3px;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
+    border-left-style: solid;
+    border-left-width: 1px;
     padding: 3px 6px 3px 6px;
     background: white;
     display: flex;
@@ -383,8 +388,9 @@ div.ontodia-default-template_type-line__icon {
 .ontodia-left-bar-template {
     max-width: 400px;
     float: left;
-    padding: 1px;
     border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
 }
 
 .ontodia-left-bar-template_body {
@@ -392,6 +398,8 @@ div.ontodia-default-template_type-line__icon {
     border-radius: 2px;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
+    border-left-style: solid;
+    border-left-width: 1px;
     padding: 2px 10px 0px 6px;
     margin-left: 13px;
     background: white;
@@ -515,9 +523,9 @@ div.ontodia-default-template_type-line__icon {
 }
 
 .ontodia-person-template {
-    padding: 1px;
-    padding: 1px;
     border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
 }
 
 .ontodia-person-template_body {
@@ -526,6 +534,8 @@ div.ontodia-default-template_type-line__icon {
     border-radius: 3px;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
+    border-left-style: solid;
+    border-left-width: 1px;
     padding: 3px 12px 3px 0px;
     background: white;
     display: flex;
