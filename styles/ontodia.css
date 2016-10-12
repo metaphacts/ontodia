@@ -189,7 +189,7 @@
 .link-types-toolbox .link-lists {
     flex-grow: 1;
     -webkit-flex-grow: 1; /* safari 8 */
-    height: 0;
+    /*height: 0;*/
     overflow-y: scroll;
 }
 .link-types-toolbox ul {

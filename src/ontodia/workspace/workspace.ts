@@ -6,7 +6,7 @@ import DiagramModel from '../diagram/model';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 import { ClassTree } from '../widgets/classTree';
 import { FilterView, FilterModel } from '../widgets/filter';
-import { LinkTypesToolbox, LinkTypesToolboxModel } from '../widgets/linksToolbox';
+import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 import { resizePanel, setPanelHeight } from '../resizable-panels';
 import { resizeItem } from '../resizable-items';
@@ -32,7 +32,7 @@ export class Workspace extends Component<Props, {}> {
     private diagram: DiagramView;
     private tree: ClassTree;
     private filter: FilterView;
-    private linksToolbox: LinkTypesToolbox;
+    private linksToolbox: LinkTypesToolboxShell;
 
     constructor(props: Props) {
         super(props);
@@ -89,7 +89,7 @@ export class Workspace extends Component<Props, {}> {
             this.filter.model.filterByType(classId);
         });
 
-        this.linksToolbox = new LinkTypesToolbox({
+        this.linksToolbox = new LinkTypesToolboxShell({
             model: new LinkTypesToolboxModel(this.model),
             view: this.diagram,
             el: this.markup.linkTypesPanel,
@@ -116,7 +116,7 @@ export class Workspace extends Component<Props, {}> {
         }
 
         if (this.linksToolbox) {
-            this.linksToolbox.remove();
+            // this.linksToolbox.remove();
         }
 
         $(window).off('resize', this.onWindowResize);
