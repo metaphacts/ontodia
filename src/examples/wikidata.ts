@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         endpointUrl: '/sparql-endpoint',
                         imageClassUris: [
                             'http://www.wikidata.org/prop/direct/P18',
+                            'http://www.wikidata.org/prop/direct/P154',
                         ],
                     }),
                     preloadedElements: {},
