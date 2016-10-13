@@ -36,7 +36,7 @@ module.exports = {
         ]
     },
     plugins: [
-        new HtmlWebpackPlugin({
+      /*  new HtmlWebpackPlugin({
             title: 'Ontodia Local Demo',
             chunks: ['commons', 'demo'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
@@ -64,9 +64,8 @@ module.exports = {
             title: 'Ontodia Style Customization Demo',
             chunks: ['commons', 'styleCustomization', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
-        }),
+        }),*/
         new HtmlWebpackPlugin({
-            filename: 'wikidata.html',
             title: 'Ontodia Style Customization Demo',
             chunks: ['commons', 'wikidata', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
