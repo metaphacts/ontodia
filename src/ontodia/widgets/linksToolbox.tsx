@@ -4,12 +4,15 @@ import * as ReactDOM from 'react-dom';
 import * as Backbone from 'backbone';
 
 import LinkTypesToolboxModel from './linksToolboxModel';
-import { FatLinkType } from '../diagram/elements';
+import { Element, FatLinkType } from '../diagram/elements';
 import DiagramView from '../diagram/view';
+import { LocalizedString } from '../data/model';
 
 export { LinkTypesToolboxModel };
 export interface LinkInToolBoxProps {
     link: FatLinkType;
+    count: number;
+    language?: string;
     onFilter?: (FatLinkType) => void;
 }
 
@@ -18,8 +21,6 @@ export interface LinkInToolBoxProps {
  *     filter-click(link: FatLinkType) - when filter button clicked
  */
 export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
-    connectedElementCount: number;
-
     constructor(props: LinkInToolBoxProps) {
         super(props);
         // this.listenTo(this.link, 'change:visible', this.onChangeLinkState);
@@ -28,13 +29,9 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     render() {
-        let badgeContainer = '';
-        if (this.props.link.get('isNew')) {
-            badgeContainer = <div>
-                <span className='label label-warning'>new</span>
-                <span className='badge'>{this.getLinkCount()}</span>
-            </div>;
-        }
+        const newIcon = (this.props.link.get('isNew') ? <span className='label label-warning'>new</span> : '');
+        const countIcon = (this.props.count > 0 ? <span className='badge'>{this.props.count}</span> : '');
+        const badgeContainer = (newIcon || countIcon ? <div>{newIcon}{countIcon}</div> : '');
 
         const onFilter = () => {
             if (this.props.onFilter) {
@@ -52,7 +49,7 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
                 curState = 'allVisible';
             }
             return stateName === curState;
-        }
+        };
 
         const onClickDisable = () => {
             this.props.link.set({visible: false, showLabel: false});
@@ -102,18 +99,20 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private getText() {
-        return this.props.link.get('label').values[0].text;
-    }
-
-    private getLinkCount() {
-        if (this.connectedElementCount && this.connectedElementCount > 0) {
-            return this.connectedElementCount;
+        for (const value of this.props.link.get('label').values){
+            if (value.lang === this.props.language) {
+                return value.text;
+            }
         }
+        return this.props.link.get('label').values[0].text;
     }
 }
 
 export interface LinkTypesToolboxProps extends Backbone.ViewOptions<LinkTypesToolboxModel> {
     links: FatLinkType[];
+    countMap?: { [linkTypeId: string]: number };
+    label?: { values: LocalizedString[] };
+    language?: string;
     dataState?: string;
     selectedElementName?: string;
     filterCallback?: (FatLinkType) => void;
@@ -124,12 +123,43 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
         super(props);
     }
 
+    private getLocalizedText(label) {
+        for (const value of label.values){
+            if (value.lang === this.props.language) {
+                return value.text;
+            }
+        }
+        return label.values[0].text;
+    }
+
     render() {
-        const links = this.props.links || [];
+        const countMap = this.props.countMap || {};
+        const links = (this.props.links || []).sort((a, b) => {
+            const aText = this.getLocalizedText(a.get('label')).toLowerCase();
+            const bText = this.getLocalizedText(b.get('label')).toLowerCase();
+
+            if (aText < bText) {
+                return -1;
+            }
+
+            if (aText > bText) {
+                return 1;
+            }
+
+            return 0;
+        });
         const dataState = this.props.dataState || null;
         const views = [];
         for (const link of links) {
-            views.push(<LinkInToolBox key={link.id} link={link} onFilter={this.props.filterCallback}/>);
+            views.push(
+                <LinkInToolBox
+                    key={link.id}
+                    link={link}
+                    onFilter={this.props.filterCallback}
+                    language={this.props.language}
+                    count={countMap[link.id] || 0}
+                />
+                );
         }
 
         let selectedElementName = '';
@@ -140,20 +170,49 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
             </h4>;
         }
 
+        const onClickDisable = () => {
+            for (const link of links) {
+                link.set({visible: false, showLabel: false});
+            }
+        };
+
+        const onClickNoLabels = () => {
+            for (const link of links) {
+                link.set({visible: true, showLabel: false});
+            }
+        };
+
+        const onClickAll = () => {
+            for (const link of links) {
+                link.set({visible: true, showLabel: true});
+            }
+        };
+
+        let connectedTo = '';
+        if (this.props.label) {
+            connectedTo = <h4 className='links-heading' style={{display: 'block'}}>
+                Connected to{'\u00A0'}
+                <span>{this.getLocalizedText(this.props.label)}</span>
+            </h4>;
+        }
+
         return (
             <div className='link-types-toolbox stateBasedProgress' data-state={dataState}>
                 <div className='link-types-toolbox-heading'>
                     <div className='btn-group btn-group-xs'>
-                        <label className='btn btn-default' title='Hide links and labels'>
-                            <input type='hidden'/>
+                        <label className='btn btn-default'
+                            title='Hide links and labels'
+                            onClick={onClickDisable}>
                             <span className='glyphicon glyphicon-remove'/>
                         </label>
-                        <label className='btn btn-default' title='Show links without labels'>
-                            <input type='hidden'/>
+                        <label className='btn btn-default'
+                            title='Show links without labels'
+                            onClick={onClickNoLabels}>
                             <span className='glyphicon glyphicon-resize-horizontal'/>
                         </label>
-                        <label className='btn btn-default' title='Show links with labels'>
-                            <input type='hidden'/>
+                        <label className='btn btn-default'
+                            title='Show links with labels'
+                            onClick={onClickAll}>
                             <span className='glyphicon glyphicon-text-width'/>
                         </label>
                     </div>
@@ -168,6 +227,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
                         style={ {width: '100%'} }>
                     </div>
                 </div>
+                {connectedTo}
                 <div className='link-lists'>
                     {selectedElementName}
                     <ul className='list-group connected-links'>{views}</ul>
@@ -186,13 +246,15 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
     private dataState: string;
     private filterCallback: (FatLinkType) => void;
     private linksOfElement: FatLinkType[] = [];
+    private countMap: { [linkTypeId: string]: number };
 
     constructor(public props: LinkTypesToolboxShellProps) {
         super(_.extend({ tagName: 'div' }, props));
 
         this.view = props.view;
 
-        this.listenTo(this.view.model, 'state:dataLoaded', () => this.render());
+        this.listenTo(this.view, 'change:language', this.render);
+        this.listenTo(this.view.model, 'state:dataLoaded', this.render);
         this.listenTo(this.view, 'change:language', this.updateLinks);
 
         this.listenTo(this.view.selection, 'add remove reset', _.debounce(() => {
@@ -228,6 +290,7 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         }
 
         if (this.model.connectionsOfSelectedElement) {
+            this.countMap = this.model.connectionsOfSelectedElement;
             const linkTypeIds = _.keys(this.model.connectionsOfSelectedElement);
             this.linksOfElement = linkTypeIds.map(id => {
                 return this.view.model.getLinkType(id);
@@ -235,6 +298,7 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
             this.subscribeOnLinksEevents(this.linksOfElement);
         } else {
            this.linksOfElement = null;
+           this.countMap = {};
         }
         this.render();
     }
@@ -242,6 +306,8 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
     private subscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
         for (const link of linksOfElement) {
             this.listenTo(link, 'change:label', this.render);
+            this.listenTo(link, 'change:visible', this.render);
+            this.listenTo(link, 'change:showLabel', this.render);
         };
     }
 
@@ -252,15 +318,19 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
     }
 
     public getReactComponent() {
+        let selectedElement: Element = this.model.get('selectedElement');
+
         return React.createElement(LinkTypesToolbox, {
             links: this.linksOfElement,
+            countMap: this.countMap,
             filterCallback: this.filterCallback,
             dataState: this.dataState,
+            language: this.view.getLanguage(),
+            label: (selectedElement ? selectedElement.template.label : null),
         });
     }
 
     public render(): LinkTypesToolboxShell {
-        // this.$el.empty();
         ReactDOM.render(
             this.getReactComponent(),
             this.el,
