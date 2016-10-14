@@ -429,7 +429,7 @@ export class DiagramView extends Backbone.Model {
     }
 
     public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
-        this.typeStyleResolvers.push(resolver);
+        this.typeStyleResolvers.unshift(resolver);
         return resolver;
     }
 
@@ -453,7 +453,7 @@ export class DiagramView extends Backbone.Model {
     }
 
     public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {
-        this.templatesResolvers.push(resolver);
+        this.templatesResolvers.unshift(resolver);
         return resolver;
     }
 
@@ -477,7 +477,7 @@ export class DiagramView extends Backbone.Model {
     }
 
     public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
-        this.linkStyleResolvers.push(resolver);
+        this.linkStyleResolvers.unshift(resolver);
         return resolver;
     }
 
