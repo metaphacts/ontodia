@@ -8,6 +8,7 @@ import {
 import { DataProvider } from '../data/provider';
 
 import { Element, Link, FatLinkType, FatClassModel } from './elements';
+import { DataFetchingThread } from './dataFetchingThread';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
 
@@ -49,10 +50,15 @@ export class DiagramModel extends Backbone.Model {
     elements: { [id: string]: Element } = {};
     linksByType: { [type: string]: Link[] } = {};
 
+    private classFetchingThread: DataFetchingThread;
+    private linkFetchingThread: DataFetchingThread;
+
     constructor(isViewOnly = false) {
         super();
         this.set('isViewOnly', isViewOnly);
         this.initializeExternalAddRemoveSupport();
+        this.classFetchingThread = new DataFetchingThread();
+        this.linkFetchingThread = new DataFetchingThread();
     }
 
     isViewOnly(): boolean { return this.get('isViewOnly'); }
@@ -379,11 +385,15 @@ export class DiagramModel extends Backbone.Model {
                 count: 0,
                 children: [],
             });
-            this.dataProvider.classInfo({classIds: [typeId]}).then(classes => {
-                for (const cl of classes) {
-                    if (!this.classesById[cl.id]) { continue; }
-                    this.classesById[cl.id].set('label', cl.label);
-                    this.classesById[cl.id].set('count', cl.count);
+            this.classFetchingThread.startFetchingThread(typeId).then(typeIds => {
+                if (typeIds.length > 0) {
+                    this.dataProvider.classInfo({classIds: typeIds}).then(classes => {
+                        for (const cl of classes) {
+                            if (!this.classesById[cl.id]) { continue; }
+                            this.classesById[cl.id].set('label', cl.label);
+                            this.classesById[cl.id].set('count', cl.count);
+                        }
+                    });
                 }
             });
         }
@@ -406,15 +416,18 @@ export class DiagramModel extends Backbone.Model {
                 diagram: this,
             });
             this.linkTypes[linkTypeId].set({visible: true, showLabel: true});
-            this.dataProvider.linkTypesInfo({ linkTypeIds: [linkTypeId]}).then(linkTypesInfo => {
-                for (const lt of linkTypesInfo) {
-                    if (!this.linkTypes[lt.id]) { continue; }
-                    this.linkTypes[lt.id].set({
-                        label: lt.label,
-                        count: lt.count,
+            this.linkFetchingThread.startFetchingThread(linkTypeId).then(linkTypeIds => {
+                if (linkTypeIds.length > 0) {
+                    this.dataProvider.linkTypesInfo({ linkTypeIds: linkTypeIds}).then(linkTypesInfo => {
+                        for (const lt of linkTypesInfo) {
+                            if (!this.linkTypes[lt.id]) { continue; }
+                            this.linkTypes[lt.id].set({
+                                label: lt.label,
+                                count: lt.count,
+                            });
+                            this.linkTypes[lt.id].set('label', lt.label);
+                        }
                     });
-                    // linkType.set('label', lt.label);
-                    this.linkTypes[lt.id].set('label', lt.label);
                 }
             });
         }
