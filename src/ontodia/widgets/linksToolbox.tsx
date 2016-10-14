@@ -13,7 +13,8 @@ export interface LinkInToolBoxProps {
     link: FatLinkType;
     count: number;
     language?: string;
-    onFilter?: (FatLinkType) => void;
+    onPressFilter?: (FatLinkType) => void;
+    filterKey?: string;
 }
 
 /**
@@ -23,9 +24,67 @@ export interface LinkInToolBoxProps {
 export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     constructor(props: LinkInToolBoxProps) {
         super(props);
-        // this.listenTo(this.link, 'change:visible', this.onChangeLinkState);
-        // this.listenTo(this.link, 'change:showLabel', this.onChangeLinkState);
-        // this.listenTo(this.view, 'change:language', this.updateText);
+    }
+
+    private onPressFilter = () => {
+        if (this.props.onPressFilter) {
+            this.props.onPressFilter(this.props.link);
+        }
+    };
+
+    private changeState = (state) => {
+        if (state === 'invisible') {
+            this.props.link.set({visible: false, showLabel: false});
+        } else if (state === 'withoutLabels') {
+            this.props.link.set({visible: true, showLabel: false});
+        } else if (state === 'allVisible') {
+            this.props.link.set({visible: true, showLabel: true});
+        }
+    };
+
+    private isChecked = (stateName): boolean => {
+        let curState;
+        if (!this.props.link.get('visible')) {
+            curState = 'invisible';
+        } else if (!this.props.link.get('showLabel')) {
+            curState = 'withoutLabels';
+        } else {
+            curState = 'allVisible';
+        }
+        return stateName === curState;
+    };
+
+    private getText = () => {
+        let fullText;
+        for (const value of this.props.link.get('label').values){
+            if (value.lang === this.props.language) {
+                fullText = value.text;
+                break;
+            }
+        }
+        fullText = this.props.link.get('label').values[0].text;
+        if (this.props.filterKey) {
+            const leftIndex =  fullText.indexOf(this.props.filterKey);
+            const rightIndex = leftIndex + this.props.filterKey.length;
+            let firstPart = '';
+            let selectedPart = '';
+            let lastPart = '';
+
+            if (leftIndex === 0) {
+                selectedPart = fullText.substring(0, rightIndex);
+            } else {
+                firstPart = fullText.substring(0, leftIndex);
+                selectedPart = fullText.substring(leftIndex, rightIndex);
+            }
+            if (rightIndex <= fullText.length) {
+                lastPart = fullText.substring(rightIndex, fullText.length);
+            }
+            return <span>
+                {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
+            </span>;
+        } else {
+            return <span>{fullText}</span>;
+        }
     }
 
     render() {
@@ -33,78 +92,39 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         const countIcon = (this.props.count > 0 ? <span className='badge'>{this.props.count}</span> : '');
         const badgeContainer = (newIcon || countIcon ? <div>{newIcon}{countIcon}</div> : '');
 
-        const onFilter = () => {
-            if (this.props.onFilter) {
-                this.props.onFilter(this.props.link);
-            }
-        };
-
-        const isChecked = (stateName): boolean => {
-            let curState;
-            if (!this.props.link.get('visible')) {
-                curState = 'invisible';
-            } else if (!this.props.link.get('showLabel')) {
-                curState = 'withoutLabels';
-            } else {
-                curState = 'allVisible';
-            }
-            return stateName === curState;
-        };
-
-        const onClickDisable = () => {
-            this.props.link.set({visible: false, showLabel: false});
-        };
-
-        const onClickNoLabels = () => {
-            this.props.link.set({visible: true, showLabel: false});
-        };
-
-        const onClickAll = () => {
-            this.props.link.set({visible: true, showLabel: true});
-        };
-
         return (
             <li data-linkTypeId={this.props.link.id} className='list-group-item linkInToolBox clearfix'>
                 <span className='btn-group btn-group-xs' data-toggle='buttons'>
-                    <label className={'btn btn-default' + (isChecked('invisible') ? ' active' : '')}
+                    <label
+                        className={'btn btn-default' + (this.isChecked('invisible') ? ' active' : '')}
                         id='invisible'
                         title='Hide links and labels'
-                        onClick={onClickDisable}
+                        onClick={() => this.changeState('invisible')}
                     >
-                        <input type='radio' autoComplete='off' checked={isChecked('invisible')}/>
                         <span className='glyphicon glyphicon-remove'/>
                     </label>
-                    <label className={'btn btn-default' + (isChecked('withoutLabels') ? ' active' : '')}
+                    <label
+                        className={'btn btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
                         id='withoutLabels'
                         title='Show links without labels'
-                        onClick={onClickNoLabels}
+                        onClick={() => this.changeState('withoutLabels')}
                     >
-                        <input type='radio' autoComplete='off' checked={isChecked('withoutLabels')}/>
                         <span className='glyphicon glyphicon-resize-horizontal'/>
                     </label>
-                    <label className={'btn btn-default' + (isChecked('allVisible') ? ' active' : '')}
+                    <label
+                        className={'btn btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
                         id='allVisible'
                         title='Show links with labels'
-                        onClick={onClickAll}
+                        onClick={() => this.changeState('allVisible')}
                     >
-                        <input type='radio' autoComplete='off' checked={isChecked('allVisible')}/>
                         <span className='glyphicon glyphicon-text-width'/>
                     </label>
                 </span>
                 <div className='link-title'>{this.getText()}</div>
                 {badgeContainer}
-                <a className='filter-button' onClick={onFilter}><img/></a>
+                <a className='filter-button' onClick={this.onPressFilter}><img/></a>
             </li>
         );
-    }
-
-    private getText() {
-        for (const value of this.props.link.get('label').values){
-            if (value.lang === this.props.language) {
-                return value.text;
-            }
-        }
-        return this.props.link.get('label').values[0].text;
     }
 }
 
@@ -114,13 +134,13 @@ export interface LinkTypesToolboxProps extends Backbone.ViewOptions<LinkTypesToo
     label?: { values: LocalizedString[] };
     language?: string;
     dataState?: string;
-    selectedElementName?: string;
     filterCallback?: (FatLinkType) => void;
 }
 
-export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}> {
+export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { filterKey: string }> {
     constructor(props: LinkTypesToolboxProps) {
         super(props);
+        this.state = {filterKey: ''};
     }
 
     private getLocalizedText(label) {
@@ -132,61 +152,74 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
         return label.values[0].text;
     }
 
-    render() {
+    private compareLinks = (a: FatLinkType, b: FatLinkType) => {
+        const aLabel = a.get('label');
+        const bLabel = b.get('label');
+        const aText = (aLabel ? this.getLocalizedText(aLabel).toLowerCase() : null);
+        const bText = (bLabel ? this.getLocalizedText(bLabel).toLowerCase() : null);
+
+        if (aText < bText) {
+            return -1;
+        }
+
+        if (aText > bText) {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private onChangeInput = (e) => {
+        this.setState({filterKey: e.target.value});
+    }
+
+    private changeState = (state, links) => {
+        if (state === 'invisible') {
+            for (const link of links) {
+                link.set({visible: false, showLabel: false});
+            }
+        } else if (state === 'withoutLabels') {
+            for (const link of links) {
+                link.set({visible: true, showLabel: false});
+            }
+        } else if (state === 'allVisible') {
+            for (const link of links) {
+                link.set({visible: true, showLabel: true});
+            }
+        }
+    };
+
+    private getLinks = () => {
+        return (this.props.links || []).filter(link => {
+            const label = link.get('label');
+            const text = (label ? this.getLocalizedText(label).toLowerCase() : null);
+            return (!this.state.filterKey) || (text && text.indexOf(this.state.filterKey.toLowerCase()) !== -1);
+        })
+        .sort(this.compareLinks);
+    }
+
+    private getViews = (links: FatLinkType[]) => {
         const countMap = this.props.countMap || {};
-        const links = (this.props.links || []).sort((a, b) => {
-            const aText = this.getLocalizedText(a.get('label')).toLowerCase();
-            const bText = this.getLocalizedText(b.get('label')).toLowerCase();
-
-            if (aText < bText) {
-                return -1;
-            }
-
-            if (aText > bText) {
-                return 1;
-            }
-
-            return 0;
-        });
-        const dataState = this.props.dataState || null;
         const views = [];
         for (const link of links) {
             views.push(
                 <LinkInToolBox
                     key={link.id}
                     link={link}
-                    onFilter={this.props.filterCallback}
+                    onPressFilter={this.props.filterCallback}
                     language={this.props.language}
                     count={countMap[link.id] || 0}
+                    filterKey={this.state.filterKey}
                 />
                 );
         }
+        return views;
+    }
 
-        let selectedElementName = '';
-        if (this.props.selectedElementName) {
-            selectedElementName = <h4 className='links-heading'>
-                Connected to
-                <span>{this.props.selectedElementName}</span>
-            </h4>;
-        }
-
-        const onClickDisable = () => {
-            for (const link of links) {
-                link.set({visible: false, showLabel: false});
-            }
-        };
-
-        const onClickNoLabels = () => {
-            for (const link of links) {
-                link.set({visible: true, showLabel: false});
-            }
-        };
-
-        const onClickAll = () => {
-            for (const link of links) {
-                link.set({visible: true, showLabel: true});
-            }
-        };
+    render() {
+        const dataState = this.props.dataState || null;
+        const links = this.getLinks();
+        const views = this.getViews(links);
 
         let connectedTo = '';
         if (this.props.label) {
@@ -199,20 +232,29 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
         return (
             <div className='link-types-toolbox stateBasedProgress' data-state={dataState}>
                 <div className='link-types-toolbox-heading'>
+                    <input
+                        className='search-input form-control'
+                        type='text'
+                        value={this.state.filterKey}
+                        onChange={this.onChangeInput}
+                        placeholder='Search for...'
+                    />
+                </div>
+                <div className='link-types-toolbox-heading'>
                     <div className='btn-group btn-group-xs'>
                         <label className='btn btn-default'
                             title='Hide links and labels'
-                            onClick={onClickDisable}>
+                            onClick={() => this.changeState('invisible', links)}>
                             <span className='glyphicon glyphicon-remove'/>
                         </label>
                         <label className='btn btn-default'
                             title='Show links without labels'
-                            onClick={onClickNoLabels}>
+                            onClick={() => this.changeState('withoutLabels', links)}>
                             <span className='glyphicon glyphicon-resize-horizontal'/>
                         </label>
                         <label className='btn btn-default'
                             title='Show links with labels'
-                            onClick={onClickAll}>
+                            onClick={() => this.changeState('allVisible', links)}>
                             <span className='glyphicon glyphicon-text-width'/>
                         </label>
                     </div>
@@ -229,7 +271,6 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, {}>
                 </div>
                 {connectedTo}
                 <div className='link-lists'>
-                    {selectedElementName}
                     <ul className='list-group connected-links'>{views}</ul>
                 </div>
             </div>
