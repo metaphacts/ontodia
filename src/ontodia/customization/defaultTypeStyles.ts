@@ -27,8 +27,7 @@ export const DefaultTypeStyleBundle: TypeStyleResolver[] = [
         if (
             types.indexOf('http://schema.org/Organization') !== -1 ||
             types.indexOf('http://dbpedia.org/ontology/Organisation') !== -1 ||
-            types.indexOf('http://xmlns.com/foaf/0.1/Organization') !== -1 ||
-            types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1
+            types.indexOf('http://xmlns.com/foaf/0.1/Organization') !== -1
             ) {
             return {color: '#77ca98', icon: 'ontodia-organization-icon'};
         }
