@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate } from '../index';
+import { Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate } from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -25,11 +25,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         return OrganizationTemplate;
                     }
                 });
+                diagram.registerTemplateResolver(types => {
+                    if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
+                        return PersonTemplate;
+                    }
+                });
                 diagram.registerElementStyleResolver(types => {
                     if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
                         return {color: '#77ca98', icon: 'ontodia-organization-icon'};
                     }
                 });
+                diagram.registerElementStyleResolver(types => {
+                    if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
+                        return {color: '#eb7777', icon: 'ontodia-person-icon'};
+                    }
+                });
+
                 const model = workspace.getModel();
                 model.graph.on('action:iriClick', (iri: string) => {
                     console.log(iri);
