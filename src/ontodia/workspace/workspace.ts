@@ -51,7 +51,7 @@ export class Workspace extends Component<Props, {}> {
                 onPrint: () => this.diagram.print(),
                 onExportSVG: link => this.onExportSvg(link),
                 onExportPNG: link => this.onExportPng(link),
-                onShare: () => this.props.onShareDiagram(this),
+                onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
                 onSaveDiagram: () => this.props.onSaveDiagram(this),
                 onForceLayout: () => {
                     this.forceLayout();
