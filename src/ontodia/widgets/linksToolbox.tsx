@@ -173,6 +173,10 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         this.setState({filterKey: e.target.value});
     }
 
+    private onDropFilter = () => {
+        this.setState({filterKey: ''});
+    }
+
     private changeState = (state, links) => {
         if (state === 'invisible') {
             for (const link of links) {
@@ -229,16 +233,28 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
             </h4>;
         }
 
+        let dropButton = '';
+        if (this.state.filterKey) {
+            dropButton = <button type='button'
+                className='close link-types-toolbox-heading_searching-box__drob-button'
+                onClick={this.onDropFilter}>
+                <span className='glyphicon glyphicon-remove'></span>
+            </button>;
+        }
+
         return (
             <div className='link-types-toolbox stateBasedProgress' data-state={dataState}>
-                <div className='link-types-toolbox-heading'>
-                    <input
-                        className='search-input form-control'
-                        type='text'
-                        value={this.state.filterKey}
-                        onChange={this.onChangeInput}
-                        placeholder='Search for...'
-                    />
+                <div className='link-types-toolbox-heading' style={{paddingBottom: '0px'}}>
+                    <div className='link-types-toolbox-heading_searching-box'>
+                        <input
+                            className='search-input form-control'
+                            type='text'
+                            value={this.state.filterKey}
+                            onChange={this.onChangeInput}
+                            placeholder='Search for...'
+                        />
+                        {dropButton}
+                    </div>
                 </div>
                 <div className='link-types-toolbox-heading'>
                     <div className='btn-group btn-group-xs'>

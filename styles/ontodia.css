@@ -209,6 +209,14 @@
     background-color: #f5f5f5;
     padding: 6px;
 }
+.link-types-toolbox-heading_searching-box {
+    display: flex;
+    align-items: center
+}
+.link-types-toolbox-heading_searching-box__drob-button {
+    margin-left: -25px;
+    margin-top: 1px;
+}
 .link-types-toolbox-heading .link-types-toolbox-controls {
     padding: 5px 15px;
     font-size: 14px;
