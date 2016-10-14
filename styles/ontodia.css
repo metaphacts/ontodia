@@ -617,3 +617,7 @@
 .ontodia-halo__expand--closed {
     background-image: url("../images/collapse-properties.png");
 }
+
+foreignObject div {
+    outline: none;
+}

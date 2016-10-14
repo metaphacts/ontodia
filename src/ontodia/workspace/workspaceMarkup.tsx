@@ -37,52 +37,52 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
 
     render() {
         let leftPanel = (
-            <div className="ontodia-left-panel filter-panel"
-                 data-position="right" data-step="7" data-intro-id="resize" data-intro={INTRO_RESIZE}>
-                <div className="ontodia-widget filter-item"
-                     data-position="right" data-step="1" data-intro-id="tree-view" data-intro={INTRO_CLASSES}>
-                    <div className="filter-item__inner">
-                        <div className="ontodia-widget-heading filter-item__header">Classes</div>
-                        <div ref={e => this.classTreePanel = e} className="tree-view filter-item__body"></div>
+            <div className='ontodia-left-panel filter-panel'
+                 data-position='right' data-step='7' data-intro-id='resize' data-intro={INTRO_RESIZE}>
+                <div className='ontodia-widget filter-item'
+                     data-position='right' data-step='1' data-intro-id='tree-view' data-intro={INTRO_CLASSES}>
+                    <div className='filter-item__inner'>
+                        <div className='ontodia-widget-heading filter-item__header'>Classes</div>
+                        <div ref={e => this.classTreePanel = e} className='tree-view filter-item__body'></div>
                     </div>
-                    <div className="filter-item__handle"></div>
+                    <div className='filter-item__handle'></div>
                 </div>
-                <div className="ontodia-widget filter-item"
-                     data-position="top" data-step="2" data-intro-id="filter-view" data-intro={INTRO_INSTANCES}>
-                    <div className="filter-item__inner">
-                        <div className="ontodia-widget-heading filter-item__header">Instances</div>
-                        <div ref={e => this.filterPanel = e} className="filter-view filter-item__body"></div>
+                <div className='ontodia-widget filter-item'
+                     data-position='top' data-step='2' data-intro-id='filter-view' data-intro={INTRO_INSTANCES}>
+                    <div className='filter-item__inner'>
+                        <div className='ontodia-widget-heading filter-item__header'>Instances</div>
+                        <div ref={e => this.filterPanel = e} className='filter-view filter-item__body'></div>
                     </div>
                 </div>
-                <div className="filter-panel__handle">
-                    <div className="filter-panel__handle-btn"></div>
+                <div className='filter-panel__handle'>
+                    <div className='filter-panel__handle-btn'></div>
                 </div>
             </div>
         );
 
         let rightPanel = (
-            <div className="ontodia-right-panel filter-panel">
-                <div className="ontodia-widget filter-item"
-                     data-position="left" data-step="4" data-intro-id="link-types-toolbox"
+            <div className='ontodia-right-panel filter-panel'>
+                <div className='ontodia-widget filter-item'
+                     data-position='left' data-step='4' data-intro-id='link-types-toolbox'
                      data-intro={INTRO_CONNECTIONS}>
-                    <div className="filter-item__inner">
-                        <div className="ontodia-widget-heading filter-item__header">Connections</div>
-                        <div ref={e => this.linkTypesPanel = e} className="link-types-toolbox filter-item__body"></div>
+                    <div className='filter-item__inner'>
+                        <div className='ontodia-widget-heading filter-item__header'>Connections</div>
+                        <div ref={e => this.linkTypesPanel = e} className='link-types-toolbox filter-item__body'></div>
                     </div>
                 </div>
-                <div className="filter-panel__handle">
-                    <div className="filter-panel__handle-btn"></div>
+                <div className='filter-panel__handle'>
+                    <div className='filter-panel__handle-btn'></div>
                 </div>
             </div>
         );
 
         return (
-            <div ref={e => this.element = e} className="ontodia">
-                <div className="ontodia-header">{this.props.toolbar}</div>
-                <div className="ontodia-workspace">
+            <div ref={e => this.element = e} className='ontodia'>
+                <div className='ontodia-header'>{this.props.toolbar}</div>
+                <div className='ontodia-workspace'>
                     {!this.props.isViewOnly ? leftPanel : null}
-                    <div id="diagrams" className="ontodia-main-panel diagramArea"
-                         data-position="left" data-step="3" data-intro-id="diagram-area" data-intro={INTRO_DIAGRAM}>
+                    <div id='diagrams' className='ontodia-main-panel diagramArea'
+                         data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
                         <div ref={e => this.chartPanel = e}
                             style={{overflow: 'hidden', height: '100%', width: '100%'}}>
                         </div>

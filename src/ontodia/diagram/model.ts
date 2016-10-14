@@ -469,9 +469,13 @@ export function normalizeTemplate(template: ElementModel): ElementModel {
 }
 
 export function uri2name(uri: string): string {
+    const hashIndex = uri.lastIndexOf('#');
+    if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
+        return uri.substring(hashIndex + 1);
+    }
     const lastPartStart = uri.lastIndexOf('/');
     if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
-        return uri.substring(uri.lastIndexOf('/') + 1);
+        return uri.substring(lastPartStart + 1);
     }
     return uri;
 }

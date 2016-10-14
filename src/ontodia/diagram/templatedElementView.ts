@@ -30,6 +30,9 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         this.listenTo(this.model, 'change:isExpanded', () => {
             this.updateUI();
         });
+        this.listenTo(this.model, 'focus-on-me', () => {
+            (this.foreignObject.firstChild as HTMLElement).focus();
+        });
     }
 
     render(): TemplatedUIElementView {
@@ -80,6 +83,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
             }
 
             const body = this.foreignObject.firstChild as HTMLElement;
+            body.setAttribute('tabindex', '0');
             const onImageLoad = () => {
                 body.removeEventListener('load', onImageLoad);
                 this.resizeContainer();
