@@ -228,7 +228,10 @@ export class DiagramView extends Backbone.Model {
 
     private onKeyUp = (e: KeyboardEvent) => {
         const DELETE_KEY_CODE = 46;
-        if (e.keyCode === DELETE_KEY_CODE) {
+        if (
+            e.keyCode === DELETE_KEY_CODE &&
+            document.activeElement.localName !== 'input'
+        ) {
             this.removeSelectedElements();
         }
     };
@@ -299,6 +302,12 @@ export class DiagramView extends Backbone.Model {
             if (!this.options.disableDefaultHalo) {
                 element.addToFilter();
             }
+            element.focus();
+        });
+
+        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
+            this.selection.reset();
+            (document.activeElement as HTMLElement).blur();
         });
 
         this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
@@ -357,6 +366,7 @@ export class DiagramView extends Backbone.Model {
                     totalXOffset += size.width + 20;
 
                     elementsToSelect.push(element);
+                    element.focus();
                 }
             }
 
