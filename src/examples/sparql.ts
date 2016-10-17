@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (workspace) {
                 const model = workspace.getModel();
                 model.graph.on('action:iriClick', (iri: string) => {
+                    window.open(iri);
                     console.log(iri);
                 });
                 model.importLayout({

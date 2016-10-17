@@ -52,6 +52,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         if (this.foreignObject && this.isReactMounted) {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
         }
+        this.unregisterLinkListeners();
         return super.remove() as this;
     }
 
@@ -83,6 +84,25 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         $root.append(this.foreignObject);
     }
 
+    private unregisterLinkListeners() {
+        const body = this.foreignObject.firstChild as HTMLElement;
+        const links = body.getElementsByTagName('a');
+        for (let i = 0; i < links.length; i++) {
+            delete links.item(i).onclick;
+        };
+    }
+
+    private registerLinkListeners() {
+        const body = this.foreignObject.firstChild as HTMLElement;
+        const links = body.getElementsByTagName('a');
+        for (let i = 0; i < links.length; i++) {
+            links.item(i).onclick = () => {
+                this.model.trigger('action:iriClick', this.model.template.id);
+                return false;
+            };
+        };
+    }
+
     private updateUI() {
         if (this.model.template && this.view) {
             const template = this.getTemplate();
@@ -100,6 +120,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                 this.resizeContainer();
             };
             body.addEventListener('load', onImageLoad, true);
+            this.registerLinkListeners();
         }
     }
 
