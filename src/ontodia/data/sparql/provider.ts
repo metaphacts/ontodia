@@ -142,7 +142,10 @@ export class SparqlDataProvider implements DataProvider {
             }}
         `;
         return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
-            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo));
+            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo)).catch((err) => {
+                console.log(err);
+                return elementsInfo;
+            });
     }
 
     private prepareElementsImage(
