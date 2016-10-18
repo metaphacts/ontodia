@@ -8,6 +8,8 @@ export interface HaloOptions {
     cellView: joint.dia.CellView;
     onDelete: () => void;
     onExpand: () => void;
+    onNavigate: () => void;
+    connectionsOn?: boolean;
 }
 
 export class Halo {
@@ -32,6 +34,8 @@ export class Halo {
             cellIsExpanded: this.options.cellView.model.get('isExpanded'),
             onDelete: this.options.onDelete,
             onExpand: this.options.onExpand,
+            onNavigate: this.options.onNavigate,
+            connectionsOn: this.options.connectionsOn,
         }), this.container);
     };
 
@@ -47,9 +51,21 @@ export interface Props {
     cellIsExpanded: boolean;
     onDelete: () => void;
     onExpand: () => void;
+    onNavigate: () => void;
+    connectionsOn?: boolean;
 }
 
-export class HaloMarkup extends React.Component<Props, {}> {
+export class HaloMarkup extends React.Component<Props, { connectionsOn: boolean }> {
+
+    constructor(props: Props) {
+        super(props);
+        this.state = { connectionsOn: this.props.connectionsOn || false };
+    }
+
+    private onNavigate = () => {
+        this.setState({ connectionsOn: !this.state.connectionsOn });
+        this.props.onNavigate();
+    };
 
     render() {
         const style = {
@@ -63,6 +79,11 @@ export class HaloMarkup extends React.Component<Props, {}> {
         return (
             <div className='ontodia-halo' style={style}>
                 <div className='ontodia-halo__delete' onClick={this.props.onDelete}/>
+
+                <div className={'ontodia-halo__navigate ' +
+                (this.state.connectionsOn ? 'ontodia-halo__navigate--closed' : 'ontodia-halo__navigate--open')}
+                    onClick={this.onNavigate}/>
+
                 <div className={'ontodia-halo__expand ' +
                 (cellIsExpanded ? 'ontodia-halo__expand--closed' : 'ontodia-halo__expand--open')}
                      onClick={this.props.onExpand}/>

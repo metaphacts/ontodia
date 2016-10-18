@@ -574,6 +574,32 @@
     pointer-events: none;
 }
 
+.ontodia-halo__navigate {
+    background-size: cover;
+    cursor: pointer;
+    height: 16px;
+    opacity: 0.5;
+    pointer-events: auto;
+    position: absolute;
+    right: -17px;
+    bottom: calc(50% - 10px);
+    margin-left: -8px;
+    width: 16px;
+    transition: opacity 0.3s;
+}
+
+.ontodia-halo__navigate:hover {
+    opacity: 1;
+}
+
+.ontodia-halo__navigate--open {
+    background-image: url("../images/arrow-right.png");
+}
+
+.ontodia-halo__navigate--closed {
+    background-image: url("../images/arrow-left.png");
+}
+
 .ontodia-halo__delete {
     background-image: url("../images/delete.png");
     background-size: cover;
@@ -620,4 +646,77 @@
 
 foreignObject div {
     outline: none;
+}
+
+.ontodia-connections-menu {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 4px 15px 0px rgba(0, 0, 0, 0.38);
+}
+
+.ontodia-connections-menu__title-label {
+    position: absolute;
+    top: -11px;
+    left: 10px;
+    background: white;
+    padding-left: 3px;
+	padding-right: 3px;
+}
+
+.ontodia-connections-menu_search-line {
+    padding: 10px;
+}
+
+.ontodia-connections-menu_links-list {
+    padding: 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-top: 1px solid #dbdbdb;
+    flex-grow: 1;
+}
+
+.ontodia-connections-menu__progress-bar {
+    opacity: 0;
+    height: 0px;
+    -webkit-transition: 0.3s;
+    -moz-transition: 0.3s;
+    transition: 0.3s;
+}
+
+.state-loading {
+    height: 10px;
+    opacity: 1;
+}
+
+.link-in-popup-menu {
+    display: flex;
+    padding: 5px
+}
+
+.link-in-popup-menu:hover {
+    background-color: whitesmoke;
+}
+
+.link-in-popup-menu__link-title {
+    flex-grow: 1;
+}
+
+.link-in-popup-menu__count {
+    float: right;
+    margin-right: 5px;
+}
+
+.link-in-popup-menu__navigate-button {
+    float: right;
+    background-image: url("../images/arrow-right.png");
+    width: 16px;
+    height: 16px;
+    opacity: 0.5;
+}
+.link-in-popup-menu__navigate-button:hover {
+    opacity: 1;
 }

@@ -19,11 +19,12 @@ import { DefaultTemplateBundle } from '../customization/templates/defaultTemplat
 
 import { PaperArea } from '../viewUtils/paperArea';
 import { Halo } from '../viewUtils/halo';
+import { ConnectionsMenu } from '../viewUtils/connectionsMenu';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { ElementModel, LocalizedString, ClassModel } from '../data/model';
+import { ElementModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element } from './elements';
@@ -55,6 +56,7 @@ export class DiagramView extends Backbone.Model {
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
     private halo: Halo;
+    private connectionsMenu: ConnectionsMenu;
 
     readonly selection = new Backbone.Collection<Element>();
 
@@ -154,6 +156,10 @@ export class DiagramView extends Backbone.Model {
 
                 if (this.selection.length === 1) {
                     const cellView = this.paper.findViewByModel(this.selection.first());
+                    if (this.connectionsMenu && this.connectionsMenu.cellView !== cellView) {
+                        this.connectionsMenu.remove();
+                        this.connectionsMenu = undefined;
+                    }
                     this.halo = new Halo({
                         paper: this.paper,
                         cellView: cellView,
@@ -163,7 +169,25 @@ export class DiagramView extends Backbone.Model {
                         onExpand: () => {
                             cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
                         },
+                        onNavigate: () => {
+                            if (this.connectionsMenu) {
+                                this.connectionsMenu.remove();
+                                this.connectionsMenu = undefined;
+                            } else {
+                                this.connectionsMenu = new ConnectionsMenu({
+                                    paper: this.paper,
+                                    cellView: cellView,
+                                    onClose: () => {},
+                                    onNavigate: () => {},
+                                    view: this,
+                                });
+                            }
+                        },
+                        connectionsOn: (this.connectionsMenu && this.connectionsMenu.cellView === cellView),
                     });
+                } else if (this.connectionsMenu) {
+                    this.connectionsMenu.remove();
+                    this.connectionsMenu = undefined;
                 }
             });
         }
