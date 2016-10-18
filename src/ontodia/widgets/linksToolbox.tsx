@@ -6,7 +6,7 @@ import * as Backbone from 'backbone';
 import LinkTypesToolboxModel from './linksToolboxModel';
 import { Element, FatLinkType } from '../diagram/elements';
 import DiagramView from '../diagram/view';
-import { LocalizedString } from '../data/model';
+import { chooseLocalizedText } from '../diagram/model';
 
 export { LinkTypesToolboxModel };
 export interface LinkInToolBoxProps {
@@ -16,6 +16,9 @@ export interface LinkInToolBoxProps {
     onPressFilter?: (FatLinkType) => void;
     filterKey?: string;
 }
+
+import { LocalizedString } from '../data/model';
+type Label = { values: LocalizedString[] };
 
 /**
  * Events:
@@ -143,20 +146,11 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         this.state = {filterKey: ''};
     }
 
-    private getLocalizedText(label) {
-        for (const value of label.values){
-            if (value.lang === this.props.language) {
-                return value.text;
-            }
-        }
-        return label.values[0].text;
-    }
-
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel = a.get('label');
-        const bLabel = b.get('label');
-        const aText = (aLabel ? this.getLocalizedText(aLabel).toLowerCase() : null);
-        const bText = (bLabel ? this.getLocalizedText(bLabel).toLowerCase() : null);
+        const aLabel: Label = a.get('label');
+        const bLabel: Label = b.get('label');
+        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.language).text.toLowerCase() : null);
+        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.language).text.toLowerCase() : null);
 
         if (aText < bText) {
             return -1;
@@ -195,8 +189,8 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
 
     private getLinks = () => {
         return (this.props.links || []).filter(link => {
-            const label = link.get('label');
-            const text = (label ? this.getLocalizedText(label).toLowerCase() : null);
+            const label: Label = link.get('label');
+            const text = (label ? chooseLocalizedText(label.values, this.props.language).text.toLowerCase() : null);
             return (!this.state.filterKey) || (text && text.indexOf(this.state.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -224,12 +218,14 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         const dataState = this.props.dataState || null;
         const links = this.getLinks();
         const views = this.getViews(links);
+        const selectedElementLabel =
+            chooseLocalizedText(this.props.label.values, this.props.language).text.toLowerCase();
 
         let connectedTo = '';
         if (this.props.label) {
             connectedTo = <h4 className='links-heading' style={{display: 'block'}}>
                 Connected to{'\u00A0'}
-                <span>{this.getLocalizedText(this.props.label)}</span>
+                <span>{selectedElementLabel}</span>
             </h4>;
         }
 
