@@ -183,10 +183,11 @@ export class WikidataDataProvider implements DataProvider {
             SELECT ?link (count(?link) as ?instcount)
             WHERE {{
                 ${escapeIri(params.elementId)} ?link ?obj.
-                FILTER (IsIRI(?obj)) 
             } UNION {
                 [] ?link ${escapeIri(params.elementId)}.
-            }} GROUP BY ?link
+            }
+            FILTER regex(STR(?link), "direct") 
+            } GROUP BY ?link
         `;
 
         return executeSparqlQuery<Sparql.LinkTypesOfResponse>(this.options.endpointUrl, query).then(getLinksTypesOf);
@@ -206,10 +207,12 @@ export class WikidataDataProvider implements DataProvider {
 
         if (params.refElementId && !params.refElementLinkId) {
             refQueryPart = `{
-                ${escapeIri(params.refElementId)} ?p ?inst .
+                ${escapeIri(params.refElementId)} ?link ?inst . 
                 } UNION {
-                    ?inst ?p ${escapeIri(params.refElementId)} .
-                }`;
+                    ?inst ?link ${escapeIri(params.refElementId)} .
+                }
+                FILTER regex(STR(?link), "direct") 
+                `;
         }
 
         if (!params.refElementId && params.refElementLinkId) {
