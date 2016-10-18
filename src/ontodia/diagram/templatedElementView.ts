@@ -49,7 +49,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         if (this.foreignObject && this.isReactMounted) {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
         }
-        this.unregisterLinkListeners();
+        this.unregisterBodyListeners();
         return super.remove() as this;
     }
 
@@ -73,23 +73,28 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         $root.append(this.foreignObject);
     }
 
-    private unregisterLinkListeners() {
+    private onImageLoad: () => void;
+    private onClick: (e) => void;
+    private registerBodyListeners() {
         const body = this.foreignObject.firstChild as HTMLElement;
-        const links = body.getElementsByTagName('a');
-        for (let i = 0; i < links.length; i++) {
-            delete links.item(i).onclick;
+        this.onImageLoad = () => {
+            this.resizeContainer();
         };
+        body.addEventListener('load', this.onImageLoad, true);
+
+        this.onClick = (e: MouseEvent) => {
+            if (e.target instanceof HTMLElement && (e.target as HTMLElement).localName === 'a') {
+                this.model.trigger('action:iriClick', this.model.template.id);
+                e.preventDefault();
+            }
+        };
+        body.addEventListener('click', this.onClick, true);
     }
 
-    private registerLinkListeners() {
+    private unregisterBodyListeners() {
         const body = this.foreignObject.firstChild as HTMLElement;
-        const links = body.getElementsByTagName('a');
-        for (let i = 0; i < links.length; i++) {
-            links.item(i).onclick = () => {
-                this.model.trigger('action:iriClick', this.model.template.id);
-                return false;
-            };
-        };
+        body.removeEventListener('load', this.onImageLoad);
+        body.removeEventListener('click', this.onClick);
     }
 
     private updateUI() {
@@ -104,12 +109,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
 
             const body = this.foreignObject.firstChild as HTMLElement;
             body.setAttribute('tabindex', '0');
-            const onImageLoad = () => {
-                body.removeEventListener('load', onImageLoad);
-                this.resizeContainer();
-            };
-            body.addEventListener('load', onImageLoad, true);
-            this.registerLinkListeners();
+            this.registerBodyListeners();
         }
     }
 
