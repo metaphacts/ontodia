@@ -46,10 +46,10 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     }
 
     remove() {
+        this.unregisterBodyListeners();
         if (this.foreignObject && this.isReactMounted) {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
         }
-        this.unregisterBodyListeners();
         return super.remove() as this;
     }
 
