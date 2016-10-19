@@ -218,11 +218,11 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         const dataState = this.props.dataState || null;
         const links = this.getLinks();
         const views = this.getViews(links);
-        const selectedElementLabel =
-            chooseLocalizedText(this.props.label.values, this.props.language).text.toLowerCase();
 
         let connectedTo = '';
         if (this.props.label) {
+            const selectedElementLabel =
+                chooseLocalizedText(this.props.label.values, this.props.language).text.toLowerCase();
             connectedTo = <h4 className='links-heading' style={{display: 'block'}}>
                 Connected to{'\u00A0'}
                 <span>{selectedElementLabel}</span>
