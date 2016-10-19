@@ -1,5 +1,5 @@
 import {
-    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount
+    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount,
 } from './model';
 
 export interface DataProvider {

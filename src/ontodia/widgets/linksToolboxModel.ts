@@ -1,6 +1,6 @@
 import * as Backbone from 'backbone';
 
-import { Element, Link, FatLinkType } from '../diagram/elements';
+import { Element } from '../diagram/elements';
 import DiagramModel from '../diagram/model';
 
 /**

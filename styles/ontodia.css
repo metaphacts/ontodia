@@ -658,6 +658,16 @@ foreignObject div {
     box-shadow: 0px 4px 15px 0px rgba(0, 0, 0, 0.38);
 }
 
+.ontodia-connections-menu_bread-crumbs {
+    padding: 10px;
+    padding-bottom: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 27px;
+    min-height: 27px;
+    flex-grow: 0;
+}
+
 .ontodia-connections-menu__title-label {
     position: absolute;
     top: -11px;
@@ -679,6 +689,44 @@ foreignObject div {
     flex-grow: 1;
 }
 
+.ocm_links-list-empty {
+    display: flex;
+    align-items: center;
+}
+
+.ontodia-connections-menu_links-list__empty {
+    width: 100%;
+    position: relative;
+    font-size: x-large;
+    color: #cbcbcb;
+    text-align: center;
+}
+
+.ontodia-connections-menu__loading,
+.ontodia-connections-menu__error {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    font-size: x-large;
+    display: flex;
+    color: #cbcbcb;
+    align-items: center;
+    justify-content: center;
+}
+.ontodia-connections-menu__loading-objects {
+    border: 1px solid gray;
+    flex-grow: 1;
+    box-shadow: inset 0px 0px 23px -8px gray;
+    background-color: whitesmoke;
+    position: relative;
+    font-size: x-large;
+    display: flex;
+    color: #cbcbcb;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+}
+
 .ontodia-connections-menu__progress-bar {
     opacity: 0;
     height: 0px;
@@ -690,6 +738,16 @@ foreignObject div {
 .state-loading {
     height: 10px;
     opacity: 1;
+}
+
+.element-in-popup-menu {
+    display: flex;
+    padding: 5px
+}
+
+.element-in-popup-menu__link-label {
+    flex-grow: 1;
+    margin-left: 5px;
 }
 
 .link-in-popup-menu {
@@ -717,6 +775,44 @@ foreignObject div {
     height: 16px;
     opacity: 0.5;
 }
+
 .link-in-popup-menu__navigate-button:hover {
     opacity: 1;
 }
+
+.ontodia-connections-menu_links-list__loading {
+    text-align: center;
+    width: 100%;
+    position: relative;
+    font-size: x-large;
+    color: #cbcbcb;
+}
+
+.ontodia-connections-menu_objects-panel {
+    flex-grow: 1;
+    padding: 10px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.ontodia-connections-menu_objects-panel_add-button-container {
+    height: 25px;
+}
+
+.btn.ontodia-connections-menu_objects-panel_add-button-container__add-button {
+    height: 25px;
+    padding-top: 1px;
+    padding-bottom: 2px;
+}
+
+.ontodia-connections-menu_objects-panel_objects-list {
+    border: 1px solid gray;
+    flex-grow: 1;
+    box-shadow: inset 0px 0px 23px -8px gray;
+    background-color: whitesmoke;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-bottom: 5px;
+}
+    

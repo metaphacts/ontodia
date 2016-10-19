@@ -24,7 +24,7 @@ import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { ElementModel, LocalizedString } from '../data/model';
+import { ElementModel, LocalizedString, ClassModel } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element } from './elements';
