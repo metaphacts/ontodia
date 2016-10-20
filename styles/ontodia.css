@@ -228,6 +228,10 @@
     white-space: normal;
     word-wrap: normal;
 }
+.badge {
+    min-width: 21px;
+}
+
 .linkInToolBox .badge {
     display: none;
     margin-left: .5em;
@@ -272,6 +276,16 @@
     content: url("../images/add-to-filter.png");
     width: 20px;
     height: 20px;
+}
+.link-in-popup-menu .filter-button img {
+    opacity: 0.4;
+    margin-left: 10px;
+    content: url("../images/add-to-filter.png");
+    width: 20px;
+    height: 20px;
+}
+.link-in-popup-menu .filter-button img:hover {
+    opacity: 1;
 }
 
 /* jsTree.css */
@@ -745,6 +759,10 @@ foreignObject div {
     padding: 5px
 }
 
+.element-in-popup-menu.unchecked {
+    background-color: rgba(255, 255, 255, 0.79);
+}
+
 .element-in-popup-menu__link-label {
     flex-grow: 1;
     margin-left: 5px;
@@ -761,11 +779,14 @@ foreignObject div {
 
 .link-in-popup-menu__link-title {
     flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .link-in-popup-menu__count {
     float: right;
-    margin-right: 5px;
+    margin-left: 10px;
 }
 
 .link-in-popup-menu__navigate-button {
@@ -774,6 +795,8 @@ foreignObject div {
     width: 16px;
     height: 16px;
     opacity: 0.5;
+    margin-left: 10px;
+    min-width: 16px;
 }
 
 .link-in-popup-menu__navigate-button:hover {
@@ -796,11 +819,22 @@ foreignObject div {
     flex-direction: column;
 }
 
-.ontodia-connections-menu_objects-panel_add-button-container {
+.ontodia-connections-menu_objects-panel_bottom-panel {
     height: 25px;
+    white-space: nowrap;
 }
 
-.btn.ontodia-connections-menu_objects-panel_add-button-container__add-button {
+.ontodia-connections-menu_objects-panel_bottom-panel__count-label {
+    height: 25px;
+    float: left;
+    padding: 0px 5px;
+    font-size: larger;
+    display: flex;
+    align-items: center;
+    max-width: 60%;
+}
+
+.btn.ontodia-connections-menu_objects-panel_bottom-panel__add-button {
     height: 25px;
     padding-top: 1px;
     padding-bottom: 2px;
@@ -815,4 +849,3 @@ foreignObject div {
     overflow-y: auto;
     margin-bottom: 5px;
 }
-    
