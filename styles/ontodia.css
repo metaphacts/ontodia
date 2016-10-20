@@ -48,6 +48,9 @@ html.print-ready, .print-ready body {
     margin-right: 0;
     margin-bottom: 0;
 }
+.paper-area {
+    flex: 1 1 100%;
+}
 .paper-area, .paper-scroller {
     cursor: default;
     overflow: auto;
@@ -342,6 +345,7 @@ html.print-ready, .print-ready body {
     border-right: 1px solid lightgray;
 }
 .ontodia-main-panel {
+    display: flex;
     flex-grow: 1;
     -webkit-flex-grow: 1; /* safari 8 */
     width: 0;

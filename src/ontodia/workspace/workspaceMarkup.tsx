@@ -84,7 +84,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                     <div id="diagrams" className="ontodia-main-panel diagramArea"
                          data-position="left" data-step="3" data-intro-id="diagram-area" data-intro={INTRO_DIAGRAM}>
                         <div ref={e => this.chartPanel = e}
-                            style={{overflow: 'hidden', height: '100%', width: '100%'}}>
+                            style={{overflow: 'hidden', height: '100%', width: '100%', display: 'flex'}}>
                         </div>
                     </div>
                     {!this.props.isViewOnly ? rightPanel : null}
