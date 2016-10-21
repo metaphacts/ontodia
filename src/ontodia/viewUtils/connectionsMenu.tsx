@@ -3,14 +3,20 @@ import * as joint from 'jointjs';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { FatLinkType } from '../diagram/elements';
+import { FatLinkType, Element } from '../diagram/elements';
 import DiagramView from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
 import { LocalizedString, ElementModel } from '../data/model';
+
 type Label = { values: LocalizedString[] };
+type ReactElementModel = { model: ElementModel, presentOnDiagram: boolean };
 
 const MENU_OFFSET = 40;
+const ALL_ERLATED_ELEMENTS_LINK = {
+    id: 'allRelatedElements',
+    label: {values: [{lang: '', text: 'All'}]},
+};
 
 export interface ConnectionsMenuOptions {
     paper: joint.dia.Paper;
@@ -29,7 +35,7 @@ export class ConnectionsMenu {
     private countMap: { [linkTypeId: string]: number };
 
     private selectedLink: FatLinkType;
-    private objects: ElementModel[];
+    private objects: ReactElementModel[];
 
     public cellView: joint.dia.CellView;
 
@@ -44,6 +50,7 @@ export class ConnectionsMenu {
         this.handler.listenTo(this.options.cellView.model,
             'change:isExpanded change:position change:size', this.render);
         this.handler.listenTo(this.options.paper, 'scale', this.render);
+        this.handler.listenTo(this.view, 'change:language', this.render);
 
         this.loadLinks();
         this.render();
@@ -63,6 +70,11 @@ export class ConnectionsMenu {
                     countMap[linkCount.id] = linkCount.count;
                     links.push(this.view.model.linkTypes[linkCount.id]);
                 }
+
+                let totalCount = 0;
+                Object.keys(countMap).forEach(key => totalCount += countMap[key]);
+                countMap['allRelatedElements'] = totalCount;
+
                 this.countMap = countMap;
                 this.links = links;
 
@@ -82,11 +94,10 @@ export class ConnectionsMenu {
         const requestsCount = Math.ceil(this.countMap[link.id] / 100);
 
         const requests = [];
-
         for (let i = 0; i < requestsCount; i++) {
             requests.push(
                 this.view.model.dataProvider.filter({
-                    refElementLinkId: this.selectedLink.id,
+                    refElementLinkId: (link === ALL_ERLATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
                     refElementId: this.cellView.model.id,
                     limit: 100,
                     offset: i * 100,
@@ -97,12 +108,21 @@ export class ConnectionsMenu {
                 })
             );
         }
+
         Promise.all(requests)
         .then(results => {
             this.state = 'completed';
             this.objects = [];
             results.forEach(elements => {
-                Object.keys(elements).forEach(key => this.objects.push(elements[key]));
+                Object.keys(elements).forEach(key => this.objects.push({
+                    model: elements[key],
+                    presentOnDiagram: (
+                        this.view.model.elements[key] &&
+                        this.view.model.elements[key].get('presentOnDiagram')
+                        ? true
+                        : false
+                    ),
+                }));
             });
             this.render();
         }).catch(err => {
@@ -112,7 +132,7 @@ export class ConnectionsMenu {
         });
     }
 
-    private addSelectedElements = (selectedObjects: ElementModel[]) => {
+    private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
         const GRID_STEP = 100;
         const bBox = this.cellView.getBBox();
@@ -121,9 +141,9 @@ export class ConnectionsMenu {
         let xi = 0;
         let yi = 0;
         selectedObjects.forEach(el => {
-            let element = this.view.model.elements[el.id];
+            let element = this.view.model.elements[el.model.id];
             if (!element) {
-                element = this.view.model.createElement(el);
+                element = this.view.model.createElement(el.model);
             }
             if (xi > positionBoxSide) {
                 xi = 0;
@@ -138,6 +158,7 @@ export class ConnectionsMenu {
             element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
             element.set('presentOnDiagram', true);
         });
+        this.view.paperArea.adjustPaper();
         this.options.onClose();
     }
 
@@ -149,9 +170,15 @@ export class ConnectionsMenu {
     }
 
     private onMoveToFilter = (link: FatLinkType) => {
-        let selectedElement = this.view.model.elements[this.cellView.model.id];
-        this.view.model.graph.trigger('add-to-filter', selectedElement, link);
-        this.options.onClose();
+        if (link === ALL_ERLATED_ELEMENTS_LINK) {
+            const element = this.cellView.model as Element;
+            element.addToFilter();
+            // this.options.onClose();
+        } else {
+            let selectedElement = this.view.model.elements[this.cellView.model.id];
+            this.view.model.graph.trigger('add-to-filter', selectedElement, link);
+            // this.options.onClose();
+        }
     }
 
     private render = () => {
@@ -197,14 +224,14 @@ export interface ConnectionsMenuMarkupProps {
 
     objectsData?: {
         selectedLink?: FatLinkType;
-        objects: ElementModel[];
+        objects: ReactElementModel[];
     };
 
     lang: string;
     state: string; // 'loading', 'completed'
 
     onExpandLink?: (link: FatLinkType) => void;
-    onPressAddSelected?: (selectedObjects: ElementModel[]) => void;
+    onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
     onMoveToFilter?: (FatLinkType) => void;
 }
 
@@ -384,14 +411,31 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
         const links = this.getLinks();
         const views = this.getViews(links);
 
+        let viewList;
+        if (views.length === 0) {
+            viewList = <label className='ontodia-connections-menu_links-list__empty'>List empty</label>;
+        } else {
+            viewList = views;
+            if (links.length > 1) {
+                const countMap = this.props.data.countMap || {};
+                viewList = [
+                    <LinkInPopupMenu
+                        key={'allRelatedElements'}
+                        link={ALL_ERLATED_ELEMENTS_LINK}
+                        onExpandLink={this.props.onExpandLink}
+                        lang={this.props.lang}
+                        count={countMap['allRelatedElements']}
+                        onMoveToFilter={this.props.onMoveToFilter}
+                    />,
+                <hr key='ontodia-hr-line' className='ontodia-connections-menu_links-list__hr'/>,
+                ].concat(viewList);
+            }
+        }
+
         return <ul className={
             'ontodia-connections-menu_links-list '
                 + (views.length === 0 ? 'ocm_links-list-empty' : '')
-        }>{
-            views.length === 0 ?
-                <label className='ontodia-connections-menu_links-list__empty'>List empty</label>
-                : views
-        }</ul>;
+        }>{viewList}</ul>;
     }
 }
 
@@ -409,40 +453,6 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
         super(props);
     }
 
-    private getText = () => {
-        let fullText;
-        for (const value of this.props.link.label.values){
-            if (value.lang === this.props.lang) {
-                fullText = value.text;
-                break;
-            }
-        }
-        fullText = this.props.link.label.values[0].text.toLowerCase();
-        if (this.props.filterKey) {
-            const filterKey = this.props.filterKey.toLowerCase();
-            const leftIndex =  fullText.indexOf(filterKey);
-            const rightIndex = leftIndex + filterKey.length;
-            let firstPart = '';
-            let selectedPart = '';
-            let lastPart = '';
-
-            if (leftIndex === 0) {
-                selectedPart = fullText.substring(0, rightIndex);
-            } else {
-                firstPart = fullText.substring(0, leftIndex);
-                selectedPart = fullText.substring(leftIndex, rightIndex);
-            }
-            if (rightIndex <= fullText.length) {
-                lastPart = fullText.substring(rightIndex, fullText.length);
-            }
-            return <span>
-                {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
-            </span>;
-        } else {
-            return <span>{fullText}</span>;
-        }
-    }
-
     private onExpandLink = () => {
         this.props.onExpandLink(this.props.link);
     }
@@ -456,12 +466,20 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
         const countIcon = (this.props.count > 0 ?
             <span className='badge link-in-popup-menu__count'>{this.props.count}</span> : '');
 
+        const fullText = chooseLocalizedText(this.props.link.label.values, this.props.lang).text;
+        const textLine = getColoredText(fullText, this.props.filterKey);
+
         return (
             <li data-linkTypeId={this.props.link.id} className='link-in-popup-menu' onClick={this.onExpandLink}>
-                <div className='link-in-popup-menu__link-title'>{this.getText()}</div>
+                <div className='link-in-popup-menu__link-title'
+                    title={'Naviagte to connected by link \'' + fullText + '\' elements'}
+                >
+                    {textLine}
+                </div>
                 {countIcon}
                 <a className='filter-button' title='Move to filter panel' onClick={this.onMoveToFilter}><img/></a>
-                <div className='link-in-popup-menu__navigate-button'/>
+                <div className='link-in-popup-menu__navigate-button'
+                    title={'Naviagte to connected by link \'' + fullText + '\' elements'}/>
             </li>
         );
     }
@@ -470,50 +488,60 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 export interface ObjectsPanelProps {
     data: {
         selectedLink: FatLinkType;
-        objects: ElementModel[]
+        objects: ReactElementModel[]
     };
     loading?: boolean;
     lang?: string;
     filterKey?: string;
-    onPressAddSelected?: (selectedObjects: ElementModel[]) => void;
+    onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
 }
 
-export class ObjectsPanel extends React.Component<ObjectsPanelProps, {}> {
-    private checkMap: { [id: string]: boolean } = {};
+export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap: { [id: string]: boolean } }> {
 
     constructor(props: ObjectsPanelProps) {
         super(props);
+        this.state  = { checkMap: {} };
         this.updateCheckMap();
     }
 
     private updateCheckMap = () => {
         this.props.data.objects.forEach(element => {
-            if (this.checkMap[element.id] === undefined) {
-                this.checkMap[element.id] = true;
+            if (this.state.checkMap[element.model.id] === undefined) {
+                this.state.checkMap[element.model.id] = true;
             }
         });
     }
 
-    private onChackboxChanged = (object: ElementModel, value: boolean) => {
-        this.checkMap[object.id] = value;
+    private onChackboxChanged = (object: ReactElementModel, value: boolean) => {
+        this.state.checkMap[object.model.id] = value;
+        this.setState(this.state);
     }
 
-    private getObjects = () => {
-        const keyMap = {};
-        return this.props.data.objects.filter(element => {
-            const label: Label = element.label;
+    private getFilteredObjects = (): ReactElementModel[] => {
+        return this.props.data.objects
+        .filter(element => {
+            const label: Label = element.model.label;
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
-        }).map(obj => {
-            if (!keyMap[obj.id]) {
-                keyMap[obj.id] = 0;
+        });
+    }
+
+    private getObjects = (list: ReactElementModel[]) => {
+        const keyMap = {};
+        return list.filter(obj => {
+            if (keyMap[obj.model.id]) {
+                return false;
+            } else {
+               keyMap[obj.model.id] = true;
+               return true;
             }
+        }).map(obj => {
             return <ElementInPopupMenu
-                key={obj.id + '_' + keyMap[obj.id]++}
+                key={obj.model.id}
                 element={obj}
                 lang={this.props.lang}
                 filterKey={this.props.filterKey}
-                checked={this.checkMap[obj.id]}
+                checked={this.state.checkMap[obj.model.id] ? true : false}
                 onCheckboxChanged={this.onChackboxChanged}
             />;
         });
@@ -521,35 +549,34 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {}> {
 
     private addSelected = () => {
         this.props.onPressAddSelected(
-            this.props.data.objects
-                .filter(element => {
-                    const label: Label = element.label;
-                    const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
-                    return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
-                })
-                .filter(el => this.checkMap[el.id])
+            this.getFilteredObjects().filter(el => this.state.checkMap[el.model.id] && !el.presentOnDiagram)
         );
     }
 
     render() {
         this.updateCheckMap();
-        const objects = this.getObjects();
+        const objects = this.getFilteredObjects();
+        const objectViews = this.getObjects(objects);
+        const activeObjCount = objects.filter(el => this.state.checkMap[el.model.id]  && !el.presentOnDiagram).length;
+        const countString = activeObjCount.toString() + '\u00A0of\u00A0' + this.props.data.objects.length;
         return <div className='ontodia-connections-menu_objects-panel'>
             {(
                 this.props.loading ?
                 <label className='ontodia-connections-menu__loading-objects'>Loading...</label>
                 : <div className='ontodia-connections-menu_objects-panel_objects-list'>
-                    {objects}
+                    {objectViews}
                 </div>
             )}
             <div className='ontodia-connections-menu_objects-panel_bottom-panel'>
                 <label className='ontodia-connections-menu_objects-panel_bottom-panel__count-label'>
-                    {objects.length} of {this.props.data.objects.length}
+                    <span>{countString}</span>
                 </label>
-                <button className={'btn btn-primary pull-right ' +
-                    'ontodia-connections-menu_objects-panel_bottom-panel__add-button ' +
-                    (this.props.loading ? 'disabled' : '')
-                } onClick={this.addSelected}>
+                <button className={
+                        'btn btn-primary pull-right ' +
+                        'ontodia-connections-menu_objects-panel_bottom-panel__add-button'
+                    }
+                    disabled={this.props.loading || activeObjCount === 0}
+                    onClick={this.addSelected}>
                     Add selected
                 </button>
             </div>
@@ -558,8 +585,8 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {}> {
 }
 
 export interface ElementInPopupMenuProps {
-    element: ElementModel;
-    onCheckboxChanged?: (object: ElementModel, value: boolean) => void;
+    element: ReactElementModel;
+    onCheckboxChanged?: (object: ReactElementModel, value: boolean) => void;
     lang?: string;
     checked?: boolean;
     filterKey?: string;
@@ -572,6 +599,9 @@ export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps,
     }
 
     private onCheckboxChange = () => {
+        if (this.props.element.presentOnDiagram) {
+            return;
+        }
         this.state.checked = !this.state.checked;
         this.setState(this.state);
         this.props.onCheckboxChanged(this.props.element, this.state.checked);
@@ -581,49 +611,53 @@ export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps,
         this.state = { checked: this.props.checked };
     }
 
-    private getText = () => {
-        let fullText;
-        for (const value of this.props.element.label.values){
-            if (value.lang === this.props.lang) {
-                fullText = value.text;
-                break;
-            }
-        }
-        fullText = this.props.element.label.values[0].text.toLowerCase();
-        if (this.props.filterKey) {
-            const filterKey = this.props.filterKey.toLowerCase();
-            const leftIndex =  fullText.indexOf(filterKey);
-            const rightIndex = leftIndex + filterKey.length;
-            let firstPart = '';
-            let selectedPart = '';
-            let lastPart = '';
-
-            if (leftIndex === 0) {
-                selectedPart = fullText.substring(0, rightIndex);
-            } else {
-                firstPart = fullText.substring(0, leftIndex);
-                selectedPart = fullText.substring(leftIndex, rightIndex);
-            }
-            if (rightIndex <= fullText.length) {
-                lastPart = fullText.substring(rightIndex, fullText.length);
-            }
-            return <span>
-                {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
-            </span>;
-        } else {
-            return <span>{fullText}</span>;
-        }
-    }
-
     render() {
+        const fullText = chooseLocalizedText(this.props.element.model.label.values, this.props.lang).text;
+        const textLine = getColoredText(fullText, this.props.filterKey);
         return (
-            <li data-linkTypeId={this.props.element.id} className={
-                'element-in-popup-menu' + (!this.state.checked ? ' unchecked' : '')
-            }>
-                <input type='checkbox' checked={this.state.checked}
-                    onChange={this.onCheckboxChange}/>
-                <div className='element-in-popup-menu__link-label'>{this.getText()}</div>
+            <li data-linkTypeId={this.props.element.model.id}
+                className={
+                    'element-in-popup-menu'
+                    + (!this.state.checked ? ' unchecked' : '')
+                }
+                onClick={this.onCheckboxChange}
+            >
+                <input type='checkbox' onChange={() => {/*nothing*/}} checked={this.state.checked}
+                    className='element-in-popup-menu__checkbox'
+                    disabled={this.props.element.presentOnDiagram}/>
+                <div className='element-in-popup-menu__link-label'
+                    title={this.props.element.presentOnDiagram ?
+                        'Element \'' + fullText + '\' already present on diagram!' : fullText}
+                    style={{fontStyle: (this.props.element.presentOnDiagram ? 'italic' : 'inherit')}}>
+                    {textLine}
+                </div>
             </li>
         );
+    }
+}
+
+function getColoredText(fullText: string, filterKey: string) {
+    if (filterKey) {
+        filterKey = filterKey.toLowerCase();
+        const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
+        const rightIndex = leftIndex + filterKey.length;
+        let firstPart = '';
+        let selectedPart = '';
+        let lastPart = '';
+
+        if (leftIndex === 0) {
+            selectedPart = fullText.substring(0, rightIndex);
+        } else {
+            firstPart = fullText.substring(0, leftIndex);
+            selectedPart = fullText.substring(leftIndex, rightIndex);
+        }
+        if (rightIndex <= fullText.length) {
+            lastPart = fullText.substring(rightIndex, fullText.length);
+        }
+        return <span>
+            {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
+        </span>;
+    } else {
+        return <span>{fullText}</span>;
     }
 }

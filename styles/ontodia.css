@@ -228,9 +228,6 @@
     white-space: normal;
     word-wrap: normal;
 }
-.badge {
-    min-width: 21px;
-}
 
 .linkInToolBox .badge {
     display: none;
@@ -607,11 +604,11 @@
 }
 
 .ontodia-halo__navigate--open {
-    background-image: url("../images/arrow-right.png");
+    background-image: url("../images/connections.png");
 }
 
 .ontodia-halo__navigate--closed {
-    background-image: url("../images/arrow-left.png");
+    background-image: url("../images/close-connections.png");
 }
 
 .ontodia-halo__delete {
@@ -689,6 +686,7 @@ foreignObject div {
     background: white;
     padding-left: 3px;
 	padding-right: 3px;
+    border-radius: 6px;
 }
 
 .ontodia-connections-menu_search-line {
@@ -701,6 +699,7 @@ foreignObject div {
     overflow-y: auto;
     border-top: 1px solid #dbdbdb;
     flex-grow: 1;
+    margin-bottom: 0px;
 }
 
 .ocm_links-list-empty {
@@ -756,21 +755,40 @@ foreignObject div {
 
 .element-in-popup-menu {
     display: flex;
-    padding: 5px
+    padding: 5px 10px;
+    margin: 5px 10px;
+    border-radius: 5px;
+}
+.element-in-popup-menu:hover {
+    background-color: #e6e6e6;
 }
 
 .element-in-popup-menu.unchecked {
     background-color: rgba(255, 255, 255, 0.79);
 }
+.element-in-popup-menu_disabled-line {
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.element-in-popup-menu__checkbox {
+    min-width: 13px;
+}
 
 .element-in-popup-menu__link-label {
     flex-grow: 1;
     margin-left: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .link-in-popup-menu {
     display: flex;
-    padding: 5px
+    padding: 5px 5px 5px 10px;
+    border-radius: 5px;
+    align-items: center;
+    margin-bottom: 4px;
+    box-shadow: 0px 0px 23px -5px #dbdbdb inset;
 }
 
 .link-in-popup-menu:hover {
@@ -788,15 +806,19 @@ foreignObject div {
     float: right;
     margin-left: 10px;
 }
+.link-in-popup-menu__count.badge {
+    min-width: 21px;
+}
 
 .link-in-popup-menu__navigate-button {
     float: right;
-    background-image: url("../images/arrow-right.png");
+    background-image: url("../images/expand-link.png");
     width: 16px;
     height: 16px;
     opacity: 0.5;
     margin-left: 10px;
     min-width: 16px;
+    background-size: cover;
 }
 
 .link-in-popup-menu__navigate-button:hover {
@@ -809,6 +831,11 @@ foreignObject div {
     position: relative;
     font-size: x-large;
     color: #cbcbcb;
+}
+
+.ontodia-connections-menu_links-list__hr {
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .ontodia-connections-menu_objects-panel {
