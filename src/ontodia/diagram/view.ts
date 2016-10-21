@@ -147,23 +147,29 @@ export class DiagramView extends Backbone.Model {
 
         if (!this.options.disableDefaultHalo) {
             this.listenTo(this.selection, 'add remove reset', () => {
-                if (this.halo) {
-                    this.halo.remove();
-                    this.halo = undefined;
-                }
 
                 if (this.selection.length === 1) {
                     const cellView = this.paper.findViewByModel(this.selection.first());
-                    this.halo = new Halo({
-                        paper: this.paper,
-                        cellView: cellView,
-                        onDelete: () => {
-                            this.removeSelectedElements();
-                        },
-                        onExpand: () => {
-                            cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
-                        },
-                    });
+                    if (this.halo && cellView !== this.halo.options.cellView) {
+                        this.halo.remove();
+                        this.halo = undefined;
+                    }
+                    if (!this.halo) {
+                        this.halo = new Halo({
+                            paper: this.paper,
+                            cellView: cellView,
+                            onDelete: () => {
+                                this.removeSelectedElements();
+                            },
+                            onExpand: () => {
+                                cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                            },
+                            diagramView: this,
+                        });
+                    }
+                } else if (this.halo && this.selection.length === 0) {
+                    this.halo.remove();
+                    this.halo = undefined;
                 }
             });
         }

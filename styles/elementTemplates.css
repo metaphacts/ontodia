@@ -125,10 +125,12 @@ div.ontodia-default-template_type-line__icon {
 .ontodia-default-template_type-line_text-container {
     flex-grow: 1;
     overflow: hidden;
+    text-overflow: ellipsis;
+    width: 0;
 }
 .ontodia-default-template_type-line_text-container__text {
+    display: inline;
     white-space: nowrap;
-    width: 0;
     font-size: 12px;
 }
 
@@ -279,10 +281,14 @@ div.ontodia-default-template_type-line__icon {
     font-style: italic;
     color: #afafaf;
     font-weight: 100;
+    display: flex;
 }
 
 .ontodia-big-icon-template_body_type-container__type {
     width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ontodia-big-icon-template_body__icon {
@@ -430,6 +436,9 @@ div.ontodia-default-template_type-line__icon {
     font-size: 12px;
     font-weight: 100;
     width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ontodia-left-bar-template_body__label {
@@ -562,10 +571,14 @@ div.ontodia-default-template_type-line__icon {
     font-style: italic;
     color: #afafaf;
     font-weight: 100;
+    display: flex;
 }
 
 .ontodia-person-template_body_main-part_type-container__type {
     width: 0;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ontodia-person-template_body__icon {

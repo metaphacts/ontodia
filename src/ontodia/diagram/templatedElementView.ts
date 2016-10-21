@@ -78,6 +78,8 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         const $root = this.$('.rootOfUI');
         $root.attr('cursor', 'pointer');
         this.foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        // set default width to correctly calculate width of node
+        this.foreignObject.setAttribute('width', '350px');
         this.foreignObject.ondblclick = () => {
             this.model.set('isExpanded', !this.model.get('isExpanded'));
         };
