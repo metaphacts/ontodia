@@ -116,7 +116,7 @@ class FilterElementView extends Backbone.View<Element> {
             this.$el.attr('title', 'Classes: ' + this.view.getElementTypeString(template));
             this.$el.attr('data-presentOnDiagram', this.model.get('presentOnDiagram'));
 
-            const {h, c, l} = this.view.getElementColor(template);
+            const {h, c, l} = this.view.getTypeStyle(template.types).color;
             const frontColor = this.model.get('selectedInFilter')
                 ? d3.hcl(h, c, l * 1.2) : d3.hcl('white');
             this.$el.css({ background: d3.hcl(h, c, l) });

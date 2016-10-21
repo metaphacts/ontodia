@@ -286,14 +286,22 @@ html.print-ready, .print-ready body {
 }
 
 /* jsTree.css */
-.jstree-icon.default-tree-icon {
+.jstree-icon.default-tree-icon::after {
     content: url("../images/tree-leaf.png");
     max-width: 19px;
     max-height: 19px;
     margin: 2px;
 }
 
-.jstree-icon.parent-tree-icon {
+.ontodia-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-size: auto 100%;
+    vertical-align: middle;
+}
+
+.jstree-icon.parent-tree-icon::after {
     content: url("../images/tree-leaf-folder.png");
     max-width: 19px;
     max-height: 19px;
@@ -620,4 +628,8 @@ html.print-ready, .print-ready body {
 
 .ontodia-halo__expand--closed {
     background-image: url("../images/collapse-properties.png");
+}
+
+foreignObject div {
+    outline: none;
 }

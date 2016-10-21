@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/6c95a70c7498a144915c36660c6698ddaeb431b4/handlebars/handlebars.d.ts",
+    "raw": "registry:dt/handlebars#4.0.5+20160804082238",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/6c95a70c7498a144915c36660c6698ddaeb431b4/handlebars/handlebars.d.ts"
+  }
+}

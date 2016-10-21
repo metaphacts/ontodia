@@ -84,7 +84,7 @@ export class LinkInToolBox extends Backbone.View<FatLinkType> {
             'glyphicon glyphicon-text-width', 'Show links with labels');
 
         let self = this;
-        $buttons.find('label').click(function() {
+        $buttons.find('label').click(function(label) {
             self.setLinkState(this.id, {isFromHandler: true});
         });
 
@@ -189,13 +189,13 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
         let $buttons = $("<div class='btn-group btn-group-xs'></div>").appendTo(this.$label);
         let createButton = (optionName: string, selected: boolean, iconClass: string, tooltip: string) => {
             let $buttonLabel = $('<label class="btn btn-default"/>').attr('title', tooltip).appendTo($buttons);
-            let $button = $('<input type="hidden">')
-                .appendTo($buttonLabel);
+            $('<input type="hidden">').appendTo($buttonLabel);
             $('<span/>').attr('class', iconClass).appendTo($buttonLabel);
             $buttonLabel.on('click', () => {
                 this.view.model.initBatchCommand();
                 _.each(this.views, function (link: LinkInToolBox) {
                     link.setLinkState(optionName, {isFromHandler: false});
+                    link.$el.find('#' + optionName).addClass('active');
                 });
                 this.view.model.storeBatchCommand();
             });
@@ -218,19 +218,19 @@ export class LinkTypesToolbox extends Backbone.View<LinkTypesToolboxModel> {
             'aria-valuemin': '0',
             'aria-valuemax': '100',
             'aria-valuenow': '100',
-            style: 'width: 100%;'
+            style: 'width: 100%;',
         })).appendTo(this.$el);
 
-        let $container = $("<div class='link-lists'/>").appendTo(this.el);
-        this.$allLinksList = $("<ul class='list-group'/>");
-        this.$connectedLinksList = $("<ul class='list-group connected-links'/>");
-        this.$notConnectedLinksList = $("<ul class='list-group'/>");
-        this.$connectedElementLabel = $("<span/>");
+        let $container = $('<div class="link-lists"/>').appendTo(this.el);
+        this.$allLinksList = $('<ul class="list-group"/>');
+        this.$connectedLinksList = $('<ul class="list-group connected-links"/>');
+        this.$notConnectedLinksList = $('<ul class="list-group"/>');
+        this.$connectedElementLabel = $('<span/>');
         $container
             .append(this.$allLinksList)
-            .append($("<h4 class='links-heading'>Connected to </h4>").append(this.$connectedElementLabel))
+            .append($('<h4 class="links-heading">Connected to </h4>').append(this.$connectedElementLabel))
             .append(this.$connectedLinksList)
-            .append("<h4 class='links-heading'>Other</h4>")
+            .append('<h4 class="links-heading">Other</h4>')
             .append(this.$notConnectedLinksList);
 
         _.each(this.view.model.linkTypes, (link: FatLinkType) => {

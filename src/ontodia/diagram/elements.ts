@@ -26,6 +26,7 @@ UIElement.prototype.markup = '<g class="rotatable"><g class="nonscalable rootOfU
  * Events:
  *     state:loaded
  *     add-to-filter
+ *     focus-on-me
  *     action:iriClick
  */
 export class Element extends UIElement {
@@ -46,6 +47,10 @@ export class Element extends UIElement {
 
     addToFilter() {
         this.trigger('add-to-filter', this);
+    }
+
+    focus() {
+        this.trigger('focus-on-me', this);
     }
 }
 

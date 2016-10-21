@@ -95,14 +95,15 @@ export class DiagramModel extends Backbone.Model {
         this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
             if (cell instanceof Element) {
                 cell.set('presentOnDiagram', false, <any>{ isFromHandler: true });
-            } else if (cell instanceof Link) {
-                const linkType = this.linkTypes[cell.get('typeId')];
-                if (linkType && linkType.get('visible')) {
-                    const mustSwitch = !_.some(this.graph.getLinks(),
-                        (link: Link) => link.get('typeId') === cell.get('typeId'));
-                    if (mustSwitch) { linkType.set('visible', false); }
-                }
             }
+            // else if (cell instanceof Link) {
+                // const linkType = this.linkTypes[cell.get('typeId')];
+                // if (linkType && linkType.get('visible')) {
+                //     const mustSwitch = !_.some(this.graph.getLinks(),
+                //         (link: Link) => link.get('typeId') === cell.get('typeId'));
+                //     if (mustSwitch) { linkType.set('visible', false); }
+                // }
+            // }
         });
         this.listenTo(this.graph, 'change:labels', (cell: joint.dia.Cell) => {
             if (cell instanceof Link) {
@@ -468,9 +469,13 @@ export function normalizeTemplate(template: ElementModel): ElementModel {
 }
 
 export function uri2name(uri: string): string {
+    const hashIndex = uri.lastIndexOf('#');
+    if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
+        return uri.substring(hashIndex + 1);
+    }
     const lastPartStart = uri.lastIndexOf('/');
     if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
-        return uri.substring(uri.lastIndexOf('/') + 1);
+        return uri.substring(lastPartStart + 1);
     }
     return uri;
 }

@@ -51,11 +51,20 @@ export class GraphBuilder {
                     results: {bindings: []},
                 };
                 N3.Parser().parse(result, (error, triple, hash) => {
-                    if (!triple) {
+                    if (triple) {
                         jsonResponse.results.bindings.push({
-                            subject:   {type: 'iri', value: triple.subject  },
-                            predicate: {type: 'iri', value: triple.predicate},
-                            object:    {type: 'iri', value: triple.object   },
+                            subject:   {
+                                type: (triple.subject.indexOf('http') === 0 ? 'iri' : 'literal'),
+                                value: triple.subject,
+                            },
+                            predicate: {
+                                type: (triple.predicate.indexOf('http') === 0 ? 'iri' : 'literal'),
+                                value: triple.predicate,
+                            },
+                            object: {
+                                type: (triple.object.indexOf('http') === 0 ? 'iri' : 'literal'),
+                                value: triple.object,
+                            },
                         });
                     } else {
                         resolve(jsonResponse);

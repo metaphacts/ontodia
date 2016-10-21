@@ -3,26 +3,44 @@ import * as Backbone from 'backbone';
 import * as $ from 'jquery';
 import * as joint from 'jointjs';
 
-import * as svgui from '../../svgui/svgui';
 import { Indicator, WrapIndicator } from '../../svgui/indicator';
+
+import {
+    TypeStyleResolver,
+    LinkStyleResolver,
+    TemplateResolver,
+    CustomTypeStyle,
+    ElementTemplate,
+} from '../customization/props';
+import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
+import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
+import { DefaultTemplate } from '../customization/defaultTemplate';
+import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
+
+import { PaperArea } from '../viewUtils/paperArea';
+import { Halo } from '../viewUtils/halo';
+import {
+    toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
+} from '../viewUtils/toSvg';
 
 import { ElementModel, LocalizedString, ClassModel } from '../data/model';
 
-import { Element, Link } from './elements';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
+import { Element } from './elements';
 
-import { PaperArea } from '../viewUtils/paperArea';
-import { printPaper } from '../viewUtils/printPaper';
-import {
-    toSVG, toSVGOptions, toDataURL, toDataURLOptions,
-} from '../viewUtils/toSvg';
-import { UIElementView, LinkView } from './elementViews';
-import { Halo } from '../viewUtils/halo';
+import { LinkView } from './elementViews';
+import { TemplatedUIElementView } from './templatedElementView';
 
 export interface DiagramViewOptions {
-    elementColor?: (elementModel: ElementModel) => string;
-    customLinkStyle?: (link: Link) => joint.dia.LinkAttributes;
+    typeStyleResolvers?: TypeStyleResolver[];
+    linkStyleResolvers?: LinkStyleResolver[];
+    templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
+}
+
+export interface TypeStyle {
+    color: { h: number; c: number; l: number; };
+    icon?: string;
 }
 
 /**
@@ -30,6 +48,10 @@ export interface DiagramViewOptions {
  *     language: string
  */
 export class DiagramView extends Backbone.Model {
+    private typeStyleResolvers: TypeStyleResolver[];
+    private linkStyleResolvers: LinkStyleResolver[];
+    private templatesResolvers: TemplateResolver[];
+
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
     private halo: Halo;
@@ -43,32 +65,20 @@ export class DiagramView extends Backbone.Model {
 
     public dragAndDropElements: { [id: string]: Element };
 
-    private toSVGOptions: toSVGOptions = {
+    private toSVGOptions: ToSVGOptions = {
         elementsToRemoveSelector: '.link-tools, .marker-vertices',
-        blacklistedCssAttributes: [
-            '-webkit-column-rule-color',
-            '-webkit-tap-highlight-color',
-            '-webkit-text-emphasis-color',
-            '-webkit-text-fill-color',
-            '-webkit-text-stroke-color',
-            '-webkit-user-select',
-            'cursor',
-            'white-space',
-            'box-sizing',
-            'line-height',
-            'outline-color',
-        ],
+        convertImagesToDataUris: true,
     };
 
     readonly options: DiagramViewOptions;
 
-    constructor(public model: DiagramModel, rootElement: HTMLElement, options?: DiagramViewOptions) {
+    constructor(public model: DiagramModel, rootElement: HTMLElement, options: DiagramViewOptions = {}) {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
             model: this.model.graph,
             gridSize: 1,
-            elementView: UIElementView,
+            elementView: TemplatedUIElementView,
             linkView: LinkView,
             width: 1500,
             height: 800,
@@ -77,7 +87,16 @@ export class DiagramView extends Backbone.Model {
         });
         this.paper['diagramView'] = this;
         this.$svg = this.paper.$('svg');
-        this.options = options || {};
+        this.options = options;
+
+        this.typeStyleResolvers = options.typeStyleResolvers
+            ? options.typeStyleResolvers : DefaultTypeStyleBundle;
+
+        this.linkStyleResolvers = options.linkStyleResolvers
+            ? this.options.linkStyleResolvers : DefaultLinkStyleBundle;
+
+        this.templatesResolvers = options.templatesResolvers
+            ? options.templatesResolvers : DefaultTemplateBundle;
 
         this.setupTextSelectionPrevention();
         this.configureArea(rootElement);
@@ -156,24 +175,19 @@ export class DiagramView extends Backbone.Model {
     cancelSelection() { this.selection.reset([]); }
 
     print() {
-        const $html = $(document.documentElement);
-        printPaper(this.paper, {
-            beforePrint: () => $html.addClass('print-ready'),
-            afterPrint: () => $html.removeClass('print-ready'),
-            printFinished: () => this.zoomToFit(),
+        this.exportSVG().then(svg => {
+            const printWindow = window.open('', undefined, 'width=1280,height=720');
+            printWindow.document.write(svg);
+            printWindow.print();
         });
     }
     exportSVG(): Promise<string> {
-        return new Promise<string>(resolve => {
-            toSVG(this.paper, resolve, this.toSVGOptions);
-        });
+        return toSVG(this.paper, this.toSVGOptions);
     }
-    exportPNG(options?: toDataURLOptions): Promise<string> {
+    exportPNG(options?: ToDataURLOptions): Promise<string> {
         options = options || {};
         options.svgOptions = options.svgOptions || this.toSVGOptions;
-        return new Promise<string>(resolve => {
-            toDataURL(this.paper, resolve, options);
-        });
+        return toDataURL(this.paper, options);
     }
 
     zoomIn() { this.paperArea.zoom(0.2, { max: 2 }); }
@@ -192,7 +206,8 @@ export class DiagramView extends Backbone.Model {
 
     showIndicator(operation?: Promise<any>) {
         this.paperArea.center();
-        const svgElement: SVGElement = <any>this.paper.$('svg').get(0);
+        const convertToAny: any = this.paper.$('svg').get(0);
+        const svgElement: SVGElement = convertToAny;
         const svgBoundingRect = svgElement.getBoundingClientRect();
         this.indicator = WrapIndicator.wrap(d3.select(svgElement), {
             position: {
@@ -213,7 +228,10 @@ export class DiagramView extends Backbone.Model {
 
     private onKeyUp = (e: KeyboardEvent) => {
         const DELETE_KEY_CODE = 46;
-        if (e.keyCode === DELETE_KEY_CODE) {
+        if (
+            e.keyCode === DELETE_KEY_CODE &&
+            document.activeElement.localName !== 'input'
+        ) {
             this.removeSelectedElements();
         }
     };
@@ -281,7 +299,15 @@ export class DiagramView extends Backbone.Model {
             if (evt.ctrlKey || evt.metaKey) { return; }
             const element = cellView.model as Element;
             this.selection.reset([element]);
-            element.addToFilter();
+            if (!this.options.disableDefaultHalo) {
+                element.addToFilter();
+            }
+            element.focus();
+        });
+
+        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
+            this.selection.reset();
+            (document.activeElement as HTMLElement).blur();
         });
     }
 
@@ -328,18 +354,20 @@ export class DiagramView extends Backbone.Model {
                         graphPoint.x -= size.width / 2;
                         graphPoint.y -= size.height / 2;
                     }
+                    const convertToAny: any = {ignoreCommandManager: true};
                     element.set('position', {
                         x: graphPoint.x + totalXOffset,
                         y: graphPoint.y,
-                    }, <any>{ignoreCommandManager: true});
+                    }, convertToAny);
                     totalXOffset += size.width + 20;
 
                     elementsToSelect.push(element);
+                    element.focus();
                 }
             }
 
             this.selection.reset(elementsToSelect);
-            if (elementsToSelect.length === 1) {
+            if (elementsToSelect.length === 1 && !this.options.disableDefaultHalo) {
                 elementsToSelect[0].addToFilter();
             }
 
@@ -386,36 +414,90 @@ export class DiagramView extends Backbone.Model {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getElementColor(elementModel: ElementModel): { h: number; c: number; l: number; } {
-        let color = this.options.elementColor ? this.options.elementColor(elementModel) : undefined;
+    /**
+     * @param types Type signature, MUST BE sorted; see DiagramModel.normalizeData()
+     */
+    public getTypeStyle(types: string[]): TypeStyle {
+        let customStyle: CustomTypeStyle;
+        for (const resolver of this.typeStyleResolvers) {
+            const result = resolver(types);
+            if (result) {
+                customStyle = result;
+                break;
+            }
+        }
 
-        if (color) {
-            return d3.hcl(color);
+        const icon = customStyle ? customStyle.icon : undefined;
+        let color;
+        if (customStyle && customStyle.color) {
+            color = d3.hcl(customStyle.color);
         } else {
-            // elementModel.types MUST BE sorted; see DiagramModel.normalizeData()
-            const hue = getHueFromClasses(elementModel.types, this.colorSeed);
-            return {h: hue, c: 40, l: 75};
+            const hue = getHueFromClasses(types, this.colorSeed);
+            color = {h: hue, c: 40, l: 75};
+        }
+        return {icon, color};
+    }
+
+    public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
+        this.typeStyleResolvers.unshift(resolver);
+        return resolver;
+    }
+
+    public unregisterElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
+        const index = this.typeStyleResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.typeStyleResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
         }
     }
 
-    public getRandomPositionInViewport() {
-        const margin = { left: 100, top: 60, right: 100, bottom: 60 };
-        const offset = this.getCanvasPageOffset();
-        return {
-            x: offset.x + margin.left + Math.random() * (
-                this.$svg.width() - margin.left - margin.right),
-            y: offset.y + margin.top + Math.random() * (
-                this.$svg.height() - margin.top - margin.bottom),
-        };
+    public getElementTemplate(types: string[]): ElementTemplate {
+        for (const resolver of this.templatesResolvers) {
+            const result = resolver(types);
+            if (result) {
+                return result;
+            }
+        }
+        return DefaultTemplate;
     }
 
-    private getCanvasPageOffset(): svgui.Vector {
-        const boundingBox = this.$svg.get(0).getBoundingClientRect();
-        const xScroll = (typeof window.pageXOffset !== 'undefined') ? window.pageXOffset
-            : (<any> document.documentElement || document.body.parentNode || document.body).scrollLeft;
-        const yScroll = (typeof window.pageYOffset !== 'undefined') ? window.pageYOffset
-            : (<any> document.documentElement || document.body.parentNode || document.body).scrollTop;
-        return {x: boundingBox.left + xScroll, y: boundingBox.top + yScroll};
+    public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {
+        this.templatesResolvers.unshift(resolver);
+        return resolver;
+    }
+
+    public unregisterTemplateResolver(resolver: TemplateResolver): TemplateResolver {
+        const index = this.templatesResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.templatesResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    public getLinkStyle(type: string): joint.dia.LinkAttributes {
+        for (const resolver of this.linkStyleResolvers) {
+            const result = resolver(type);
+            if (result) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
+    public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
+        this.linkStyleResolvers.unshift(resolver);
+        return resolver;
+    }
+
+    public unregisterLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
+        const index = this.linkStyleResolvers.indexOf(resolver);
+        if (index !== -1) {
+            return this.linkStyleResolvers.splice(index, 1)[0];
+        } else {
+            return undefined;
+        }
     }
 
     public getOptions(): DiagramViewOptions {

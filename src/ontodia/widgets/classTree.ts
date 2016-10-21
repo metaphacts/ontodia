@@ -2,6 +2,8 @@ import * as Backbone from 'backbone';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
 
+import { Dictionary } from '../data/model';
+
 import { ClassTreeElement } from '../diagram/model';
 import DiagramView from '../diagram/view';
 
@@ -53,16 +55,12 @@ export class ClassTree extends Backbone.View<FilterModel> {
         this.listenTo(this.view.model, 'state:dataLoaded', () => {
             let model = this.view.model;
             let tree = model.classTree;
-            this.updateClassLabels(tree);
+            const iconMap = this.updateClassLabels(tree);
             this.setUrls(tree);
             this.getJSTree().jstree({
                 'plugins': ['types', 'sort', 'search'],
                 'core': {'data': tree},
-                'types': {
-                    'default' : {'icon' : 'default-tree-icon'},
-                    'has-not-children' : {'icon' : 'default-tree-icon'},
-                    'has-children' : {'icon' : 'parent-tree-icon'},
-                },
+                'types': iconMap,
                 'sort': function (firstClassId, secondClassId) {
                     return model.classesById[firstClassId]['text'].localeCompare(
                         model.classesById[secondClassId]['text']);
@@ -84,21 +82,43 @@ export class ClassTree extends Backbone.View<FilterModel> {
         });
     }
 
-    private updateClassLabels(roots: ClassTreeElement[]) {
+    private updateClassLabels(roots: ClassTreeElement[]): Dictionary<{icon: string}> {
+        const iconMap = {
+            'default' : {icon: 'default-tree-icon'},
+            'has-not-children' : {icon: 'default-tree-icon'},
+            'has-children' : {icon: 'parent-tree-icon'},
+        };
+
         if (roots) {
             for (let i = 0; i < roots.length; i++) {
                 let element = roots[i];
+                const icon = this.view.getTypeStyle([element.id]).icon;
+                let iconId;
+                if (icon) {
+                    iconId = _.uniqueId('iconId');
+                    iconMap[iconId] = {icon: icon + ' ontodia-tree-icon'};
+                }
+
                 if ('children' in element) {
-                    this.updateClassLabels(element.children);
+                    const innerMap = this.updateClassLabels(element.children);
+                    Object.keys(innerMap).forEach(key => {
+                        iconMap[key] = innerMap[key];
+                    });
+
                     if (element.children.length !== 0) {
-                        element['type'] = 'has-children';
+                        element['type'] = (iconId ? iconId : 'has-children');
+                    } else {
+                        element['type'] = (iconId ? iconId : 'has-not-children');
                     }
                 } else {
-                    element['type'] = 'has-not-children';
+                    element['type'] = (iconId ? iconId : 'has-not-children');
                 }
+
                 element['text'] = this.view.getLocalizedText(element.label.values).text + ' (' + element.count + ')';
             }
         }
+
+        return iconMap;
     }
 
     private getJSTree() {
@@ -106,7 +126,7 @@ export class ClassTree extends Backbone.View<FilterModel> {
     }
 
     private onLanguageChanged() {
-        this.updateClassLabels(this.view.model.classTree);
+        // this.updateClassLabels(this.view.model.classTree);
         let jsTree = this.getJSTree().jstree(true);
         (jsTree as any).settings.core.data = this.view.model.classTree;
         jsTree.refresh(/* do not show loading indicator */ true, undefined);
