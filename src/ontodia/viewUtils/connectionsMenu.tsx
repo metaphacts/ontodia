@@ -13,10 +13,14 @@ type Label = { values: LocalizedString[] };
 type ReactElementModel = { model: ElementModel, presentOnDiagram: boolean };
 
 const MENU_OFFSET = 40;
-const ALL_ERLATED_ELEMENTS_LINK = {
-    id: 'allRelatedElements',
-    label: {values: [{lang: '', text: 'All'}]},
-};
+const ALL_ERLATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
+    linkType: {
+        id: 'allRelatedElements',
+        label: { values: [{lang: '', text: 'All'}] },
+        count: 0,
+    },
+    diagram: null,
+});
 
 export interface ConnectionsMenuOptions {
     paper: joint.dia.Paper;
@@ -56,6 +60,20 @@ export class ConnectionsMenu {
         this.render();
     }
 
+    private subscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
+        for (const link of linksOfElement) {
+            this.handler.listenTo(link, 'change:label', this.render);
+            this.handler.listenTo(link, 'change:visible', this.render);
+            this.handler.listenTo(link, 'change:showLabel', this.render);
+        };
+    }
+
+    private unsubscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
+        for (const link of linksOfElement) {
+            this.handler.stopListening(link);
+        };
+    }
+
     private loadLinks() {
         this.state = 'loading';
         this.links = [];
@@ -68,7 +86,7 @@ export class ConnectionsMenu {
                 const links = [];
                 for (const linkCount of linkTypes) {
                     countMap[linkCount.id] = linkCount.count;
-                    links.push(this.view.model.linkTypes[linkCount.id]);
+                    links.push(this.view.model.getLinkType(linkCount.id));
                 }
 
                 let totalCount = 0;
@@ -76,7 +94,10 @@ export class ConnectionsMenu {
                 countMap['allRelatedElements'] = totalCount;
 
                 this.countMap = countMap;
+
+                this.unsubscribeOnLinksEevents(this.links);
                 this.links = links;
+                this.subscribeOnLinksEevents(this.links);
 
                 this.render();
             })
@@ -272,7 +293,7 @@ export class ConnectionsMenuMarkup
                 <a onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
                 {
                     chooseLocalizedText(
-                        this.props.objectsData.selectedLink.label.values,
+                        this.props.objectsData.selectedLink.get('label').values,
                         this.props.lang
                     ).text.toLowerCase()
                 }
@@ -363,8 +384,8 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.label;
-        const bLabel: Label = b.label;
+        const aLabel: Label = a.get('label');
+        const bLabel: Label = b.get('label');
         const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
         const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
 
@@ -381,7 +402,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
-            const label: Label = link.label;
+            const label: Label = link.get('label');
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
@@ -466,7 +487,7 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
         const countIcon = (this.props.count > 0 ?
             <span className='badge link-in-popup-menu__count'>{this.props.count}</span> : '');
 
-        const fullText = chooseLocalizedText(this.props.link.label.values, this.props.lang).text;
+        const fullText = chooseLocalizedText(this.props.link.get('label').values, this.props.lang).text;
         const textLine = getColoredText(fullText, this.props.filterKey);
 
         return (

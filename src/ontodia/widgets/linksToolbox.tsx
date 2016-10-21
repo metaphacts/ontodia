@@ -59,10 +59,10 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
     private getText = () => {
         const label: Label = this.props.link.get('label');
-        const fullText = chooseLocalizedText(label.values, this.props.language).text.toLowerCase().toLowerCase();
+        const fullText = chooseLocalizedText(label.values, this.props.language).text.toLowerCase();
         if (this.props.filterKey) {
             const filterKey = this.props.filterKey.toLowerCase();
-            const leftIndex =  fullText.indexOf(filterKey);
+            const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
             const rightIndex = leftIndex + filterKey.length;
             let firstPart = '';
             let selectedPart = '';
