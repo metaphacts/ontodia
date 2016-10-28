@@ -10,7 +10,7 @@ import { chooseLocalizedText } from '../diagram/model';
 import { LocalizedString, ElementModel } from '../data/model';
 
 type Label = { values: LocalizedString[] };
-type ReactElementModel = { model: ElementModel, presentOnDiagram: boolean };
+export type ReactElementModel = { model: ElementModel, presentOnDiagram: boolean };
 
 const MENU_OFFSET = 40;
 const ALL_ERLATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
@@ -181,14 +181,14 @@ export class ConnectionsMenu {
         });
         this.view.paperArea.adjustPaper();
         this.options.onClose();
-    }
+    };
 
     private onExpandLink = (link: FatLinkType) => {
         if (this.selectedLink !== link || !this.objects) {
             this.loadObjects(link);
         }
         this.render();
-    }
+    };
 
     private onMoveToFilter = (link: FatLinkType) => {
         if (link === ALL_ERLATED_ELEMENTS_LINK) {
@@ -200,7 +200,7 @@ export class ConnectionsMenu {
             this.view.model.graph.trigger('add-to-filter', selectedElement, link);
             // this.options.onClose();
         }
-    }
+    };
 
     private render = () => {
         const connectionsData = {
@@ -276,16 +276,16 @@ export class ConnectionsMenuMarkup
             return 'Connections';
         }
         return 'Error';
-    }
+    };
 
     private onExpandLink = (link: FatLinkType) => {
         this.setState({ filterKey: '',  panel: 'objects' });
         this.props.onExpandLink(link);
-    }
+    };
 
     private onCollapseLink = () => {
         this.setState({ filterKey: '',  panel: 'connections' });
-    }
+    };
 
     private getBreadCrumbs = () => {
         return (this.props.objectsData && this.state.panel === 'objects' ?
@@ -300,7 +300,7 @@ export class ConnectionsMenuMarkup
             </span>
             : ''
         );
-    }
+    };
 
     private getBody = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
@@ -323,7 +323,7 @@ export class ConnectionsMenuMarkup
                 onMoveToFilter={this.props.onMoveToFilter}/>;
         }
         return <label className='ontodia-connections-menu__error'>Error</label>;
-    }
+    };
 
     render() {
         const bBox = this.props.cellView.getBBox();
@@ -398,7 +398,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
         }
 
         return 0;
-    }
+    };
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
@@ -407,7 +407,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
-    }
+    };
 
     private getViews = (links: FatLinkType[]) => {
         const countMap = this.props.data.countMap || {};
@@ -426,7 +426,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
                 );
         }
         return views;
-    }
+    };
 
     render() {
         const links = this.getLinks();
@@ -476,12 +476,12 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     private onExpandLink = () => {
         this.props.onExpandLink(this.props.link);
-    }
+    };
 
     private onMoveToFilter = (evt: Event) => {
         evt.stopPropagation();
         this.props.onMoveToFilter(this.props.link);
-    }
+    };
 
     render() {
         const countIcon = (this.props.count > 0 ?
@@ -531,12 +531,12 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
                 this.state.checkMap[element.model.id] = true;
             }
         });
-    }
+    };
 
     private onChackboxChanged = (object: ReactElementModel, value: boolean) => {
         this.state.checkMap[object.model.id] = value;
         this.setState(this.state);
-    }
+    };
 
     private getFilteredObjects = (): ReactElementModel[] => {
         return this.props.data.objects
@@ -545,7 +545,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         });
-    }
+    };
 
     private getObjects = (list: ReactElementModel[]) => {
         const keyMap = {};
@@ -566,13 +566,13 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
                 onCheckboxChanged={this.onChackboxChanged}
             />;
         });
-    }
+    };
 
     private addSelected = () => {
         this.props.onPressAddSelected(
             this.getFilteredObjects().filter(el => this.state.checkMap[el.model.id] && !el.presentOnDiagram)
         );
-    }
+    };
 
     render() {
         this.updateCheckMap();
@@ -626,7 +626,7 @@ export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps,
         this.state.checked = !this.state.checked;
         this.setState(this.state);
         this.props.onCheckboxChanged(this.props.element, this.state.checked);
-    }
+    };
 
     componentWillReceiveProps(props: ElementInPopupMenuProps) {
         this.state = { checked: this.props.checked };
