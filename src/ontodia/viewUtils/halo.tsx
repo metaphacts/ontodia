@@ -2,22 +2,22 @@ import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import DiagramView from '../diagram/view';
 
-import { ConnectionsMenu } from '../viewUtils/connectionsMenu';
+import { DiagramView } from '../diagram/view';
 
 export interface HaloOptions {
     paper: joint.dia.Paper;
     cellView: joint.dia.CellView;
     diagramView: DiagramView;
-    onDelete: () => void;
-    onExpand: () => void;
+    onDelete?: () => void;
+    onExpand?: () => void;
+    navigationMenuOpened?: boolean;
+    onToggleNavigationMenu?: () => void;
 }
 
 export class Halo {
     private container: HTMLElement;
     private handler: Backbone.Model;
-    private connectionsMenu: ConnectionsMenu;
 
     constructor(public options: HaloOptions) {
         this.container = document.createElement('div');
@@ -31,40 +31,19 @@ export class Halo {
         this.handler.listenTo(this.options.paper, 'scale', this.render);
     }
 
-    private onChangeMenuState = () => {
-        if (this.connectionsMenu) {
-            this.connectionsMenu.remove();
-            this.connectionsMenu = undefined;
-        } else {
-            this.connectionsMenu = new ConnectionsMenu({
-                paper: this.options.diagramView.paper,
-                cellView: this.options.cellView,
-                onClose: () => {
-                    this.connectionsMenu.remove();
-                    this.connectionsMenu = undefined;
-                    this.render();
-                },
-                view: this.options.diagramView,
-            });
-        }
-    }
-
     private render = () => {
         ReactDOM.render(React.createElement(HaloMarkup, {
             cellView: this.options.cellView,
             cellIsExpanded: this.options.cellView.model.get('isExpanded'),
             onDelete: this.options.onDelete,
             onExpand: this.options.onExpand,
-            onChangeMenuState: this.onChangeMenuState,
-            menuOpened: (this.connectionsMenu ? true : false),
+            navigationMenuOpened: this.options.navigationMenuOpened,
+            onToggleNavigationMenu: this.options.onToggleNavigationMenu,
         }), this.container);
     };
 
     remove() {
-        if (this.connectionsMenu) {
-            this.connectionsMenu.remove();
-            this.connectionsMenu = undefined;
-        }
+        this.options.diagramView.hideNavigationMenu();
         this.handler.stopListening();
         ReactDOM.unmountComponentAtNode(this.container);
         this.options.paper.el.removeChild(this.container);
@@ -76,46 +55,32 @@ export interface Props {
     cellIsExpanded: boolean;
     onDelete: () => void;
     onExpand: () => void;
-    onChangeMenuState: () => void;
-    menuOpened?: boolean;
+    navigationMenuOpened?: boolean;
+    onToggleNavigationMenu?: () => void;
 }
 
-export class HaloMarkup extends React.Component<Props, { menuOpened: boolean }> {
-
-    constructor(props: Props) {
-        super(props);
-        this.state = { menuOpened: this.props.menuOpened || false };
-    }
-
-    componentWillReceiveProps(props: Props) {
-        this.state = { menuOpened: this.props.menuOpened || false };
-    }
-
-    private onChangeMenuState = () => {
-        this.setState({ menuOpened: !this.state.menuOpened });
-        this.props.onChangeMenuState();
-    };
-
+export class HaloMarkup extends React.Component<Props, void> {
     render() {
+        const {cellIsExpanded, navigationMenuOpened} = this.props;
+        const bbox = this.props.cellView.getBBox();
         const style = {
-            top: this.props.cellView.getBBox().y,
-            left: this.props.cellView.getBBox().x,
-            height: this.props.cellView.getBBox().height,
-            width: this.props.cellView.getBBox().width,
+            top: bbox.y,
+            left: bbox.x,
+            height: bbox.height,
+            width: bbox.width,
         };
-        const cellIsExpanded = this.props.cellIsExpanded;
 
         return (
             <div className='ontodia-halo' style={style}>
-                <div className='ontodia-halo__delete' onClick={this.props.onDelete}/>
+                <div className='ontodia-halo__delete' onClick={this.props.onDelete} />
 
                 <div className={'ontodia-halo__navigate ' +
-                (this.state.menuOpened ? 'ontodia-halo__navigate--closed' : 'ontodia-halo__navigate--open')}
-                    onClick={this.onChangeMenuState}/>
+                (navigationMenuOpened ? 'ontodia-halo__navigate--closed' : 'ontodia-halo__navigate--open')}
+                    onClick={this.props.onToggleNavigationMenu} />
 
                 <div className={'ontodia-halo__expand ' +
                 (cellIsExpanded ? 'ontodia-halo__expand--closed' : 'ontodia-halo__expand--open')}
-                     onClick={this.props.onExpand}/>
+                     onClick={this.props.onExpand} />
             </div>
         );
     }
