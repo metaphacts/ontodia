@@ -23,21 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 diagram.registerTemplateResolver(types => {
                     if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
                         return OrganizationTemplate;
-                    }
-                });
-                diagram.registerTemplateResolver(types => {
-                    if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
+                    } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
                         return PersonTemplate;
+                    } else {
+                        return undefined;
                     }
                 });
                 diagram.registerElementStyleResolver(types => {
                     if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
                         return {color: '#77ca98', icon: 'ontodia-organization-icon'};
-                    }
-                });
-                diagram.registerElementStyleResolver(types => {
-                    if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
+                    } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
                         return {color: '#eb7777', icon: 'ontodia-person-icon'};
+                    } else {
+                        return undefined;
                     }
                 });
 

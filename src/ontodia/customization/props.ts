@@ -3,9 +3,9 @@ import { ComponentClass } from 'react';
 
 import { Dictionary, Property } from '../data/model';
 
-export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | void;
-export type LinkStyleResolver = (type: string) => joint.dia.LinkAttributes | void;
-export type TemplateResolver = (types: string[]) => ElementTemplate;
+export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
+export type LinkStyleResolver = (type: string) => joint.dia.LinkAttributes | undefined;
+export type TemplateResolver = (types: string[]) => ElementTemplate | undefined;
 
 export interface CustomTypeStyle {
     color?: string;

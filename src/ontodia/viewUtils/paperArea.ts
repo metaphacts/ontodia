@@ -208,6 +208,8 @@ export class PaperArea extends Backbone.View<any> {
                 evt.originalEvent.pageY - offset.top);
             this.zoom(delta / 10, {min: .2, max: 5, ox: o.x, oy: o.y});
             return false;
+        } else {
+            return undefined;
         }
     }
     public startPanning(evt: any) {

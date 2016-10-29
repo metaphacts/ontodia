@@ -9,7 +9,8 @@
             "es2015.promise"
         ],
         "noImplicitAny": true,
-        "noImplicitThis": true
+        "noImplicitThis": true,
+        "noImplicitReturns": true
     },
     "include": [
         "./index.ts",

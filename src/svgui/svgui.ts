@@ -130,6 +130,7 @@ export function align(alignment: Alignment, inner: number, outer: number): numbe
         case Alignment.START: return 0;
         case Alignment.END: return outer - inner;
         case Alignment.CENTER: return (outer - inner) / 2;
+        default: throw new Error('Invalid alignment');
     }
 }
 
