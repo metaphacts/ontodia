@@ -317,7 +317,7 @@ export class ConnectionsMenuMarkup
             }
             return <ConnectionsList
                 data={this.props.connectionsData}
-                lange={this.props.lang}
+                lang={this.props.lang}
                 filterKey={this.state.filterKey}
                 onExpandLink={this.onExpandLink}
                 onMoveToFilter={this.props.onMoveToFilter}/>;
@@ -478,7 +478,7 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
         this.props.onExpandLink(this.props.link);
     };
 
-    private onMoveToFilter = (evt: Event) => {
+    private onMoveToFilter = (evt: React.MouseEvent<any>) => {
         evt.stopPropagation();
         this.props.onMoveToFilter(this.props.link);
     };
@@ -508,7 +508,7 @@ export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
 export interface ObjectsPanelProps {
     data: {
-        selectedLink: FatLinkType;
+        selectedLink?: FatLinkType;
         objects: ReactElementModel[]
     };
     loading?: boolean;

@@ -214,7 +214,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         const links = this.getLinks();
         const views = this.getViews(links);
 
-        let connectedTo = '';
+        let connectedTo: React.ReactElement<any> = null;
         if (this.props.label) {
             const selectedElementLabel =
                 chooseLocalizedText(this.props.label.values, this.props.language).text.toLowerCase();
@@ -224,7 +224,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
             </h4>;
         }
 
-        let dropButton = '';
+        let dropButton: React.ReactElement<any> = null;
         if (this.state.filterKey) {
             dropButton = <button type='button'
                 className='close link-types-toolbox-heading_searching-box__drob-button'

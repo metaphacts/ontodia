@@ -33,8 +33,8 @@ export class EditorToolbar extends React.Component<Props, State> {
         this.state = {showModal: false};
     }
 
-    private onChangeLanguage = (event: React.SyntheticEvent) => {
-        const value = (event.target as HTMLSelectElement).value;
+    private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
+        const value = event.target.value;
         this.props.onChangeLanguage(value);
     };
 
@@ -88,13 +88,13 @@ export class EditorToolbar extends React.Component<Props, State> {
                         ? (this.props.onSaveDiagram ? btnSaveDiagram : undefined)
                         : (this.props.onEditAtMainSite ? btnEditAtMainSite : undefined)}
                     {this.props.onSaveToSelf ? (
-                        <button type='button' class='btn btn-default'>
-                            <span class='glyphicon glyphicon-save'></span> Save under your account
+                        <button type='button' className='btn btn-default'>
+                            <span className='glyphicon glyphicon-save'></span> Save under your account
                         </button>
                     ) : undefined}
                     {(this.props.isDiagramSaved && this.props.onResetDiagram) ? (
-                        <button type='button' class='btn btn-default'>
-                            <span class='glyphicon glyphicon-repeat'></span> Reset
+                        <button type='button' className='btn btn-default'>
+                            <span className='glyphicon glyphicon-repeat'></span> Reset
                         </button>
                     ) : undefined}
                     <button type='button' className='btn btn-default'
