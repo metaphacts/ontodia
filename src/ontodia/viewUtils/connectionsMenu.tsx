@@ -7,13 +7,16 @@ import { FatLinkType, Element } from '../diagram/elements';
 import DiagramView from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
-import { LocalizedString, ElementModel } from '../data/model';
+import { Dictionary, LocalizedString, ElementModel } from '../data/model';
 
 type Label = { values: LocalizedString[] };
-export type ReactElementModel = { model: ElementModel, presentOnDiagram: boolean };
+export interface ReactElementModel {
+    model: ElementModel;
+    presentOnDiagram: boolean;
+}
 
 const MENU_OFFSET = 40;
-const ALL_ERLATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
+const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     linkType: {
         id: 'allRelatedElements',
         label: { values: [{lang: '', text: 'All'}] },
@@ -82,8 +85,8 @@ export class ConnectionsMenu {
             .then(linkTypes => {
                 this.state = 'completed';
 
-                const countMap = {};
-                const links = [];
+                const countMap: Dictionary<number> = {};
+                const links: FatLinkType[] = [];
                 for (const linkCount of linkTypes) {
                     countMap[linkCount.id] = linkCount.count;
                     links.push(this.view.model.getLinkType(linkCount.id));
@@ -114,11 +117,11 @@ export class ConnectionsMenu {
         this.objects = [];
         const requestsCount = Math.ceil(this.countMap[link.id] / 100);
 
-        const requests = [];
+        const requests: Promise<Dictionary<ElementModel>>[] = [];
         for (let i = 0; i < requestsCount; i++) {
             requests.push(
                 this.view.model.dataProvider.filter({
-                    refElementLinkId: (link === ALL_ERLATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
+                    refElementLinkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
                     refElementId: this.cellView.model.id,
                     limit: 100,
                     offset: i * 100,
@@ -191,7 +194,7 @@ export class ConnectionsMenu {
     };
 
     private onMoveToFilter = (link: FatLinkType) => {
-        if (link === ALL_ERLATED_ELEMENTS_LINK) {
+        if (link === ALL_RELATED_ELEMENTS_LINK) {
             const element = this.cellView.model as Element;
             element.addToFilter();
             // this.options.onClose();
@@ -208,7 +211,11 @@ export class ConnectionsMenu {
             countMap: this.countMap || {},
         };
 
-        let objectsData = null;
+        let objectsData: {
+            selectedLink: FatLinkType;
+            objects: ReactElementModel[];
+        } = null;
+
         if (this.selectedLink && this.objects) {
             objectsData = {
                 selectedLink: this.selectedLink,
@@ -253,7 +260,7 @@ export interface ConnectionsMenuMarkupProps {
 
     onExpandLink?: (link: FatLinkType) => void;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
-    onMoveToFilter?: (FatLinkType) => void;
+    onMoveToFilter?: (link: FatLinkType) => void;
 }
 
 export class ConnectionsMenuMarkup
@@ -264,7 +271,7 @@ export class ConnectionsMenuMarkup
         this.state = { filterKey: '',  panel: 'connections' };
     }
 
-    private onChangeFilter = (e) => {
+    private onChangeFilter = (e: React.FormEvent<HTMLInputElement>) => {
         this.state.filterKey = e.target.value;
         this.setState(this.state);
     };
@@ -373,8 +380,8 @@ export interface ConnectionsListProps {
     lang: string;
     filterKey: string;
 
-    onExpandLink?: (FatLinkType) => void;
-    onMoveToFilter?: (FatLinkType) => void;
+    onExpandLink?: (link: FatLinkType) => void;
+    onMoveToFilter?: (link: FatLinkType) => void;
 }
 
 export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
@@ -411,7 +418,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
 
     private getViews = (links: FatLinkType[]) => {
         const countMap = this.props.data.countMap || {};
-        const views = [];
+        const views: React.ReactElement<any>[] = [];
         for (const link of links) {
             views.push(
                 <LinkInPopupMenu
@@ -423,7 +430,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
                     filterKey={this.props.filterKey}
                     onMoveToFilter={this.props.onMoveToFilter}
                 />
-                );
+            );
         }
         return views;
     };
@@ -432,7 +439,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
         const links = this.getLinks();
         const views = this.getViews(links);
 
-        let viewList;
+        let viewList: React.ReactElement<any> | React.ReactElement<any>[];
         if (views.length === 0) {
             viewList = <label className='ontodia-connections-menu_links-list__empty'>List empty</label>;
         } else {
@@ -442,7 +449,7 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
                 viewList = [
                     <LinkInPopupMenu
                         key={'allRelatedElements'}
-                        link={ALL_ERLATED_ELEMENTS_LINK}
+                        link={ALL_RELATED_ELEMENTS_LINK}
                         onExpandLink={this.props.onExpandLink}
                         lang={this.props.lang}
                         count={countMap['allRelatedElements']}
@@ -465,8 +472,8 @@ export interface LinkInPopupMenuProps {
     count: number;
     lang?: string;
     filterKey?: string;
-    onExpandLink?: (FatLinkType) => void;
-    onMoveToFilter?: (FatLinkType) => void;
+    onExpandLink?: (link: FatLinkType) => void;
+    onMoveToFilter?: (link: FatLinkType) => void;
 }
 
 export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
@@ -548,7 +555,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
     };
 
     private getObjects = (list: ReactElementModel[]) => {
-        const keyMap = {};
+        const keyMap: Dictionary<boolean> = {};
         return list.filter(obj => {
             if (keyMap[obj.model.id]) {
                 return false;

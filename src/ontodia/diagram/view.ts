@@ -87,7 +87,7 @@ export class DiagramView extends Backbone.Model {
             async: true,
             preventContextMenu: false,
         });
-        this.paper['diagramView'] = this;
+        (this.paper as any).diagramView = this;
         this.$svg = this.paper.$('svg');
         this.options = options;
 
@@ -474,7 +474,7 @@ export class DiagramView extends Backbone.Model {
         }
 
         const icon = customStyle ? customStyle.icon : undefined;
-        let color;
+        let color: { h: number; c: number; l: number; };
         if (customStyle && customStyle.color) {
             color = d3.hcl(customStyle.color);
         } else {
@@ -573,7 +573,7 @@ function getHueFromClasses(classes: string[], seed?: number): number {
  */
 function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:disable:no-bitwise */
-    let i, l, hval = seed & 0x7fffffff;
+    let i: number, l: number, hval = seed & 0x7fffffff;
 
     for (i = 0, l = str.length; i < l; i++) {
         hval ^= str.charCodeAt(i);

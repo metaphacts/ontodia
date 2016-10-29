@@ -20,21 +20,21 @@ namespace joint {
          * The collection of all the cells is stored in the property cells.
          */
         class Graph extends Backbone.Model {
-            initialize();
-            fromJSON(json: any);
-            clear();
+            initialize(): void;
+            fromJSON(json: any): void;
+            clear(): void;
             /**
              * Add a new cell to the graph. If cell is an array, all the cells in the array will be added to the graph.
              */
-            addCell(cell: Cell, options?: any);
+            addCell(cell: Cell, options?: any): void;
             /**
              * Add new cells to the graph. This is just a syntactic sugar to the addCell method.
              * Calling addCell with an array of cells is an equivalent to calling addCells.
              */
-            addCells(cells: Cell[], options?: any);
+            addCells(cells: Cell[], options?: any): void;
             getConnectedLinks(cell: Cell, options?: any): Link[];
-            disconnectLinks(cell: Cell);
-            removeLinks(cell: Cell[]);
+            disconnectLinks(cell: Cell): void;
+            removeLinks(cell: Cell[]): void;
             getElements(): Element[];
             getLinks(): Link[];
             /**
@@ -45,28 +45,28 @@ namespace joint {
              * @param options optionally contain additional data that is passed over to
              *        the event listeners of the graph reset event
              */
-            resetCells(cells: Cell[], options?: any);
+            resetCells(cells: Cell[], options?: any): void;
         }
 
         class Cell extends Backbone.Model {
-            toJSON();
-            remove(options?: any);
-            toFront();
-            toBack();
-            getBBox();
-            embed(cell: Cell);
-            unembed(cell: Cell);
+            toJSON(): void;
+            remove(options?: any): void;
+            toFront(): void;
+            toBack(): void;
+            getBBox(): void;
+            embed(cell: Cell): void;
+            unembed(cell: Cell): void;
             getEmbeddedCells(): Cell[];
             clone(opt?: any): Backbone.Model;      // @todo: return can either be Cell or Cell[].
             attr(attrs: any): Cell;
-            attr(path: string, value: any);
+            attr(path: string, value: any): Cell;
         }
 
         class Element extends Cell {
             position(x: number, y: number): Element;
             translate(tx: number, ty?: number): Element;
             resize(width: number, height: number): Element;
-            rotate(angle: number, absolute): Element;
+            rotate(angle: number, absolute?: boolean): Element;
         }
 
         class Link extends Cell {
@@ -176,36 +176,36 @@ namespace joint {
             options: IOptions;
             svg: SVGElement;
             viewport: SVGGElement;
-            setDimensions(width: number, height: number);
+            setDimensions(width: number, height: number): void;
             scale(sx: number, sy?: number, ox?: number, oy?: number): Paper;
             rotate(deg: number, ox?: number, oy?: number): Paper;      // @todo not released yet though it's in the source code already
             findView(el: any): CellView;
             findViewByModel(modelOrId: any): CellView;
             findViewsFromPoint(p: { x: number; y: number; }): CellView[];
             findViewsInArea(r: { x: number; y: number; width: number; height: number; }): CellView[];
-            fitToContent(opt?: PaperFitToContentOptions);
-            snapToGrid(p): { x: number; y: number; };
-            scaleContentToFit(opt?: PaperScaleToFitOptions);
-            toPNG(callback: (string) => void);
-            toSVG(callback: (string) => void);
-            openAsSVG();
-            print();
+            fitToContent(opt?: PaperFitToContentOptions): void;
+            snapToGrid(p: { x: number; y: number; }): { x: number; y: number; };
+            scaleContentToFit(opt?: PaperScaleToFitOptions): void;
+            toPNG(callback: (png: string) => void): void;
+            toSVG(callback: (svg: string) => void): void;
+            openAsSVG(): void;
+            print(): void;
             getContentBBox(): g.rect;
-            setOrigin(x: number, y: number);
+            setOrigin(x: number, y: number): void;
         }
 
         class ElementView extends CellView  {
-            scale(sx: number, sy: number);
-            resize();
-            update(cell?: any, renderingOnlyAttrs?: any);
+            scale(sx: number, sy: number): void;
+            resize(): void;
+            update(cell?: any, renderingOnlyAttrs?: any): void;
         }
 
         class CellView extends Backbone.View<Cell> {
             getBBox(): { x: number; y: number; width: number; height: number; };
-            highlight(el?: any);
-            unhighlight(el?: any);
-            findMagnet(el: any);
-            getSelector(el: any);
+            highlight(el?: any): void;
+            unhighlight(el?: any): void;
+            findMagnet(el: any): void;
+            getSelector(el: any): void;
         }
 
         class LinkView extends CellView {
@@ -216,12 +216,12 @@ namespace joint {
         /** Rappid only */
         class CommandManager extends Backbone.Model {
             constructor(options?: CommandManagerOptions);
-            initialize();
-            undo();
-            initBatchCommand();
-            storeBatchCommand();
-            redo();
-            reset();
+            initialize(): void;
+            undo(): void;
+            initBatchCommand(): void;
+            storeBatchCommand(): void;
+            redo(): void;
+            reset(): void;
         }
 
         /** Rappid only */
@@ -234,11 +234,11 @@ namespace joint {
     namespace ui {
         /** Rappid only */
         class PaperScroller extends Backbone.View<Backbone.Model> {
-            startPanning(evt): void;
-            zoom(size: any, opts: any);
-            zoomToFit(params: any);
+            startPanning(evt: MouseEvent): void;
+            zoom(size: any, opts: any): void;
+            zoomToFit(params: any): void;
             toLocalPoint(x: number, y: number): {x: number; y: number};
-            center();
+            center(): void;
             adjustPaper(): void;
         }
 
@@ -250,7 +250,7 @@ namespace joint {
         /** Rappid only */
         class Snaplines extends Backbone.View<Backbone.Model> {
             constructor(options: SnaplinesOptions);
-            startListening();
+            startListening(): void;
         }
 
         /** Rappid only */
@@ -262,17 +262,17 @@ namespace joint {
         /** Rappid only */
         class SelectionView extends Backbone.View<any> {
             constructor(options: SelectionViewOptions);
-            startSelecting(evt): void;
-            cancelSelection();
-            createSelectionBox(view: joint.dia.CellView);
-            destroySelectionBox(view: joint.dia.CellView);
+            startSelecting(evt: MouseEvent): void;
+            cancelSelection(): void;
+            createSelectionBox(view: joint.dia.CellView): void;
+            destroySelectionBox(view: joint.dia.CellView): void;
         }
 
         /** Rappid only */
         class Halo extends Backbone.View<Backbone.Model> {
             constructor(options: HaloOptions);
             options: HaloOptions;
-            addHandle(options: { name:string; position: string; icon: string; });
+            addHandle(options: { name:string; position: string; icon: string; }): void;
             removeHandle(name: string): void;
             changeHandle(name: string, options: { position: string; icon: string; }): void;
         }

@@ -146,7 +146,7 @@ export abstract class UIElement extends Backbone.Model {
     get element() { return this.root.node() as Element; }
     /** Measured size of the element. */
     size: Vector;
-    constructor(attributes?, options?) {
+    constructor(attributes?: any, options?: any) {
         super(attributes, options);
     }
     defaults(): any {
@@ -408,7 +408,7 @@ export class PropertyTable extends UIElement {
             let caption =
                 new Label({parent: this.root, text: group.name, raze: false, textClass: this.get('captionClass')});
             caption.update();
-            let pairs = [];
+            let pairs: Array<{ left: Label; right: Label; }> = [];
             for (let j = 0; j < group.val.length; j++) {
                 let pair = group.val[j];
                 let left = new Label({parent: this.root, text: pair.left, textClass: this.get('pairClass')});
@@ -438,7 +438,6 @@ export class PropertyTable extends UIElement {
                 let leftSize = measure(pair.left, vector(this.leftWidth, maxSize.y));
                 let rightSize = measure(pair.right, vector(this.rightWidth, maxSize.y));
                 let maxHeight = Math.max(pair.left.size.y, pair.right.size.y);
-//                    pair.left.size.y = pair.right.size.y = maxHeight;
                 this.maxLeftWidth = Math.max(this.maxLeftWidth, leftSize.x);
                 this.maxRightWidth = Math.max(this.maxRightWidth, rightSize.x);
                 maxSize.y = Math.max(maxSize.y - maxHeight - this.get('spacing').y, 0);
@@ -721,7 +720,7 @@ export class Paginator extends UIElement {
         newPage = Math.min(Math.max(newPage, 1), this.get('pageCount'));
         this.set('currentPage', newPage);
     }
-    private createEar(isLeft, isEnd): PaginatorEar {
+    private createEar(isLeft: boolean, isEnd: boolean): PaginatorEar {
         let ear = this.buttons.append('g').attr('class', 'paginatorButton');
         let rect = ear.append('rect').attr('rx', this.cornerRadius).attr('ry', this.cornerRadius);
         let path = isLeft ? 'M5,5L-5,0L5,-5' : 'M-5,5L5,0L-5,-5';
@@ -939,7 +938,7 @@ export function textInfo(stringOfText: string, textElementClass: string): TextIn
         baselineSpan.appendChild(span2);
     }
 
-    let baseline;
+    let baseline: number;
     if (textInfoCache[textElementClass]) {
         baseline = textInfoCache[textElementClass].baseline;
     } else {
@@ -998,7 +997,7 @@ export function razeText(
 
 function splitIntoLines(width: number | ((lineIndex: number) => number), text: string, textClass: string): string[] {
     function maxWidth(lineIndex: number): number {
-        return typeof width === 'function' ? (<(number) => number>width)(lineIndex) : <number>width;
+        return typeof width === 'function' ? width(lineIndex) : width;
     }
     let resultLines: string[] = [];
     let i = 0;

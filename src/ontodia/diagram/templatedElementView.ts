@@ -4,13 +4,14 @@ import * as ReactDOM from 'react-dom';
 import { hcl } from 'd3';
 import { compile as compileTemplate, registerHelper } from 'handlebars';
 
+import { Dictionary, Property } from '../data/model';
 import { TemplateProps } from '../customization/props';
 
 import { Element } from './elements';
 import { uri2name } from './model';
 import { DiagramView } from './view';
 
-registerHelper('getProperty', function(props, id) {
+registerHelper('getProperty', function(props: Dictionary<Property[]>, id: string) {
     if (props && props[id] && props[id].length > 0) {
         return props[id].map(p => p.value.text).join(', ');
     } else {
@@ -20,6 +21,9 @@ registerHelper('getProperty', function(props, id) {
 
 export class TemplatedUIElementView extends joint.dia.ElementView {
     model: Element;
+
+    paper?: { diagramView?: DiagramView };
+
     private view: DiagramView;
     private foreignObject: SVGForeignObjectElement;
     private isReactMounted = false;
@@ -42,13 +46,13 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         const result: any = super.render();
         this.createUI();
         this.update();
-        if (!this.view && this['paper'] && this['paper']['diagramView']) {
-            this.setView(this['paper']['diagramView']);
+        if (!this.view && this.paper && this.paper.diagramView) {
+            this.setView(this.paper.diagramView);
         }
         return result;
     }
 
-    remove() {
+    remove(): this {
         this.unregisterBodyListeners();
         if (this.foreignObject && this.isReactMounted) {
             ReactDOM.unmountComponentAtNode(this.foreignObject);
@@ -87,7 +91,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     }
 
     private onImageLoad: () => void;
-    private onClick: (e) => void;
+    private onClick: (e: MouseEvent) => void;
     private registerBodyListeners() {
         const body = this.foreignObject.firstChild as HTMLElement;
         this.onImageLoad = () => {
@@ -165,7 +169,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                         this.view.getElementTypeString(this.model.template) :
                         'Thing');
         const label = (this.view ? this.view.getLocalizedText(this.model.template.label.values).text : '');
-        let propTable = [];
+        let propTable: Array<{ id: string; name: string; properties: Property[]; }> = [];
         if (this.model.template.properties) {
             propTable = Object.keys(this.model.template.properties).map(key => ({
                 id: key,

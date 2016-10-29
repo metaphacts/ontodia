@@ -2,12 +2,12 @@ interface JQuery {
 	/**
 	 * Shows or hides a modal dialog
 	 **/
-	modal(showOrHide: string);
+	modal(showOrHide: string): void;
 	modal(options: {
     	backdrop: string;
         keyboard: boolean;
         show: boolean;
-    });
+    }): void;
 	
 	serializeObject(): any;
 	deserialize(data: any): void;
@@ -15,10 +15,10 @@ interface JQuery {
 	fileupload(options: {
 		url: string;
         dataType: string;
-        done: (e, data) => void;
-        progressall: (e, data) => void;
-        start: (e, data) => void;
-        onRemove: (id) => void;
+        done: (e: any, data: any) => void;
+        progressall: (e: any, data: any) => void;
+        start: (e: any, data: any) => void;
+        onRemove: (id: string) => void;
 	}): JQuery;
 }
 

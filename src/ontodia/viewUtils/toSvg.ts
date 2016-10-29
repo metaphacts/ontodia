@@ -139,7 +139,6 @@ export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): P
         contentHeight = imageRect.height - 2 * padding;
 
         const img = new Image();
-        let svg;
         img.onload = function () {
             let dataURL: string;
             let context: CanvasRenderingContext2D;
@@ -167,7 +166,7 @@ export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): P
         const svgOptions = _.clone(options.svgOptions || {convertImagesToDataUris: true});
         svgOptions.convertImagesToDataUris = true;
         toSVG(paper, svgOptions).then(svgString => {
-            svg = svgString = svgString
+            svgString = svgString
                 .replace('width="100%"', 'width="' + contentWidth + '"')
                 .replace('height="100%"', 'height="' + contentHeight + '"');
             img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);

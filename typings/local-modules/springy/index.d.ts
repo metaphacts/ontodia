@@ -29,7 +29,7 @@ declare module "springy" {
 		merge(data: any): void;
 		filterNodes(fn: (node: Node) => boolean): void;
 		filterEdges(fn: (edge: Edge) => boolean): void;
-		addGraphListener(listener: { graphChanged() }): void;
+		addGraphListener(listener: { graphChanged(): void; }): void;
 		notify(): void;
 	}
 	

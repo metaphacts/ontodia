@@ -17,7 +17,10 @@ const DEFAULT_PREFIX =
 const GREED_STEP = 150;
 
 export class GraphBuilder {
-    constructor(public dataProvider: DataProvider, public endpointUrl) { }
+    constructor(
+        public dataProvider: DataProvider,
+        public endpointUrl: string
+    ) {}
 
     getGraphFromConstrunct(constructQuery: string): Promise<{
         preloadedElements: any,

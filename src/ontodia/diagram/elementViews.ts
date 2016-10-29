@@ -10,6 +10,9 @@ import DiagramView from './view';
 
 export class UIElementView extends joint.dia.ElementView {
     model: Element;
+
+    paper?: { diagramView?: DiagramView };
+
     private view: DiagramView;
     private name: svgui.Label;
     private label: svgui.Label;
@@ -37,8 +40,8 @@ export class UIElementView extends joint.dia.ElementView {
         const result: any = super.render();
         this.createUI();
         this.update();
-        if (!this.view && this['paper'] && this['paper']['diagramView']) {
-            this.setView(this['paper']['diagramView']);
+        if (!this.view && this.paper && this.paper.diagramView) {
+            this.setView(this.paper.diagramView);
         }
         return result;
     }
@@ -187,7 +190,7 @@ function listPropertyValues(
     for (const propertyName in elementModel.properties) {
         if (elementModel.properties.hasOwnProperty(propertyName)) {
             const values = elementModel.properties[propertyName];
-            const stringValues = [];
+            const stringValues: string[] = [];
             for (const property of values) {
                 if (property.type === 'string') {
                     const localized = property.value;
@@ -205,7 +208,11 @@ function listPropertyValues(
 
 export class LinkView extends joint.dia.LinkView {
     model: Link;
+
+    paper?: { diagramView?: DiagramView };
+
     private view: DiagramView;
+
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'state:loaded', this.updateLabel);
@@ -213,8 +220,8 @@ export class LinkView extends joint.dia.LinkView {
     }
     render(): LinkView {
         const result: any = super.render();
-        if (!this.view && this['paper'] && this['paper']['diagramView']) {
-            this.setView(this['paper']['diagramView']);
+        if (!this.view && this.paper && this.paper.diagramView) {
+            this.setView(this.paper.diagramView);
         }
         return result;
     }
@@ -242,7 +249,7 @@ export class LinkView extends joint.dia.LinkView {
             style = merge(style, cloneDeep(customStyle));
         }
 
-        let labelStyle;
+        let labelStyle: any;
         if (typeModel && typeModel.get('showLabel')) {
             labelStyle = {
                 labels: [{

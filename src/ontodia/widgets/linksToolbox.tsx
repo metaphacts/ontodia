@@ -13,12 +13,14 @@ export interface LinkInToolBoxProps {
     link: FatLinkType;
     count: number;
     language?: string;
-    onPressFilter?: (FatLinkType) => void;
+    onPressFilter?: (type: FatLinkType) => void;
     filterKey?: string;
 }
 
 import { LocalizedString } from '../data/model';
 type Label = { values: LocalizedString[] };
+
+type LinkTypeVisibility = 'invisible' | 'withoutLabels' | 'allVisible';
 
 /**
  * Events:
@@ -35,7 +37,7 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         }
     };
 
-    private changeState = (state) => {
+    private changeState = (state: LinkTypeVisibility) => {
         if (state === 'invisible') {
             this.props.link.set({visible: false, showLabel: false});
         } else if (state === 'withoutLabels') {
@@ -45,8 +47,8 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         }
     };
 
-    private isChecked = (stateName): boolean => {
-        let curState;
+    private isChecked = (stateName: LinkTypeVisibility): boolean => {
+        let curState: LinkTypeVisibility;
         if (!this.props.link.get('visible')) {
             curState = 'invisible';
         } else if (!this.props.link.get('showLabel')) {
@@ -132,7 +134,7 @@ export interface LinkTypesToolboxProps extends Backbone.ViewOptions<LinkTypesToo
     label?: { values: LocalizedString[] };
     language?: string;
     dataState?: string;
-    filterCallback?: (FatLinkType) => void;
+    filterCallback?: (type: FatLinkType) => void;
 }
 
 export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { filterKey: string }> {
@@ -158,7 +160,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         return 0;
     }
 
-    private onChangeInput = (e) => {
+    private onChangeInput = (e: React.SyntheticEvent<HTMLInputElement>) => {
         this.setState({filterKey: e.target.value});
     }
 
@@ -166,7 +168,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         this.setState({filterKey: ''});
     }
 
-    private changeState = (state, links) => {
+    private changeState = (state: LinkTypeVisibility, links: FatLinkType[]) => {
         if (state === 'invisible') {
             for (const link of links) {
                 link.set({visible: false, showLabel: false});
@@ -193,7 +195,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
 
     private getViews = (links: FatLinkType[]) => {
         const countMap = this.props.countMap || {};
-        const views = [];
+        const views: React.ReactElement<any>[] = [];
         for (const link of links) {
             views.push(
                 <LinkInToolBox
@@ -204,7 +206,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                     count={countMap[link.id] || 0}
                     filterKey={this.state.filterKey}
                 />
-                );
+            );
         }
         return views;
     }
@@ -292,7 +294,7 @@ export interface LinkTypesToolboxShellProps extends Backbone.ViewOptions<LinkTyp
 export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> {
     private view: DiagramView;
     private dataState: string;
-    private filterCallback: (FatLinkType) => void;
+    private filterCallback: (type: FatLinkType) => void;
     private linksOfElement: FatLinkType[] = [];
     private countMap: { [linkTypeId: string]: number };
 
@@ -327,7 +329,7 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         };
     }
 
-    private setDataState(dataState) {
+    private setDataState(dataState: string) {
         this.dataState = dataState;
         this.render();
     }

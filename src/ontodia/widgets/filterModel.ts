@@ -9,7 +9,8 @@ import {
     DiagramModel, normalizeTemplate, chooseLocalizedText,
 } from '../diagram/model';
 
-/* Properties:
+/**
+ * Properties:
  *     type: string - one of [typeId, text, linkedElementId, linkedToByLinkType]
  *     typeId: string
  *     text: string
@@ -82,10 +83,13 @@ export class FilterModel extends Backbone.Model {
         };
         this.criteria.each((criterion: FilterCriterion) => {
             const type = criterion.get('type');
-            if (type === 'typeId') { request.elementTypeId = criterion.get('typeId'); }
-            else if (type === 'text') { request.text = criterion.get('text'); }
-            else if (type === 'linkedElementId') { request.refElementId = criterion.get('elementId'); }
-            else if (type === 'linkedToByLinkType') {
+            if (type === 'typeId') {
+                request.elementTypeId = criterion.get('typeId');
+            } else if (type === 'text') {
+                request.text = criterion.get('text');
+            } else if (type === 'linkedElementId') {
+                request.refElementId = criterion.get('elementId');
+            } else if (type === 'linkedToByLinkType') {
                 request.refElementId = criterion.get('elementId');
                 request.refElementLinkId = criterion.get('linkTypeId');
             }
@@ -125,7 +129,7 @@ export class FilterModel extends Backbone.Model {
     }
 
     private processFilterData(elements: Dictionary<ElementModel>) {
-        let newItems = [];
+        let newItems: Element[] = [];
         for (const elementId in elements) {
             if (elements.hasOwnProperty(elementId)) {
                 let element = this.diagram.elements[elementId];

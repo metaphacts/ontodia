@@ -9,7 +9,7 @@ export class DataFetchingThread {
         this.waitingTime = waitingTime || DEFAULT_WAITING_TIME;
     }
 
-    public startFetchingThread(typeId): Promise<string[]> {
+    public startFetchingThread(typeId: string): Promise<string[]> {
         this.fetchingQueue.push(typeId);
         if (this.fetchingPromise) {
             return Promise.resolve([]);

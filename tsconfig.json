@@ -7,7 +7,8 @@
             "dom",
             "es2015",
             "es2015.promise"
-        ]
+        ],
+        "noImplicitAny": true
     },
     "include": [
         "./index.ts",

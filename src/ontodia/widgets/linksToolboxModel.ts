@@ -24,7 +24,7 @@ export class LinkTypesToolboxModel extends Backbone.Model {
         this.listenTo(this, 'change:selectedElement', this.onSelectedElementChanged);
     }
 
-    private onSelectedElementChanged(self, element: Element) {
+    private onSelectedElementChanged(self: LinkTypesToolboxModel, element: Element) {
         this.trigger('state:beginQuery');
         if (element) {
             const request = {elementId: element.id};

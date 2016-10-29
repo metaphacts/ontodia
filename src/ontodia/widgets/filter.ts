@@ -88,7 +88,7 @@ class FilterElementView extends Backbone.View<Element> {
         if (this.$div) { return this; }
         this.$el.empty().attr('draggable', 'true');
         this.$div = $("<div class='unselectable'/>").appendTo(this.$el);
-        this.el.addEventListener('dragstart', (e) => {
+        this.el.addEventListener('dragstart', (e: DragEvent) => {
             this.model.set('selectedInFilter', true);
             const selectedElements: Element[] =
                 this.filterView.model.items.filter(item => item.get('selectedInFilter'));
@@ -102,10 +102,10 @@ class FilterElementView extends Backbone.View<Element> {
             this.el.classList.add('dragging');
             return false;
         });
-        this.el.addEventListener('dragend', (e) => {
+        this.el.addEventListener('dragend', (e: DragEvent) => {
             $('.elementInToolBox').removeClass('dragging');
         });
-        this.el.addEventListener('click', (e) => {
+        this.el.addEventListener('click', (e: DragEvent) => {
             if (!this.model.get('presentOnDiagram')) {
                 this.model.set('selectedInFilter', !this.model.get('selectedInFilter'));
             }

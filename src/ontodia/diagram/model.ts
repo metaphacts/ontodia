@@ -253,7 +253,7 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private initLayout(elements: Dictionary<ElementModel>, layoutData: LayoutData) {
-        const cellModels = [];
+        const cellModels: joint.dia.Cell[] = [];
         // create elements
         for (let i = 0; i < layoutData.cells.length; i++) {
             let cell = layoutData.cells[i];
@@ -377,7 +377,7 @@ export class DiagramModel extends Backbone.Model {
         .catch(err => console.error(err));
     }
 
-    getClassesById(typeId): FatClassModel {
+    getClassesById(typeId: string): FatClassModel {
         if (!this.classesById[typeId]) {
             this.classesById[typeId] = new FatClassModel({
                 id: typeId,
