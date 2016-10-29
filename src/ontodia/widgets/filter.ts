@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import * as $ from 'jquery';
 
 import { FilterCriterion, FilterModel } from './filterModel';
-import { Element, Link, FatLinkType } from '../diagram/elements';
+import { Element } from '../diagram/elements';
 import { uri2name } from '../diagram/model';
 import DiagramView from '../diagram/view';
 import { CollectionView, removeAllViews } from '../viewUtils/collectionView';
@@ -29,36 +29,40 @@ class FilterCriterionView extends Backbone.View<FilterCriterion> {
     }
 
     public render(): FilterCriterionView {
-        var getElementLabel = (elementId: string) => {
-            var element = this.view.model.elements[elementId];
-            var elementTemplate = element ? element.template : null;
-            return elementTemplate ? this.view.getLocalizedText(elementTemplate.label.values).text : uri2name(elementId);
-        }
+        const getElementLabel = (elementId: string) => {
+            const element = this.view.model.elements[elementId];
+            const elementTemplate = element ? element.template : null;
+            return elementTemplate ?
+                this.view.getLocalizedText(elementTemplate.label.values).text :
+                uri2name(elementId);
+        };
 
         this.$el.empty();
-        var $buttons = $("<div class='btn-group btn-group-xs'></div>").appendTo(this.$el);
+        const $buttons = $("<div class='btn-group btn-group-xs'></div>").appendTo(this.$el);
         $("<button type='button' class='btn btn-default'><span class='glyphicon glyphicon-remove'/></button>")
             .on('click', () => { this.model.trigger('destroy', this.model); })
             .appendTo($buttons);
-        var type: string = this.model.get('type');
+        const type: string = this.model.get('type');
         if (type === 'typeId') {
-            var typeId = this.model.get('typeId');
-            var classInfo = this.view.model.classesById[typeId];
-            var classLabel = classInfo ? this.view.getLocalizedText(classInfo.label.values).text : uri2name(typeId);
-            var span = $('<span>Has type </span>').appendTo(this.$el);
+            const typeId = this.model.get('typeId');
+            const classInfo = this.view.model.getClassesById(typeId);
+            const classLabel = this.view.getLocalizedText(classInfo.get('label').values).text;
+            const span = $('<span>Has type </span>').appendTo(this.$el);
             $('<span class="class-label"></span>').text(classLabel).appendTo(span);
         } else if (type === 'linkedElementId') {
-            var elementLabel = getElementLabel(this.model.get('elementId'));
-            var span = $('<span>Connected to </span>').appendTo(this.$el);
+            const elementLabel = getElementLabel(this.model.get('elementId'));
+            const span = $('<span>Connected to </span>').appendTo(this.$el);
             $('<span class="element-label"></span>').text(elementLabel).appendTo(span);
         } else if (type === 'linkedToByLinkType') {
-            var elementLabel = getElementLabel(this.model.get('elementId'));
-            var linkTypeId = this.model.get('linkTypeId');
-            var linkType = this.view.model.linkTypes[linkTypeId];
-            var linkTypeLabel = linkType ? this.view.getLocalizedText(linkType.label.values).text : uri2name(linkTypeId)
-            var span = $('<span>Connected to </span>')
+            const elementLabel = getElementLabel(this.model.get('elementId'));
+            const linkTypeId = this.model.get('linkTypeId');
+            const linkType = this.view.model.getLinkType(linkTypeId);
+            const linkTypeLabel = linkType ?
+                this.view.getLocalizedText(linkType.get('label').values).text :
+                uri2name(linkTypeId);
+            $('<span>Connected to </span>')
                 .append($('<span class="element-label"></span>').text(elementLabel))
-                .append(" through ")
+                .append(' through ')
                 .append($('<span class="link-type-label"></span>').text(linkTypeLabel))
                 .appendTo(this.$el);
         }
@@ -86,19 +90,20 @@ class FilterElementView extends Backbone.View<Element> {
         this.$div = $("<div class='unselectable'/>").appendTo(this.$el);
         this.el.addEventListener('dragstart', (e) => {
             this.model.set('selectedInFilter', true);
-            var selectedElements: Element[] = this.filterView.model.items.filter(item => item.get('selectedInFilter'));
-            var elementIds = selectedElements.map(element => element.id as string);
+            const selectedElements: Element[] =
+                this.filterView.model.items.filter(item => item.get('selectedInFilter'));
+            const elementIds = selectedElements.map(element => element.id as string);
             try {
                 e.dataTransfer.setData('application/x-ontodia-elements', JSON.stringify(elementIds));
             } catch (ex) { // IE fix
                 e.dataTransfer.setData('text', JSON.stringify(elementIds));
             }
             this.view.dragAndDropElements = _.keyBy(selectedElements, 'id');
-            this.el.classList.add("dragging");
+            this.el.classList.add('dragging');
             return false;
         });
         this.el.addEventListener('dragend', (e) => {
-            $(".elementInToolBox").removeClass("dragging");
+            $('.elementInToolBox').removeClass('dragging');
         });
         this.el.addEventListener('click', (e) => {
             if (!this.model.get('presentOnDiagram')) {
@@ -147,31 +152,31 @@ export class FilterView extends Backbone.View<FilterModel> {
         super(_.extend({className: 'filter-view stateBasedProgress'}, options));
         this.$el.addClass(_.result(this, 'className') as string);
         this.view = options.view;
-        var childOptions: FilterElementOptions<Element> = {
+        const childOptions: FilterElementOptions<Element> = {
             tagName: 'li',
             view: this.view,
-            filterView: this
+            filterView: this,
         };
         this.elementViews = new CollectionView<Element>({
             collection: this.model.items,
             childView: FilterElementView,
             childOptions: childOptions,
             tagName: 'ul',
-            className: 'filtered-items'
+            className: 'filtered-items',
         });
         this.listenTo(this.model.criteria, 'add remove reset', this.onCriteriaChanged);
         this.listenTo(this.model, 'state:beginQuery', () => {
-            this.$el.attr('data-state', "querying");
+            this.$el.attr('data-state', 'querying');
         });
         this.listenTo(this.model, 'state:endQuery',   () => {
-            if (this.model.criteria.length == 0) {
+            if (this.model.criteria.length === 0) {
                 this.$el.removeAttr('data-state');
             } else {
-                this.$el.attr('data-state', "finished");
+                this.$el.attr('data-state', 'finished');
             }
             this.updateLoadMoreButtonState();
         });
-        this.listenTo(this.model, 'state:queryError', () => this.$el.attr('data-state', "error"));
+        this.listenTo(this.model, 'state:queryError', () => this.$el.attr('data-state', 'error'));
         this.listenTo(this.view, 'change:language', this.onLanguageChanged);
         this.model.set('language', this.view.getLanguage(), {silent: true});
     }
@@ -186,13 +191,13 @@ export class FilterView extends Backbone.View<FilterModel> {
 
     private updateLoadMoreButtonState() {
         if (this.isRendered) {
-            var itemsAvailable = this.model.get('moreItemsAvailable');
+            const itemsAvailable = this.model.get('moreItemsAvailable');
             if (this.model.items.length > 0) {
                 this.$loadMoreButton.toggle(true);
-                this.$loadMoreButton.prop("disabled", !itemsAvailable);
+                this.$loadMoreButton.prop('disabled', !itemsAvailable);
             } else {
                 this.$loadMoreButton.toggle(itemsAvailable);
-                this.$loadMoreButton.prop("disabled", false);
+                this.$loadMoreButton.prop('disabled', false);
             }
         }
     }
@@ -202,28 +207,28 @@ export class FilterView extends Backbone.View<FilterModel> {
 
         this.$progress = $('<div class="progress" style=""/>').appendTo(this.$el);
         $('<div/>').attr({
-            'class': "progress-bar progress-bar-striped active",
-            role: "progressbar",
-            'aria-valuemin': "0",
-            'aria-valuemax': "100",
-            'aria-valuenow': "100",
-            style: "width: 100%;"
+            'class': 'progress-bar progress-bar-striped active',
+            role: 'progressbar',
+            'aria-valuemin': '0',
+            'aria-valuemax': '100',
+            'aria-valuenow': '100',
+            style: 'width: 100%;',
         }).appendTo(this.$progress);
 
-        var criteriaElement = $("<div class='filter-criteria'/>").appendTo(this.$el);
-        this.$filterCriteria = $("<ul/>");
+        const criteriaElement = $("<div class='filter-criteria'/>").appendTo(this.$el);
+        this.$filterCriteria = $('<ul/>');
 
         this.$filterText = $("<input type='text' class='form-control' placeholder='Search for...'/>");
-        var $filterTextGroup = $("<div class='input-group'/>")
+        const $filterTextGroup = $("<div class='input-group'/>")
             .append(this.$filterText)
             .append("<span class='input-group-btn'>" +
                 "<button class='btn btn-default' type='button'>" +
                 "<span class='glyphicon glyphicon-search'/></button></span>");
 
-        var updateFilterText = () => { this.setFilterText(this.$filterText.val()) };
-        $filterTextGroup.find("button").on('click', updateFilterText);
+        const updateFilterText = () => { this.setFilterText(this.$filterText.val()); };
+        $filterTextGroup.find('button').on('click', updateFilterText);
         this.$filterText.on('keydown', (e: JQueryEventObject) => {
-            if (e.keyCode == 13) {
+            if (e.keyCode === 13) {
                 updateFilterText();
             }
         });
@@ -232,7 +237,7 @@ export class FilterView extends Backbone.View<FilterModel> {
         criteriaElement.append($filterTextGroup);
         this.renderCriteria();
 
-        var $scrollableRest = $("<div class='filter-rest'/>").appendTo(this.$el);
+        const $scrollableRest = $("<div class='filter-rest'/>").appendTo(this.$el);
         this.elementViews.render();
         $scrollableRest.append(this.elementViews.el);
 
@@ -240,15 +245,15 @@ export class FilterView extends Backbone.View<FilterModel> {
                 "<button type='button' class='btn btn-primary' style='display: none'>" +
                 "<span class='glyphicon glyphicon-chevron-down'/>&nbsp;Show more</button>")
             .on('click', () => {
-                this.$loadMoreButton.prop("disabled", true);
+                this.$loadMoreButton.prop('disabled', true);
                 this.model.queryItems(true);
-            }).appendTo($("<div/>").appendTo($scrollableRest));
+            }).appendTo($('<div/>').appendTo($scrollableRest));
         return this;
     }
 
     private setFilterText(text: string) {
-        var textCriterion = this.model.criteria.findWhere({type: 'text'});
-        if (text.length == 0 && textCriterion) {
+        const textCriterion = this.model.criteria.findWhere({type: 'text'});
+        if (text.length === 0 && textCriterion) {
             this.model.criteria.remove(textCriterion);
         } else if (text.length > 0 && !textCriterion) {
             this.model.criteria.add(FilterCriterion.containsText(text));
@@ -259,15 +264,16 @@ export class FilterView extends Backbone.View<FilterModel> {
 
     private renderCriteria() {
         removeAllViews(this.criteriaViews);
-        this.$filterText.val("");
+        this.$filterText.val('');
 
         this.model.criteria.each(criterion => {
-            if (criterion.get('type') == 'text') { this.$filterText.val(criterion.get('text')); }
-            else {
-                var criterionView = new FilterCriterionView({
+            if (criterion.get('type') === 'text') {
+                this.$filterText.val(criterion.get('text'));
+            } else {
+                const criterionView = new FilterCriterionView({
                     model: criterion,
                     view: this.view,
-                    filterView: this
+                    filterView: this,
                 }).render();
                 this.$filterCriteria.append(criterionView.el);
                 this.criteriaViews.push(criterionView);

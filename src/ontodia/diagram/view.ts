@@ -19,14 +19,15 @@ import { DefaultTemplateBundle } from '../customization/templates/defaultTemplat
 
 import { PaperArea } from '../viewUtils/paperArea';
 import { Halo } from '../viewUtils/halo';
+import { ConnectionsMenu } from '../viewUtils/connectionsMenu';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { ElementModel, LocalizedString, ClassModel } from '../data/model';
+import { ElementModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { Element } from './elements';
+import { Element, FatClassModel } from './elements';
 
 import { LinkView } from './elementViews';
 import { TemplatedUIElementView } from './templatedElementView';
@@ -54,7 +55,8 @@ export class DiagramView extends Backbone.Model {
 
     readonly paper: joint.dia.Paper;
     paperArea: PaperArea;
-    private halo: Halo;
+    halo: Halo;
+    connectionsMenu: ConnectionsMenu;
 
     readonly selection = new Backbone.Collection<Element>();
 
@@ -101,6 +103,7 @@ export class DiagramView extends Backbone.Model {
         this.setupTextSelectionPrevention();
         this.configureArea(rootElement);
         this.configureSelection();
+        this.configureDefaultHalo();
         this.enableDragAndDropSupport();
 
         $('html').keyup(this.onKeyUp);
@@ -144,29 +147,6 @@ export class DiagramView extends Backbone.Model {
             this.model.resetHistory();
             this.zoomToFit();
         });
-
-        if (!this.options.disableDefaultHalo) {
-            this.listenTo(this.selection, 'add remove reset', () => {
-                if (this.halo) {
-                    this.halo.remove();
-                    this.halo = undefined;
-                }
-
-                if (this.selection.length === 1) {
-                    const cellView = this.paper.findViewByModel(this.selection.first());
-                    this.halo = new Halo({
-                        paper: this.paper,
-                        cellView: cellView,
-                        onDelete: () => {
-                            this.removeSelectedElements();
-                        },
-                        onExpand: () => {
-                            cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
-                        },
-                    });
-                }
-            });
-        }
     }
 
     getLanguage(): string { return this.get('language'); }
@@ -270,10 +250,10 @@ export class DiagramView extends Backbone.Model {
 
     private configureArea(rootElement: HTMLElement) {
         this.paperArea = new PaperArea({paper: this.paper});
-        this.paper.on('blank:pointerdown', (evt) => {
+        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
             if (evt.ctrlKey || this.model.isViewOnly()) {
+                evt.preventDefault();
                 this.preventTextSelection();
-                this.cancelSelection();
                 this.paperArea.startPanning(evt);
             }
         });
@@ -305,10 +285,76 @@ export class DiagramView extends Backbone.Model {
             element.focus();
         });
 
-        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
-            this.selection.reset();
-            (document.activeElement as HTMLElement).blur();
+        let pointerScreenCoords = {x: NaN, y: NaN};
+        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
+            pointerScreenCoords = {x: evt.screenX, y: evt.screenY};
         });
+
+        this.paper.on('blank:pointerup', (evt: MouseEvent) => {
+            if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
+            this.selection.reset();
+            if (document.activeElement) {
+                (document.activeElement as HTMLElement).blur();
+            }
+        });
+    }
+
+    private configureDefaultHalo() {
+        if (this.options.disableDefaultHalo) { return; }
+
+        this.listenTo(this.selection, 'add remove reset', () => {
+            if (this.selection.length === 1) {
+                const selectedElement = this.selection.first();
+                const cellView = this.paper.findViewByModel(selectedElement);
+                if (this.halo && cellView !== this.halo.options.cellView) {
+                    this.halo.remove();
+                    this.halo = undefined;
+                }
+                if (!this.halo) {
+                    this.halo = new Halo({
+                        paper: this.paper,
+                        diagramView: this,
+                        cellView: cellView,
+                        onDelete: () => {
+                            this.removeSelectedElements();
+                        },
+                        onExpand: () => {
+                            cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                        },
+                        onToggleNavigationMenu: () => {
+                            if (this.connectionsMenu) {
+                                this.hideNavigationMenu();
+                            } else {
+                                this.showNavigationMenu(selectedElement);
+                            }
+                        },
+                    });
+                }
+            } else if (this.halo && this.selection.length === 0) {
+                this.halo.remove();
+                this.halo = undefined;
+            }
+        });
+    }
+
+    showNavigationMenu(element: Element) {
+        const cellView = this.paper.findViewByModel(element);
+        this.connectionsMenu = new ConnectionsMenu({
+            paper: this.paper,
+            view: this,
+            cellView,
+            onClose: () => {
+                this.connectionsMenu.remove();
+                this.connectionsMenu = undefined;
+            },
+        });
+    }
+
+    hideNavigationMenu() {
+        if (this.connectionsMenu) {
+            this.connectionsMenu.remove();
+            this.connectionsMenu = undefined;
+        }
     }
 
     private enableDragAndDropSupport() {
@@ -398,19 +444,19 @@ export class DiagramView extends Backbone.Model {
 
     public getElementTypeString(elementModel: ElementModel): string {
         return elementModel.types.map((typeId: string) => {
-            const type = this.model.classesById[typeId];
-            return type ? this.getElementTypeLabel(type).text : uri2name(typeId);
+            const type = this.model.getClassesById(typeId);
+            return this.getElementTypeLabel(type).text;
         }).join(', ');
     }
 
-    public getElementTypeLabel(type: ClassModel): LocalizedString {
-        const label = this.getLocalizedText(type.label.values);
+    public getElementTypeLabel(type: FatClassModel): LocalizedString {
+        const label = this.getLocalizedText(type.get('label').values);
         return label ? label : { text: uri2name(type.id), lang: '' };
     }
 
     public getLinkLabel(linkTypeId: string): LocalizedString {
-        const type = this.model.linkTypes[linkTypeId];
-        const label = type ? this.getLocalizedText(type.label.values) : null;
+        const type = this.model.getLinkType(linkTypeId);
+        const label = type ? this.getLocalizedText(type.get('label').values) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 

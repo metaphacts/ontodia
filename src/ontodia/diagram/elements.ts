@@ -1,7 +1,7 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
-import { LocalizedString, ElementModel, LinkType } from '../data/model';
+import { ClassModel, ElementModel, LinkType } from '../data/model';
 import DiagramModel from './model';
 
 export class UIElement extends joint.shapes.basic.Generic {
@@ -64,6 +64,26 @@ export class Element extends UIElement {
  * Events:
  *     state:loaded
  */
+export class FatClassModel extends Backbone.Model {
+    model: ClassModel;
+    constructor(classModel: ClassModel) {
+        super({id: classModel.id});
+        this.model = classModel;
+        this.set('label', classModel.label);
+        this.set('count', classModel.count);
+    }
+}
+
+/**
+ * Properties:
+ *     typeId: string
+ *     source: { id: string }
+ *     target: { id: string }
+ *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
+ * 
+ * Events:
+ *     state:loaded
+ */
 export class Link extends joint.dia.Link {
     markup: string;
     get layoutOnly() { return this.get('layoutOnly'); }
@@ -77,9 +97,9 @@ export class Link extends joint.dia.Link {
  *     visible: boolean
  *     showLabel: boolean
  *     isNew?: boolean
+ *     label?: { values: LocalizedString[] }
  */
 export class FatLinkType extends Backbone.Model {
-    label: { values: LocalizedString[] };
     diagram: DiagramModel;
 
     constructor(params: {
@@ -87,7 +107,8 @@ export class FatLinkType extends Backbone.Model {
         diagram: DiagramModel;
     }) {
         super({id: params.linkType.id});
-        this.label = params.linkType.label;
+        // this.label = params.linkType.label;
+        this.set('label', params.linkType.label);
         this.diagram = params.diagram;
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }

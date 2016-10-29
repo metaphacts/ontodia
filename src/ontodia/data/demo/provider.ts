@@ -22,8 +22,20 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(CLASSES);
     }
 
+    classInfo(params: {classIds: string[]}) {
+        let classIds = params.classIds || [];
+        return this.simulateNetwork(CLASSES.filter(cl => classIds.indexOf(cl.id)));
+    }
+
     linkTypes() {
         return this.simulateNetwork(LINK_TYPES);
+    }
+
+    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        const types = keyBy(params.linkTypeIds);
+        const links = LINKS.filter(link =>
+        types[link.linkTypeId]);
+        return this.simulateNetwork(links);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {

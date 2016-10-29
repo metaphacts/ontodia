@@ -4,12 +4,14 @@ import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 import {
     getClassTree,
+    getClassInfo,
     getLinkTypes,
     getElementsInfo,
     getLinksInfo,
     getLinksTypesOf,
     getFilteredData,
     getEnrichedElementsInfo,
+    getLinkTypesInfo,
 } from './responseHandler';
 import * as Sparql from './sparqlModels';
 
@@ -46,6 +48,34 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<Sparql.TreeResponse>(
             this.options.endpointUrl, query).then(getClassTree);
+    }
+
+    classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
+        const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?class ?label ?instcount
+            WHERE {
+                ?class rdfs:label ?label.
+                VALUES (?class) {${ids}}.
+                BIND("" as ?instcount)
+            }
+        `;
+        return executeSparqlQuery<Sparql.ClassInfoResponse>(
+            this.options.endpointUrl, query).then(getClassInfo);
+    }
+
+    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?type ?label ?instcount
+            WHERE {
+                ?type rdfs:label ?label.
+                VALUES (?type) {${ids}}.
+                BIND("" as ?instcount)      
+            }
+        `;
+        return executeSparqlQuery<Sparql.LinkTypesInfoResponse>(
+            this.options.endpointUrl, query).then(getLinkTypesInfo);
     }
 
     linkTypes(): Promise<LinkType[]> {
@@ -112,7 +142,10 @@ export class SparqlDataProvider implements DataProvider {
             }}
         `;
         return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
-            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo));
+            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo)).catch((err) => {
+                console.log(err);
+                return elementsInfo;
+            });
     }
 
     private prepareElementsImage(
@@ -221,7 +254,7 @@ function escapeIri(iri: string) {
     return `<${iri}>`;
 }
 
-function sparqlExtractLabel(subject: string, label: string): string {
+export function sparqlExtractLabel(subject: string, label: string): string {
     return  `
         BIND ( str( ${subject} ) as ?uriStr)
         BIND ( strafter(?uriStr, "#") as ?label3)

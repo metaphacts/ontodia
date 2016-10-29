@@ -71,6 +71,11 @@ export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
     return tree;
 }
 
+export function getClassInfo(response: Sparql.ClassInfoResponse): ClassModel[] {
+    const sparqlClasses = response.results.bindings;
+    return sparqlClasses.map((sClass: Sparql.ClassInfo) => getClassModel(sClass));
+}
+
 export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
@@ -141,6 +146,11 @@ export function getEnrichedElementsInfo(
         }
     }
     return elementsInfo;
+}
+
+export function getLinkTypesInfo(response: Sparql.LinkTypesInfoResponse): LinkType[] {
+    const sparqlLinkTypes = response.results.bindings;
+    return sparqlLinkTypes.map((sLinkType: Sparql.LinkTypeInfo) => getLinkTypeInfo(sLinkType));
 }
 
 export function getLinksInfo(response: Sparql.LinksInfoResponse): LinkModel[] {
@@ -269,6 +279,15 @@ export function getLinkInfo(sLinkInfo: Sparql.LinkInfo): LinkModel {
     return {
         linkTypeId: sLinkInfo.type.value,
         sourceId: sLinkInfo.source.value,
-        targetId: sLinkInfo.target.value
+        targetId: sLinkInfo.target.value,
+    };
+}
+
+export function getLinkTypeInfo(sLinkInfo: Sparql.LinkTypeInfo): LinkType {
+    if (!sLinkInfo) { return undefined; }
+    return {
+        id: sLinkInfo.typeId.value,
+        label: { values: [getLocalizedString(sLinkInfo.label, sLinkInfo.typeId.value)] },
+        count: getInstCount(sLinkInfo.instcount),
     };
 }

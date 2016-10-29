@@ -157,7 +157,7 @@ div.ontodia-default-template_type-line__icon {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 0;
-    white-space: normal;
+    white-space: nowrap;
     word-wrap: break-word;
 }
 

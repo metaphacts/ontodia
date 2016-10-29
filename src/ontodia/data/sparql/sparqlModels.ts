@@ -11,6 +11,7 @@ export interface TypedField extends Field {
     datatype: string;
 }
 
+export type ClassInfo = TreeNode;
 export interface TreeNode {
     class: Field;
     instcount?: TypedField;
@@ -30,6 +31,12 @@ export interface ElementInfo {
     label?: Label;
     propType?: Field;
     propValue?: TypedField;
+}
+
+export interface LinkTypeInfo {
+    typeId: Field;
+    label?: Label;
+    instcount?: TypedField;
 }
 
 export interface LinkInfo {
@@ -59,12 +66,20 @@ export interface TreeResponse extends SparqlResponse {
     results: { bindings: TreeNode[] };
 };
 
+export interface ClassInfoResponse extends SparqlResponse {
+    results: { bindings: ClassInfo[] };
+};
+
 export interface LinkTypesResponse extends SparqlResponse {
     results: { bindings: LinkType[] };
 };
 
 export interface ElementsInfoResponse extends SparqlResponse  {
     results: { bindings: ElementInfo[] };
+};
+
+export interface LinkTypesInfoResponse extends SparqlResponse  {
+    results: { bindings: LinkTypeInfo[] };
 };
 
 export interface LinksInfoResponse extends SparqlResponse  {

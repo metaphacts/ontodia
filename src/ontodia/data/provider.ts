@@ -1,11 +1,19 @@
 import {
-    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount
+    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount,
 } from './model';
 
 export interface DataProvider {
     classTree(): Promise<ClassModel[]>;
 
+    classInfo(params: {
+        classIds: string[];
+    }): Promise<ClassModel[]>;
+
     linkTypes(): Promise<LinkType[]>;
+
+    linkTypesInfo(params: {
+        linkTypeIds: string[];
+    }): Promise<LinkType[]>;
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>>;
 

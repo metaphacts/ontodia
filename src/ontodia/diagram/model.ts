@@ -7,7 +7,8 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
-import { Element, Link, FatLinkType } from './elements';
+import { Element, Link, FatLinkType, FatClassModel } from './elements';
+import { DataFetchingThread } from './dataFetchingThread';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
 
@@ -43,16 +44,21 @@ export class DiagramModel extends Backbone.Model {
     dataProvider: DataProvider;
 
     classTree: ClassTreeElement[];
-    classesById: { [id: string]: ClassModel } = {};
-    linkTypes: { [id: string]: FatLinkType };
+    private classesById: Dictionary<FatClassModel> = {};
+    private linkTypes: Dictionary<FatLinkType>;
 
     elements: { [id: string]: Element } = {};
     linksByType: { [type: string]: Link[] } = {};
+
+    private classFetchingThread: DataFetchingThread;
+    private linkFetchingThread: DataFetchingThread;
 
     constructor(isViewOnly = false) {
         super();
         this.set('isViewOnly', isViewOnly);
         this.initializeExternalAddRemoveSupport();
+        this.classFetchingThread = new DataFetchingThread();
+        this.linkFetchingThread = new DataFetchingThread();
     }
 
     isViewOnly(): boolean { return this.get('isViewOnly'); }
@@ -88,7 +94,7 @@ export class DiagramModel extends Backbone.Model {
             if (cell instanceof Element) {
                 cell.set('presentOnDiagram', true, <any>{isFromHandler: true});
             } else if (cell instanceof Link) {
-                const linkType = this.linkTypes[cell.get('typeId')];
+                const linkType = this.getLinkType(cell.get('typeId'));
                 linkType.set('visible', true);
             }
         });
@@ -107,7 +113,7 @@ export class DiagramModel extends Backbone.Model {
         });
         this.listenTo(this.graph, 'change:labels', (cell: joint.dia.Cell) => {
             if (cell instanceof Link) {
-                const linkType = this.linkTypes[cell.get('typeId')];
+                const linkType = this.getLinkType(cell.get('typeId'));
                 if (linkType) {
                     const hasLabels = cell.get('labels').length > 0;
                     linkType.set('showLabel', hasLabels);
@@ -192,7 +198,7 @@ export class DiagramModel extends Backbone.Model {
     private setClassTree(rootClasses: ClassModel[]) {
         this.classTree = rootClasses;
         const addClass = (cl: ClassTreeElement) => {
-            this.classesById[cl.id] = cl;
+            this.classesById[cl.id] = new FatClassModel(cl);
             _.each(cl.children, addClass);
         };
         _.each(rootClasses, addClass);
@@ -339,7 +345,7 @@ export class DiagramModel extends Backbone.Model {
                 this.graph.addCell(element);
                 // restore links
                 for (const link of element.links) {
-                    if (this.isSourceAndTargetVisible(link) && this.linkTypes[link.get('typeId')].get('visible')) {
+                    if (this.isSourceAndTargetVisible(link) && this.getLinkType(link.get('typeId')).get('visible')) {
                         this.graph.addCell(link);
                     }
                 }
@@ -369,6 +375,63 @@ export class DiagramModel extends Backbone.Model {
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => console.error(err));
+    }
+
+    getClassesById(typeId): FatClassModel {
+        if (!this.classesById[typeId]) {
+            this.classesById[typeId] = new FatClassModel({
+                id: typeId,
+                label: { values: [{lang: '', text: uri2name(typeId)}] },
+                count: 0,
+                children: [],
+            });
+            this.classFetchingThread.startFetchingThread(typeId).then(typeIds => {
+                if (typeIds.length > 0) {
+                    this.dataProvider.classInfo({classIds: typeIds}).then(classes => {
+                        for (const cl of classes) {
+                            if (!this.classesById[cl.id]) { continue; }
+                            this.classesById[cl.id].set('label', cl.label);
+                            this.classesById[cl.id].set('count', cl.count);
+                        }
+                    });
+                }
+            });
+        }
+        return this.classesById[typeId];
+    }
+
+    getLinkTypes(): Dictionary<FatLinkType> {
+        return this.linkTypes;
+    }
+
+    getLinkType(linkTypeId: string): FatLinkType {
+        if (!this.linkTypes.hasOwnProperty(linkTypeId)) {
+            const defaultLabel = {values: [{text: uri2name(linkTypeId), lang: ''}]};
+            this.linkTypes[linkTypeId] = new FatLinkType({
+                linkType: {
+                    id: linkTypeId,
+                    count: 0,
+                    label: defaultLabel,
+                },
+                diagram: this,
+            });
+            this.linkTypes[linkTypeId].set({visible: true, showLabel: true});
+            this.linkFetchingThread.startFetchingThread(linkTypeId).then(linkTypeIds => {
+                if (linkTypeIds.length > 0) {
+                    this.dataProvider.linkTypesInfo({ linkTypeIds: linkTypeIds}).then(linkTypesInfo => {
+                        for (const lt of linkTypesInfo) {
+                            if (!this.linkTypes[lt.id]) { continue; }
+                            this.linkTypes[lt.id].set({
+                                label: lt.label,
+                                count: lt.count,
+                            });
+                            this.linkTypes[lt.id].set('label', lt.label);
+                        }
+                    });
+                }
+            });
+        }
+        return this.linkTypes[linkTypeId];
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
@@ -411,7 +474,7 @@ export class DiagramModel extends Backbone.Model {
 
         this.registerLink(link);
 
-        if (this.isSourceAndTargetVisible(link) && this.linkTypes[link.get('typeId')].get('visible')) {
+        if (this.isSourceAndTargetVisible(link) && this.getLinkType(link.get('typeId')).get('visible')) {
             this.graph.addCell(link, options);
         }
 
@@ -441,6 +504,7 @@ export class DiagramModel extends Backbone.Model {
         }
         return null;
     }
+
 }
 
 export default DiagramModel;
