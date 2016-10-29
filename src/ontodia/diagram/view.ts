@@ -250,10 +250,10 @@ export class DiagramView extends Backbone.Model {
 
     private configureArea(rootElement: HTMLElement) {
         this.paperArea = new PaperArea({paper: this.paper});
-        this.paper.on('blank:pointerdown', (evt) => {
+        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
             if (evt.ctrlKey || this.model.isViewOnly()) {
+                evt.preventDefault();
                 this.preventTextSelection();
-                this.cancelSelection();
                 this.paperArea.startPanning(evt);
             }
         });
@@ -285,13 +285,17 @@ export class DiagramView extends Backbone.Model {
             element.focus();
         });
 
-        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
-            this.selection.reset();
-            (document.activeElement as HTMLElement).blur();
+        let pointerScreenCoords = {x: NaN, y: NaN};
+        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
+            pointerScreenCoords = {x: evt.screenX, y: evt.screenY};
         });
 
-        this.paper.on('blank:pointerclick', (object, evt: MouseEvent) => {
+        this.paper.on('blank:pointerup', (evt: MouseEvent) => {
+            if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
             this.selection.reset();
+            if (document.activeElement) {
+                (document.activeElement as HTMLElement).blur();
+            }
         });
     }
 
