@@ -80,7 +80,7 @@ export class ClassTree extends Backbone.View<FilterModel> {
                 this.trigger('action:classSelected', data.selected[0]);
             });
 
-            searchInput.keyup(function() {
+            searchInput.keyup(function (this: HTMLInputElement) {
                 let searchString = $(this).val();
                 selfLink.getJSTree().jstree('search', searchString);
             });

@@ -849,15 +849,15 @@ function makeEditableField(
 ): void {
     let form = parent.append('foreignObject').attr('pointer-events', 'none');
     let field = form.append('xhtml:form').append('input')
-        .attr('value', function() {
+        .attr('value', function (this: HTMLInputElement) {
             let self: HTMLInputElement = this;
             onCreate(form, d3.select(self));
             return initialText;
         })
-        .call(function () {
-            this.node().focus();
-            let endOfText = this.node().value.length;
-            this.node().setSelectionRange(0, endOfText);
+        .call(function (this: d3.Selection<any>) {
+            (this.node() as HTMLElement).focus();
+            let endOfText = (this.node() as HTMLInputElement).value.length;
+            (this.node() as HTMLInputElement).setSelectionRange(0, endOfText);
         })
         // make the form go away when you jump out (form looses focus) or hit ENTER:
         .on('blur', function() {
