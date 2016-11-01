@@ -1,9 +1,10 @@
 import * as $ from 'jquery';
 import { Component, createElement, ReactElement } from 'react';
 
-import DiagramModel from '../diagram/model';
+import { DiagramModel } from '../diagram/model';
+import { Link } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
-import { forceLayout, LayoutNode, LayoutLink } from '../layout/forceLayout';
+import { forceLayout, LayoutNode, LayoutLink } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
 import { FilterView, FilterModel } from '../widgets/filter';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
@@ -143,25 +144,30 @@ export class Workspace extends Component<Props, {}> {
 
     public forceLayout() {
         const nodes: LayoutNode[] = [];
-        const nodeIndices: { [id: string]: number } = {};
+        const nodeById: { [id: string]: LayoutNode } = {};
         for (const elementId in this.model.elements) {
             if (this.model.elements.hasOwnProperty(elementId)) {
                 const element = this.model.elements[elementId];
                 if (!element.get('presentOnDiagram')) { continue; }
                 const size = element.get('size');
                 const position = element.get('position');
-                nodeIndices[elementId] = nodes.length;
-                nodes.push({
+                const node: LayoutNode = {
                     id: elementId,
                     x: position.x,
                     y: position.y,
                     width: size.width,
                     height: size.height,
-                });
+                };
+                nodeById[elementId] = node;
+                nodes.push(node);
             }
         }
 
-        const links: LayoutLink[] = [];
+        interface LinkWithReference extends LayoutLink {
+            link: Link;
+            vertices?: Array<{ x: number; y: number; }>;
+        }
+        const links: LinkWithReference[] = [];
         for (const linkId in this.model.linksByType) {
             if (this.model.linksByType.hasOwnProperty(linkId)) {
                 const linksOfType = this.model.linksByType[linkId];
@@ -170,14 +176,15 @@ export class Workspace extends Component<Props, {}> {
                     const source = this.model.sourceOf(link);
                     const target = this.model.targetOf(link);
                     links.push({
-                        source: nodeIndices[source.id],
-                        target: nodeIndices[target.id],
+                        link,
+                        source: nodeById[source.id],
+                        target: nodeById[target.id],
                     });
                 }
             }
         }
 
-        forceLayout({nodes, links});
+        forceLayout({nodes, links, preferredLinkLength: 150});
 
         let minX = Infinity, minY = Infinity;
         for (const node of nodes) {
@@ -189,6 +196,10 @@ export class Workspace extends Component<Props, {}> {
         for (const node of nodes) {
             this.model.elements[node.id].position(
                 node.x - minX + padding, node.y - minY + padding);
+        }
+
+        for (const {link} of links) {
+            link.set('vertices', []);
         }
     }
 
