@@ -187,7 +187,9 @@ export class Workspace extends Component<Props, {}> {
     private onExportSvg(link: HTMLAnchorElement) {
         this.diagram.exportSVG().then(svg => {
             link.download = 'diagram.svg';
-            link.href = window.URL.createObjectURL(new Blob([svg], {type: 'image/svg+xml'}));
+            const xmlEncodingHeader = '<?xml version="1.0" encoding="UTF-8"?>';
+            link.href = window.URL.createObjectURL(
+                new Blob([xmlEncodingHeader + svg], {type: 'image/svg+xml'}));
             link.click();
         });
     }
