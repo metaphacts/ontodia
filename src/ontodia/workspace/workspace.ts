@@ -1,6 +1,8 @@
 import * as $ from 'jquery';
 import { Component, createElement, ReactElement } from 'react';
 import * as Springy from 'springy';
+import * as d3 from 'd3';
+import * as _ from 'lodash';
 
 import DiagramModel from '../diagram/model';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
@@ -12,6 +14,7 @@ import { resizePanel, setPanelHeight } from '../resizable-panels';
 import { resizeItem } from '../resizable-items';
 import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
+import { Element } from '../diagram/elements';
 
 import WorkspaceMarkup from './workspaceMarkup';
 
@@ -182,6 +185,70 @@ export class Workspace extends Component<Props, {}> {
 
             (<any>node).real.position(x, y);
         });
+
+        // Select model.elements values as vertexes for Voronoi diagram
+        const vertices = _.values<Element>(this.model.elements);
+        let triangulationEdges: d3.geom.voronoi.Link<Element>[] = [];
+
+        // Configure Voronoi
+        const myVoronoi = d3.geom.voronoi<Element>()
+                        .x(function(d) { return (<Element>d).get('position').x; })
+                        .y(function(d) { return (<Element>d).get('position').y; });
+        
+        // Consider some debugging data
+        let overlapping = 0;
+        let round = 1;
+        
+        // Consider safe execution with max number of overlapping issue solving attempts = 100;
+        const MAX_ROUNDS = 100;
+        const MAX_SSCALE = 1.5;
+
+        while (round < MAX_ROUNDS) {
+            // Break if no more overlapping nodes found over Delaunay triangulation
+            if(overlapping === 0 && round > 1)
+                break;
+            
+            overlapping = 0;
+           
+            // Form a proximity graph by Delaunay triangulation on Voronoi diagram            
+            triangulationEdges = myVoronoi.links(vertices);
+
+            triangulationEdges.forEach(function(edge) {
+                const leftHandEpr = (edge.source.get('size').width/2 + edge.target.get('size').width/2) / (Math.abs(edge.source.get('position').x - edge.target.get('position').x));
+                const rightHandExpr = (edge.source.get('size').height/2 + edge.target.get('size').height/2) / (Math.abs(edge.source.get('position').y - edge.target.get('position').y));
+                
+                // Calculate overlap factor using left and right hand expressions calculated above
+                const tFactor = Math.max(Math.min(leftHandEpr, rightHandExpr), 1);
+
+                // If overlapping actually exists
+                if (tFactor > 1) {
+                    // Increment overlapping rate
+                    overlapping++;
+                    
+                    // Choose an optimal factor (smax = 1.5 is believed to be a good option)
+                    const sFactor = Math.min(tFactor, MAX_SSCALE);
+
+                    // Calculate coordinates for both: source and target nodes that form an edge
+                    const xSourceCoord = edge.source.get('position').x*sFactor;
+                    const ySourceCoord =  edge.source.get('position').y*sFactor;                                        
+                    const xTargetCoord = edge.target.get('position').x*sFactor;
+                    const yTargetCoord =  edge.target.get('position').y*sFactor;
+
+                    // TODO: Consider in future proper solving of a proximity stress model...
+
+                    // Adjust coordinates considering previously set MAX_POSITION const
+                    edge.source.position(Math.max(-MAX_POSITION, Math.min(MAX_POSITION, xSourceCoord)), Math.max(-MAX_POSITION, Math.min(MAX_POSITION, ySourceCoord)));
+                    edge.target.position(Math.max(-MAX_POSITION, Math.min(MAX_POSITION, xTargetCoord)), Math.max(-MAX_POSITION, Math.min(MAX_POSITION, yTargetCoord)));
+                }
+            });
+
+            // Increment round number
+            round++;
+        }
+
+        // Display some nice debug info
+        console.debug('Overlappings left:', overlapping);
+        console.debug('Rounds used:', round); 
     }
 
     private onExportSvg(link: HTMLAnchorElement) {
