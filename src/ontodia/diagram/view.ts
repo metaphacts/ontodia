@@ -251,7 +251,7 @@ export class DiagramView extends Backbone.Model {
     private configureArea(rootElement: HTMLElement) {
         this.paperArea = new PaperArea({paper: this.paper});
         this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
-            if (evt.ctrlKey || this.model.isViewOnly()) {
+            if (evt.ctrlKey || evt.shiftKey || this.model.isViewOnly()) {
                 evt.preventDefault();
                 this.preventTextSelection();
                 this.paperArea.startPanning(evt);
@@ -276,7 +276,7 @@ export class DiagramView extends Backbone.Model {
         this.paper.on('cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
             // We don't want a Halo for links.
             if (cellView.model instanceof joint.dia.Link) { return; }
-            if (evt.ctrlKey || evt.metaKey) { return; }
+            if (evt.ctrlKey || evt.shiftKey || evt.metaKey) { return; }
             const element = cellView.model as Element;
             this.selection.reset([element]);
             if (!this.options.disableDefaultHalo) {

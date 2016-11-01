@@ -12,8 +12,8 @@
 
 .ontodia-workspace {
   display: flex;
-  flex-grow: 1;
-  height: 0;
+  flex: auto;
+  overflow: hidden;
 }
 
 .ontodia-toolbar {
@@ -56,10 +56,9 @@
 
 .ontodia-main-panel {
   display: flex;
-  flex-grow: 1;
-  -webkit-flex-grow: 1; /* safari 8 */
-  width: 0;
+  flex: auto;
   overflow: hidden;
+  width: 0;
 }
 
 .ontodia-main-panel .paper-area, .ontodia-main-panel .paper-scroller {

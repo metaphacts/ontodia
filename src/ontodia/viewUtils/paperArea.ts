@@ -61,7 +61,6 @@ export class PaperArea extends Backbone.View<any> {
 
         this.$svg = $(this.options.paper.svg);
         this.$svg.css({ overflow: 'visible' });
-        this.$el.css({ height: '100%' });
         this.$el.append(paper.el);
         this.addPadding();
 
@@ -132,8 +131,8 @@ export class PaperArea extends Backbone.View<any> {
         // initially set spacing to paperSize * 0.5
         // but make total spacing no less than (scrollerSize - paperSize)
         // overwise paper will not be centered when zoomed out at maximum
-        let sw = paperWidth * 0.5,
-            sh = paperHeight * 0.5;
+        let sw = paperWidth * 0.7,
+            sh = paperHeight * 0.7;
         if (sw * 2 + paperWidth < scrollerWidth) {
             sw = (scrollerWidth - paperWidth) / 2;
         }
@@ -221,10 +220,6 @@ export class PaperArea extends Backbone.View<any> {
     }
     private pan(evt: any) {
         if (this.isPanning) {
-            if (!isLeftButtonDown(evt)) {
-                this.isPanning = false;
-                return;
-            }
             const offsetX = evt.pageX - this.originX,
                 offsetY = evt.pageY - this.originY;
             this.el.scrollLeft = this.originScrollLeft - offsetX;
@@ -254,9 +249,3 @@ export class PaperArea extends Backbone.View<any> {
 }
 
 export default PaperArea;
-
-function isLeftButtonDown(evt: MouseEvent) {
-    /* tslint:disable:no-bitwise */
-    return (evt.buttons & 1) !== 0;
-    /* tslint:enable:no-bitwise */
-}

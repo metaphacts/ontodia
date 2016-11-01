@@ -1,11 +1,10 @@
-.paper-area, .paper-scroller {
+.paper-area {
   cursor: default;
-  overflow: auto;
-  position: relative;
+  overflow: scroll;
   box-sizing: border-box;
 }
 
-.paper-area > .paper, .paper-scroller > .paper {
+.paper-area > .paper {
   margin: 0;
   position: relative;
   display: inline-block;
@@ -16,7 +15,7 @@
   display: block;
 }
 
-foreignObject div {
+.paper-area foreignObject div {
   outline: none;
 }
 
