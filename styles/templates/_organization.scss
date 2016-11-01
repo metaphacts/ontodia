@@ -1,0 +1,52 @@
+.ontodia-organization-template {
+  border: 2px solid;
+	max-width: 400px;
+	float: left;
+	border-radius: 2px;
+}
+
+.ontodia-organization-template_body {
+  height: 100%;
+  border-radius: 3px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 3px 12px 3px 12px;
+  background: white;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.ontodia-organization-template_body__logo {
+  position: inherit !important;
+  font-size: x-large;
+  margin: 5px 0px;
+  border: 1px solid;
+  padding: 5px 6px;
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.ontodia-organization-template_body_data {
+	flex-grow: 1;
+}
+
+.ontodia-organization-template_body_data__types {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 100;
+}
+
+.ontodia-organization-template_body_data__label {
+  white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+  margin-bottom: 0px;
+}

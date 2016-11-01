@@ -1,0 +1,133 @@
+.link-types-toolbox {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+
+  &__heading {
+    padding: 10px;
+  }
+
+  &__searching-box {
+    display: flex;
+    align-items: center;
+  }
+
+  &__clearSearch {
+    margin-left: -25px;
+    -webkit-appearance: none;
+    padding: 0;
+    cursor: pointer;
+    background: 0 0;
+    border: 0;
+  }
+
+  &__switch-all {
+    margin-top: 5px;
+  }
+
+  &__rest {
+    border-top: 1px solid #dddddd;
+  }
+}
+
+.link-types-toolbox .panel-heading {
+  flex-shrink: 0;
+  -webkit-flex-shrink: 0; /* safari 8 */
+}
+.link-types-toolbox .link-lists {
+  flex-grow: 1;
+  -webkit-flex-grow: 1; /* safari 8 */
+  /*height: 0;*/
+  overflow-y: scroll;
+}
+.link-types-toolbox ul {
+  margin-bottom: 0;
+}
+.link-types-toolbox .links-heading {
+  margin-left: .4em;
+}
+.link-types-toolbox .links-heading span {
+  border: black 1px dashed;
+  background: rgb(255, 131, 92);
+  padding: 0 .5em 0 .5em;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+.link-types-toolbox__heading .link-types-toolbox-controls {
+  padding: 5px 15px;
+  font-size: 14px;
+  font-style: italic;
+}
+.link-types-toolbox__heading .link-types-toolbox-controls > span {
+  padding-left: .3em;
+}
+
+.list-group .linkInToolBox {
+  padding: 0 0 0 5px;
+  word-break: break-word;
+}
+.linkInToolBox > div {
+  display: inline;
+}
+.linkInToolBox .label {
+  margin-left: .5em;
+  white-space: normal;
+  word-wrap: normal;
+}
+
+.linkInToolBox .badge {
+  display: none;
+  margin-left: .5em;
+  white-space: normal;
+  word-wrap: normal;
+}
+.connected-links .linkInToolBox .badge {
+  /* show connection count badge only in "Connected to Element" list */
+  display: inline;
+}
+.linkInToolBox .link-title {
+  font-size: 16px;
+  color: black;
+  display: inline;
+}
+.linkInToolBox .btn-group {
+  float: left;
+  margin-top: 2px;
+  margin-right: 6px;
+  margin-bottom: 2px;
+}
+.linkInToolBox .btn.btn-default {
+  border-color: rgb(195, 195, 195);
+}
+.linkInToolBox .filter-button {
+  display: none;
+  float: right;
+  margin: 3px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 200ms 0ms;
+}
+.linkInToolBox:hover .filter-button {
+  opacity: 1.0;
+  transition: opacity 200ms 0ms;
+}
+.connected-links .linkInToolBox .filter-button {
+  /* show filter button only in "Connected to Element" list */
+  display: inline;
+}
+.linkInToolBox .filter-button img {
+  content: url("../images/add-to-filter.png");
+  width: 20px;
+  height: 20px;
+}
+.link-in-popup-menu .filter-button img {
+  opacity: 0.4;
+  margin-left: 10px;
+  content: url("../images/add-to-filter.png");
+  width: 20px;
+  height: 20px;
+}
+.link-in-popup-menu .filter-button img:hover {
+  opacity: 1;
+}

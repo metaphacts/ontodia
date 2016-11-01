@@ -1,0 +1,152 @@
+.ontodia-big-icon-container {
+  max-width: 400px;
+  float: left;
+}
+
+.ontodia-big-icon-template {
+  border-radius: 10px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+.ontodia-big-icon-template_body {
+  margin-left: 13px;
+  height: 100%;
+  border-radius: 3px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border-left-style: solid;
+  border-left-width: 1px;
+  padding: 3px 6px 3px 6px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.ontodia-big-icon-template_body__label {
+  font-size: 19px;
+  white-space: nowrap;
+  font-weight: 100;
+  margin-bottom: -7px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ontodia-big-icon-template_body_type-container {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-style: italic;
+  color: #afafaf;
+  font-weight: 100;
+  display: flex;
+}
+
+.ontodia-big-icon-template_body_type-container__type {
+  width: 0;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ontodia-big-icon-template_body__icon {
+  position: inherit !important;
+  font-size: x-large;
+  margin: 5px 6px 5px 15px;
+}
+
+.ontodia-big-icon-template_property {
+  border-radius: 10px;
+  background-color: white;
+  margin-top: 5px;
+  border: 1px solid;
+}
+
+.ontodia-big-icon-template_property__image {
+  width: 100%;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom: 1px solid;
+}
+
+.ontodia-big-icon-template_property_content {
+  width: 100%;
+  height: 100%;
+  padding: 9px;
+}
+
+.ontodia-big-icon-template_property_content_iri-line {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.ontodia-big-icon-template_property_content_iri-line__label {
+  font-size: 12px;
+  font-weight: 100;
+  margin-right: 4px;
+  color: #b6b6b6;
+}
+
+.ontodia-big-icon-template_property_content_iri-line__iri {
+  font-size: 12px;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ontodia-big-icon-template_property_content_iri-line__iri a {
+  color: #b6b6b6;
+}
+
+.ontodia-big-icon-template_property_content__hr {
+  margin: 5px 0px 5px 0px;
+}
+
+.ontodia-big-icon-template_property_content_property-table {
+  font-size: 15px;
+  font-weight: 100;
+  max-height: 200px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.ontodia-big-icon-template_property_content_property-table_row {
+  white-space: nowrap;
+}
+
+.ontodia-big-icon-template_property_content_property-table_row__key {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.ontodia-big-icon-template_property_content_property-table_row_key {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.ontodia-big-icon-template_property_content_property-table_row_key_values {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.ontodia-big-icon-template_property_content_property-table_row_key_values__value {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: initial;
+  padding-right: 10px;
+}

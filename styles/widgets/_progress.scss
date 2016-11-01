@@ -1,0 +1,27 @@
+.stateBasedProgress .progress {
+  flex-shrink: 0;
+  -webkit-flex-shrink: 0; /* safari 8 */
+  width: 100%;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+.stateBasedProgress:not([data-state]) .progress {
+  height: 0;
+}
+
+.stateBasedProgress[data-state='querying'] .progress,
+.stateBasedProgress[data-state='error'] .progress {
+  /* property name | duration | delay */
+  transition: height 300ms 300ms;
+}
+
+.stateBasedProgress[data-state='error'] .progress-bar {
+  background-color: #E72F2F;
+}
+
+.stateBasedProgress[data-state='finished'] .progress {
+  height: 0;
+  /* property name | duration | delay */
+  transition: height 200ms 0ms;
+}

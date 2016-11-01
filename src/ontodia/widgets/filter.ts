@@ -39,7 +39,8 @@ class FilterCriterionView extends Backbone.View<FilterCriterion> {
 
         this.$el.empty();
         const $buttons = $("<div class='btn-group btn-group-xs'></div>").appendTo(this.$el);
-        $("<button type='button' class='btn btn-default'><span class='glyphicon glyphicon-remove'/></button>")
+        $("<button type='button' class='btn btn-default' title='Remove criteria'>" +
+            "<span class='fa fa-times' aria-hidden='true' /></button>")
             .on('click', () => { this.model.trigger('destroy', this.model); })
             .appendTo($buttons);
         const type: string = this.model.get('type');
@@ -222,8 +223,8 @@ export class FilterView extends Backbone.View<FilterModel> {
         const $filterTextGroup = $("<div class='input-group'/>")
             .append(this.$filterText)
             .append("<span class='input-group-btn'>" +
-                "<button class='btn btn-default' type='button'>" +
-                "<span class='glyphicon glyphicon-search'/></button></span>");
+                "<button class='btn btn-default' type='button' title='Search'>" +
+                "<span class='fa fa-search' aria-hidden='true' /></button></span>");
 
         const updateFilterText = () => { this.setFilterText(this.$filterText.val()); };
         $filterTextGroup.find('button').on('click', updateFilterText);
@@ -243,7 +244,7 @@ export class FilterView extends Backbone.View<FilterModel> {
 
         this.$loadMoreButton = $(
                 "<button type='button' class='btn btn-primary' style='display: none'>" +
-                "<span class='glyphicon glyphicon-chevron-down'/>&nbsp;Show more</button>")
+                "<span class='fa fa-chevron-down' aria-hidden='true' />&nbsp;Show more</button>")
             .on('click', () => {
                 this.$loadMoreButton.prop('disabled', true);
                 this.model.queryItems(true);

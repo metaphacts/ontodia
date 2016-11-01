@@ -1,0 +1,26 @@
+.paper-area, .paper-scroller {
+  cursor: default;
+  overflow: auto;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.paper-area > .paper, .paper-scroller > .paper {
+  margin: 0;
+  position: relative;
+  display: inline-block;
+  border: 1px solid black;
+}
+
+.paper-area > .paper > svg {
+  display: block;
+}
+
+foreignObject div {
+  outline: none;
+}
+
+.uiElementView__iri {
+    fill: #969696;
+    font-size: smaller;
+}

@@ -1,0 +1,95 @@
+.filter-view {
+  display: flex;
+  flex-direction: column;
+  display: -webkit-flex; /* safari 8 */
+  -webkit-flex-direction: column; /* safari 8 */
+}
+.filter-view .btn.btn-default {
+  border-color: rgb(195, 195, 195);
+}
+.filter-view .filter-criteria {
+  flex-shrink: 0;
+  -webkit-flex-shrink: 0; /* safari 8 */
+  margin: 10px 0 10px 0;
+}
+.filter-view .filter-criteria > ul {
+  padding-left: 15px;
+}
+.filter-view .filter-criteria > ul:empty {
+  margin-bottom: 0;
+}
+.filter-view .filter-criteria .input-group {
+  margin: 0 10px;
+}
+.filter-view .criterion {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+.filter-view .criterion .class-label {
+  border: black 1px dashed;
+  background: rgb(255, 210, 33);
+  padding: 0 .5em 0 .5em;
+  word-wrap: break-word;
+}
+.filter-view .criterion .element-label {
+  border: black 1px dashed;
+  background: rgb(255, 131, 92);
+  padding: 0 .5em 0 .5em;
+  word-wrap: break-word;
+}
+.filter-view .criterion .link-type-label {
+  border: black 1px dashed;
+  background: rgb(202, 255, 206);
+  padding: 0 .5em 0 .5em;
+  word-wrap: break-word;
+}
+.filter-view .criterion .btn-group {
+  float: right;
+  margin: 0 10px 4px 4px;
+}
+.filter-view .filter-rest {
+  height: 0;
+  flex-grow: 1;
+  -webkit-flex-grow: 1; /* safari 8 */
+  overflow-y: scroll;
+  border-top: 1px solid rgb(221, 221, 221);
+}
+.filter-view .filtered-items {
+  padding-left: 0;
+  padding-top: 10px;
+  margin: 0 10px 0 10px;
+}
+.filter-view[data-state='finished'] .filtered-items:empty:before {
+  content: 'No items correspond to the specified criteria.';
+  font-style: italic;
+}
+.filter-view .filtered-items li {
+  display: block;
+  background: #808080;
+  padding: 1px 1px 1px 20px;
+  border-radius: 10px;
+  margin: 0 0 2px 0;
+  opacity: 1.0;
+  cursor: move;
+}
+.filter-view .filtered-items li[data-presentOnDiagram=true] {
+  opacity: 0.4;
+  cursor: default;
+}
+.filter-view .filtered-items li > div {
+  background: white;
+  border-radius: 10px;
+  font-family: "Andale Mono", sans-serif;
+  font-size: 15px;
+  min-height: 1.3em;
+  padding-left: 7px;
+  padding-right: 5px;
+  overflow-wrap: break-word;
+}
+.filter-view .filter-rest > div:last-child {
+  margin: 5px 10px 15px 10px;
+}
+.filter-view .filter-rest > div:last-child button {
+  width: 100%;
+}

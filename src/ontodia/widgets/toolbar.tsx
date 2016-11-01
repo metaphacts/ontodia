@@ -55,7 +55,7 @@ export class EditorToolbar extends React.Component<Props, State> {
         let btnSaveDiagram = (
             <button type='button' className='saveDiagramButton btn btn-primary'
                     onClick={this.props.onSaveDiagram}>
-                <span className='glyphicon glyphicon-save'/> Save diagram
+                <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
             </button>
         );
 
@@ -68,14 +68,14 @@ export class EditorToolbar extends React.Component<Props, State> {
         let btnShare = (
             <button type='button' className='btn btn-default'
                     title='Publish or share diagram' onClick={this.props.onShare}>
-                <span className='glyphicon glyphicon-user'/> Share
+                <span className='fa fa-users' aria-hidden='true' /> Share
             </button>
         );
 
         let btnHelp = (
             <button type='button' className='btn btn-default'
                     onClick={this.props.onShowTutorial}>
-                <span className='glyphicon glyphicon-question-sign'/> Help
+                <span className='fa fa-info-circle' aria-hidden='true' /> Help
             </button>
         );
 
@@ -89,53 +89,53 @@ export class EditorToolbar extends React.Component<Props, State> {
                         : (this.props.onEditAtMainSite ? btnEditAtMainSite : undefined)}
                     {this.props.onSaveToSelf ? (
                         <button type='button' className='btn btn-default'>
-                            <span className='glyphicon glyphicon-save'></span> Save under your account
+                            <span className='fa fa-floppy-o' aria-hidden='true'></span> Save under your account
                         </button>
                     ) : undefined}
                     {(this.props.isDiagramSaved && this.props.onResetDiagram) ? (
                         <button type='button' className='btn btn-default'>
-                            <span className='glyphicon glyphicon-repeat'></span> Reset
+                            <span className='fa fa-trash-o' aria-hidden='true'></span> Reset
                         </button>
                     ) : undefined}
                     <button type='button' className='btn btn-default'
                             onClick={this.props.onForceLayout}>
-                        <span className='glyphicon glyphicon-tree-conifer'/> Layout
+                        <span className='fa fa-sitemap' aria-hidden='true' /> Layout
                     </button>
                     <button type='button' className='btn btn-default'
                             title='Zoom In' onClick={this.props.onZoomIn}>
-                        <span className='glyphicon glyphicon-zoom-in'/>
+                        <span className='fa fa-search-plus' aria-hidden='true' />
                     </button>
                     <button type='button' className='btn btn-default'
                             title='Zoom Out' onClick={this.props.onZoomOut}>
-                        <span className='glyphicon glyphicon-zoom-out'/>
+                        <span className='fa fa-search-minus' aria-hidden='true' />
                     </button>
                     <button type='button' className='btn btn-default'
                             title='Fit to Screen' onClick={this.props.onZoomToFit}>
-                        <span className='glyphicon glyphicon-fullscreen'/>
+                        <span className='fa fa-arrows-alt' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onUndo) ? (
                         <button type='button' className='btn btn-default ontodia-toolbar__undo'
                             title='Undo' onClick={this.props.onUndo}>
-                            <span className='glyphicon glyphicon-arrow-left'/>
+                            <span className='fa fa-undo' aria-hidden='true' />
                         </button>
                     ) : undefined}
                     {(nonEmbedded && this.props.onRedo) ? (
                         <button type='button' className='btn btn-default ontodia-toolbar__redo'
                             title='Redo' onClick={this.props.onRedo}>
-                            <span className='glyphicon glyphicon-arrow-right'/>
+                            <span className='fa fa-repeat' aria-hidden='true' />
                         </button>
                     ) : undefined}
                     <button type='button' className='btn btn-default'
                             title='Export diagram as PNG' onClick={this.onExportPNG}>
-                        <span className='glyphicon glyphicon-picture'/> PNG
+                        <span className='fa fa-picture-o' aria-hidden='true' /> PNG
                     </button>
                     <button type='button' className='btn btn-default'
                             title='Export diagram as SVG' onClick={this.onExportSVG}>
-                        <span className='glyphicon glyphicon-picture'/> SVG
+                        <span className='fa fa-picture-o' aria-hidden='true' /> SVG
                     </button>
                     <button type='button' className='btn btn-default'
                             title='Print diagram' onClick={this.props.onPrint}>
-                        <span className='glyphicon glyphicon-print'/>
+                        <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
                     <div className='btn-group languageSelector'>

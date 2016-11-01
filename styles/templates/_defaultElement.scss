@@ -1,0 +1,135 @@
+.ontodia-default-template {
+  max-width: 350px;
+  float: left;
+  border-radius: 12px;
+  border-style: solid;
+  border-width: 1px;
+}
+
+.ontodia-default-template_type-line {
+  padding: 0px 7px;
+  color: white;
+  height: 18px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: baseline;
+  margin-top: -3px;
+}
+
+div.ontodia-default-template_type-line__icon {
+  position: inherit !important;
+  margin-right: 4px;
+}
+
+.ontodia-default-template_type-line_text-container {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 0;
+}
+.ontodia-default-template_type-line_text-container__text {
+  display: inline;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.ontodia-default-template__image {
+  width: 100%; 
+  border-bottom: 1px solid;
+}
+
+.ontodia-default-template_body {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  background: white;
+  padding: 7px 10px 8px 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ontodia-default-template_body__label {
+  font-size: 19px;
+  font-weight: 100;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0;
+  white-space: nowrap;
+  word-wrap: break-word;
+}
+
+.ontodia-default-template_body_expander {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+}
+
+.ontodia-default-template_body_expander__iri_label {
+  font-size: 12px;
+  font-weight: 100;
+  margin-right: 15px;
+  color: #b6b6b6;
+}
+
+.ontodia-default-template_body_expander_iri {
+  font-size: 12px;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ontodia-default-template_body_expander_iri__link {
+  color: #b6b6b6;
+}
+
+.ontodia-default-template_body_expander__hr {
+  margin: 5px 0px 5px 0px;
+}
+
+.ontodia-default-template_body_expander_property-table {
+  font-size: 15px;
+  font-weight: 100;
+  margin-bottom: 5px;
+  max-height: 200px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.ontodia-default-template_body_expander_property-table_row {
+  white-space: nowrap;
+}
+
+.ontodia-default-template_body_expander_property-table_row__key {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.ontodia-default-template_body_expander_property-table_row_key {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.ontodia-default-template_body_expander_property-table_row_key_values {
+  display: inline-block;
+  width: 50%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.ontodia-default-template_body_expander_property-table_row_key_values__value {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: initial;
+  padding-right: 10px;
+}

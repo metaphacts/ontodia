@@ -1,0 +1,97 @@
+.ontodia {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ontodia-header {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.ontodia-workspace {
+  display: flex;
+  flex-grow: 1;
+  height: 0;
+}
+
+.ontodia-toolbar {
+  .languageSelector {
+    padding: 5px;
+    margin-top: 4px;
+  }
+  .languageSelector > label > span {
+    vertical-align: middle;
+  }
+}
+
+.ontodia-toolbar {
+  background: rgba(0, 0, 0, 0.15);
+}
+.ontodia-toolbar > .btn-group {
+  margin-left: 10px;
+}
+.ontodia-toolbar > .btn-group > button {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.ontodia-toolbar .ontodia-toolbar__undo,
+.ontodia-toolbar .ontodia-toolbar__redo {
+  display: none;
+}
+#saveToSelf span {
+  color: #0C8BFF;
+}
+#resetDiagram span {
+  color: #E2A000;
+}
+
+.ontodia-left-panel {
+  display: flex;
+  flex-direction: column;
+  width: 15%;
+  border-right: 1px solid lightgray;
+}
+
+.ontodia-main-panel {
+  display: flex;
+  flex-grow: 1;
+  -webkit-flex-grow: 1; /* safari 8 */
+  width: 0;
+  overflow: hidden;
+}
+
+.ontodia-main-panel .paper-area, .ontodia-main-panel .paper-scroller {
+  background-image: url('../images/transparent-background.png');
+}
+
+.ontodia-main-panel .paper-area svg, .ontodia-main-panel .paper-scroller svg {
+  background-color: white;
+}
+
+.ontodia-right-panel {
+  display: flex;
+  flex-direction: column;
+  width: 15%;
+  border-left: 1px solid lightgray;
+}
+
+.ontodia-widget {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid lightgray;
+}
+
+.ontodia-widget-heading {
+  flex-shrink: 0;
+  font-size: 16px;
+  background: #E4E4E4;
+  cursor: default;
+  /* unselectable */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

@@ -95,29 +95,20 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         return (
             <li data-linkTypeId={this.props.link.id} className='list-group-item linkInToolBox clearfix'>
                 <span className='btn-group btn-group-xs' data-toggle='buttons'>
-                    <label
-                        className={'btn btn-default' + (this.isChecked('invisible') ? ' active' : '')}
-                        id='invisible'
-                        title='Hide links and labels'
-                        onClick={() => this.changeState('invisible')}
-                    >
-                        <span className='glyphicon glyphicon-remove'/>
+                    <label className={'btn btn-default' + (this.isChecked('invisible') ? ' active' : '')}
+                        id='invisible' title='Hide links and labels'
+                        onClick={() => this.changeState('invisible')}>
+                        <span className='fa fa-times' aria-hidden='true' />
                     </label>
-                    <label
-                        className={'btn btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
-                        id='withoutLabels'
-                        title='Show links without labels'
-                        onClick={() => this.changeState('withoutLabels')}
-                    >
-                        <span className='glyphicon glyphicon-resize-horizontal'/>
+                    <label className={'btn btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
+                        id='withoutLabels' title='Show links without labels'
+                        onClick={() => this.changeState('withoutLabels')}>
+                        <span className='fa fa-arrows-h' aria-hidden='true' />
                     </label>
-                    <label
-                        className={'btn btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
-                        id='allVisible'
-                        title='Show links with labels'
-                        onClick={() => this.changeState('allVisible')}
-                    >
-                        <span className='glyphicon glyphicon-text-width'/>
+                    <label className={'btn btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
+                        id='allVisible' title='Show links with labels'
+                        onClick={() => this.changeState('allVisible')}>
+                        <span className='fa fa-text-width' aria-hidden='true' />
                     </label>
                 </span>
                 <div className='link-title'>{this.getText()}</div>
@@ -212,62 +203,63 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
     }
 
     render() {
+        const className = 'link-types-toolbox';
+
         const dataState = this.props.dataState || null;
         const links = this.getLinks();
         const views = this.getViews(links);
 
         let connectedTo: React.ReactElement<any> = null;
         if (this.props.label) {
-            const selectedElementLabel =
-                chooseLocalizedText(this.props.label.values, this.props.language).text.toLowerCase();
-            connectedTo = <h4 className='links-heading' style={{display: 'block'}}>
-                Connected to{'\u00A0'}
-                <span>{selectedElementLabel}</span>
-            </h4>;
+            const selectedElementLabel = chooseLocalizedText(
+                this.props.label.values, this.props.language).text.toLowerCase();
+            connectedTo = (
+                <h4 className='links-heading' style={{display: 'block'}}>
+                    Connected to{'\u00A0'}
+                    <span>{selectedElementLabel}</span>
+                </h4>
+            );
         }
 
         let dropButton: React.ReactElement<any> = null;
         if (this.state.filterKey) {
-            dropButton = <button type='button'
-                className='close link-types-toolbox-heading_searching-box__drob-button'
+            dropButton = <button type='button' className={`${className}__clearSearch`}
                 onClick={this.onDropFilter}>
-                <span className='glyphicon glyphicon-remove'></span>
+                <span className='fa fa-times' aria-hidden='true'></span>
             </button>;
         }
 
         return (
-            <div className='link-types-toolbox stateBasedProgress' data-state={dataState}>
-                <div className='link-types-toolbox-heading' style={{paddingBottom: '0px'}}>
-                    <div className='link-types-toolbox-heading_searching-box'>
-                        <input
-                            className='search-input form-control'
+            <div className={`${className} stateBasedProgress`} data-state={dataState}>
+                <div className={`${className}__heading`}>
+                    <div className={`${className}__searching-box`}>
+                        <input className='search-input form-control'
                             type='text'
                             value={this.state.filterKey}
                             onChange={this.onChangeInput}
-                            placeholder='Search for...'
-                        />
+                            placeholder='Search for...' />
                         {dropButton}
                     </div>
-                </div>
-                <div className='link-types-toolbox-heading'>
-                    <div className='btn-group btn-group-xs'>
-                        <label className='btn btn-default'
-                            title='Hide links and labels'
-                            onClick={() => this.changeState('invisible', links)}>
-                            <span className='glyphicon glyphicon-remove'/>
-                        </label>
-                        <label className='btn btn-default'
-                            title='Show links without labels'
-                            onClick={() => this.changeState('withoutLabels', links)}>
-                            <span className='glyphicon glyphicon-resize-horizontal'/>
-                        </label>
-                        <label className='btn btn-default'
-                            title='Show links with labels'
-                            onClick={() => this.changeState('allVisible', links)}>
-                            <span className='glyphicon glyphicon-text-width'/>
-                        </label>
+                    <div className={`${className}__switch-all`}>
+                        <div className='btn-group btn-group-xs'>
+                            <label className='btn btn-default'
+                                title='Hide links and labels'
+                                onClick={() => this.changeState('invisible', links)}>
+                                <span className='fa fa-times' aria-hidden='true' />
+                            </label>
+                            <label className='btn btn-default'
+                                title='Show links without labels'
+                                onClick={() => this.changeState('withoutLabels', links)}>
+                                <span className='fa fa-arrows-h' aria-hidden='true' />
+                            </label>
+                            <label className='btn btn-default'
+                                title='Show links with labels'
+                                onClick={() => this.changeState('allVisible', links)}>
+                                <span className='fa fa-text-width' aria-hidden='true' />
+                            </label>
+                        </div>
+                        <span>&nbsp;Switch all</span>
                     </div>
-                    <span>Switch all</span>
                 </div>
                 <div className='progress'>
                     <div className='progress-bar progress-bar-striped active'
@@ -278,9 +270,11 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                         style={ {width: '100%'} }>
                     </div>
                 </div>
-                {connectedTo}
-                <div className='link-lists'>
-                    <ul className='list-group connected-links'>{views}</ul>
+                <div className={`${className}__rest`}>
+                    {connectedTo}
+                    <div className='link-lists'>
+                        <ul className='list-group connected-links'>{views}</ul>
+                    </div>
                 </div>
             </div>
         );
@@ -370,14 +364,11 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
     public getReactComponent() {
         let selectedElement: Element = this.model.get('selectedElement');
 
-        return React.createElement(LinkTypesToolbox, {
-            links: this.linksOfElement,
-            countMap: this.countMap,
-            filterCallback: this.filterCallback,
-            dataState: this.dataState,
-            language: this.view.getLanguage(),
-            label: (selectedElement ? selectedElement.template.label : null),
-        });
+        return (<LinkTypesToolbox links={this.linksOfElement} countMap={this.countMap}
+            filterCallback={this.filterCallback} dataState={this.dataState}
+            language={this.view.getLanguage()}
+            label={selectedElement ? selectedElement.template.label : null}
+        />);
     }
 
     public render(): LinkTypesToolboxShell {

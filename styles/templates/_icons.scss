@@ -1,0 +1,94 @@
+.ontodia-default-icon::after {
+  content: "\25EF";
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+  font-size: 12px;
+}
+
+.ontodia-class-icon::after {
+  content: "C";
+  font-weight: bold;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-class-icon {
+  color: #eaac77;
+  background-color: #fff6f0;
+  border: 1px solid #d99292;
+}
+
+.ontodia-object-property-icon::after {
+  content: "OP";
+  font-weight: bold;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-object-property-icon {
+  font-size: 11px;
+  color: #34c7f3;
+  border: 1px solid #2dd6e6;
+}
+
+.ontodia-datatype-property-icon::after {
+  content: "DP";
+  font-weight: bold;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-datatype-property-icon {
+  font-size: 11px;
+  color: #34c7f3;
+}
+
+.ontodia-person-icon::after {
+  content: "\1F464";
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-person-icon {
+  color: #eb7777;
+}
+
+.ontodia-organization-icon::after {
+  content: "Org";
+  font-weight: bold;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-organization-icon {
+  font-size: 9px;
+  color: #4c9d6c;
+  background-color: #dcffe2;
+  border: 1px solid #69b286;
+}
+.jstree-default .jstree-icon.jstree-themeicon-custom.ontodia-tree-icon {
+  height: 20px;
+  width: 20px;
+  line-height: 20px;
+}
+.jstree-icon.jstree-themeicon-custom.ontodia-tree-icon {
+  color: #1573b0;
+  background-color: aliceblue;
+  border-radius: 15px;
+  border: 1px solid #92bdd9;
+  overflow: hidden;
+  font-size: 15px;
+}

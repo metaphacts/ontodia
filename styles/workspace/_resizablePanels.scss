@@ -1,0 +1,148 @@
+.filter-item__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.filter-item__body {
+  -webkit-flex-grow: 1;
+  flex-grow: 1;
+}
+
+.filter-item {
+  box-sizing: border-box;
+  flex: 1;
+  position: relative;
+}
+
+.filter-item__header {
+  padding-left: 20px;
+  position: relative;
+}
+
+.filter-item__header:before {
+  border-top: 6px solid #555555;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 7px;
+  margin-top: -3px;
+
+  -webkit-transition: 0.1s;
+  -moz-transition: 0.1s;
+  transition: 0.1s;
+}
+
+.filter-item__handle {
+  height: 5px;
+  position: absolute;
+  bottom: -2.5px;
+  left: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+.filter-item.closed .filter-item__header:before {
+  -webkit-transform: rotate(-90deg);
+  -moz-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);
+  transform: rotate(-90deg);
+}
+
+.filter-item.closed .filter-item__handle, .filter-item.closed .filter-item__body {
+  display: none;
+}
+
+
+.filter-panel {
+  display: block;
+  position: relative;
+}
+
+.filter-panel__handle {
+  background: #fff url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAHElEQVQIW2PcvHnzf19fX0YGKIAzMARgKjFUAABdvQgFy9518AAAAABJRU5ErkJggg==) repeat;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  width: 8px;
+  z-index: 2;
+  -webkit-transition: 0.3s;
+  -moz-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.filter-panel.ontodia-left-panel {
+  margin-right: 8px;
+}
+
+.filter-panel.ontodia-right-panel {
+  margin-left: 8px;
+}
+
+.ontodia-left-panel .filter-panel__handle {
+  right: -8px;
+}
+
+.ontodia-right-panel .filter-panel__handle {
+  left: -8px;
+}
+
+.filter-panel__handle-btn {
+  background: #eee;
+  cursor: pointer;
+  height: 40px;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  margin-top: -20px;
+  width: 100%;
+  z-index: 1;
+  -webkit-transition: 0.3s;
+  -moz-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.filter-panel__handle-btn::before {
+  background-position: 0 0 ;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: "";
+  height: 6px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -3px;
+  margin-left: -3px;
+  width: 6px;
+  -webkit-transition: 0.3s;
+  -moz-transition: 0.3s;
+  transition: 0.3s;
+}
+
+.ontodia-left-panel .filter-panel__handle-btn::before {
+  background-image: url("../images/arrow-left.png");
+}
+
+.ontodia-right-panel .filter-panel__handle-btn::before {
+  background-image: url("../images/arrow-right.png");
+}
+
+.filter-panel__handle-btn:hover {
+  background: #b3b3b3;
+  transform: scale(1.2);
+}
+
+.ontodia-left-panel .filter-panel__handle-btn:hover::before {
+  background-image: url("../images/arrow-left1.png");
+}
+
+.ontodia-right-panel .filter-panel__handle-btn:hover::before {
+  background-image: url("../images/arrow-right1.png");
+}
+
+.filter-panel__handle-btn.active::before {
+  transform: rotate(180deg);
+}

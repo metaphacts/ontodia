@@ -1,8 +1,6 @@
 require('intro.js/introjs.css');
 
-require('../styles/ontodia.css');
-require('../styles/svgui.css');
-require('../styles/elementTemplates.css');
+require('../styles/main.scss');
 
 export * from './ontodia/customization/props';
 export * from './ontodia/customization/defaultTemplate';
