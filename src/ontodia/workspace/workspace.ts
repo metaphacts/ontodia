@@ -95,10 +95,14 @@ export class Workspace extends Component<Props, {}> {
             el: this.markup.linkTypesPanel,
         });
 
-        const panelRoot = $(this.markup.element);
-        panelRoot.find('.filter-panel').each(resizePanel);
-        panelRoot.find('.filter-item').each(resizeItem);
-
+        resizePanel({
+            panel: this.markup.element.querySelector('.ontodia-left-panel') as HTMLElement,
+        });
+        resizePanel({
+            panel: this.markup.element.querySelector('.ontodia-right-panel') as HTMLElement,
+            initiallyClosed: true,
+        });
+        $(this.markup.element).find('.filter-item').each(resizeItem);
         $(window).resize(this.onWindowResize);
 
         if (!this.props.isViewOnly && !this.props.hideTutorial) {
