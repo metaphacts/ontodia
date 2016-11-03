@@ -1,13 +1,15 @@
 import * as $ from 'jquery';
 import { Component, createElement, ReactElement } from 'react';
-import * as Springy from 'springy';
 
-import DiagramModel from '../diagram/model';
+import { DiagramModel } from '../diagram/model';
+import { Link } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
+import { forceLayout, LayoutNode, LayoutLink } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
 import { FilterView, FilterModel } from '../widgets/filter';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { dataURLToBlob } from '../viewUtils/toSvg';
+
 import { resizePanel, setPanelHeight } from '../resizable-panels';
 import { resizeItem } from '../resizable-items';
 import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
@@ -141,47 +143,64 @@ export class Workspace extends Component<Props, {}> {
     }
 
     public forceLayout() {
-        const SCALE_FACTOR = 50;
-        const MAX_POSITION = 1000;
-
-        const graph = new Springy.Graph();
+        const nodes: LayoutNode[] = [];
+        const nodeById: { [id: string]: LayoutNode } = {};
         for (const elementId in this.model.elements) {
             if (this.model.elements.hasOwnProperty(elementId)) {
-                const element: any = this.model.elements[elementId];
-                if (!this.props.isViewOnly || element.get('presentOnDiagram')) {
-                    element.graphNode = graph.newNode();
-                    element.graphNode.real = element;
-                }
+                const element = this.model.elements[elementId];
+                if (!element.get('presentOnDiagram')) { continue; }
+                const size = element.get('size');
+                const position = element.get('position');
+                const node: LayoutNode = {
+                    id: elementId,
+                    x: position.x,
+                    y: position.y,
+                    width: size.width,
+                    height: size.height,
+                };
+                nodeById[elementId] = node;
+                nodes.push(node);
             }
         }
+
+        interface LinkWithReference extends LayoutLink {
+            link: Link;
+            vertices?: Array<{ x: number; y: number; }>;
+        }
+        const links: LinkWithReference[] = [];
         for (const linkId in this.model.linksByType) {
             if (this.model.linksByType.hasOwnProperty(linkId)) {
-                const links = this.model.linksByType[linkId];
-                for (const link of links) {
-                    const graphLink: any = link;
-                    const source: any = this.model.sourceOf(link);
-                    const target: any = this.model.targetOf(link);
-                    if (!this.props.isViewOnly || this.model.isSourceAndTargetVisible(link)) {
-                        graphLink.graphEdge = graph.newEdge(source.graphNode, target.graphNode);
-                        graphLink.graphEdge.real = link;
-                    }
+                const linksOfType = this.model.linksByType[linkId];
+                for (const link of linksOfType) {
+                    if (!this.model.isSourceAndTargetVisible(link)) { continue; }
+                    const source = this.model.sourceOf(link);
+                    const target = this.model.targetOf(link);
+                    links.push({
+                        link,
+                        source: nodeById[source.id],
+                        target: nodeById[target.id],
+                    });
                 }
             }
         }
-        const layout = new Springy.Layout.ForceDirected(graph, 300.0, 300.0, 0.4);
-        for (let j = 0; j < 1000; j++) {
-            layout.tick(0.03);
+
+        forceLayout({nodes, links, preferredLinkLength: 150});
+
+        let minX = Infinity, minY = Infinity;
+        for (const node of nodes) {
+            minX = Math.min(minX, node.x);
+            minY = Math.min(minY, node.y);
         }
 
-        layout.eachNode((node, point) => {
-            let x = SCALE_FACTOR * point.p.x;
-            let y = SCALE_FACTOR * point.p.y;
+        const padding = 200;
+        for (const node of nodes) {
+            this.model.elements[node.id].position(
+                node.x - minX + padding, node.y - minY + padding);
+        }
 
-            x = Math.max(-MAX_POSITION, Math.min(MAX_POSITION, x));
-            y = Math.max(-MAX_POSITION, Math.min(MAX_POSITION, y));
-
-            (<any>node).real.position(x, y);
-        });
+        for (const {link} of links) {
+            link.set('vertices', []);
+        }
     }
 
     private onExportSvg(link: HTMLAnchorElement) {

@@ -45,8 +45,8 @@ module.exports = {
         'n3': true,
         'react': true,
         'react-dom': true,
-        'springy': true,
         'backbone': true,
+        'webcola': true,
     },
     devtool: '#source-map',
 };

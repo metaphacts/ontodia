@@ -21,6 +21,7 @@ Handlebars as template engines with ability to register custom templates.
 - Replaced bundled typings for backbone and react with @types/*
 - Make Connections panel intially hidden.
 - Replaced icons from Glyphicons with FontAwesome.
+- Replaced force layout implementation from Springy to WebCola.
 
 ### Fixed
 - SparqlEndpoint error when imageClassUris left unspecifed.
