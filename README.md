@@ -46,13 +46,11 @@ Ontodia library is distributed under LGPL-2.1
 
 #### Dependencies ####
 
-- d3 - used to create element interface
 - intro.js - used to display overlay help
 - jointjs - diagramming library Ontodia builds upon
-- jquery - dependency of jointjs
 - lodash - general purpose utility library
 - n3 - library to parse SPARQL endpoint responses.
-- springy - force directed layout implementation
+- webcola - graph layout implementation
 
 ### Contribution guidelines ###
 
