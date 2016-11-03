@@ -48,8 +48,6 @@
 }
 
 .ontodia-left-panel {
-  display: flex;
-  flex-direction: column;
   width: 15%;
   border-right: 1px solid lightgray;
 }
@@ -70,15 +68,11 @@
 }
 
 .ontodia-right-panel {
-  display: flex;
-  flex-direction: column;
   width: 15%;
   border-left: 1px solid lightgray;
 }
 
 .ontodia-widget {
-  display: flex;
-  flex-direction: column;
   border-top: 1px solid lightgray;
 }
 
