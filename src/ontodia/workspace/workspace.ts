@@ -31,127 +31,110 @@ export interface Props {
 export class Workspace extends Component<Props, {}> {
     private markup: WorkspaceMarkup;
 
-    private model: DiagramModel;
-    private diagram: DiagramView;
+    private readonly model: DiagramModel;
+    private readonly diagram: DiagramView;
     private tree: ClassTree;
     private filter: FilterView;
     private linksToolbox: LinkTypesToolboxShell;
 
-    private isUnsupported: boolean;
-
     constructor(props: Props) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
+        this.diagram = new DiagramView(this.model, this.props.viewOptions);
+    }
+
+    private isUnsupportedBrowser() {
+        return browser.name === 'ie';
     }
 
     render(): ReactElement<any> {
-        if (!this.isUnsupported) {
-            return createElement(WorkspaceMarkup, {
-                isViewOnly: this.props.isViewOnly,
-                toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                    onUndo: () => this.model.undo(),
-                    onRedo: () => this.model.redo(),
-                    onZoomIn: () => this.diagram.zoomIn(),
-                    onZoomOut: () => this.diagram.zoomOut(),
-                    onZoomToFit: () => this.diagram.zoomToFit(),
-                    onPrint: () => this.diagram.print(),
-                    onExportSVG: link => this.onExportSvg(link),
-                    onExportPNG: link => this.onExportPng(link),
-                    onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
-                    onSaveDiagram: () => this.props.onSaveDiagram(this),
-                    onForceLayout: () => {
-                        this.forceLayout();
-                        this.diagram.zoomToFit();
-                    },
-                    onChangeLanguage: language => this.diagram.setLanguage(language),
-                    onShowTutorial: () => {
-                        if (!this.props.hideTutorial) {
-                            showTutorial();
-                        }
-                    },
-                    onEditAtMainSite: () => this.props.onEditAtMainSite(this),
-                    isEmbeddedMode: this.props.isViewOnly,
-                    isDiagramSaved: this.props.isDiagramSaved,
-                }),
-                ref: markup => {
-                    this.markup = markup;
-                },
-            });
-        } else {
+        if (this.isUnsupportedBrowser()) {
             return D.div({className: 'alert alert-danger'}, `You seem to be using Internet Explorer. 
-            The key features of Ontodia are not supported for this browser. 
-            We recommend the following alternatives: Microsoft Edge, Google Chrome, Opera and Mozilla Firefox. 
-            Thanks for your understanding!`);
+                The key features of Ontodia are not supported for this browser. 
+                We recommend the following alternatives: Microsoft Edge, Google Chrome, Opera and Mozilla Firefox. 
+                Thanks for your understanding!`);
         }
-    }
-
-    componentWillMount() {
-        if (browser.name === 'ie') {
-            this.isUnsupported = true;
-        }
+        return createElement(WorkspaceMarkup, {
+            ref: markup => { this.markup = markup; },
+            isViewOnly: this.props.isViewOnly,
+            view: this.diagram,
+            toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
+                onUndo: () => this.model.undo(),
+                onRedo: () => this.model.redo(),
+                onZoomIn: () => this.markup.paperArea.zoomBy(0.2),
+                onZoomOut: () => this.markup.paperArea.zoomBy(-0.2),
+                onZoomToFit: () => this.markup.paperArea.zoomToFit(),
+                onPrint: () => this.diagram.print(),
+                onExportSVG: link => this.onExportSvg(link),
+                onExportPNG: link => this.onExportPng(link),
+                onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
+                onSaveDiagram: () => this.props.onSaveDiagram(this),
+                onForceLayout: () => {
+                    this.forceLayout();
+                    this.markup.paperArea.zoomToFit();
+                },
+                onChangeLanguage: language => this.diagram.setLanguage(language),
+                onShowTutorial: () => {
+                    if (!this.props.hideTutorial) { showTutorial(); }
+                },
+                onEditAtMainSite: () => this.props.onEditAtMainSite(this),
+                isEmbeddedMode: this.props.isViewOnly,
+                isDiagramSaved: this.props.isDiagramSaved,
+            }),
+        });
     }
 
     componentDidMount() {
-        if (!this.isUnsupported) {
-            this.diagram = new DiagramView(this.model, this.markup.chartPanel, this.props.viewOptions);
-            if (this.props.isViewOnly) {
-                return;
-            }
+        if (this.isUnsupportedBrowser()) { return; }
+        if (this.props.isViewOnly) { return; }
 
-            this.filter = new FilterView({
-                model: new FilterModel(this.diagram.model),
-                view: this.diagram,
-                el: this.markup.filterPanel,
-            }).render();
+        this.filter = new FilterView({
+            model: new FilterModel(this.diagram.model),
+            view: this.diagram,
+            el: this.markup.filterPanel,
+        }).render();
 
-            this.tree = new ClassTree({
-                model: new FilterModel(this.diagram.model),
-                view: this.diagram,
-                el: this.markup.classTreePanel,
-            }).render();
+        this.tree = new ClassTree({
+            model: new FilterModel(this.diagram.model),
+            view: this.diagram,
+            el: this.markup.classTreePanel,
+        }).render();
 
-            this.tree.on('action:classSelected', (classId: string) => {
-                this.filter.model.filterByType(classId);
-            });
+        this.tree.on('action:classSelected', (classId: string) => {
+            this.filter.model.filterByType(classId);
+        });
 
-            this.linksToolbox = new LinkTypesToolboxShell({
-                model: new LinkTypesToolboxModel(this.model),
-                view: this.diagram,
-                el: this.markup.linkTypesPanel,
-            });
+        this.linksToolbox = new LinkTypesToolboxShell({
+            model: new LinkTypesToolboxModel(this.model),
+            view: this.diagram,
+            el: this.markup.linkTypesPanel,
+        });
 
-            resizePanel({
-                panel: this.markup.element.querySelector('.ontodia-left-panel') as HTMLElement,
-            });
-            resizePanel({
-                panel: this.markup.element.querySelector('.ontodia-right-panel') as HTMLElement,
-                initiallyClosed: true,
-            });
-            $(this.markup.element).find('.filter-item').each(resizeItem);
-            $(window).resize(this.onWindowResize);
+        resizePanel({
+            panel: this.markup.element.querySelector('.ontodia__left-panel') as HTMLElement,
+        });
+        resizePanel({
+            panel: this.markup.element.querySelector('.ontodia__right-panel') as HTMLElement,
+            initiallyClosed: true,
+        });
+        $(this.markup.element).find('.filter-item').each(resizeItem);
+        $(window).resize(this.onWindowResize);
 
-            if (!this.props.isViewOnly && !this.props.hideTutorial) {
-                showTutorialIfNotSeen();
-            }
+        if (!this.props.isViewOnly && !this.props.hideTutorial) {
+            showTutorialIfNotSeen();
         }
     }
 
     componentWillUnmount() {
-        if (!this.isUnsupported) {
-            if (this.filter) {
-                this.filter.remove();
-            }
-
-            if (this.tree) {
-                this.tree.remove();
-            }
-
-            if (this.linksToolbox) {
-                // this.linksToolbox.remove();
-            }
-
-            $(window).off('resize', this.onWindowResize);
+        if (this.filter) {
+            this.filter.remove();
         }
+
+        if (this.tree) {
+            this.tree.remove();
+        }
+
+        $(window).off('resize', this.onWindowResize);
     }
 
     private onWindowResize = () => {
@@ -160,15 +143,19 @@ export class Workspace extends Component<Props, {}> {
         }
     }
 
-    public getModel() {
+    getModel() {
         return this.model;
     }
 
-    public getDiagram() {
+    getDiagram() {
         return this.diagram;
     }
 
-    public forceLayout() {
+    zoomToFit() {
+        this.markup.paperArea.zoomToFit();
+    }
+
+    forceLayout() {
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
         for (const elementId in this.model.elements) {

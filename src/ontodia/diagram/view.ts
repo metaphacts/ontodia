@@ -1,9 +1,9 @@
-import * as d3 from 'd3';
+import { hcl } from 'd3';
 import * as Backbone from 'backbone';
 import * as $ from 'jquery';
 import * as joint from 'jointjs';
 
-import { Indicator, WrapIndicator } from '../../svgui/indicator';
+import { Indicator } from '../../svgui/indicator';
 
 import {
     TypeStyleResolver,
@@ -17,7 +17,6 @@ import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
 import { DefaultTemplate } from '../customization/defaultTemplate';
 import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
 
-import { PaperArea } from '../viewUtils/paperArea';
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu } from '../viewUtils/connectionsMenu';
 import {
@@ -54,15 +53,11 @@ export class DiagramView extends Backbone.Model {
     private templatesResolvers: TemplateResolver[];
 
     readonly paper: joint.dia.Paper;
-    paperArea: PaperArea;
     halo: Halo;
     connectionsMenu: ConnectionsMenu;
 
     readonly selection = new Backbone.Collection<Element>();
 
-    private $svg: JQuery;
-    private $documentBody: JQuery;
-    private indicator: WrapIndicator;
     private colorSeed = 0x0BADBEEF;
 
     public dragAndDropElements: { [id: string]: Element };
@@ -72,9 +67,10 @@ export class DiagramView extends Backbone.Model {
         convertImagesToDataUris: true,
     };
 
-    readonly options: DiagramViewOptions;
-
-    constructor(public model: DiagramModel, rootElement: HTMLElement, options: DiagramViewOptions = {}) {
+    constructor(
+        public readonly model: DiagramModel,
+        public readonly options: DiagramViewOptions = {}
+    ) {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
@@ -88,8 +84,6 @@ export class DiagramView extends Backbone.Model {
             preventContextMenu: false,
         });
         (this.paper as any).diagramView = this;
-        this.$svg = this.paper.$('svg');
-        this.options = options;
 
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
@@ -100,52 +94,16 @@ export class DiagramView extends Backbone.Model {
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
 
-        this.setupTextSelectionPrevention();
-        this.configureArea(rootElement);
         this.configureSelection();
         this.configureDefaultHalo();
-        this.enableDragAndDropSupport();
 
         $('html').keyup(this.onKeyUp);
 
-        let indicator: Indicator;
-        const onLoaded = (elementCount?: number, error?: any) => {
-            if (this.indicator) {
-                this.indicator.remove();
-            }
-            const createTemporaryIndicator = (status?: string) => {
-                const paperRect = this.$svg.get(0).getBoundingClientRect();
-                const x = status ? paperRect.width / 4 : paperRect.width / 2;
-                indicator = Indicator.create(d3.select(this.$svg.get(0)), {
-                    position: {x: x, y: paperRect.height / 2 },
-                });
-                indicator.status(status);
-            };
-            const WARN_ELEMENT_COUNT = 70;
-            if (error) {
-                createTemporaryIndicator(error.statusText || error.message);
-                indicator.error();
-            } else if (elementCount > WARN_ELEMENT_COUNT) {
-                createTemporaryIndicator(
-                    `The diagram contains more than ${WARN_ELEMENT_COUNT} ` +
-                    `elements. Please wait until it is fully loaded.`);
-            } else {
-                createTemporaryIndicator();
-            }
-            indicator.run();
-        };
-        this.listenTo(model, 'state:beginLoad', this.showIndicator);
-        this.listenTo(model, 'state:endLoad', onLoaded);
-        this.listenTo(model, 'state:loadError', (error: any) => onLoaded(null, error));
-        this.listenTo(model, 'state:renderStart', () => {
-            if (indicator) { indicator.remove(); }
-        });
         this.listenTo(this.paper, 'render:done', () => {
             this.model.trigger('state:renderDone');
         });
         this.listenTo(model, 'state:dataLoaded', () => {
             this.model.resetHistory();
-            this.zoomToFit();
         });
     }
 
@@ -161,55 +119,19 @@ export class DiagramView extends Backbone.Model {
             printWindow.print();
         });
     }
+
     exportSVG(): Promise<string> {
         return toSVG(this.paper, this.toSVGOptions);
     }
-    exportPNG(options?: ToDataURLOptions): Promise<string> {
-        options = options || {};
+
+    exportPNG(options: ToDataURLOptions = {}): Promise<string> {
         options.svgOptions = options.svgOptions || this.toSVGOptions;
         return toDataURL(this.paper, options);
     }
 
-    zoomIn() { this.paperArea.zoom(0.2, { max: 2 }); }
-    zoomOut() { this.paperArea.zoom(-0.2, { min: 0.2 }); }
-    zoomToFit() {
-        if (this.model.graph.get('cells').length > 0) {
-            this.paperArea.zoomToFit({
-                minScale: 0.2,
-                maxScale: 2,
-            });
-            this.paperArea.zoom(-0.1, { min: 0.2 });
-        } else {
-            this.paperArea.center();
-        }
-    }
-
-    showIndicator(operation?: Promise<any>) {
-        this.paperArea.center();
-        const convertToAny: any = this.paper.$('svg').get(0);
-        const svgElement: SVGElement = convertToAny;
-        const svgBoundingRect = svgElement.getBoundingClientRect();
-        this.indicator = WrapIndicator.wrap(d3.select(svgElement), {
-            position: {
-                x: svgBoundingRect.width / 2,
-                y: svgBoundingRect.height / 2,
-            },
-        });
-        if (operation) {
-            operation.then(() => {
-                this.indicator.remove();
-            }).catch(error => {
-                console.error(error);
-                this.indicator.status('Unknown error occured');
-                this.indicator.error();
-            });
-        }
-    }
-
     private onKeyUp = (e: KeyboardEvent) => {
         const DELETE_KEY_CODE = 46;
-        if (
-            e.keyCode === DELETE_KEY_CODE &&
+        if (e.keyCode === DELETE_KEY_CODE &&
             document.activeElement.localName !== 'input'
         ) {
             this.removeSelectedElements();
@@ -227,48 +149,6 @@ export class DiagramView extends Backbone.Model {
         }
         this.model.graph.trigger('batch:stop');
     };
-
-    private setupTextSelectionPrevention() {
-        this.$documentBody = $(document.body);
-        this.paper.on('cell:pointerdown', () => {
-            this.preventTextSelection();
-        });
-        document.addEventListener('mouseup', () => {
-            this.$documentBody.removeClass('unselectable');
-        });
-        if ('onselectstart' in document) { // IE unselectable fix
-            document.addEventListener('selectstart', () => {
-                const unselectable = this.$documentBody.hasClass('unselectable');
-                return !unselectable;
-            });
-        }
-    }
-
-    preventTextSelection() {
-        this.$documentBody.addClass('unselectable');
-    }
-
-    private configureArea(rootElement: HTMLElement) {
-        this.paperArea = new PaperArea({paper: this.paper});
-        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
-            if (evt.ctrlKey || evt.shiftKey || this.model.isViewOnly()) {
-                evt.preventDefault();
-                this.preventTextSelection();
-                this.paperArea.startPanning(evt);
-            }
-        });
-        $(rootElement).append(this.paperArea.render().el);
-
-        this.listenTo(this.paper, 'render:done', () => {
-            this.paperArea.adjustPaper();
-            this.paperArea.center();
-        });
-
-        // automatic paper adjust on element dragged
-        this.listenTo(this.paper, 'cell:pointerup', () => {
-            this.paperArea.adjustPaper();
-        });
-    }
 
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
@@ -357,68 +237,50 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    private enableDragAndDropSupport() {
-        const svg = this.$svg.get(0);
-        svg.addEventListener('dragover', (e: DragEvent) => {
-            if (e.preventDefault) { e.preventDefault(); } // Necessary. Allows us to drop.
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        });
-        svg.addEventListener('dragenter', function (e) { /* nothing */});
-        svg.addEventListener('dragleave', function (e) { /* nothing */ });
-        svg.addEventListener('drop', (e: DragEvent) => {
-            e.preventDefault();
-            let elementIds: string[];
+    onDragDrop(e: DragEvent, paperPosition: { x: number; y: number; }) {
+        e.preventDefault();
+        let elementIds: string[];
+        try {
+            elementIds = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
+        } catch (ex) {
             try {
-                elementIds = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
+                elementIds = JSON.parse(e.dataTransfer.getData('text')); // IE fix
             } catch (ex) {
-                try {
-                    elementIds = JSON.parse(e.dataTransfer.getData('text')); // IE fix
-                } catch (ex) {
-                    const uriFromTree = e.dataTransfer.getData('text/uri-list');
-                    elementIds = [uriFromTree.substr(uriFromTree.indexOf('#') + 1, uriFromTree.length)];
-                }
+                const uriFromTree = e.dataTransfer.getData('text/uri-list');
+                elementIds = [uriFromTree.substr(uriFromTree.indexOf('#') + 1, uriFromTree.length)];
             }
-            if (!elementIds) { return; }
+        }
+        if (!elementIds) { return; }
 
-            this.model.initBatchCommand();
+        this.model.initBatchCommand();
 
-            let elementsToSelect: Element[] = [];
+        let elementsToSelect: Element[] = [];
 
-            let totalXOffset = 0;
-            for (const elementId of elementIds) {
-                const element = this.getDragAndDropElement(elementId);
-                if (element) {
-                    const currentOffset = this.paperArea.$el.offset();
-                    const relX = e.pageX - currentOffset.left;
-                    const relY = e.pageY - currentOffset.top;
-                    const graphPoint = this.paperArea.toLocalPoint(relX, relY);
-                    element.set('presentOnDiagram', true);
-                    element.set('selectedInFilter', false);
-                    const size: { width: number; height: number; } = element.get('size');
-                    if (elementIds.length === 1) {
-                        graphPoint.x -= size.width / 2;
-                        graphPoint.y -= size.height / 2;
-                    }
-                    const convertToAny: any = {ignoreCommandManager: true};
-                    element.set('position', {
-                        x: graphPoint.x + totalXOffset,
-                        y: graphPoint.y,
-                    }, convertToAny);
-                    totalXOffset += size.width + 20;
-
-                    elementsToSelect.push(element);
-                    element.focus();
-                }
+        let totalXOffset = 0;
+        let {x, y} = paperPosition;
+        for (const elementId of elementIds) {
+            const element = this.getDragAndDropElement(elementId);
+            element.set('presentOnDiagram', true);
+            element.set('selectedInFilter', false);
+            const size: { width: number; height: number; } = element.get('size');
+            if (elementIds.length === 1) {
+                x -= size.width / 2;
+                y -= size.height / 2;
             }
+            const ignoreHistory = {ignoreCommandManager: true};
+            element.set('position', {x: x + totalXOffset, y: y}, ignoreHistory);
+            totalXOffset += size.width + 20;
 
-            this.selection.reset(elementsToSelect);
-            if (elementsToSelect.length === 1 && !this.options.disableDefaultHalo) {
-                elementsToSelect[0].addToFilter();
-            }
+            elementsToSelect.push(element);
+            element.focus();
+        }
 
-            this.model.storeBatchCommand();
-        });
+        this.selection.reset(elementsToSelect);
+        if (elementsToSelect.length === 1 && !this.options.disableDefaultHalo) {
+            elementsToSelect[0].addToFilter();
+        }
+
+        this.model.storeBatchCommand();
     }
 
     private getDragAndDropElement(elementId: string): Element {
@@ -476,7 +338,7 @@ export class DiagramView extends Backbone.Model {
         const icon = customStyle ? customStyle.icon : undefined;
         let color: { h: number; c: number; l: number; };
         if (customStyle && customStyle.color) {
-            color = d3.hcl(customStyle.color);
+            color = hcl(customStyle.color);
         } else {
             const hue = getHueFromClasses(types, this.colorSeed);
             color = {h: hue, c: 40, l: 75};

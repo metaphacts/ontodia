@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import * as _ from 'lodash';
 
 import * as svgui from './svgui';
 
@@ -18,28 +17,24 @@ function resumedEase(elapsedTime: number, ease?: any) {
 }
 
 class ReferenceClock {
-    element: any;
     /**
      * @param element Element to run reference transition, must not be running any other transition.
      */
-    static create(element: any) {
-        const clock = new ReferenceClock();
-        clock.element = element;
-        return clock;
-    }
+    constructor(readonly element: HTMLElement) { /* nothing */ }
+
     run(duration: number, startTime: number) {
-        this.element.attr('__referenceTime', startTime);
-        this.element.transition()
+        const element = d3.select(this.element);
+        element.attr('data-reference-time', startTime);
+        element.transition()
             .ease('linear')
             .duration(duration * (1 - startTime))
-            .attr('__referenceTime', 1);
+            .attr('data-reference-time', 1);
         return this;
     }
-    /**
-     * @returns current time scaled from 0 to 1.
-     */
+
+    /** @returns current time scaled from 0 to 1 */
     time(): number {
-        return this.element.attr('__referenceTime');
+        return Number(d3.select(this.element).attr('data-reference-time'));
     }
 }
 
@@ -52,33 +47,35 @@ export interface IndicatorParams {
 export class Indicator {
     static instances: Indicator[];
 
-    parent: any = null;
     statusText: string = null;
     isErrorOccurred = false;
     spacing = 5;
     isVisible = true;
-    size = 50;
+
     position: { x: number; y: number; };
-    maxWidth = Infinity;
+    size: number;
+    maxWidth: number;
 
     private animation: any;
     private arrowPath: any;
     private text: any;
     private clock: any;
 
-    static create(parent: any, params: IndicatorParams) {
-        params = _.extend({
-            position: {
-                x: parent.attr('width') / 2,
-                y: parent.attr('height') / 2,
-            },
-        }, params);
-        const indicator = new Indicator();
-        indicator.parent = parent;
-        indicator.position = params.position;
-        if (params.size !== undefined) { indicator.size = params.size; }
-        if (params.maxWidth !== undefined) { indicator.maxWidth = params.maxWidth; }
-        return indicator;
+    constructor(
+        readonly parent: SVGElement,
+        params: IndicatorParams
+    ) {
+        if (params.position) {
+            this.position = params.position;
+        } else {
+            const selection = d3.select(parent);
+            this.position = {
+                x: Number(selection.attr('width')) / 2,
+                y: Number(selection.attr('height')) / 2,
+            };
+        }
+        this.size = params.size === undefined ? 50 : params.size;
+        this.maxWidth = params.maxWidth === undefined ? Infinity : params.maxWidth;
     }
     run() {
         this.animate(this.parent);
@@ -106,10 +103,9 @@ export class Indicator {
     }
     /**
      * Adds waiting animation.
-     * @param svg - d3.Selector of SVGElement
      */
-    private animate(svg: any) {
-        this.animation = svg.append('svg:g')
+    private animate(svg: SVGElement) {
+        this.animation = d3.select(svg).append('svg:g')
             .attr('transform', 'translate(' + this.position.x + ',' + this.position.y + ')')
             .attr('display', this.isVisible ? null : 'none');
         const arrow = this.animation.append('svg:g');
@@ -127,7 +123,7 @@ export class Indicator {
         // add repeating rotate animation
         const duration = 1500;
         const time =  Indicator.instances.length > 0 ? Indicator.instances[0].clock.time() : 0;
-        const clock = this.clock = ReferenceClock.create(this.animation).run(duration, time);
+        const clock = this.clock = new ReferenceClock(this.animation.node()).run(duration, time);
         const startAngle = d3.ease('cubic-in-out')(time) * 360;
         if (!this.isErrorOccurred) {
             arrow.transition()
@@ -154,7 +150,7 @@ export class Indicator {
         if (!this.animation) { return; }
         const index = Indicator.instances.indexOf(this);
         if (index >= 0) { Indicator.instances.splice(index, 1); }
-        this.parent.node().removeChild(this.animation.node());
+        this.parent.removeChild(this.animation.node());
         this.animation = null;
     }
     private updateState() {
@@ -183,18 +179,19 @@ Indicator.instances = [];
  *     });
  */
 export class WrapIndicator {
-    private parent: any;
+    private parent: SVGElement;
     private indicator: Indicator;
     private wrapper: any;
     private running: boolean;
     private pointerEvents: any;
 
-    static wrap(parent: any, params: IndicatorParams) {
+    static wrap(parent: SVGElement, params: IndicatorParams) {
+        const parentSelection = d3.select(parent);
         const wrapIndicator = new WrapIndicator();
         wrapIndicator.parent = parent;
-        wrapIndicator.wrapper = parent.append('svg:g');
-        WrapIndicator.moveChildren(parent.node(), wrapIndicator.wrapper.node());
-        wrapIndicator.indicator = Indicator.create(parent, params);
+        wrapIndicator.wrapper = parentSelection.append('svg:g');
+        WrapIndicator.moveChildren(parent, wrapIndicator.wrapper.node());
+        wrapIndicator.indicator = new Indicator(parent, params);
         wrapIndicator.wrapper
             .transition()
             .style('opacity', 0.2)
@@ -203,8 +200,8 @@ export class WrapIndicator {
                     wrapIndicator.indicator.run();
                 }
             });
-        wrapIndicator.pointerEvents = parent.attr('pointer-events');
-        parent.attr('pointer-events', 'none');
+        wrapIndicator.pointerEvents = parentSelection.attr('pointer-events');
+        parentSelection.attr('pointer-events', 'none');
         wrapIndicator.running = true;
         return wrapIndicator;
     }
@@ -218,9 +215,9 @@ export class WrapIndicator {
         if (!this.running) { return; }
         this.running = false;
         this.indicator.remove();
-        this.parent.attr('pointer-events', this.pointerEvents);
-        WrapIndicator.moveChildren(this.wrapper.node(), this.parent.node());
-        this.parent.node().removeChild(this.wrapper.node());
+        d3.select(this.parent).attr('pointer-events', this.pointerEvents);
+        WrapIndicator.moveChildren(this.wrapper.node(), this.parent);
+        this.parent.removeChild(this.wrapper.node());
     }
     /**
      * Move children nodes from node 'from' to node 'to' except node 'to' itself.

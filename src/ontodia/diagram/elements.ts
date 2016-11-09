@@ -2,7 +2,7 @@ import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
 import { ClassModel, ElementModel, LinkType } from '../data/model';
-import DiagramModel from './model';
+import { DiagramModel, PreventLinksLoading } from './model';
 
 export class UIElement extends joint.shapes.basic.Generic {
     markup: string;
@@ -114,7 +114,7 @@ export class FatLinkType extends Backbone.Model {
     }
 
 
-    private onVisibilityChanged(self: FatLinkType, visible: boolean, options: any) {
+    private onVisibilityChanged(self: FatLinkType, visible: boolean, options: PreventLinksLoading) {
         const links = this.diagram.linksByType[this.id];
         if (!links) { return; }
 

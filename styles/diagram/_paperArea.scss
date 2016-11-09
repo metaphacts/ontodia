@@ -1,22 +1,22 @@
 .paper-area {
+  flex: auto;
   cursor: default;
   overflow: scroll;
-  box-sizing: border-box;
-}
 
-.paper-area > .paper {
-  margin: 0;
-  position: relative;
-  display: inline-block;
-  border: 1px solid black;
-}
+  background-image: url('../images/transparent-background.png');
+  .paper {
+    margin: 0;
+    position: relative;
+    display: inline-block;
+    border: 1px solid black;
+    background-color: white;
 
-.paper-area > .paper > svg {
-  display: block;
-}
-
-.paper-area foreignObject div {
-  outline: none;
+    > svg {
+      foreignObject > div {
+        outline: none;
+      }
+    }
+  }
 }
 
 .uiElementView__iri {

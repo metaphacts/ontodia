@@ -74,22 +74,6 @@
   transition: 0.3s;
 }
 
-.filter-panel.ontodia-left-panel {
-  margin-right: 8px;
-}
-
-.filter-panel.ontodia-right-panel {
-  margin-left: 8px;
-}
-
-.ontodia-left-panel .filter-panel__handle {
-  right: -8px;
-}
-
-.ontodia-right-panel .filter-panel__handle {
-  left: -8px;
-}
-
 .filter-panel__handle-btn {
   background: #eee;
   cursor: pointer;
@@ -122,27 +106,41 @@
   transition: 0.3s;
 }
 
-.ontodia-left-panel .filter-panel__handle-btn::before {
-  background-image: url("../images/arrow-left.png");
-}
-
-.ontodia-right-panel .filter-panel__handle-btn::before {
-  background-image: url("../images/arrow-right.png");
-}
-
 .filter-panel__handle-btn:hover {
   background: #b3b3b3;
   transform: scale(1.2);
 }
 
-.ontodia-left-panel .filter-panel__handle-btn:hover::before {
-  background-image: url("../images/arrow-left1.png");
-}
-
-.ontodia-right-panel .filter-panel__handle-btn:hover::before {
-  background-image: url("../images/arrow-right1.png");
-}
-
 .filter-panel__handle-btn.active::before {
   transform: rotate(180deg);
+}
+
+.ontodia__left-panel {
+  &.filter-panel {
+    margin-right: 8px;
+  }
+  .filter-panel__handle {
+    right: -8px;
+  }
+  .filter-panel__handle-btn::before {
+    background-image: url("../images/arrow-left.png");
+  }
+  .filter-panel__handle-btn:hover::before {
+    background-image: url("../images/arrow-left1.png");
+  }
+}
+
+.ontodia__right-panel {
+  &.filter-panel {
+    margin-left: 8px;
+  }
+  .filter-panel__handle {
+    left: -8px;
+  }
+  .filter-panel__handle-btn::before {
+    background-image: url("../images/arrow-right.png");
+  }
+  .filter-panel__handle-btn:hover::before {
+    background-image: url("../images/arrow-right1.png");
+  }
 }

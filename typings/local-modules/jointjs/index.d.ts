@@ -129,16 +129,7 @@ namespace joint {
             };
             z?: number;
         }
-
-        interface IOptions {
-            width: number;
-            height: number;
-            gridSize: number;
-            perpendicularLinks: boolean;
-            elementView: ElementView;
-            linkView: LinkView;
-            origin: {x: number; y: number}
-        }
+        
         interface PaperFitToContentOptions {
             gridWidth?: number;
             gridHeight?: number;
@@ -161,7 +152,7 @@ namespace joint {
             scaleGrid?: number;
             fittingBBox?: {x?: number; y?: number; width?: number; height?: number;}
         }
-        interface PaperOptions extends Backbone.ViewOptions<Backbone.Model> {
+        interface PaperOptions extends Backbone.ViewOptions<joint.dia.Graph> {
             gridSize?: number;
             elementView?: typeof ElementView;
             linkView?: typeof LinkView;
@@ -171,9 +162,9 @@ namespace joint {
             async?: boolean;
             preventContextMenu?: boolean;
         }
-        class Paper extends Backbone.View<Backbone.Model> {
+        class Paper extends Backbone.View<joint.dia.Graph> {
             constructor(options?: PaperOptions);
-            options: IOptions;
+            options: PaperOptions;
             svg: SVGElement;
             viewport: SVGGElement;
             setDimensions(width: number, height: number): void;
