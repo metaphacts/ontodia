@@ -1,7 +1,7 @@
 import * as cola from 'webcola';
 
 export interface LayoutNode {
-    id: string;
+    id?: string;
     x: number;
     y: number;
     width: number;
@@ -23,11 +23,70 @@ export function forceLayout(params: {
     const layout = new cola.Layout()
         .nodes(params.nodes)
         .links(params.links)
-        .avoidOverlaps(true)
         .convergenceThreshold(1e-9)
         .jaccardLinkLengths(params.preferredLinkLength)
         .handleDisconnected(true);
     layout.start(30, 0, 10, undefined, false);
+}
+
+export function removeOverlaps(nodes: LayoutNode[]) {
+    const nodeRectangles: cola.vpsc.Rectangle[] = [];
+    for (const node of nodes) {
+        nodeRectangles.push(new cola.vpsc.Rectangle(
+            node.x, node.x + node.width,
+            node.y, node.y + node.height));
+    }
+
+    cola.vpsc.removeOverlaps(nodeRectangles);
+
+    for (let i = 0; i < nodeRectangles.length; i++) {
+        const node = nodes[i];
+        const rectangle = nodeRectangles[i];
+        node.x = rectangle.x;
+        node.y = rectangle.y;
+    }
+}
+
+export function uniformGrid(params: {
+    rows: number;
+    cellSize: { x: number; y: number; };
+}): (cellIndex: number) => LayoutNode {
+    return cellIndex => {
+        const row = Math.floor(cellIndex / params.rows);
+        const column = cellIndex - row * params.rows;
+        return {
+            x: column * params.cellSize.x,
+            y: row * params.cellSize.y,
+            width: params.cellSize.x,
+            height: params.cellSize.y,
+        };
+    };
+}
+
+export function padded(
+    nodes: LayoutNode[],
+    padding: { x: number; y: number; } | undefined,
+    transform: () => void,
+) {
+    if (padding) {
+        for (const node of nodes) {
+            node.x -= padding.x;
+            node.y -= padding.y;
+            node.width += 2 * padding.x;
+            node.height += 2 * padding.y;
+        }
+    }
+
+    transform();
+
+    if (padding) {
+        for (const node of nodes) {
+            node.x += padding.x;
+            node.y += padding.y;
+            node.width -= 2 * padding.x;
+            node.height -= 2 * padding.y;
+        }
+    }
 }
 
 export function flowLayout<Link extends LayoutLink>(params: {

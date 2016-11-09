@@ -4,7 +4,7 @@ import { Component, createElement, ReactElement } from 'react';
 import { DiagramModel } from '../diagram/model';
 import { Link } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
-import { forceLayout, LayoutNode, LayoutLink } from '../viewUtils/layout';
+import { forceLayout, removeOverlaps, padded, LayoutNode, LayoutLink } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
 import { FilterView, FilterModel } from '../widgets/filter';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
@@ -185,6 +185,9 @@ export class Workspace extends Component<Props, {}> {
         }
 
         forceLayout({nodes, links, preferredLinkLength: 150});
+        padded(nodes, {x: 5, y: 5}, () => {
+            removeOverlaps(nodes);
+        });
 
         let minX = Infinity, minY = Infinity;
         for (const node of nodes) {
@@ -192,10 +195,11 @@ export class Workspace extends Component<Props, {}> {
             minY = Math.min(minY, node.y);
         }
 
-        const padding = 200;
+        const canvasPadding = 150;
         for (const node of nodes) {
             this.model.elements[node.id].position(
-                node.x - minX + padding, node.y - minY + padding);
+                node.x - minX + canvasPadding,
+                node.y - minY + canvasPadding);
         }
 
         for (const {link} of links) {

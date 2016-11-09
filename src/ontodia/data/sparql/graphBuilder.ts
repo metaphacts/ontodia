@@ -1,12 +1,11 @@
 import * as N3 from 'n3';
 
 import { LayoutData } from '../../diagram/model';
-import { executeSparqlQuery } from './provider';
+import { uniformGrid } from '../../viewUtils/layout';
 import { DataProvider } from '../provider';
-import {
-    Dictionary, ElementModel, LinkModel,
-} from '../model';
+import { Dictionary, ElementModel, LinkModel } from '../model';
 
+import { executeSparqlQuery } from './provider';
 import * as Sparql from './sparqlModels';
 
 const DEFAULT_PREFIX =
@@ -103,16 +102,17 @@ export class GraphBuilder {
 
     private getLayout(elementsInfo: Dictionary<ElementModel>, linksInfo: LinkModel[]): LayoutData {
         const keys = Object.keys(elementsInfo);
-        const maxXY = Math.ceil(Math.sqrt(keys.length));
-        let x = 0;
-        let y = 0;
-        const layoutElements: any[] = keys.map(key => {
+
+        const rows = Math.ceil(Math.sqrt(keys.length));
+        const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
+
+        const layoutElements: any[] = keys.map((key, index) => {
             const element = elementsInfo[key];
-            if (x > maxXY) { x = 0; y++; }
+            const {x, y} = grid(index);
             return {
                 id: element.id,
                 type: 'Ontodia.Element',
-                position: {x: (x++) * GREED_STEP, y: y * GREED_STEP},
+                position: {x, y},
                 presentOnDiagram: true,
             };
         });
