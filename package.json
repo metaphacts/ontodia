@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "d3": "3.5.10",
+    "detect-browser": "1.5.0",
     "handlebars": "4.0.5",
     "intro.js": "1.1.1",
     "jointjs": "0.9.10",

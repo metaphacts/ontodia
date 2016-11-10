@@ -1,5 +1,6 @@
 import * as $ from 'jquery';
-import { Component, createElement, ReactElement } from 'react';
+import { Component, createElement, ReactElement, DOM as D } from 'react';
+import * as browser from 'detect-browser';
 
 import { DiagramModel } from '../diagram/model';
 import { Link } from '../diagram/elements';
@@ -36,96 +37,121 @@ export class Workspace extends Component<Props, {}> {
     private filter: FilterView;
     private linksToolbox: LinkTypesToolboxShell;
 
+    private isUnsupported: boolean;
+
     constructor(props: Props) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
     }
 
     render(): ReactElement<any> {
-        return createElement(WorkspaceMarkup, {
-            isViewOnly: this.props.isViewOnly,
-            toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                onUndo: () => this.model.undo(),
-                onRedo: () => this.model.redo(),
-                onZoomIn: () => this.diagram.zoomIn(),
-                onZoomOut: () => this.diagram.zoomOut(),
-                onZoomToFit: () => this.diagram.zoomToFit(),
-                onPrint: () => this.diagram.print(),
-                onExportSVG: link => this.onExportSvg(link),
-                onExportPNG: link => this.onExportPng(link),
-                onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
-                onSaveDiagram: () => this.props.onSaveDiagram(this),
-                onForceLayout: () => {
-                    this.forceLayout();
-                    this.diagram.zoomToFit();
+        if (!this.isUnsupported) {
+            return createElement(WorkspaceMarkup, {
+                isViewOnly: this.props.isViewOnly,
+                toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
+                    onUndo: () => this.model.undo(),
+                    onRedo: () => this.model.redo(),
+                    onZoomIn: () => this.diagram.zoomIn(),
+                    onZoomOut: () => this.diagram.zoomOut(),
+                    onZoomToFit: () => this.diagram.zoomToFit(),
+                    onPrint: () => this.diagram.print(),
+                    onExportSVG: link => this.onExportSvg(link),
+                    onExportPNG: link => this.onExportPng(link),
+                    onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
+                    onSaveDiagram: () => this.props.onSaveDiagram(this),
+                    onForceLayout: () => {
+                        this.forceLayout();
+                        this.diagram.zoomToFit();
+                    },
+                    onChangeLanguage: language => this.diagram.setLanguage(language),
+                    onShowTutorial: () => {
+                        if (!this.props.hideTutorial) {
+                            showTutorial();
+                        }
+                    },
+                    onEditAtMainSite: () => this.props.onEditAtMainSite(this),
+                    isEmbeddedMode: this.props.isViewOnly,
+                    isDiagramSaved: this.props.isDiagramSaved,
+                }),
+                ref: markup => {
+                    this.markup = markup;
                 },
-                onChangeLanguage: language => this.diagram.setLanguage(language),
-                onShowTutorial: () => {
-                    if (!this.props.hideTutorial) { showTutorial(); }
-                },
-                onEditAtMainSite: () => this.props.onEditAtMainSite(this),
-                isEmbeddedMode: this.props.isViewOnly,
-                isDiagramSaved: this.props.isDiagramSaved,
-            }),
-            ref: markup => { this.markup = markup; },
-        });
+            });
+        } else {
+            return D.div({className: 'alert alert-danger'}, `You seem to be using Internet Explorer. 
+            The key features of Ontodia are not supported for this browser. 
+            We recommend the following alternatives: Microsoft Edge, Google Chrome, Opera and Mozilla Firefox. 
+            Thanks for your understanding!`);
+        }
+    }
+
+    componentWillMount() {
+        if (browser.name === 'ie') {
+            this.isUnsupported = true;
+        }
     }
 
     componentDidMount() {
-        this.diagram = new DiagramView(this.model, this.markup.chartPanel, this.props.viewOptions);
-        if (this.props.isViewOnly) { return; }
+        if (!this.isUnsupported) {
+            this.diagram = new DiagramView(this.model, this.markup.chartPanel, this.props.viewOptions);
+            if (this.props.isViewOnly) {
+                return;
+            }
 
-        this.filter = new FilterView({
-            model: new FilterModel(this.diagram.model),
-            view: this.diagram,
-            el: this.markup.filterPanel,
-        }).render();
+            this.filter = new FilterView({
+                model: new FilterModel(this.diagram.model),
+                view: this.diagram,
+                el: this.markup.filterPanel,
+            }).render();
 
-        this.tree = new ClassTree({
-            model: new FilterModel(this.diagram.model),
-            view: this.diagram,
-            el: this.markup.classTreePanel,
-        }).render();
+            this.tree = new ClassTree({
+                model: new FilterModel(this.diagram.model),
+                view: this.diagram,
+                el: this.markup.classTreePanel,
+            }).render();
 
-        this.tree.on('action:classSelected', (classId: string) => {
-            this.filter.model.filterByType(classId);
-        });
+            this.tree.on('action:classSelected', (classId: string) => {
+                this.filter.model.filterByType(classId);
+            });
 
-        this.linksToolbox = new LinkTypesToolboxShell({
-            model: new LinkTypesToolboxModel(this.model),
-            view: this.diagram,
-            el: this.markup.linkTypesPanel,
-        });
+            this.linksToolbox = new LinkTypesToolboxShell({
+                model: new LinkTypesToolboxModel(this.model),
+                view: this.diagram,
+                el: this.markup.linkTypesPanel,
+            });
 
-        resizePanel({
-            panel: this.markup.element.querySelector('.ontodia-left-panel') as HTMLElement,
-        });
-        resizePanel({
-            panel: this.markup.element.querySelector('.ontodia-right-panel') as HTMLElement,
-            initiallyClosed: true,
-        });
-        $(this.markup.element).find('.filter-item').each(resizeItem);
-        $(window).resize(this.onWindowResize);
+            resizePanel({
+                panel: this.markup.element.querySelector('.ontodia-left-panel') as HTMLElement,
+            });
+            resizePanel({
+                panel: this.markup.element.querySelector('.ontodia-right-panel') as HTMLElement,
+                initiallyClosed: true,
+            });
+            $(this.markup.element).find('.filter-item').each(resizeItem);
+            $(window).resize(this.onWindowResize);
 
-        if (!this.props.isViewOnly && !this.props.hideTutorial) {
-            showTutorialIfNotSeen();
+            if (!this.props.isViewOnly && !this.props.hideTutorial) {
+                showTutorialIfNotSeen();
+            }
         }
     }
 
     componentWillUnmount() {
-        if (this.filter) {
-            this.filter.remove();
-        }
+        if (!this.isUnsupported) {
+            if (this.filter) {
+                this.filter.remove();
+            }
 
-        if (this.tree) {
-            this.tree.remove();
-        }
+            if (this.tree) {
+                this.tree.remove();
+            }
 
-        if (this.linksToolbox) {
-            // this.linksToolbox.remove();
-        }
+            if (this.linksToolbox) {
+                // this.linksToolbox.remove();
+            }
 
-        $(window).off('resize', this.onWindowResize);
+            $(window).off('resize', this.onWindowResize);
+        }
     }
 
     private onWindowResize = () => {
