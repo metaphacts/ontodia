@@ -53,7 +53,7 @@ export const DefaultElementTemplate = `
             {{else}}
                 no properties
             {{/if}}
-        {{/if}}        
+        {{/if}}
     </div>
 </div>
 `;
@@ -123,7 +123,7 @@ export const BigIconTemplate = `
     <div class="ontodia-big-icon-template" 
         style="background-color: {{color}}; border-color: {{color}}">
         <div class="ontodia-big-icon-template_body" style="border-left-color: {{color}}">
-            <div style="flex-grow: 1;">
+            <div style="flex-grow: 1; text-overflow: ellipsis; overflow: hidden;">
                 <label title="{{label}}" class="ontodia-big-icon-template_body__label">
                     {{label}}
                 </label>
