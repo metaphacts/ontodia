@@ -27,7 +27,7 @@ Ontodia library heavily uses TypeScript language. All type definitions are expor
 
 #### Usage of library in you own code ####
 
-Ontodia interface is React-based application and you should initialize React component to work with. You can see example of initializing library in src/examples/template.ejs and /home/yuricus/projects/ontodia/src/examples/demo.ts
+Ontodia interface is React-based application and you should initialize React component to work with. You can see example of initializing library in [`src/examples/template.ejs`](src/examples/template.ejs) and [`src/examples/demo.ts`](src/examples/demo.ts).
 
 #### API ###
 You can:
