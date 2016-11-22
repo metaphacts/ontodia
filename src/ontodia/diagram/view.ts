@@ -2,8 +2,7 @@ import { hcl } from 'd3';
 import * as Backbone from 'backbone';
 import * as $ from 'jquery';
 import * as joint from 'jointjs';
-
-import { Indicator } from '../../svgui/indicator';
+import { merge, cloneDeep } from 'lodash';
 
 import {
     TypeStyleResolver,
@@ -11,6 +10,7 @@ import {
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
+    LinkStyle, LinkMarkerStyle,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
@@ -23,10 +23,10 @@ import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { ElementModel, LocalizedString } from '../data/model';
+import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { Element, FatClassModel } from './elements';
+import { Element, FatClassModel, linkMarkerKey } from './elements';
 
 import { LinkView } from './elementViews';
 import { TemplatedUIElementView } from './templatedElementView';
@@ -60,12 +60,17 @@ export class DiagramView extends Backbone.Model {
 
     private colorSeed = 0x0BADBEEF;
 
-    public dragAndDropElements: { [id: string]: Element };
+    public dragAndDropElements: Dictionary<Element>;
 
     private toSVGOptions: ToSVGOptions = {
         elementsToRemoveSelector: '.link-tools, .marker-vertices',
         convertImagesToDataUris: true,
     };
+
+    private linkMarkers: Dictionary<{
+        start: SVGMarkerElement;
+        end: SVGMarkerElement;
+    }> = {};
 
     constructor(
         public readonly model: DiagramModel,
@@ -384,14 +389,50 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    public getLinkStyle(type: string): joint.dia.LinkAttributes {
+    getLinkStyle(linkTypeId: string): LinkStyle {
+        let style = getDefaultLinkStyle();
         for (const resolver of this.linkStyleResolvers) {
-            const result = resolver(type);
+            const result = resolver(linkTypeId);
             if (result) {
-                return result;
+                merge(style, cloneDeep(result));
+                break;
             }
         }
-        return undefined;
+        if (!this.linkMarkers[linkTypeId]) {
+            this.linkMarkers[linkTypeId] = {
+                start: this.createLinkMarker(linkTypeId, true, style.markerSource),
+                end: this.createLinkMarker(linkTypeId, false, style.markerTarget),
+            };
+        }
+        return style;
+    }
+
+    private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {
+        if (!style) { return undefined; }
+
+        const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
+        const defs = this.paper.svg.getElementsByTagNameNS(SVG_NAMESPACE, 'defs')[0];
+        const marker = document.createElementNS(SVG_NAMESPACE, 'marker');
+        const linkTypeIndex = this.model.getLinkType(linkTypeId).index;
+        marker.setAttribute('id', linkMarkerKey(linkTypeIndex, startMarker));
+        marker.setAttribute('markerWidth', style.width.toString());
+        marker.setAttribute('markerHeight', style.height.toString());
+        marker.setAttribute('orient', 'auto');
+
+        let xOffset = startMarker ? 0 : (style.width - 1);
+        marker.setAttribute('refX', xOffset.toString());
+        marker.setAttribute('refY', (style.height / 2).toString());
+        marker.setAttribute('markerUnits', 'userSpaceOnUse');
+
+        const path = document.createElementNS(SVG_NAMESPACE, 'path');
+        path.setAttribute('d', style.d);
+        if (style.fill !== undefined) { path.setAttribute('fill', style.fill); }
+        if (style.stroke !== undefined) { path.setAttribute('stroke', style.stroke); }
+        if (style.strokeWidth !== undefined) { path.setAttribute('stroke-width', style.strokeWidth); }
+
+        marker.appendChild(path);
+        defs.appendChild(marker);
+        return marker;
     }
 
     public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
@@ -420,6 +461,12 @@ function getHueFromClasses(classes: string[], seed?: number): number {
     }
     const MAX_INT32 = 0x7fffffff;
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
+}
+
+function getDefaultLinkStyle(): LinkStyle {
+    return {
+        markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
+    };
 }
 
 /**

@@ -17,11 +17,9 @@ export interface ReactElementModel {
 
 const MENU_OFFSET = 40;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
-    linkType: {
-        id: 'allRelatedElements',
-        label: { values: [{lang: '', text: 'All'}] },
-        count: 0,
-    },
+    id: 'allRelatedElements',
+    index: -1,
+    label: { values: [{lang: '', text: 'All'}] },
     diagram: null,
 });
 

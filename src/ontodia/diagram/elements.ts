@@ -1,7 +1,7 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
-import { ClassModel, ElementModel, LinkType } from '../data/model';
+import { ClassModel, ElementModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
 
 export class UIElement extends joint.shapes.basic.Generic {
@@ -77,6 +77,7 @@ export class FatClassModel extends Backbone.Model {
 /**
  * Properties:
  *     typeId: string
+ *     typeIndex: number
  *     source: { id: string }
  *     target: { id: string }
  *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
@@ -85,11 +86,29 @@ export class FatClassModel extends Backbone.Model {
  *     state:loaded
  */
 export class Link extends joint.dia.Link {
-    markup: string;
-    get layoutOnly() { return this.get('layoutOnly'); }
+    arrowheadMarkup: string;
+    get markup() {
+        return `<path class="connection" stroke="black" d="M 0 0 0 0"`
+            + ` marker-start="url(#${linkMarkerKey(this.typeIndex, true)})"`
+            + ` marker-end="url(#${linkMarkerKey(this.typeIndex, false)})" />`
+            + `<path class="connection-wrap" d="M 0 0 0 0"/>`
+            + `<g class="labels"/>`
+            + `<g class="marker-vertices"/>`
+            + `<g class="link-tools"/>`;
+    }
+
+    get typeIndex(): number { return this.get('typeIndex'); }
+    set typeIndex(value: number) { this.set('typeIndex', value); }
+
+    get layoutOnly(): boolean { return this.get('layoutOnly'); }
     initialize(attributes?: {id: string}) {
         this.set('labels', [{position: 0.5}]);
     }
+}
+Link.prototype.arrowheadMarkup = null;
+
+export function linkMarkerKey(linkTypeIndex: number, startMarker: boolean) {
+    return `ontodia-${startMarker ? 'mstart' : 'mend'}-${linkTypeIndex}`;
 }
 
 /**
@@ -100,15 +119,18 @@ export class Link extends joint.dia.Link {
  *     label?: { values: LocalizedString[] }
  */
 export class FatLinkType extends Backbone.Model {
+    readonly index: number;
     diagram: DiagramModel;
 
     constructor(params: {
-        linkType: LinkType;
+        id: string;
+        index: number;
+        label: { values: LocalizedString[] };
         diagram: DiagramModel;
     }) {
-        super({id: params.linkType.id});
-        // this.label = params.linkType.label;
-        this.set('label', params.linkType.label);
+        super({id: params.id});
+        this.index = params.index;
+        this.set('label', params.label);
         this.diagram = params.diagram;
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }

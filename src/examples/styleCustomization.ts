@@ -1,27 +1,29 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, LinkStyle } from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
 
-const CUSTOM_LINK_STYLE = {
-    attrs: {
-        '.connection': {
-            stroke: '#3c4260',
-            'stroke-width': 2,
-        },
-        '.marker-source': {
-            fill: '#4b4a67',
-            stroke: '#4b4a67',
-            d: 'M0,3a3,3 0 1,0 6,0a3,3 0 1,0 -6,0',
-        },
-        '.marker-target': {
-            fill: '#4b4a67',
-            stroke: '#4b4a67',
-            d: 'M5.5,15.499,15.8,21.447,15.8,15.846,25.5,21.447,25.5,9.552,15.8,15.152,15.8,9.552z',
-        },
+const CUSTOM_LINK_STYLE: LinkStyle = {
+    connection: {
+        stroke: '#3c4260',
+        'stroke-width': 2,
+    },
+    markerSource: {
+        fill: '#4b4a67',
+        stroke: '#4b4a67',
+        d: 'M0,3a3,3 0 1,0 6,0a3,3 0 1,0 -6,0',
+        width: 6,
+        height: 6,
+    },
+    markerTarget: {
+        fill: '#4b4a67',
+        stroke: '#4b4a67',
+        d: 'm 20,5.88 -10.3,-5.95 0,5.6 -9.7,-5.6 0,11.82 9.7,-5.53 0,5.6 z',
+        width: 20,
+        height: 12,
     },
     labels: [{
         attrs: {
