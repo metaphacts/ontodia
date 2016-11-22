@@ -5,3 +5,4 @@
 /// <reference path="local-modules/n3/index.d.ts" />
 /// <reference path="local-modules/handlebars/index.d.ts" />
 /// <reference path="local-modules/webcola/index.d.ts" />
+/// <reference path="local-modules/detect-browser/index.d.ts" />
