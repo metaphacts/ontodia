@@ -25,18 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
                 graphBuilder.getGraphFromConstrunct(
-                    `CONSTRUCT {
-                        ?inst rdf:type ?class.
-                        ?inst ?propType1 ?propValue1.
-                        ?inst rdfs:label ?label .
-                        ?propValue2 ?propType2 ?inst .
-                    } WHERE {
-                        BIND (<http://collection.britishmuseum.org/id/object/JCF8939> as ?inst)
-                        ?inst rdf:type ?class.	
-                        OPTIONAL {?inst rdfs:label ?label}
-                        OPTIONAL {?inst ?propType1 ?propValue1.  FILTER(isURI(?propValue1)). }  	
-                        OPTIONAL {?propValue2 ?propType2 ?inst.  FILTER(isURI(?propValue2)). }  
-                    } LIMIT 100`
+                    `CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }`
                 ).then(response => model.importLayout({
                     dataProvider: sparqlDataProvider,
                     preloadedElements: response.preloadedElements,

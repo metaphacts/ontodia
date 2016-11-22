@@ -88,14 +88,20 @@ export class GraphBuilder {
         const links: LinkModel[] = [];
 
         for (const constructElement of sElements) {
-            if (!elements[constructElement.subject.value]) { elements[constructElement.subject.value] = true; }
-            if (!elements[constructElement.object.value])  { elements[constructElement.object.value]  = true; }
+            if (constructElement.subject.type === 'uri' && constructElement.object.type === 'uri') {
+                if (!elements[constructElement.subject.value]) {
+                    elements[constructElement.subject.value] = true;
+                }
+                if (!elements[constructElement.object.value]) {
+                    elements[constructElement.object.value]  = true;
+                }
 
-            links.push({
-                linkTypeId: constructElement.predicate.value,
-                sourceId: constructElement.subject.value,
-                targetId: constructElement.object.value,
-            });
+                links.push({
+                    linkTypeId: constructElement.predicate.value,
+                    sourceId: constructElement.subject.value,
+                    targetId: constructElement.object.value,
+                });
+            }
         }
         return { elementIds: Object.keys(elements), links: links };
     }
