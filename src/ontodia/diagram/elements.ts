@@ -86,11 +86,23 @@ export class FatClassModel extends Backbone.Model {
  */
 export class Link extends joint.dia.Link {
     markup: string;
+    arrowheadMarkup: string;
     get layoutOnly() { return this.get('layoutOnly'); }
     initialize(attributes?: {id: string}) {
         this.set('labels', [{position: 0.5}]);
     }
 }
+Link.prototype.markup = [
+    '<path class="connection" stroke="black" marker-end="url(#ontodia-arrowhead)" d="M 0 0 0 0"/>',
+    // '<path class="marker-source" fill="black" stroke="black" d="M 0 0 0 0"/>',
+    // '<path class="marker-target" fill="black" stroke="black" d="M 0 0 0 0"/>',
+    '<path class="connection-wrap" d="M 0 0 0 0"/>',
+    '<g class="labels"/>',
+    '<g class="marker-vertices"/>',
+    // '<g class="marker-arrowheads"/>',
+    '<g class="link-tools"/>',
+].join('');
+Link.prototype.arrowheadMarkup = null;
 
 /**
  * Properties:

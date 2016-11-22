@@ -105,6 +105,20 @@ export class DiagramView extends Backbone.Model {
         this.listenTo(model, 'state:dataLoaded', () => {
             this.model.resetHistory();
         });
+
+        const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
+        const defs = this.paper.svg.getElementsByTagNameNS(
+            SVG_NAMESPACE, 'defs')[0] as SVGDefsElement;
+        const marker = document.createElementNS(SVG_NAMESPACE, 'marker');
+        marker.setAttribute('id', 'ontodia-arrowhead');
+        marker.setAttribute('markerWidth', '40');
+        marker.setAttribute('markerHeight', '120');
+        marker.setAttribute('orient', 'auto');
+        marker.setAttribute('refX', '8');
+        marker.setAttribute('refY', '3');
+        marker.setAttribute('markerUnits', 'userSpaceOnUse');
+        marker.innerHTML = `<path d="M0,0 L0,6 L9,3 z" style="fill: currentColor;" />`;
+        defs.appendChild(marker);
     }
 
     getLanguage(): string { return this.get('language'); }
