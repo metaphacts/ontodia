@@ -46,6 +46,9 @@ namespace joint {
              *        the event listeners of the graph reset event
              */
             resetCells(cells: Cell[], options?: any): void;
+            startBatch(name: string, data?: any): void;
+            stopBatch(name: string, data?: any): void;
+            hasActiveBatch(name: string): void;
         }
 
         class Cell extends Backbone.Model {
