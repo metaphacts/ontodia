@@ -47,6 +47,23 @@ export function removeOverlaps(nodes: LayoutNode[]) {
     }
 }
 
+export function translateToPositiveQuadrant(params: {
+    nodes: LayoutNode[];
+    padding?: { x: number; y: number; };
+}) {
+    let minX = Infinity, minY = Infinity;
+    for (const node of params.nodes) {
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+    }
+
+    const {padding = {x: 0, y: 0}} = params;
+    for (const node of params.nodes) {
+        node.x = node.x - minX + padding.x;
+        node.y = node.y - minY + padding.y;
+    }
+}
+
 export function uniformGrid(params: {
     rows: number;
     cellSize: { x: number; y: number; };
