@@ -175,6 +175,11 @@ export class DiagramModel extends Backbone.Model {
         this.dataProvider = params.dataProvider;
         this.trigger('state:beginLoad');
 
+        const cells = (params.layoutData && params.layoutData.cells) || [];
+        console.log(`Loading diagram with ${cells.filter(cell => cell.type === 'element').length} `
+            + `elements and ${cells.filter(cell => cell.type === 'link').length} links...`);
+        (window as any).ontodiaStartLoadTime = performance.now();
+
         return Promise.all<ClassModel[], LinkType[]>([
             this.dataProvider.classTree(),
             this.dataProvider.linkTypes(),
@@ -194,6 +199,10 @@ export class DiagramModel extends Backbone.Model {
         }).catch(err => {
             console.error(err);
             this.trigger('state:endLoad', null, err.errorKind, err.message);
+        }).then(() => {
+            const end = performance.now();
+            const start: number = (window as any).ontodiaStartLoadTime;
+            console.log(`Diagram loaded in ${Math.round(end - start)} ms`);
         });
     }
 
