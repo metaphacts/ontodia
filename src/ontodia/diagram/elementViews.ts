@@ -1,6 +1,6 @@
 import * as joint from 'jointjs';
 import * as d3 from 'd3';
-import { merge, cloneDeep } from 'lodash';
+import { merge } from 'lodash';
 
 import * as svgui from '../../svgui/svgui';
 import { ElementModel } from '../data/model';
@@ -242,41 +242,28 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.getLinkType(linkTypeId);
 
-        let style: any = getDefaultLinkStyle(this.model.layoutOnly);
+        const style = this.view.getLinkStyle(this.model.get('typeId'));
+        merge(style, {connection: {'stroke-dasharray': this.model.layoutOnly ? '5,5' : null}});
 
-        const customStyle = this.view.getLinkStyle(this.model.get('typeId'));
-        if (customStyle) {
-            style = merge(style, cloneDeep(customStyle));
+        let linkAttributes: joint.dia.LinkAttributes = {
+            labels: style.labels,
+            connector: style.connector,
+            router: style.router,
+            z: 0,
+        };
+        if (style.connection) {
+            merge(linkAttributes, {attrs: {'.connection': style.connection}});
         }
 
-        let labelStyle: any;
-        if (typeModel && typeModel.get('showLabel')) {
-            labelStyle = {
-                labels: [{
-                    position: 0.5,
-                    attrs: {text: {
-                        text: this.view.getLinkLabel(linkTypeId).text,
-                    }},
-                }],
-            };
-        } else {
-            labelStyle = {labels: []};
-        }
-        // this.model.set('labels', labelStyle.labels);
-        style = merge(style, labelStyle);
-        this.model.set(style);
+        const showLabels = typeModel && typeModel.get('showLabel');
+        const labelAttributes = showLabels ? [{
+            position: 0.5,
+            attrs: {text: {
+                text: this.view.getLinkLabel(linkTypeId).text,
+            }},
+        }] : [];
+
+        merge(linkAttributes, {labels: labelAttributes});
+        this.model.set(linkAttributes);
     }
-}
-
-function getDefaultLinkStyle(layoutOnly: boolean): joint.dia.LinkAttributes {
-    return {
-        attrs: {
-            '.marker-target': {
-                d: 'M 10 0 L 0 5 L 10 10 z',
-                'fill': layoutOnly ? 'white' : null,
-            },
-            '.connection': {'stroke-dasharray': layoutOnly ? '5,5' : null},
-        },
-        z: 0,
-    };
 }

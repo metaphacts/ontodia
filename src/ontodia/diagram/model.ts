@@ -48,6 +48,8 @@ export class DiagramModel extends Backbone.Model {
 
     classTree: ClassTreeElement[];
     private classesById: Dictionary<FatClassModel> = {};
+
+    private nextLinkTypeIndex = 0;
     private linkTypes: Dictionary<FatLinkType>;
 
     elements: { [id: string]: Element } = {};
@@ -140,8 +142,9 @@ export class DiagramModel extends Backbone.Model {
 
     private initLinkTypes(linkTypes: LinkType[]) {
         this.linkTypes = {};
-        _.each(linkTypes, (linkType: LinkType) => {
-            this.linkTypes[linkType.id] = new FatLinkType({linkType: linkType, diagram: this});
+        _.each(linkTypes, ({id, label}: LinkType) => {
+            const linkType = new FatLinkType({id, label, diagram: this, index: this.nextLinkTypeIndex++});
+            this.linkTypes[linkType.id] = linkType;
         });
     }
 
@@ -410,33 +413,33 @@ export class DiagramModel extends Backbone.Model {
     }
 
     getLinkType(linkTypeId: string): FatLinkType {
-        if (!this.linkTypes.hasOwnProperty(linkTypeId)) {
-            const defaultLabel = {values: [{text: uri2name(linkTypeId), lang: ''}]};
-            this.linkTypes[linkTypeId] = new FatLinkType({
-                linkType: {
-                    id: linkTypeId,
-                    count: 0,
-                    label: defaultLabel,
-                },
-                diagram: this,
-            });
-            this.linkTypes[linkTypeId].set({visible: true, showLabel: true});
-            this.linkFetchingThread.startFetchingThread(linkTypeId).then(linkTypeIds => {
-                if (linkTypeIds.length > 0) {
-                    this.dataProvider.linkTypesInfo({ linkTypeIds: linkTypeIds}).then(linkTypesInfo => {
-                        for (const lt of linkTypesInfo) {
-                            if (!this.linkTypes[lt.id]) { continue; }
-                            this.linkTypes[lt.id].set({
-                                label: lt.label,
-                                count: lt.count,
-                            });
-                            this.linkTypes[lt.id].set('label', lt.label);
-                        }
-                    });
-                }
-            });
+        if (this.linkTypes.hasOwnProperty(linkTypeId)) {
+            return this.linkTypes[linkTypeId];
         }
-        return this.linkTypes[linkTypeId];
+
+        const defaultLabel = {values: [{text: uri2name(linkTypeId), lang: ''}]};
+        const fatLinkType = new FatLinkType({
+            id: linkTypeId, index: this.nextLinkTypeIndex++, label: defaultLabel, diagram: this,
+        });
+        fatLinkType.set({visible: true, showLabel: true});
+
+        this.linkFetchingThread.startFetchingThread(linkTypeId).then(linkTypeIds => {
+            if (linkTypeIds.length > 0) {
+                this.dataProvider.linkTypesInfo({ linkTypeIds: linkTypeIds}).then(linkTypesInfo => {
+                    for (const lt of linkTypesInfo) {
+                        if (!this.linkTypes[lt.id]) { continue; }
+                        this.linkTypes[lt.id].set({
+                            label: lt.label,
+                            count: lt.count,
+                        });
+                        this.linkTypes[lt.id].set('label', lt.label);
+                    }
+                });
+            }
+        });
+
+        this.linkTypes[linkTypeId] = fatLinkType;
+        return fatLinkType;
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
@@ -492,6 +495,10 @@ export class DiagramModel extends Backbone.Model {
             this.linksByType[typeId] = [];
         }
         this.linksByType[typeId].push(link);
+
+        if (link.typeIndex === undefined) {
+            link.typeIndex = this.getLinkType(typeId).index;
+        }
 
         this.sourceOf(link).links.push(link);
         this.targetOf(link).links.push(link);
