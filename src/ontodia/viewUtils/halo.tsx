@@ -28,7 +28,7 @@ export class Halo {
         this.handler = new Backbone.Model();
         this.handler.listenTo(this.options.cellView.model,
             'change:isExpanded change:position change:size', this.render);
-        this.handler.listenTo(this.options.paper, 'scale', this.render);
+        this.handler.listenTo(this.options.paper, 'resize scale', this.render);
     }
 
     private render = () => {

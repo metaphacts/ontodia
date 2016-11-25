@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     layoutData: response.layout,
                 })).then(() => {
                     workspace.forceLayout();
-                    workspace.getDiagram().zoomToFit();
+                    workspace.zoomToFit();
                 });
             }
         },

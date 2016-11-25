@@ -63,9 +63,9 @@ export function resizePanel(params: {
                 const width = self.outerWidth();
 
                 let percentage = 0;
-                if (self.hasClass('ontodia-left-panel')) {
+                if (self.hasClass('ontodia__left-panel')) {
                     percentage = ((e.pageX - self.offset().left) + (posX - handleWidth / 2));
-                } else if (self.hasClass('ontodia-right-panel')) {
+                } else if (self.hasClass('ontodia__right-panel')) {
                     percentage = width - ((e.pageX - self.offset().left) + (posX - handleWidth / 2));
                 }
 

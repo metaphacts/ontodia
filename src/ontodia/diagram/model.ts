@@ -11,6 +11,9 @@ import { Element, Link, FatLinkType, FatClassModel } from './elements';
 import { DataFetchingThread } from './dataFetchingThread';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
+export type PreventLinksLoading = { preventLoading?: boolean; };
+
+type ChangeVisibilityOptions = { isFromHandler?: boolean };
 
 /**
  * Model of diagram.
@@ -92,7 +95,8 @@ export class DiagramModel extends Backbone.Model {
         // listen to external add/remove calls to graph (Halo's remove for example)
         this.listenTo(this.graph, 'add', (cell: joint.dia.Cell) => {
             if (cell instanceof Element) {
-                cell.set('presentOnDiagram', true, <any>{isFromHandler: true});
+                const options: ChangeVisibilityOptions = {isFromHandler: true};
+                cell.set('presentOnDiagram', true, options);
             } else if (cell instanceof Link) {
                 const linkType = this.getLinkType(cell.get('typeId'));
                 linkType.set('visible', true);
@@ -100,16 +104,9 @@ export class DiagramModel extends Backbone.Model {
         });
         this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
             if (cell instanceof Element) {
-                cell.set('presentOnDiagram', false, <any>{ isFromHandler: true });
+                const options: ChangeVisibilityOptions = {isFromHandler: true};
+                cell.set('presentOnDiagram', false, options);
             }
-            // else if (cell instanceof Link) {
-                // const linkType = this.linkTypes[cell.get('typeId')];
-                // if (linkType && linkType.get('visible')) {
-                //     const mustSwitch = !_.some(this.graph.getLinks(),
-                //         (link: Link) => link.get('typeId') === cell.get('typeId'));
-                //     if (mustSwitch) { linkType.set('visible', false); }
-                // }
-            // }
         });
         this.listenTo(this.graph, 'change:labels', (cell: joint.dia.Cell) => {
             if (cell instanceof Link) {
@@ -243,12 +240,13 @@ export class DiagramModel extends Backbone.Model {
             const indexedSettings = _.keyBy(linkSettings, 'id');
             _.each(this.linkTypes, (type, typeId) => {
                 const settings = indexedSettings[typeId] || {isNew: true};
-                const options = {preventLoading: true};
+                const options: PreventLinksLoading = {preventLoading: true};
                 type.set(_.defaults(settings, existingDefaults), options);
             });
         } else {
             const newDefaults = { visible: true, showLabel: true };
-            _.each(this.linkTypes, type => type.set(newDefaults, <any>{preventLoading: true}));
+            const options: PreventLinksLoading = {preventLoading: true};
+            _.each(this.linkTypes, type => type.set(newDefaults, options));
         }
     }
 
@@ -334,10 +332,10 @@ export class DiagramModel extends Backbone.Model {
         return this.createIfNeeded(elementModel, {requestData: true});
     }
 
-    initializeElement(element: Element, options?: { requestData?: boolean }) {
+    initializeElement(element: Element, {requestData = false} = {}) {
         this.elements[element.id] = element;
 
-        element.on('change:presentOnDiagram', (self: Element, value: boolean, options: { isFromHandler?: boolean }) => {
+        element.on('change:presentOnDiagram', (self: Element, value: boolean, options: ChangeVisibilityOptions) => {
             if (options.isFromHandler) { return; }
             const isPresentOnDiagram = element.get('presentOnDiagram');
             if (isPresentOnDiagram) {
@@ -354,7 +352,7 @@ export class DiagramModel extends Backbone.Model {
             }
         });
 
-        if (options && options.requestData) {
+        if (requestData) {
             this.dataProvider.elementInfo({elementIds: [element.id]})
                 .then(elements => this.onElementInfoLoaded(elements))
                 .catch(err => console.error(err));

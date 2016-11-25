@@ -182,7 +182,7 @@ export class ConnectionsMenu {
             element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
             element.set('presentOnDiagram', true);
         });
-        this.view.paperArea.adjustPaper();
+        this.options.paper.trigger('ontodia:adjustSize');
         this.options.onClose();
     };
 

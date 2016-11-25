@@ -1,7 +1,11 @@
 import * as React from 'react';
 
+import { DiagramView } from '../diagram/view';
+import { PaperArea } from '../diagram/paperArea';
+
 export interface Props {
     toolbar: React.ReactElement<any>;
+    view: DiagramView;
     isViewOnly?: boolean;
 }
 
@@ -33,11 +37,11 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
     classTreePanel: HTMLElement;
     filterPanel: HTMLElement;
     linkTypesPanel: HTMLElement;
-    chartPanel: HTMLElement;
+    paperArea: PaperArea;
 
     render() {
         let leftPanel = (
-            <div className='ontodia-left-panel filter-panel'
+            <div className='ontodia__left-panel filter-panel'
                  data-position='right' data-step='7' data-intro-id='resize' data-intro={INTRO_RESIZE}>
                 <div className='ontodia-widget filter-item'
                      data-position='right' data-step='1' data-intro-id='tree-view' data-intro={INTRO_CLASSES}>
@@ -61,7 +65,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
         );
 
         let rightPanel = (
-            <div className='ontodia-right-panel filter-panel'>
+            <div className='ontodia__right-panel filter-panel'>
                 <div className='ontodia-widget filter-item'
                      data-position='left' data-step='4' data-intro-id='link-types-toolbox'
                      data-intro={INTRO_CONNECTIONS}>
@@ -78,20 +82,39 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
 
         return (
             <div ref={e => this.element = e} className='ontodia'>
-                <div className='ontodia-header'>{this.props.toolbar}</div>
-                <div className='ontodia-workspace'>
+                <div className='ontodia__header'>{this.props.toolbar}</div>
+                <div className='ontodia__workspace'>
                     {!this.props.isViewOnly ? leftPanel : null}
-                    <div id='diagrams' className='ontodia-main-panel diagramArea'
+                    <div className='ontodia__main-panel'
                          data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
-                        <div ref={e => this.chartPanel = e}
-                            style={{overflow: 'hidden', display: 'flex', flex: 'auto'}}>
-                        </div>
+                        <PaperArea ref={el => this.paperArea = el}
+                            model={this.props.view.model}
+                            paper={this.props.view.paper}
+                            zoomOptions={{min: 0.2, max: 2, fitPadding: 20}}
+                            preventTextSelection={() => this.preventTextSelection()}
+                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)} />
                     </div>
                     {!this.props.isViewOnly ? rightPanel : null}
                 </div>
             </div>
         );
     }
+
+    componentDidMount() {
+        document.addEventListener('mouseup', this.onDocumentMouseUp);
+    }
+
+    componentWillUnmount() {
+        document.removeEventListener('mouseup', this.onDocumentMouseUp);
+    }
+
+    preventTextSelection() {
+        this.element.classList.add('ontodia--unselectable');
+    }
+
+    private onDocumentMouseUp = () => {
+        this.element.classList.remove('ontodia--unselectable');
+    };
 }
 
 export default WorkspaceMarkup;
