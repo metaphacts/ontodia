@@ -215,7 +215,6 @@ export class LinkView extends joint.dia.LinkView {
 
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
-        this.listenTo(this.model, 'state:loaded', this.updateLabel);
         this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
     }
     render(): LinkView {

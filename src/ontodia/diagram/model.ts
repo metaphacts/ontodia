@@ -14,6 +14,7 @@ export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
 export type PreventLinksLoading = { preventLoading?: boolean; };
 
 type ChangeVisibilityOptions = { isFromHandler?: boolean };
+type RegisteredLink = Link & { __existsInData?: boolean };
 
 /**
  * Model of diagram.
@@ -283,8 +284,6 @@ export class DiagramModel extends Backbone.Model {
                 if (elements[cell.source.id] && elements[cell.target.id]) {
                     const linkCellModel = new Link(cell);
                     this.registerLink(linkCellModel);
-                    // mark link as only existing in layout
-                    linkCellModel.set('layoutOnly', true);
                     cellModels.push(linkCellModel);
                 }
             }
@@ -303,13 +302,18 @@ export class DiagramModel extends Backbone.Model {
                     element.trigger('state:loaded');
                 }
             }
+
             for (const linkModel of links) {
                 // only keep link if it's type info exists
                 if (this.linkTypes[linkModel.linkTypeId]) {
-                    const link = this.linkInstances(linkModel);
-                    // link exists in underlying data, remove mark
-                    link.set('layoutOnly', false);
-                    link.trigger('state:loaded');
+                    this.linkInstances(linkModel);
+                }
+            }
+
+            for (const link of this.graph.getLinks()) {
+                const registered: RegisteredLink = link as Link;
+                if (!registered.__existsInData) {
+                    registered.layoutOnly = true;
                 }
             }
         }
@@ -466,19 +470,21 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private linkInstances(linkModel: LinkModel, options?: IgnoreCommandHistory): Link {
-        const existingLink = this.getLink(linkModel);
+        const existingLink: RegisteredLink = this.getLink(linkModel);
         if (existingLink) {
           if (existingLink.layoutOnly) {
             existingLink.set('layoutOnly', false, {ignoreCommandManager: true} as IgnoreCommandHistory);
           }
+          existingLink.__existsInData = true;
           return existingLink;
         }
-        const link = new Link({
+        const link: RegisteredLink = new Link({
             id: _.uniqueId('link_'),
             typeId: linkModel.linkTypeId,
             source: { id: linkModel.sourceId },
             target: { id: linkModel.targetId },
         });
+        link.__existsInData = true;
 
         this.registerLink(link);
 
@@ -504,7 +510,7 @@ export class DiagramModel extends Backbone.Model {
         this.targetOf(link).links.push(link);
     }
 
-    private getLink(linkModel: LinkModel): Link {
+    private getLink(linkModel: LinkModel): Link | undefined {
         const source = this.elements[linkModel.sourceId];
         for (const link of source.links) {
             if (link.get('source').id === linkModel.sourceId &&
@@ -514,9 +520,8 @@ export class DiagramModel extends Backbone.Model {
                 return link;
             }
         }
-        return null;
+        return undefined;
     }
-
 }
 
 export default DiagramModel;

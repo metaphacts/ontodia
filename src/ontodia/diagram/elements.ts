@@ -101,6 +101,8 @@ export class Link extends joint.dia.Link {
     set typeIndex(value: number) { this.set('typeIndex', value); }
 
     get layoutOnly(): boolean { return this.get('layoutOnly'); }
+    set layoutOnly(value: boolean) { this.set('layoutOnly', value); }
+
     initialize(attributes?: {id: string}) {
         this.set('labels', [{position: 0.5}]);
     }
