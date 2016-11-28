@@ -219,10 +219,10 @@ export class LinkView extends joint.dia.LinkView {
         this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
     }
     render(): LinkView {
-        const result: any = super.render();
         if (!this.view && this.paper && this.paper.diagramView) {
             this.setView(this.paper.diagramView);
         }
+        const result: any = super.render();
         return result;
     }
     getTypeModel(): FatLinkType {
@@ -236,9 +236,9 @@ export class LinkView extends joint.dia.LinkView {
         this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
         this.listenTo(typeModel, 'change:label', this.updateLabel);
 
-        this.updateLabel();
+        this.updateLabel({silent: true});
     }
-    private updateLabel() {
+    private updateLabel(options?: { silent?: boolean }) {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.getLinkType(linkTypeId);
 
@@ -264,6 +264,6 @@ export class LinkView extends joint.dia.LinkView {
         }] : [];
 
         merge(linkAttributes, {labels: labelAttributes});
-        this.model.set(linkAttributes);
+        this.model.set(linkAttributes, options);
     }
 }
