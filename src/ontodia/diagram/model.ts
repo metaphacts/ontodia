@@ -42,7 +42,7 @@ export class DiagramModel extends Backbone.Model {
         'typeId', 'source', 'target', 'vertices',  // link properties
     ];
 
-    graph = new joint.dia.Graph;
+    graph = new joint.dia.Graph();
 
     dataProvider: DataProvider;
 
@@ -211,6 +211,8 @@ export class DiagramModel extends Backbone.Model {
             _.each(params.elements, normalizeTemplate);
 
             this.listenToOnce(this, 'state:renderDone', () => {
+                const beforeReturn = () => this.graph.stopBatch('to-back');
+
                 try {
                     this.syncCellsWithLayout(
                         params.elements, params.links);
@@ -218,12 +220,17 @@ export class DiagramModel extends Backbone.Model {
                         this.hideUnusedLinkTypes(params.links);
                     }
                 } catch (err) {
+                    beforeReturn();
                     reject(err);
                 }
+
+                beforeReturn();
                 resolve();
                 // notify when graph model is fully initialized
                 this.trigger('state:dataLoaded');
             });
+
+            this.graph.startBatch('to-back');
 
             if (params.layoutData) {
                 this.initLayout(params.elements, params.layoutData);

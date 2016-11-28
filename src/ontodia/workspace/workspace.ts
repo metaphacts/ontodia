@@ -5,7 +5,10 @@ import * as browser from 'detect-browser';
 import { DiagramModel } from '../diagram/model';
 import { Link } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
-import { forceLayout, removeOverlaps, padded, LayoutNode, LayoutLink } from '../viewUtils/layout';
+import {
+    forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
+    LayoutNode, LayoutLink,
+} from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
 import { FilterView, FilterModel } from '../widgets/filter';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
@@ -176,10 +179,7 @@ export class Workspace extends Component<Props, {}> {
             }
         }
 
-        interface LinkWithReference extends LayoutLink {
-            link: Link;
-            vertices?: Array<{ x: number; y: number; }>;
-        }
+        type LinkWithReference = LayoutLink & { link: Link };
         const links: LinkWithReference[] = [];
         for (const linkId in this.model.linksByType) {
             if (this.model.linksByType.hasOwnProperty(linkId)) {
@@ -198,21 +198,11 @@ export class Workspace extends Component<Props, {}> {
         }
 
         forceLayout({nodes, links, preferredLinkLength: 150});
-        padded(nodes, {x: 5, y: 5}, () => {
-            removeOverlaps(nodes);
-        });
+        padded(nodes, {x: 5, y: 5}, () => removeOverlaps(nodes));
+        translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
 
-        let minX = Infinity, minY = Infinity;
         for (const node of nodes) {
-            minX = Math.min(minX, node.x);
-            minY = Math.min(minY, node.y);
-        }
-
-        const canvasPadding = 150;
-        for (const node of nodes) {
-            this.model.elements[node.id].position(
-                node.x - minX + canvasPadding,
-                node.y - minY + canvasPadding);
+            this.model.elements[node.id].position(node.x, node.y);
         }
 
         for (const {link} of links) {
