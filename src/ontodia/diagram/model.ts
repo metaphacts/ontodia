@@ -7,6 +7,7 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
+import { LayoutData, normalizeImportedCell, cleanExportedLayout } from './layoutData';
 import { Element, Link, FatLinkType, FatClassModel } from './elements';
 import { DataFetchingThread } from './dataFetchingThread';
 
@@ -37,12 +38,6 @@ type RegisteredLink = Link & { __existsInData?: boolean };
  *     history:storeBatchCommand
  */
 export class DiagramModel extends Backbone.Model {
-    private static serializedCellProperties = [
-        'id', 'type', 'presentOnDiagram',          // common properties
-        'size', 'angle', 'isExpanded', 'position', // element properties
-        'typeId', 'source', 'target', 'vertices',  // link properties
-    ];
-
     graph = new joint.dia.Graph();
 
     dataProvider: DataProvider;
@@ -184,10 +179,7 @@ export class DiagramModel extends Backbone.Model {
         layoutData: LayoutData;
         linkSettings: LinkTypeOptions[];
     } {
-        const layoutData = this.graph.toJSON();
-        layoutData.cells = _.map(layoutData.cells, function (cell) {
-            return _.pick(cell, DiagramModel.serializedCellProperties);
-        });
+        const layoutData = cleanExportedLayout(this.graph.toJSON());
         const linkSettings = _.map(this.linkTypes, (type: FatLinkType) => ({
             id: type.id,
             visible: type.get('visible'),
@@ -267,7 +259,7 @@ export class DiagramModel extends Backbone.Model {
         for (let i = 0; i < layoutData.cells.length; i++) {
             let cell = layoutData.cells[i];
             if (cell.type !== 'link') {
-                cell = _.pick(cell, DiagramModel.serializedCellProperties);
+                cell = normalizeImportedCell(cell);
                 const elementCellModel = new Element(cell);
                 const template = elements[cell.id];
                 elementCellModel.template = template;
@@ -280,7 +272,7 @@ export class DiagramModel extends Backbone.Model {
         for (let i = 0; i < layoutData.cells.length; i++) {
             let cell = layoutData.cells[i];
             if (cell.type === 'link') {
-                cell = _.pick(cell, DiagramModel.serializedCellProperties);
+                cell = normalizeImportedCell(cell);
                 if (elements[cell.source.id] && elements[cell.target.id]) {
                     const linkCellModel = new Link(cell);
                     this.registerLink(linkCellModel);
@@ -306,7 +298,7 @@ export class DiagramModel extends Backbone.Model {
             for (const linkModel of links) {
                 // only keep link if it's type info exists
                 if (this.linkTypes[linkModel.linkTypeId]) {
-                    this.linkInstances(linkModel);
+                    this.createLink(linkModel);
                 }
             }
 
@@ -459,7 +451,7 @@ export class DiagramModel extends Backbone.Model {
     private onLinkInfoLoaded(links: LinkModel[]) {
         this.initBatchCommand();
         for (const linkModel of links) {
-            this.linkInstances(linkModel);
+            this.createLink(linkModel);
         }
         this.storeBatchCommand();
     }
@@ -469,7 +461,7 @@ export class DiagramModel extends Backbone.Model {
             && this.targetOf(link).get('presentOnDiagram');
     }
 
-    private linkInstances(linkModel: LinkModel, options?: IgnoreCommandHistory): Link {
+    createLink(linkModel: LinkModel, options?: IgnoreCommandHistory): Link {
         const existingLink: RegisteredLink = this.getLink(linkModel);
         if (existingLink) {
           if (existingLink.layoutOnly) {
@@ -510,7 +502,7 @@ export class DiagramModel extends Backbone.Model {
         this.targetOf(link).links.push(link);
     }
 
-    private getLink(linkModel: LinkModel): Link | undefined {
+    getLink(linkModel: LinkModel): Link | undefined {
         const source = this.elements[linkModel.sourceId];
         for (const link of source.links) {
             if (link.get('source').id === linkModel.sourceId &&
@@ -538,10 +530,6 @@ export interface LinkTypeOptions {
     id: string;
     visible: boolean;
     showLabel?: boolean;
-}
-
-export interface LayoutData {
-    cells: any[];
 }
 
 export function normalizeTemplate(template: ElementModel): ElementModel {

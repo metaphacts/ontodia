@@ -8,7 +8,7 @@ export class UIElement extends joint.shapes.basic.Generic {
     markup: string;
     defaults() {
         return joint.util.deepSupplement({
-            type: 'Ontodia.Element',
+            type: 'element',
             size: { width: 250, height: 50 },
         }, joint.shapes.basic.Generic.prototype.defaults);
     }

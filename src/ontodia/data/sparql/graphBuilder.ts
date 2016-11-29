@@ -1,6 +1,6 @@
 import * as N3 from 'n3';
 
-import { LayoutData } from '../../diagram/model';
+import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
 import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
@@ -112,17 +112,17 @@ export class GraphBuilder {
         const rows = Math.ceil(Math.sqrt(keys.length));
         const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
 
-        const layoutElements: any[] = keys.map((key, index) => {
+        const layoutElements: LayoutCell[] = keys.map<LayoutElement>((key, index) => {
             const element = elementsInfo[key];
             const {x, y} = grid(index);
             return {
                 id: element.id,
-                type: 'Ontodia.Element',
+                type: 'element',
                 position: {x, y},
                 presentOnDiagram: true,
             };
         });
-        const layoutLinks: any[] = linksInfo.map((link, index) => {
+        const layoutLinks = linksInfo.map<LayoutLink>((link, index) => {
             return {
                 id: 'link_' + index,
                 typeId: link.linkTypeId,
