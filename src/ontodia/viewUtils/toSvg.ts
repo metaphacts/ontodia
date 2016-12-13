@@ -49,7 +49,8 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
         img.setAttribute('height', height.toString());
         if (opt.convertImagesToDataUris) {
             joint.util.imageToDataUri(img.src, (err, dataUri) => {
-                if (dataUri) { img.src = dataUri; }
+                // check for empty svg data URI which happens when mockJointXHR catches an exception
+                if (dataUri && dataUri !== 'data:image/svg+xml,') { img.src = dataUri; }
                 convertImagesStartingAt(index + 1, done);
             });
         } else {
@@ -58,18 +59,25 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     };
 
     return new Promise<void>(resolve => {
-        convertImagesStartingAt(0, () => resolve());
+        const mock = mockJointXHR();
+        convertImagesStartingAt(0, () => {
+            mock.dispose();
+            resolve();
+        });
     }).then(() => {
         const cssRuleTexts: string[] = [];
         for (let i = 0; i < document.styleSheets.length; i++) {
-            const cssSheet = document.styleSheets[i] as CSSStyleSheet;
-            const rules = cssSheet.cssRules || cssSheet.rules;
-            if (rules) {
-                for (let j = 0; j < rules.length; j++) {
-                    const rule = rules[j];
-                    if (rule instanceof CSSStyleRule) {
-                        cssRuleTexts.push(rule.cssText);
-                    }
+            let rules: CSSRuleList;
+            try {
+                const cssSheet = document.styleSheets[i] as CSSStyleSheet;
+                rules = cssSheet.cssRules || cssSheet.rules;
+                if (!rules) { continue; }
+            } catch (e) { continue; }
+
+            for (let j = 0; j < rules.length; j++) {
+                const rule = rules[j];
+                if (rule instanceof CSSStyleRule) {
+                    cssRuleTexts.push(rule.cssText);
                 }
             }
         }
@@ -85,6 +93,40 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
 
         return new XMLSerializer().serializeToString(svgClone);
     });
+}
+
+/**
+ * Mock XMLHttpRequest for joint.util.imageToDataUri as workaround to uncatchable
+ * DOMException in synchronous xhr.send() call when Joint trying to load SVG image.
+ * 
+ * @param onSyncSendError callback called on error
+ */
+function mockJointXHR(onSyncSendError?: (e: any) => void): { dispose: () => void } {
+    try {
+        const oldXHR = XMLHttpRequest;
+        XMLHttpRequest = class {
+            xhr = new oldXHR();
+            responseText = '';
+            open(...args: any[]) { this.xhr.open.apply(this.xhr, args); }
+            send(...args: any[]) {
+                try {
+                    this.xhr.send.apply(this.xhr, args);
+                } catch (e) {
+                    if (onSyncSendError) { onSyncSendError(e); }
+                }
+            }
+        } as any;
+        let disposed = false;
+        const dispose = () => {
+            if (disposed) { return; }
+            disposed = true;
+            XMLHttpRequest = oldXHR;
+        };
+        return {dispose};
+    } catch (e) {
+        // do nothing if failed to mock XHR
+        return {dispose: () => { /* nothing */ }};
+    }
 }
 
 function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T) => void) {
