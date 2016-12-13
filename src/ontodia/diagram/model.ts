@@ -159,7 +159,7 @@ export class DiagramModel extends Backbone.Model {
                 links: params.preloadedLinks,
                 layoutData: params.layoutData,
                 hideUnusedLinkTypes: params.hideUnusedLinkTypes,
-            });
+            }).then(() => this.requestLinksOfType());
         }).catch(err => {
             console.error(err);
             this.trigger('state:endLoad', null, err.errorKind, err.message);
@@ -358,12 +358,9 @@ export class DiagramModel extends Backbone.Model {
     }
 
     requestLinksOfType(linkTypeIds?: string[]) {
-        if (!linkTypeIds) {
-            const linkTypes = _.values(this.linkTypes);
-            linkTypeIds = _.chain(linkTypes)
-                // .filter(type => type.get('visible'))
-                .map((type: FatLinkType) => type.id)
-                .value();
+        let linkTypes = linkTypeIds;
+        if (!linkTypes) {
+            linkTypeIds = _.values(this.linkTypes).map(type => type.id);
         }
         return this.dataProvider.linksInfo({
             elementIds: _.keys(this.elements),

@@ -1,7 +1,10 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate } from '../index';
+import {
+    Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate,
+    GraphBuilder,
+} from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -44,17 +47,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(iri);
                     console.log(iri);
                 });
-                model.importLayout({
-                    dataProvider: new WikidataDataProvider({
-                        endpointUrl: '/sparql-endpoint',
-                        imageClassUris: [
-                            'http://www.wikidata.org/prop/direct/P18',
-                            'http://www.wikidata.org/prop/direct/P154',
-                        ],
-                    }),
-                    preloadedElements: {},
-                    preloadedLinks: [],
-                    layoutData: undefined,
+
+                const dataProvider = new WikidataDataProvider({
+                    endpointUrl: '/sparql-endpoint',
+                    imageClassUris: [
+                        'http://www.wikidata.org/prop/direct/P18',
+                        'http://www.wikidata.org/prop/direct/P154',
+                    ],
+                });
+                const graphBuilder = new GraphBuilder(dataProvider, '/sparql-endpoint');
+
+                // model.importLayout({
+                //     dataProvider: new WikidataDataProvider({
+                //         endpointUrl: '/sparql-endpoint',
+                //         imageClassUris: [
+                //             'http://www.wikidata.org/prop/direct/P18',
+                //             'http://www.wikidata.org/prop/direct/P154',
+                //         ],
+                //     }),
+                //     preloadedElements: {},
+                //     preloadedLinks: [],
+                //     layoutData: undefined,
+                // });
+
+                graphBuilder.getGraphFromConstrunct(`
+                    CONSTRUCT { ?current ?p ?o. }
+                    WHERE {
+                      {
+                        ?current ?p ?o.
+                        ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label.
+                        FILTER(ISIRI(?o))
+                      }
+                    }
+                    LIMIT 20
+                    VALUES (?current) {
+                      (<http://www.wikidata.org/entity/Q2836593>)
+                    }`
+                ).then(response => model.importLayout({
+                    dataProvider,
+                    preloadedElements: response.preloadedElements,
+                    preloadedLinks: response.preloadedLinks,
+                    layoutData: response.layout,
+                })).then(() => {
+                    workspace.forceLayout();
+                    workspace.zoomToFit();
                 });
             }
         },

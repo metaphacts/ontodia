@@ -197,8 +197,8 @@ export class Workspace extends Component<Props, {}> {
             }
         }
 
-        forceLayout({nodes, links, preferredLinkLength: 150});
-        padded(nodes, {x: 5, y: 5}, () => removeOverlaps(nodes));
+        forceLayout({nodes, links, preferredLinkLength: 200});
+        padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
 
         for (const node of nodes) {
