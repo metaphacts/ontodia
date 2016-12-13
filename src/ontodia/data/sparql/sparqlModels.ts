@@ -1,103 +1,63 @@
-export interface Field {
-    type: string;
+export type RdfNode = RdfIri | RdfLiteral;
+
+export interface RdfIri {
+    type: 'uri';
     value: string;
 }
 
-export interface Label extends Field {
+export interface RdfLiteral {
+    type: 'literal';
+    value: string;
+    datatype?: string;
     'xml:lang': string;
 }
 
-export interface TypedField extends Field {
-    datatype: string;
+export interface Triple {
+    subject: RdfNode;
+    predicate: RdfNode;
+    object: RdfNode;
 }
 
-export type ClassInfo = TreeNode;
-export interface TreeNode {
-    class: Field;
-    instcount?: TypedField;
-    label?: Label;
-    parent?: Field;
+export interface ElementBinding {
+    inst: RdfLiteral;
+    class?: RdfLiteral;
+    label?: RdfLiteral;
+    propType?: RdfLiteral;
+    propValue?: RdfLiteral;
 }
 
-export interface LinkType {
-    link: Field;
-    instcount?: TypedField;
-    label?: Label;
+export interface ClassBinding {
+    class: RdfIri;
+    instcount?: RdfLiteral;
+    label?: RdfLiteral;
+    parent?: RdfIri;
 }
 
-export interface ElementInfo {
-    inst: Field;
-    class?: Field;
-    label?: Label;
-    propType?: Field;
-    propValue?: TypedField;
+export interface LinkBinding {
+    source: RdfIri;
+    type: RdfIri;
+    target: RdfIri;
 }
 
-export interface LinkTypeInfo {
-    typeId: Field;
-    label?: Label;
-    instcount?: TypedField;
+export interface LinkTypeBinding {
+    link: RdfIri;
+    instcount?: RdfLiteral;
+    label?: RdfLiteral;
 }
 
-export interface LinkInfo {
-    source: Field;
-    type: Field;
-    target: Field;
+export interface LinkTypeInfoBinding {
+    typeId: RdfIri;
+    label?: RdfLiteral;
+    instcount?: RdfLiteral;
 }
 
-export interface ConstructElement {
-    subject: Field;
-    predicate: Field;
-    object: Field;
+export interface ElementImageBinding {
+    inst: RdfIri;
+    linkType: RdfIri;
+    image: RdfIri;
 }
 
-export interface ImageLink {
-    inst: Field;
-    linkType: Field;
-    image: Field;
-}
-
-export interface SparqlResponse {
+export interface SparqlResponse<Binding> {
     head: { vars: string[] };
-    results: { bindings: any };
+    results: { bindings: Binding[] };
 }
-
-export interface TreeResponse extends SparqlResponse {
-    results: { bindings: TreeNode[] };
-};
-
-export interface ClassInfoResponse extends SparqlResponse {
-    results: { bindings: ClassInfo[] };
-};
-
-export interface LinkTypesResponse extends SparqlResponse {
-    results: { bindings: LinkType[] };
-};
-
-export interface ElementsInfoResponse extends SparqlResponse  {
-    results: { bindings: ElementInfo[] };
-};
-
-export interface LinkTypesInfoResponse extends SparqlResponse  {
-    results: { bindings: LinkTypeInfo[] };
-};
-
-export interface LinksInfoResponse extends SparqlResponse  {
-    results: { bindings: LinkInfo[] };
-};
-
-export interface LinkTypesOfResponse extends SparqlResponse  {
-    results: { bindings: LinkType[] };
-};
-
-export interface FilterResponse extends SparqlResponse  {
-    results: { bindings: ElementInfo[] };
-};
-
-export interface ConstructResponse extends SparqlResponse  {
-    results: { bindings: ConstructElement[] };
-};
-
-export interface ImageResponse extends SparqlResponse  {
-    results: { bindings: ImageLink[] };
-};

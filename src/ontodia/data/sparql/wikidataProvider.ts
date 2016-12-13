@@ -11,7 +11,10 @@ import {
     getEnrichedElementsInfo,
     getLinkTypesInfo,
 } from './responseHandler';
-import * as Sparql from './sparqlModels';
+import {
+    SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
+} from './sparqlModels';
 import {executeSparqlQuery, SparqlDataProviderOptions} from './provider';
 import * as _ from 'lodash';
 
@@ -42,7 +45,7 @@ export class WikidataDataProvider implements DataProvider {
               BIND("" as ?instcount)
             }
         `;
-        return executeSparqlQuery<Sparql.TreeResponse>(
+        return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassTree);
     }
 
@@ -56,7 +59,7 @@ export class WikidataDataProvider implements DataProvider {
                 BIND("" as ?instcount)
             }
         `;
-        return executeSparqlQuery<Sparql.ClassInfoResponse>(
+        return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassInfo);
     }
 
@@ -69,7 +72,7 @@ export class WikidataDataProvider implements DataProvider {
                   BIND("" as ?instcount)
             }
         `;
-        return executeSparqlQuery<Sparql.LinkTypesResponse>(
+        return executeSparqlQuery<LinkTypeBinding>(
             this.options.endpointUrl, query).then(getLinkTypes);
     }
 
@@ -83,7 +86,7 @@ export class WikidataDataProvider implements DataProvider {
                 BIND("" as ?instcount)      
             }
         `;
-        return executeSparqlQuery<Sparql.LinkTypesInfoResponse>(
+        return executeSparqlQuery<LinkTypeInfoBinding>(
             this.options.endpointUrl, query).then(getLinkTypesInfo);
     }
 
@@ -104,7 +107,7 @@ export class WikidataDataProvider implements DataProvider {
                 FILTER (isLiteral(?propValue)) }
             }
             `;
-            return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
+            return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
                 .then(elementsInfo => getElementsInfo(elementsInfo, [element]))
                 .then(elementsInfo => {
                     if (this.options.prepareImages) {
@@ -141,7 +144,7 @@ export class WikidataDataProvider implements DataProvider {
                 ?inst ?linkType ?image
             }}
         `;
-        return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
+        return executeSparqlQuery<ElementImageBinding>(this.options.endpointUrl, query)
             .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo)).catch((err) => {
                 console.log(err);
                 return elementsInfo;
@@ -174,7 +177,7 @@ export class WikidataDataProvider implements DataProvider {
                 VALUES (?target) {${ids}}                
             }
         `;
-        return executeSparqlQuery<Sparql.LinksInfoResponse>(
+        return executeSparqlQuery<LinkBinding>(
             this.options.endpointUrl, query).then(getLinksInfo);
     }
 
@@ -190,7 +193,7 @@ export class WikidataDataProvider implements DataProvider {
             } GROUP BY ?link
         `;
 
-        return executeSparqlQuery<Sparql.LinkTypesOfResponse>(this.options.endpointUrl, query).then(getLinksTypesOf);
+        return executeSparqlQuery<LinkTypeBinding>(this.options.endpointUrl, query).then(getLinksTypesOf);
     };
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
@@ -245,7 +248,7 @@ export class WikidataDataProvider implements DataProvider {
             }
         `;
 
-        return executeSparqlQuery<Sparql.FilterResponse>(
+        return executeSparqlQuery<ElementBinding>(
             this.options.endpointUrl, query).then(getFilteredData);
     };
 };

@@ -13,7 +13,10 @@ import {
     getEnrichedElementsInfo,
     getLinkTypesInfo,
 } from './responseHandler';
-import * as Sparql from './sparqlModels';
+import {
+    SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
+} from './sparqlModels';
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -46,7 +49,7 @@ export class SparqlDataProvider implements DataProvider {
                 OPTIONAL {?class rdfs:subClassOf ?parent}
             }
         `;
-        return executeSparqlQuery<Sparql.TreeResponse>(
+        return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassTree);
     }
 
@@ -60,7 +63,7 @@ export class SparqlDataProvider implements DataProvider {
                 BIND("" as ?instcount)
             }
         `;
-        return executeSparqlQuery<Sparql.ClassInfoResponse>(
+        return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassInfo);
     }
 
@@ -74,7 +77,7 @@ export class SparqlDataProvider implements DataProvider {
                 BIND("" as ?instcount)      
             }
         `;
-        return executeSparqlQuery<Sparql.LinkTypesInfoResponse>(
+        return executeSparqlQuery<LinkTypeInfoBinding>(
             this.options.endpointUrl, query).then(getLinkTypesInfo);
     }
 
@@ -95,7 +98,7 @@ export class SparqlDataProvider implements DataProvider {
                 OPTIONAL {?link rdfs:label ?label}
             }
         `;
-        return executeSparqlQuery<Sparql.LinkTypesResponse>(
+        return executeSparqlQuery<LinkTypeBinding>(
             this.options.endpointUrl, query).then(getLinkTypes);
     }
 
@@ -113,7 +116,7 @@ export class SparqlDataProvider implements DataProvider {
                 FILTER (isLiteral(?propValue)) }
             }}
         `;
-        return executeSparqlQuery<Sparql.ElementsInfoResponse>(this.options.endpointUrl, query)
+        return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementsInfo => {
                 if (this.options.prepareImages) {
@@ -141,7 +144,7 @@ export class SparqlDataProvider implements DataProvider {
                 ?inst ?linkType ?image
             }}
         `;
-        return executeSparqlQuery<Sparql.ImageResponse>(this.options.endpointUrl, query)
+        return executeSparqlQuery<ElementImageBinding>(this.options.endpointUrl, query)
             .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo)).catch((err) => {
                 console.log(err);
                 return elementsInfo;
@@ -176,7 +179,7 @@ export class SparqlDataProvider implements DataProvider {
                 FILTER (?type in (${types}))
             }
         `;
-        return executeSparqlQuery<Sparql.LinksInfoResponse>(
+        return executeSparqlQuery<LinkBinding>(
             this.options.endpointUrl, query).then(getLinksInfo);
     }
 
@@ -191,7 +194,7 @@ export class SparqlDataProvider implements DataProvider {
             }} GROUP BY ?link
         `;
 
-        return executeSparqlQuery<Sparql.LinkTypesOfResponse>(this.options.endpointUrl, query).then(getLinksTypesOf);
+        return executeSparqlQuery<LinkTypeBinding>(this.options.endpointUrl, query).then(getLinksTypesOf);
     };
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
@@ -245,7 +248,7 @@ export class SparqlDataProvider implements DataProvider {
             }
         `;
 
-        return executeSparqlQuery<Sparql.FilterResponse>(
+        return executeSparqlQuery<ElementBinding>(
             this.options.endpointUrl, query).then(getFilteredData);
     };
 };
@@ -267,8 +270,8 @@ export function sparqlExtractLabel(subject: string, label: string): string {
     `;
 };
 
-export function executeSparqlQuery<T>(endpoint: string, query: string) {
-    return new Promise<T>((resolve, reject) => {
+export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
+    return new Promise<SparqlResponse<Binding>>((resolve, reject) => {
         $.ajax({
             type: 'POST',
             url: endpoint,

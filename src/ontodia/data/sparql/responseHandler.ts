@@ -1,4 +1,7 @@
-import * as Sparql from './sparqlModels';
+import {
+    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    ElementImageBinding, LinkTypeBinding, LinkTypeInfoBinding,
+} from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property,
 } from '../model';
@@ -6,7 +9,7 @@ import {
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
-export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
+export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const sNodes = response.results.bindings;
     const tree: ClassModel[] = [];
     const createdTreeNodes: Dictionary<ClassModel> = {};
@@ -71,12 +74,12 @@ export function getClassTree(response: Sparql.TreeResponse): ClassModel[] {
     return tree;
 }
 
-export function getClassInfo(response: Sparql.ClassInfoResponse): ClassModel[] {
+export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const sparqlClasses = response.results.bindings;
-    return sparqlClasses.map((sClass: Sparql.ClassInfo) => getClassModel(sClass));
+    return sparqlClasses.map((sClass: ClassBinding) => getClassModel(sClass));
 }
 
-export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
+export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
     const instancesMap: Dictionary<LinkType> = {};
@@ -105,7 +108,7 @@ export function getLinkTypes(response: Sparql.LinkTypesResponse): LinkType[] {
     return linkTypes;
 }
 
-export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: string[]): Dictionary<ElementModel> {
+export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: string[]): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
 
@@ -135,7 +138,7 @@ export function getElementsInfo(response: Sparql.ElementsInfoResponse, ids: stri
 }
 
 export function getEnrichedElementsInfo(
-    response: Sparql.ImageResponse,
+    response: SparqlResponse<ElementImageBinding>,
     elementsInfo: Dictionary<ElementModel>
 ): Dictionary<ElementModel> {
     const respElements = response.results.bindings;
@@ -148,22 +151,22 @@ export function getEnrichedElementsInfo(
     return elementsInfo;
 }
 
-export function getLinkTypesInfo(response: Sparql.LinkTypesInfoResponse): LinkType[] {
+export function getLinkTypesInfo(response: SparqlResponse<LinkTypeInfoBinding>): LinkType[] {
     const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLinkType: Sparql.LinkTypeInfo) => getLinkTypeInfo(sLinkType));
+    return sparqlLinkTypes.map((sLinkType: LinkTypeInfoBinding) => getLinkTypeInfo(sLinkType));
 }
 
-export function getLinksInfo(response: Sparql.LinksInfoResponse): LinkModel[] {
+export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
     const sparqlLinks = response.results.bindings;
-    return sparqlLinks.map((sLink: Sparql.LinkInfo) => getLinkInfo(sLink));
+    return sparqlLinks.map((sLink: LinkBinding) => getLinkInfo(sLink));
 }
 
-export function getLinksTypesOf(response: Sparql.LinkTypesOfResponse): LinkType[] {
+export function getLinksTypesOf(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLink: Sparql.LinkType) => getLinkType(sLink));
+    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => getLinkType(sLink));
 }
 
-export function getFilteredData(response: Sparql.FilterResponse): Dictionary<ElementModel> {
+export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
 
@@ -180,7 +183,7 @@ export function getFilteredData(response: Sparql.FilterResponse): Dictionary<Ele
     return instancesMap;
 }
 
-export function enrichElement(element: ElementModel, sInst: Sparql.ElementInfo) {
+export function enrichElement(element: ElementModel, sInst: ElementBinding) {
     if (!element) {
         return;
     }
@@ -214,7 +217,7 @@ export function getNameFromId(id: string): string {
     }
 }
 
-export function getLocalizedString(label?: Sparql.Label, id?: string): LocalizedString {
+export function getLocalizedString(label?: RdfLiteral, id?: string): LocalizedString {
     if (label) {
         return {
             text: label.value,
@@ -230,11 +233,11 @@ export function getLocalizedString(label?: Sparql.Label, id?: string): Localized
     }
 }
 
-export function getInstCount(instcount: Sparql.TypedField): number {
+export function getInstCount(instcount: RdfLiteral): number {
     return (instcount ? +instcount.value : 0);
 }
 
-export function getClassModel(node: Sparql.TreeNode): ClassModel {
+export function getClassModel(node: ClassBinding): ClassModel {
     return {
         id: node.class.value,
         children: [],
@@ -243,7 +246,7 @@ export function getClassModel(node: Sparql.TreeNode): ClassModel {
     };
 }
 
-export function getLinkType(sLinkType: Sparql.LinkType): LinkType {
+export function getLinkType(sLinkType: LinkTypeBinding): LinkType {
     return {
         id: sLinkType.link.value,
         label: { values: [getLocalizedString(sLinkType.label, sLinkType.link.value)] },
@@ -251,22 +254,22 @@ export function getLinkType(sLinkType: Sparql.LinkType): LinkType {
     };
 }
 
-export function getPropertyValue(propValue?: Sparql.TypedField): Property {
+export function getPropertyValue(propValue?: RdfLiteral): Property {
     if (!propValue) { return undefined; }
     return {
         type: 'string',
-        value: { lang: '', text: propValue.value }
+        value: {lang: '', text: propValue.value},
     };
 }
 
-export function getElementInfo(sInfo: Sparql.ElementInfo): ElementModel {
-
+export function getElementInfo(sInfo: ElementBinding): ElementModel {
     const elementInfo: ElementModel = {
         id: sInfo.inst.value,
         label: { values: [getLocalizedString(sInfo.label, sInfo.inst.value)] },
         types: (sInfo.class ? [ sInfo.class.value ] : []),
-        properties: {}
+        properties: {},
     };
+
     if (sInfo.propType && sInfo.propType.value !== LABEL_URI) {
         elementInfo.properties[sInfo.propType.value] = [getPropertyValue(sInfo.propValue)];
     }
@@ -274,7 +277,7 @@ export function getElementInfo(sInfo: Sparql.ElementInfo): ElementModel {
     return elementInfo;
 }
 
-export function getLinkInfo(sLinkInfo: Sparql.LinkInfo): LinkModel {
+export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     if (!sLinkInfo) { return undefined; }
     return {
         linkTypeId: sLinkInfo.type.value,
@@ -283,7 +286,7 @@ export function getLinkInfo(sLinkInfo: Sparql.LinkInfo): LinkModel {
     };
 }
 
-export function getLinkTypeInfo(sLinkInfo: Sparql.LinkTypeInfo): LinkType {
+export function getLinkTypeInfo(sLinkInfo: LinkTypeInfoBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     return {
         id: sLinkInfo.typeId.value,

@@ -1,12 +1,12 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, Triple } from '../index';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
 
-const GRAPH = [
+const GRAPH: Triple[] = [
     {
         subject: {
             'type': 'uri',

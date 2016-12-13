@@ -6,7 +6,7 @@ import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
 import { executeSparqlQuery } from './provider';
-import * as Sparql from './sparqlModels';
+import { SparqlResponse, Triple } from './sparqlModels';
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -27,12 +27,12 @@ export class GraphBuilder {
         layout: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
-        return executeSparqlQuery<Sparql.ConstructResponse>(this.endpointUrl, query)
-            .then(this.normalizeResults)
+        return executeSparqlQuery<Triple>(this.endpointUrl, query)
+            .then(normalizeSparqlResults)
             .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
     };
 
-    getGraphFromRDFGraph(graph: Sparql.ConstructElement[]): Promise<{
+    getGraphFromRDFGraph(graph: Triple[]): Promise<{
         preloadedElements: any,
         preloadedLinks: any[],
         layout: LayoutData,
@@ -45,61 +45,20 @@ export class GraphBuilder {
         }));
     };
 
-    private normalizeResults(result: any) {
-        return new Promise<Sparql.SparqlResponse>((resolve, reject) => {
-            if (typeof result === 'string') {
-                const jsonResponse: Sparql.SparqlResponse = {
-                    head: {vars: ['subject', 'predicate', 'object']},
-                    results: {bindings: []},
-                };
-                N3.Parser().parse(result, (error, triple, hash) => {
-                    if (triple) {
-                        jsonResponse.results.bindings.push({
-                            subject:   {
-                                type: (triple.subject.indexOf('http') === 0 ? 'iri' : 'literal'),
-                                value: triple.subject,
-                            },
-                            predicate: {
-                                type: (triple.predicate.indexOf('http') === 0 ? 'iri' : 'literal'),
-                                value: triple.predicate,
-                            },
-                            object: {
-                                type: (triple.object.indexOf('http') === 0 ? 'iri' : 'literal'),
-                                value: triple.object,
-                            },
-                        });
-                    } else {
-                        resolve(jsonResponse);
-                    }
-                });
-            } else if (typeof result === 'object' && result) {
-                resolve(result);
-            } else {
-                reject(result);
-            }
-        });
-    }
-
-    private getConstructElements(response: Sparql.ConstructElement[]): {
+    private getConstructElements(response: Triple[]): {
         elementIds: string[], links: LinkModel[]
     } {
-        const sElements: Sparql.ConstructElement[] = response;
         const elements: Dictionary<boolean> = {};
         const links: LinkModel[] = [];
 
-        for (const constructElement of sElements) {
-            if (constructElement.subject.type === 'uri' && constructElement.object.type === 'uri') {
-                if (!elements[constructElement.subject.value]) {
-                    elements[constructElement.subject.value] = true;
-                }
-                if (!elements[constructElement.object.value]) {
-                    elements[constructElement.object.value]  = true;
-                }
-
+        for (const {subject, predicate, object} of response) {
+            if (subject.type === 'uri' && object.type === 'uri') {
+                if (!elements[subject.value]) { elements[subject.value] = true; }
+                if (!elements[object.value]) { elements[object.value]  = true; }
                 links.push({
-                    linkTypeId: constructElement.predicate.value,
-                    sourceId: constructElement.subject.value,
-                    targetId: constructElement.object.value,
+                    linkTypeId: predicate.value,
+                    sourceId: subject.value,
+                    targetId: object.value,
                 });
             }
         }
@@ -133,6 +92,40 @@ export class GraphBuilder {
         });
         return {cells: layoutElements.concat(layoutLinks)};
     }
-};
+}
+
+function normalizeSparqlResults(result: string | SparqlResponse<Triple>) {
+    return new Promise<SparqlResponse<Triple>>((resolve, reject) => {
+        if (typeof result === 'string') {
+            const jsonResponse: SparqlResponse<any> = {
+                head: {vars: ['subject', 'predicate', 'object']},
+                results: {bindings: []},
+            };
+            N3.Parser().parse(result, (error, triple, hash) => {
+                if (triple) {
+                    jsonResponse.results.bindings.push({
+                        subject: toRdfNode(triple.subject),
+                        predicate: toRdfNode(triple.predicate),
+                        object: toRdfNode(triple.object),
+                    });
+                } else {
+                    resolve(jsonResponse);
+                }
+            });
+        } else if (typeof result === 'object' && result) {
+            resolve(result);
+        } else {
+            reject(result);
+        }
+    });
+}
+
+function toRdfNode(entity: string) {
+    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
+        return {type: 'literal', value: entity.substring(1, entity.length - 1)};
+    } else {
+        return {type: 'uri', value: entity};
+    }
+}
 
 export default GraphBuilder;
