@@ -5,10 +5,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Added
+- Fetching for link between elements on a diagram at the end of import.
+
 ### Changed
+- Significant performance improvments when importing diagram.
+- Increased preferred link length in force layout.
+- Breaking change: link arrowheads implementation replaced by native
+SVG markers, changed link style customization interface.
 - Breaking change: rewritten scrollable diagram component `PaperArea`
 in React way, moved `zoomToFit()` and other related members.
 This change fixes many issues with scrolling and resizing diagram area.
+
+### Fixed
+- Unable to export as PNG/SVG diagram that contains element with SVG thumbnail.
+- Unable to export as PNG/SVG in Firefox >= 50.
+- Connections dialog height overflow in Firefox.
 
 ## [0.3.1] - 2016-11-22
 ### Added
