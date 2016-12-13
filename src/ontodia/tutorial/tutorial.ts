@@ -1,6 +1,13 @@
 import * as $ from 'jquery';
 import { introJs } from 'intro.js';
 
+export interface TutorialProps {
+    'data-position': string;
+    'data-step': string;
+    'data-intro-id': string;
+    'data-intro': string;
+}
+
 const helpAlreadySeenKey = 'helpPopupDisable';
 
 export function showTutorial() {

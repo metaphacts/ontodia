@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
+import { TutorialProps } from '../tutorial/tutorial';
 
 export interface Props {
     toolbar: React.ReactElement<any>;
@@ -41,43 +42,41 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
 
     render() {
         let leftPanel = (
-            <div className='ontodia__left-panel filter-panel'
-                 data-position='right' data-step='7' data-intro-id='resize' data-intro={INTRO_RESIZE}>
-                <div className='ontodia-widget filter-item'
-                     data-position='right' data-step='1' data-intro-id='tree-view' data-intro={INTRO_CLASSES}>
-                    <div className='filter-item__inner'>
-                        <div className='ontodia-widget-heading filter-item__header'>Classes</div>
-                        <div ref={e => this.classTreePanel = e} className='tree-view filter-item__body'></div>
-                    </div>
-                    <div className='filter-item__handle'></div>
-                </div>
-                <div className='ontodia-widget filter-item'
-                     data-position='top' data-step='2' data-intro-id='filter-view' data-intro={INTRO_INSTANCES}>
-                    <div className='filter-item__inner'>
-                        <div className='ontodia-widget-heading filter-item__header'>Instances</div>
-                        <div ref={e => this.filterPanel = e} className='filter-view filter-item__body'></div>
-                    </div>
-                </div>
-                <div className='filter-panel__handle'>
-                    <div className='filter-panel__handle-btn'></div>
-                </div>
-            </div>
+            <DragResizableColumn className='ontodia__left-panel' tutorialProps={{
+                'data-position': 'right', 'data-step': '7', 'data-intro-id': 'resize', 'data-intro': INTRO_RESIZE}}>
+                <ToggableColumnWidget heading='Classes'
+                    bodyClassName='tree-view' bodyRef={e => this.classTreePanel = e}
+                    tutorialProps={{
+                        'data-position': 'right',
+                        'data-step': '1',
+                        'data-intro-id': 'tree-view',
+                        'data-intro': INTRO_CLASSES,
+                    }}>
+                </ToggableColumnWidget>
+                <ToggableColumnWidget heading='Instances'
+                    bodyClassName='filter-view' bodyRef={e => this.filterPanel = e}
+                    tutorialProps={{
+                        'data-position': 'top',
+                        'data-step': '2',
+                        'data-intro-id': 'filter-view',
+                        'data-intro': INTRO_INSTANCES,
+                    }}>
+                </ToggableColumnWidget>
+            </DragResizableColumn>
         );
 
         let rightPanel = (
-            <div className='ontodia__right-panel filter-panel'>
-                <div className='ontodia-widget filter-item'
-                     data-position='left' data-step='4' data-intro-id='link-types-toolbox'
-                     data-intro={INTRO_CONNECTIONS}>
-                    <div className='filter-item__inner'>
-                        <div className='ontodia-widget-heading filter-item__header'>Connections</div>
-                        <div ref={e => this.linkTypesPanel = e} className='link-types-toolbox filter-item__body'></div>
-                    </div>
-                </div>
-                <div className='filter-panel__handle'>
-                    <div className='filter-panel__handle-btn'></div>
-                </div>
-            </div>
+            <DragResizableColumn className='ontodia__right-panel'>
+                <ToggableColumnWidget heading='Connections'
+                    bodyClassName='link-types-toolbox' bodyRef={e => this.linkTypesPanel = e}
+                    tutorialProps={{
+                        'data-position': 'left',
+                        'data-step': '4',
+                        'data-intro-id': 'link-types-toolbox',
+                        'data-intro': INTRO_CONNECTIONS,
+                    }}>
+                </ToggableColumnWidget>
+            </DragResizableColumn>
         );
 
         return (
@@ -115,6 +114,46 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
     private onDocumentMouseUp = () => {
         this.element.classList.remove('ontodia--unselectable');
     };
+}
+
+interface DragResizableColumnProps {
+    className?: string;
+    tutorialProps?: TutorialProps;
+    children?: React.ReactNode;
+}
+
+class DragResizableColumn extends React.Component<DragResizableColumnProps, void> {
+    render() {
+        return <div className={`filter-panel ${this.props.className || ''}`}>
+            {this.props.children}
+            <div className='filter-panel__handle'>
+                <div className='filter-panel__handle-btn'></div>
+            </div>
+        </div>;
+    }
+}
+
+interface ToggableColumnWidgetProps {
+    heading: string;
+    bodyClassName?: string;
+    bodyRef?: (body: HTMLDivElement) => void;
+    tutorialProps?: TutorialProps;
+    children?: React.ReactNode;
+}
+
+class ToggableColumnWidget extends React.Component<ToggableColumnWidgetProps, void> {
+    render() {
+        return <div className='filter-item ontodia-widget' {...this.props.tutorialProps}>
+            <div className='filter-item__inner'>
+                <div className='ontodia-widget-heading filter-item__header'>{this.props.heading}</div>
+                <div ref={this.props.bodyRef}
+                    className={`filter-item__body ${this.props.bodyClassName || ''}`}>
+                    {this.props.children}
+                </div>
+            </div>
+            <div className='filter-item__handle'></div>
+        </div>;
+    }
 }
 
 export default WorkspaceMarkup;
