@@ -208,10 +208,11 @@
 
 .ontodia-connections-menu_objects-panel_objects-list {
   border: 1px solid gray;
+  height: 0;
   flex-grow: 1;
   box-shadow: inset 0px 0px 23px -8px gray;
   background-color: whitesmoke;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
   margin-bottom: 5px;
 }
