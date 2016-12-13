@@ -235,9 +235,14 @@ export class LinkView extends joint.dia.LinkView {
         this.listenTo(typeModel, 'change:showLabel', this.updateLabel);
         this.listenTo(typeModel, 'change:label', this.updateLabel);
 
-        this.updateLabel({silent: true});
+        this.updateLabelWithOptions({silent: true});
     }
-    private updateLabel(options?: { silent?: boolean }) {
+
+    private updateLabel() {
+        this.updateLabelWithOptions();
+    }
+
+    private updateLabelWithOptions(options?: { silent?: boolean }) {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.getLinkType(linkTypeId);
 

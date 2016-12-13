@@ -124,15 +124,22 @@ export class FatLinkType extends Backbone.Model {
     readonly index: number;
     diagram: DiagramModel;
 
+    get label(): { values: LocalizedString[] } { return this.get('label'); }
+    set label(value: { values: LocalizedString[] }) { this.set('label', value); }
+
     constructor(params: {
         id: string;
         index: number;
         label: { values: LocalizedString[] };
         diagram: DiagramModel;
     }) {
-        super({id: params.id});
+        super({
+            id: params.id,
+            label: params.label,
+            visible: true,
+            showLabel: true,
+        });
         this.index = params.index;
-        this.set('label', params.label);
         this.diagram = params.diagram;
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }
