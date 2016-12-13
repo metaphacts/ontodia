@@ -110,7 +110,8 @@ export class DiagramModel extends Backbone.Model {
             if (cell instanceof Link) {
                 const linkType = this.getLinkType(cell.get('typeId'));
                 if (linkType) {
-                    const hasLabels = cell.get('labels').length > 0;
+                    const labels: any[] = cell.get('labels');
+                    const hasLabels = labels && labels.length > 0;
                     linkType.set('showLabel', hasLabels);
                 }
             }
