@@ -1,6 +1,6 @@
 {
   "name": "ontodia",
-  "version": "0.3.2",
+  "version": "0.3.2-dev.20161214",
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
@@ -67,7 +67,7 @@
     "sass-loader": "4.0.2",
     "style-loader": "0.13.1",
     "ts-loader": "0.8.2",
-    "typescript": "2.0.8",
+    "typescript": "2.0.10",
     "url-loader": "0.5.7",
     "webpack": "1.13.2",
     "webpack-dev-server": "1.14.1"

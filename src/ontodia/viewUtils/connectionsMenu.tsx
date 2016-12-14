@@ -180,7 +180,7 @@ export class ConnectionsMenu {
             element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
             element.set('presentOnDiagram', true);
         });
-        this.options.paper.trigger('ontodia:adjustSize');
+        this.options.view.adjustPaper();
         this.options.onClose();
     };
 

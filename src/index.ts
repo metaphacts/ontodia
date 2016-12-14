@@ -12,6 +12,7 @@ export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparq
 export * from './ontodia/data/sparql/provider';
 export * from './ontodia/data/sparql/wikidataProvider';
 export * from './ontodia/data/sparql/graphBuilder';
+export { Element, Link } from './ontodia/diagram/elements';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 export { Workspace, Props as WorkspaceProps } from './ontodia/workspace/workspace';

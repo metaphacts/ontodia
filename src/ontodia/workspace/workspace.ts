@@ -149,16 +149,14 @@ export class Workspace extends Component<Props, {}> {
         }
     }
 
-    getModel() {
-        return this.model;
-    }
+    getModel() { return this.model; }
+    getDiagram() { return this.diagram; }
 
-    getDiagram() {
-        return this.diagram;
-    }
+    preventTextSelectionUntilMouseUp() { this.markup.preventTextSelection(); }
+    zoomToFit() { this.markup.paperArea.zoomToFit(); }
 
-    zoomToFit() {
-        this.markup.paperArea.zoomToFit();
+    showWaitIndicatorWhile(promise: Promise<any>) {
+        this.markup.paperArea.showIndicator(promise);
     }
 
     forceLayout() {

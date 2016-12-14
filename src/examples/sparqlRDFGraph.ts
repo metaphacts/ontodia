@@ -86,7 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
-                graphBuilder.getGraphFromRDFGraph(GRAPH).then(response => model.importLayout({
+                const loadingGraph = graphBuilder.getGraphFromRDFGraph(GRAPH);
+                workspace.showWaitIndicatorWhile(loadingGraph);
+
+                loadingGraph.then(response => model.importLayout({
                     dataProvider: sparqlDataProvider,
                     preloadedElements: response.preloadedElements,
                     preloadedLinks: response.preloadedLinks,

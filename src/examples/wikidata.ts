@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 //     layoutData: undefined,
                 // });
 
-                graphBuilder.getGraphFromConstrunct(`
+                const loadingGraph = graphBuilder.getGraphFromConstruct(`
                     CONSTRUCT { ?current ?p ?o. }
                     WHERE {
                       {
@@ -83,7 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     VALUES (?current) {
                       (<http://www.wikidata.org/entity/Q2836593>)
                     }`
-                ).then(response => model.importLayout({
+                );
+                workspace.showWaitIndicatorWhile(loadingGraph);
+
+                loadingGraph.then(response => model.importLayout({
                     dataProvider,
                     preloadedElements: response.preloadedElements,
                     preloadedLinks: response.preloadedLinks,

@@ -198,7 +198,7 @@ export class DiagramModel extends Backbone.Model {
             _.each(params.elements, normalizeTemplate);
 
             this.listenToOnce(this, 'state:renderDone', () => {
-                const beforeReturn = () => this.graph.stopBatch('to-back');
+                const beforeReturn = () => this.graph.trigger('batch:stop', {batchName: 'to-back'});
 
                 try {
                     this.syncCellsWithLayout(
@@ -217,7 +217,7 @@ export class DiagramModel extends Backbone.Model {
                 this.trigger('state:dataLoaded');
             });
 
-            this.graph.startBatch('to-back');
+            this.graph.trigger('batch:start', {batchName: 'to-back'});
 
             if (params.layoutData) {
                 this.initLayout(params.elements, params.layoutData);

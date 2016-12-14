@@ -3,31 +3,3 @@
 .link-tools .tool-options { display: none }
 .marker-arrowheads { display: none }
 .selection .handle.rotate { display: none; } /* disables the rotate tool */
-
-/* JointJS Halo */
-.halo .handle.clone { display: none; }
-.halo .handle.fork { display: none; }
-.halo .handle.link { display: none; }
-.halo .handle.unlink { display: none; }
-.halo .handle.resize { display: none; }
-.halo label {
-    max-width: inherit;
-    font-weight: normal;
-}
-.halo .handles .handle {
-    opacity: 0.4;
-    transition: opacity 200ms 0ms;
-}
-.halo .handles .handle:hover {
-    opacity: 1.0;
-    transition: opacity 200ms 0ms;
-}
-
-.selection-wrapper[data-selection-length="1"] {
-    display: inherit;
-}
-/* HACK: temporary fix for shifted selection box */
-.selection-wrapper {
-    margin-left: 0 !important;
-    margin-top: 0 !important;
-}

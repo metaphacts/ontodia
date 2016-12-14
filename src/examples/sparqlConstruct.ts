@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sparqlDataProvider = new SparqlDataProvider({endpointUrl});
                 const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
-                graphBuilder.getGraphFromConstrunct(
+                const loadingGraph = graphBuilder.getGraphFromConstruct(
                     `CONSTRUCT {
                         ?inst rdf:type ?class.
                         ?inst ?propType1 ?propValue1.
@@ -37,7 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         OPTIONAL {?inst ?propType1 ?propValue1.  FILTER(isURI(?propValue1)). }  	
                         OPTIONAL {?propValue2 ?propType2 ?inst.  FILTER(isURI(?propValue2)). }  
                     } LIMIT 100`
-                ).then(response => model.importLayout({
+                );
+                workspace.showWaitIndicatorWhile(loadingGraph);
+
+                loadingGraph.then(response => model.importLayout({
                     dataProvider: sparqlDataProvider,
                     preloadedElements: response.preloadedElements,
                     preloadedLinks: response.preloadedLinks,

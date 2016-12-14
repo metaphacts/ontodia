@@ -21,7 +21,7 @@ export class GraphBuilder {
         public endpointUrl: string
     ) {}
 
-    getGraphFromConstrunct(constructQuery: string): Promise<{
+    getGraphFromConstruct(constructQuery: string): Promise<{
         preloadedElements: any,
         preloadedLinks: any[],
         layout: LayoutData,

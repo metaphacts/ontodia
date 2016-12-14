@@ -133,6 +133,10 @@ export class DiagramView extends Backbone.Model {
         return toDataURL(this.paper, options);
     }
 
+    adjustPaper() {
+        this.paper.trigger('ontodia:adjustSize');
+    }
+
     initializePaperComponents() {
         this.configureSelection();
         this.configureDefaultHalo();
@@ -216,6 +220,7 @@ export class DiagramView extends Backbone.Model {
                     } else {
                         this.showNavigationMenu(selectedElement);
                     }
+                    renderDefaultHalo(selectedElement);
                 },
             }), container);
         };
