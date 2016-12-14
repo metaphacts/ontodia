@@ -1,7 +1,5 @@
 import * as d3 from 'd3';
 
-import * as svgui from './svgui';
-
 /**
  * Returns a remainder of an ease function starting from elapsedTime.
  */
@@ -155,9 +153,7 @@ export class Indicator {
     }
     private updateState() {
         if (this.text) {
-            const ti = svgui.textInfo(this.statusText, this.text.attr('class'));
-            const maxTextWidth = Math.max(this.maxWidth - this.spacing - this.size);
-            svgui.razeText(this.text, this.statusText ? this.statusText : '', '', ti, maxTextWidth);
+            this.text.text(this.statusText);
         }
         if (this.animation && this.isErrorOccurred) {
             const index = Indicator.instances.indexOf(this);

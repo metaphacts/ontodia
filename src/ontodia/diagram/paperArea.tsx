@@ -3,7 +3,7 @@ import * as joint from 'jointjs';
 import * as React from 'react';
 import { debounce } from 'lodash';
 
-import { Indicator, WrapIndicator } from '../../svgui/indicator';
+import { Indicator, WrapIndicator } from '../viewUtils/indicator';
 
 import { DiagramModel } from './model';
 
@@ -354,7 +354,7 @@ export class PaperArea extends React.Component<Props, {}> {
         }
         const createTemporaryIndicator = (status?: string) => {
             const paperRect = this.paper.svg.getBoundingClientRect();
-            const x = status ? paperRect.width / 4 : paperRect.width / 2;
+            const x = status ? paperRect.width / 3 : paperRect.width / 2;
             this.loadingIndicator = new Indicator(this.paper.svg, {
                 position: {x: x, y: paperRect.height / 2},
             });

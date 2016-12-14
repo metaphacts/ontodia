@@ -1,6 +1,5 @@
 import { hcl } from 'd3';
 import * as Backbone from 'backbone';
-import * as $ from 'jquery';
 import * as joint from 'jointjs';
 import { merge, cloneDeep } from 'lodash';
 import { createElement } from 'react';
@@ -30,7 +29,7 @@ import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element, FatClassModel, linkMarkerKey } from './elements';
 
-import { LinkView } from './elementViews';
+import { LinkView } from './linkView';
 import { TemplatedUIElementView } from './templatedElementView';
 
 export interface DiagramViewOptions {
