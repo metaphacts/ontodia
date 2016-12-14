@@ -91,6 +91,8 @@ export class Workspace extends Component<Props, {}> {
         if (this.isUnsupportedBrowser()) { return; }
         if (this.props.isViewOnly) { return; }
 
+        this.diagram.initializePaperComponents();
+
         this.filter = new FilterView({
             model: new FilterModel(this.diagram.model),
             view: this.diagram,
@@ -138,6 +140,7 @@ export class Workspace extends Component<Props, {}> {
         }
 
         $(window).off('resize', this.onWindowResize);
+        this.diagram.dispose();
     }
 
     private onWindowResize = () => {

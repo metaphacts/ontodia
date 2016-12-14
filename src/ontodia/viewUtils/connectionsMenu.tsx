@@ -198,7 +198,7 @@ export class ConnectionsMenu {
             // this.options.onClose();
         } else {
             let selectedElement = this.view.model.elements[this.cellView.model.id];
-            this.view.model.graph.trigger('add-to-filter', selectedElement, link);
+            selectedElement.addToFilter(link);
             // this.options.onClose();
         }
     };

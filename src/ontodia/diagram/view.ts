@@ -3,6 +3,8 @@ import * as Backbone from 'backbone';
 import * as $ from 'jquery';
 import * as joint from 'jointjs';
 import { merge, cloneDeep } from 'lodash';
+import { createElement } from 'react';
+import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
 
 import {
     TypeStyleResolver,
@@ -46,13 +48,16 @@ export interface TypeStyle {
 /**
  * Properties:
  *     language: string
+ * 
+ * Events:
+ *     (private) dispose - fires on view dispose
  */
 export class DiagramView extends Backbone.Model {
     private typeStyleResolvers: TypeStyleResolver[];
     private linkStyleResolvers: LinkStyleResolver[];
     private templatesResolvers: TemplateResolver[];
 
-    readonly paper: joint.dia.Paper;
+    paper: joint.dia.Paper;
     halo: Halo;
     connectionsMenu: ConnectionsMenu;
 
@@ -99,11 +104,6 @@ export class DiagramView extends Backbone.Model {
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
 
-        this.configureSelection();
-        this.configureDefaultHalo();
-
-        $('html').keyup(this.onKeyUp);
-
         this.listenTo(this.paper, 'render:done', () => {
             this.model.trigger('state:renderDone');
         });
@@ -134,6 +134,13 @@ export class DiagramView extends Backbone.Model {
         return toDataURL(this.paper, options);
     }
 
+    initializePaperComponents() {
+        this.configureSelection();
+        this.configureDefaultHalo();
+        document.addEventListener('keyup', this.onKeyUp);
+        this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+    }
+
     private onKeyUp = (e: KeyboardEvent) => {
         const DELETE_KEY_CODE = 46;
         if (e.keyCode === DELETE_KEY_CODE &&
@@ -158,7 +165,7 @@ export class DiagramView extends Backbone.Model {
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
 
-        this.paper.on('cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
+        this.listenTo(this.paper, 'cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
             // We don't want a Halo for links.
             if (cellView.model instanceof joint.dia.Link) { return; }
             if (evt.ctrlKey || evt.shiftKey || evt.metaKey) { return; }
@@ -171,11 +178,11 @@ export class DiagramView extends Backbone.Model {
         });
 
         let pointerScreenCoords = {x: NaN, y: NaN};
-        this.paper.on('blank:pointerdown', (evt: MouseEvent) => {
+        this.listenTo(this.paper, 'blank:pointerdown', (evt: MouseEvent) => {
             pointerScreenCoords = {x: evt.screenX, y: evt.screenY};
         });
 
-        this.paper.on('blank:pointerup', (evt: MouseEvent) => {
+        this.listenTo(this.paper, 'blank:pointerup', (evt: MouseEvent) => {
             if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
             this.selection.reset();
             if (document.activeElement) {
@@ -187,38 +194,42 @@ export class DiagramView extends Backbone.Model {
     private configureDefaultHalo() {
         if (this.options.disableDefaultHalo) { return; }
 
-        this.listenTo(this.selection, 'add remove reset', () => {
-            if (this.selection.length === 1) {
-                const selectedElement = this.selection.first();
-                const cellView = this.paper.findViewByModel(selectedElement);
-                if (this.halo && cellView !== this.halo.options.cellView) {
-                    this.halo.remove();
-                    this.halo = undefined;
-                }
-                if (!this.halo) {
-                    this.halo = new Halo({
-                        paper: this.paper,
-                        diagramView: this,
-                        cellView: cellView,
-                        onDelete: () => {
-                            this.removeSelectedElements();
-                        },
-                        onExpand: () => {
-                            cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
-                        },
-                        onToggleNavigationMenu: () => {
-                            if (this.connectionsMenu) {
-                                this.hideNavigationMenu();
-                            } else {
-                                this.showNavigationMenu(selectedElement);
-                            }
-                        },
-                    });
-                }
-            } else if (this.halo && this.selection.length === 0) {
-                this.halo.remove();
-                this.halo = undefined;
+        const container = document.createElement('div');
+        this.paper.el.appendChild(container);
+
+        const renderDefaultHalo = (selectedElement?: Element) => {
+            let cellView: joint.dia.CellView = undefined;
+            if (selectedElement) {
+                cellView = this.paper.findViewByModel(selectedElement);
             }
+            reactDOMRender(createElement(Halo, {
+                paper: this.paper,
+                diagramView: this,
+                cellView: cellView,
+                onDelete: () => this.removeSelectedElements(),
+                onExpand: () => {
+                    cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                },
+                navigationMenuOpened: Boolean(this.connectionsMenu),
+                onToggleNavigationMenu: () => {
+                    if (this.connectionsMenu) {
+                        this.hideNavigationMenu();
+                    } else {
+                        this.showNavigationMenu(selectedElement);
+                    }
+                },
+            }), container);
+        };
+
+        this.listenTo(this.selection, 'add remove reset', () => {
+            const selected = this.selection.length === 1 ? this.selection.first() : undefined;
+            renderDefaultHalo(selected);
+        });
+
+        renderDefaultHalo();
+        this.onDispose(() => {
+            unmountComponentAtNode(container);
+            this.paper.el.removeChild(container);
         });
     }
 
@@ -451,6 +462,18 @@ export class DiagramView extends Backbone.Model {
 
     public getOptions(): DiagramViewOptions {
         return this.options;
+    }
+
+    private onDispose(handler: () => void) {
+        this.listenTo(this, 'dispose', handler);
+    }
+
+    dispose() {
+        if (!this.paper) { return; }
+        this.trigger('dispose');
+        this.stopListening();
+        this.paper.remove();
+        this.paper = undefined;
     }
 }
 

@@ -45,8 +45,8 @@ export class Element extends UIElement {
         }
     }
 
-    addToFilter() {
-        this.trigger('add-to-filter', this);
+    addToFilter(linkType?: FatLinkType) {
+        this.trigger('add-to-filter', this, linkType);
     }
 
     focus() {

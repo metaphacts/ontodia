@@ -1,74 +1,69 @@
 .ontodia-halo {
   position: absolute;
   pointer-events: none;
-}
 
-.ontodia-halo__navigate {
-  background-size: cover;
-  cursor: pointer;
-  height: 16px;
-  opacity: 0.5;
-  pointer-events: auto;
-  position: absolute;
-  right: -17px;
-  bottom: calc(50% - 10px);
-  margin-left: -8px;
-  width: 16px;
-  transition: opacity 0.3s;
-}
+  @mixin halo-button {
+    position: absolute;
+    background-size: cover;
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    width: 16px;
+    height: 16px;
+  }
 
-.ontodia-halo__navigate:hover {
-  opacity: 1;
-}
+  &__navigate {
+    @include halo-button;
+    bottom: calc(50% - 10px);
+    right: -17px;
+    margin-left: -8px;
 
-.ontodia-halo__navigate--open {
-  background-image: url("../images/connections.png");
-}
+    &:hover {
+      opacity: 1;
+    }
 
-.ontodia-halo__navigate--closed {
-  background-image: url("../images/close-connections.png");
-}
+    &--open {
+      background-image: url("../images/connections.png");
+    }
 
-.ontodia-halo__delete {
-  background-image: url("../images/delete.png");
-  background-size: cover;
-  cursor: pointer;
-  height: 16px;
-  opacity: 0.5;
-  pointer-events: auto;
-  position: absolute;
-  top: -16px;
-  right: -16px;
-  width: 16px;
-  transition: opacity 0.3s;
-}
+    &--closed {
+      background-image: url("../images/close-connections.png");
+    }
+  }
 
-.ontodia-halo__delete:hover {
-  opacity: 1;
-}
+  &__delete {
+    @include halo-button;
+    background-image: url("../images/delete.png");
+    top: -16px;
+    right: -16px;
 
-.ontodia-halo__expand {
-  background-size: cover;
-  cursor: pointer;
-  height: 16px;
-  opacity: 0.5;
-  pointer-events: auto;
-  position: absolute;
-  bottom: -17px;
-  left: 50%;
-  margin-left: -8px;
-  width: 16px;
-  transition: opacity 0.3s;
-}
+    &:hover {
+      opacity: 1;
+    }
+  }
 
-.ontodia-halo__expand:hover {
-  opacity: 1;
-}
+  &__expand {
+    @include halo-button;
+    bottom: -17px;
+    left: 50%;
+    margin-left: -8px;
 
-.ontodia-halo__expand--open {
-  background-image: url("../images/expand-properties.png");
-}
+    &:hover {
+      opacity: 1;
+    }
 
-.ontodia-halo__expand--closed {
-  background-image: url("../images/collapse-properties.png");
+    &--open {
+      background-image: url("../images/expand-properties.png");
+    }
+
+    &--closed {
+      background-image: url("../images/collapse-properties.png");
+    }
+  }
+
+  &__filter {
+    @include halo-button;
+    bottom: -17px;
+  }
 }

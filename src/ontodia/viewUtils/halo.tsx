@@ -1,11 +1,10 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 
 import { DiagramView } from '../diagram/view';
 
-export interface HaloOptions {
+export interface Props {
     paper: joint.dia.Paper;
     cellView: joint.dia.CellView;
     diagramView: DiagramView;
@@ -15,53 +14,41 @@ export interface HaloOptions {
     onToggleNavigationMenu?: () => void;
 }
 
-export class Halo {
-    private container: HTMLElement;
-    private handler: Backbone.Model;
+export class Halo extends React.Component<Props, void> {
+    private handler = new Backbone.Model();
 
-    constructor(public options: HaloOptions) {
-        this.container = document.createElement('div');
-        this.options.paper.el.appendChild(this.container);
-
-        this.render();
-
-        this.handler = new Backbone.Model();
-        this.handler.listenTo(this.options.cellView.model,
-            'change:isExpanded change:position change:size', this.render);
-        this.handler.listenTo(this.options.paper, 'resize scale', this.render);
+    componentWillMount() {
+        this.handler.listenTo(this.props.paper, 'resize scale', () => this.forceUpdate());
+        this.listenToCell(this.props.cellView);
     }
 
-    private render = () => {
-        ReactDOM.render(React.createElement(HaloMarkup, {
-            cellView: this.options.cellView,
-            cellIsExpanded: this.options.cellView.model.get('isExpanded'),
-            onDelete: this.options.onDelete,
-            onExpand: this.options.onExpand,
-            navigationMenuOpened: this.options.navigationMenuOpened,
-            onToggleNavigationMenu: this.options.onToggleNavigationMenu,
-        }), this.container);
-    };
+    componentWillReceiveProps(nextProps: Props) {
+        if (nextProps.cellView !== this.props.cellView) {
+            if (this.props.cellView) { this.handler.stopListening(this.props.cellView.model); }
+            this.listenToCell(nextProps.cellView);
+        }
+    }
 
-    remove() {
-        this.options.diagramView.hideNavigationMenu();
+    listenToCell(cellView: joint.dia.CellView) {
+        if (cellView) {
+            this.handler.listenTo(cellView.model,
+                'change:isExpanded change:position change:size', () => this.forceUpdate());
+        }
+    }
+
+    componentWillUnmount() {
+        this.props.diagramView.hideNavigationMenu();
         this.handler.stopListening();
-        ReactDOM.unmountComponentAtNode(this.container);
-        this.options.paper.el.removeChild(this.container);
     }
-}
 
-export interface Props {
-    cellView: joint.dia.CellView;
-    cellIsExpanded: boolean;
-    onDelete: () => void;
-    onExpand: () => void;
-    navigationMenuOpened?: boolean;
-    onToggleNavigationMenu?: () => void;
-}
-
-export class HaloMarkup extends React.Component<Props, void> {
     render() {
-        const {cellIsExpanded, navigationMenuOpened} = this.props;
+        if (!this.props.cellView) {
+            return <div className='ontodia-halo' style={{display: 'none'}} />;
+        }
+
+        const {cellView, navigationMenuOpened} = this.props;
+        const cellExpanded = cellView.model.get('isExpanded');
+
         const bbox = this.props.cellView.getBBox();
         const style = {
             top: bbox.y,
@@ -79,7 +66,7 @@ export class HaloMarkup extends React.Component<Props, void> {
                     onClick={this.props.onToggleNavigationMenu} />
 
                 <div className={'ontodia-halo__expand ' +
-                (cellIsExpanded ? 'ontodia-halo__expand--closed' : 'ontodia-halo__expand--open')}
+                (cellExpanded ? 'ontodia-halo__expand--closed' : 'ontodia-halo__expand--open')}
                      onClick={this.props.onExpand} />
             </div>
         );
