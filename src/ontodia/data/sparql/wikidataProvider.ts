@@ -231,7 +231,11 @@ export class WikidataDataProvider implements DataProvider {
                         ${elementTypePart}
                         ${refQueryPart}
                         ${textSearchPart}
-                        BIND(<http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(STR(?inst), 33)) AS ?score)
+                        FILTER ISIRI(?inst)
+                        BIND(STR(?inst) as ?strInst)
+                        BIND(IF(STRLEN(?strInst) > 33,
+                            <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
+                            10000) as ?score)
                     } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
                 }
                 OPTIONAL {?inst wdt:P31 ?foundClass}
