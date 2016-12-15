@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Fixed
+- Exported missing LayoutData types.
 
 ## [0.3.3] - 2016-12-15
 ### Added
