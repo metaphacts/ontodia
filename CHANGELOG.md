@@ -5,22 +5,46 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+## [0.3.3] - 2016-12-15
+### Added
+- "Search for connected elements" button to Halo.
+
+### Changed
+- Disabled "click on element to search".
+- Hide "Connections" dialog when click on empty paper space.
+
+### Fixed
+- Display error in Connection menu on failed request.
+- Inconsistent thumbnail width in default element thumbnail.
+- Made paper adjust its size when element is expanded or collapsed.
+- `WikidataProvider`:
+  * made search ordering consistent;
+  * prevent label and property duplication;
+  * replaced full images with thumbnails when using `imageClassUris`;
+  * query elementInfo using single SPARQL query for all elements;
+  * corrected `linkTypesOf` query to return actual connected elements count.
+
+## [0.3.2] - 2016-12-14
 ### Added
 - Fetching for link between elements on a diagram at the end of import.
 
 ### Changed
 - Significant performance improvments when importing diagram.
 - Increased preferred link length in force layout.
-- Breaking change: link arrowheads implementation replaced by native
-SVG markers, changed link style customization interface.
-- Breaking change: rewritten scrollable diagram component `PaperArea`
-in React way, moved `zoomToFit()` and other related members.
-This change fixes many issues with scrolling and resizing diagram area.
 
 ### Fixed
 - Unable to export as PNG/SVG diagram that contains element with SVG thumbnail.
 - Unable to export as PNG/SVG in Firefox >= 50.
 - Connections dialog height overflow in Firefox.
+
+### Breaking changes
+- Link arrowheads implementation replaced by native
+SVG markers, changed link style customization interface.
+- Rewritten scrollable diagram component `PaperArea`
+in React way, moved `zoomToFit()` and other related members.
+This change fixes many issues with scrolling and resizing diagram area.
+- Fixed typo in `GraphBuilder.getGraphFromConstruct()` method name.
 
 ## [0.3.1] - 2016-11-22
 ### Added
@@ -72,7 +96,9 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...HEAD
+[0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ontodia-org/ontodia/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/ontodia-org/ontodia/compare/v0.2.0...v0.2.1
