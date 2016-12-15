@@ -34,7 +34,7 @@ export class ConnectionsMenu {
     private container: HTMLElement;
     private handler: Backbone.Model;
     private view: DiagramView;
-    private state: string;
+    private state: 'loading' | 'error' | 'completed';
 
     private links: FatLinkType[];
     private countMap: { [linkTypeId: string]: number };
@@ -124,15 +124,11 @@ export class ConnectionsMenu {
                     limit: 100,
                     offset: i * 100,
                     languageCode: this.view.getLanguage(),
-                }).catch(err => {
-                    console.error(err);
-                    return {};
                 })
             );
         }
 
-        Promise.all(requests)
-        .then(results => {
+        Promise.all(requests).then(results => {
             this.state = 'completed';
             this.objects = [];
             results.forEach(elements => {
@@ -254,7 +250,7 @@ export interface ConnectionsMenuMarkupProps {
     };
 
     lang: string;
-    state: string; // 'loading', 'completed'
+    state: 'loading' | 'error' | 'completed';
 
     onExpandLink?: (link: FatLinkType) => void;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
@@ -308,7 +304,9 @@ export class ConnectionsMenuMarkup
     };
 
     private getBody = () => {
-        if (this.props.objectsData && this.state.panel === 'objects') {
+        if (this.props.state === 'error') {
+            return <label className='ontodia-connections-menu__error'>Error</label>;
+        } else if (this.props.objectsData && this.state.panel === 'objects') {
             return <ObjectsPanel
                 data={this.props.objectsData}
                 lang={this.props.lang}
@@ -316,7 +314,7 @@ export class ConnectionsMenuMarkup
                 loading={this.props.state === 'loading'}
                 onPressAddSelected={this.props.onPressAddSelected}
             />;
-        } else  if (this.props.connectionsData  && this.state.panel === 'connections') {
+        } else if (this.props.connectionsData && this.state.panel === 'connections') {
             if (this.props.state === 'loading') {
                 return <label className='ontodia-connections-menu__loading'>Loading...</label>;
             }
@@ -326,8 +324,9 @@ export class ConnectionsMenuMarkup
                 filterKey={this.state.filterKey}
                 onExpandLink={this.onExpandLink}
                 onMoveToFilter={this.props.onMoveToFilter}/>;
+        } else {
+            return <div/>;
         }
-        return <label className='ontodia-connections-menu__error'>Error</label>;
     };
 
     render() {
@@ -352,16 +351,14 @@ export class ConnectionsMenuMarkup
                         placeholder='Search for...'
                     />
                 </div>
-                <div className={
-                    'ontodia-connections-menu__progress-bar '
-                        + (this.props.state === 'loading' ? 'state-loading' : '')
-                }>
+                <div className={`ontodia-connections-menu__progress-bar ` +
+                    `ontodia-connections-menu__progress-bar--${this.props.state}`}>
                     <div className='progress-bar progress-bar-striped active'
                         role='progressbar'
                         aria-valuemin='0'
                         aria-valuemax='100'
                         aria-valuenow='100'
-                        style={ {width: '100%'} }>
+                        style={{width: '100%'}}>
                     </div>
                 </div>
                 {this.getBody()}

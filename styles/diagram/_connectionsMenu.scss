@@ -85,11 +85,17 @@
   -webkit-transition: 0.3s;
   -moz-transition: 0.3s;
   transition: 0.3s;
-}
 
-.state-loading {
-  height: 10px;
-  opacity: 1;
+  &--loading {
+    height: 10px;
+    opacity: 1;
+  }
+
+  &--error {
+    height: 10px;
+    opacity: 1;
+    > .progress-bar { background-color: #E72F2F; }
+  }
 }
 
 .element-in-popup-menu {
