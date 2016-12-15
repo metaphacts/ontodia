@@ -81,6 +81,7 @@ export class PaperArea extends React.Component<Props, {}> {
         this.listener.listenTo(this.paper, 'cell:pointerup', this.adjustPaper);
         this.listener.listenTo(this.paper.options.model,
             'add remove change:position', debounce(this.adjustPaper, 50));
+        this.listener.listenTo(this.paper.options.model, 'change:size', this.adjustPaper);
         this.listener.listenTo(this.paper, 'ontodia:adjustSize', this.adjustPaper);
 
         this.area.addEventListener('dragover', this.onDragOver);
