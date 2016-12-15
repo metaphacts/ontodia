@@ -12,7 +12,10 @@ export interface Props {
     onExpand?: () => void;
     navigationMenuOpened?: boolean;
     onToggleNavigationMenu?: () => void;
+    onAddToFilter?: () => void;
 }
+
+const CLASS_NAME = 'ontodia-halo';
 
 export class Halo extends React.Component<Props, void> {
     private handler = new Backbone.Model();
@@ -43,7 +46,7 @@ export class Halo extends React.Component<Props, void> {
 
     render() {
         if (!this.props.cellView) {
-            return <div className='ontodia-halo' style={{display: 'none'}} />;
+            return <div className={CLASS_NAME} style={{display: 'none'}} />;
         }
 
         const {cellView, navigationMenuOpened} = this.props;
@@ -58,16 +61,24 @@ export class Halo extends React.Component<Props, void> {
         };
 
         return (
-            <div className='ontodia-halo' style={style}>
-                <div className='ontodia-halo__delete' onClick={this.props.onDelete} />
+            <div className={CLASS_NAME} style={style}>
+                <div className={`${CLASS_NAME}__delete`}
+                    title='Remove an element from the diagram'
+                    onClick={this.props.onDelete} />
 
-                <div className={'ontodia-halo__navigate ' +
-                (navigationMenuOpened ? 'ontodia-halo__navigate--closed' : 'ontodia-halo__navigate--open')}
+                <div className={`${CLASS_NAME}__navigate ` +
+                    `${CLASS_NAME}__navigate--${navigationMenuOpened ? 'closed' : 'open'}`}
+                    title='Open a dialog to navigate to connected elements'
                     onClick={this.props.onToggleNavigationMenu} />
 
-                <div className={'ontodia-halo__expand ' +
-                (cellExpanded ? 'ontodia-halo__expand--closed' : 'ontodia-halo__expand--open')}
-                     onClick={this.props.onExpand} />
+                <div className={`${CLASS_NAME}__add-to-filter`}
+                    title='Search for connected elements'
+                    onClick={this.props.onAddToFilter} />
+
+                <div className={`${CLASS_NAME}__expand ` +
+                    `${CLASS_NAME}__expand--${cellExpanded ? 'closed' : 'open'}`}
+                    title={`Expand an element to reveal additional properties`}
+                    onClick={this.props.onExpand} />
             </div>
         );
     }

@@ -62,8 +62,14 @@
     }
   }
 
-  &__filter {
+  &__add-to-filter {
     @include halo-button;
+    background-image: url("../images/add-to-filter.png");
     bottom: -17px;
+    right: -17px;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }

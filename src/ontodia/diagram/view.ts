@@ -174,9 +174,6 @@ export class DiagramView extends Backbone.Model {
             if (evt.ctrlKey || evt.shiftKey || evt.metaKey) { return; }
             const element = cellView.model as Element;
             this.selection.reset([element]);
-            if (!this.options.disableDefaultHalo) {
-                element.addToFilter();
-            }
             element.focus();
         });
 
@@ -188,6 +185,7 @@ export class DiagramView extends Backbone.Model {
         this.listenTo(this.paper, 'blank:pointerup', (evt: MouseEvent) => {
             if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
             this.selection.reset();
+            this.hideNavigationMenu();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
@@ -222,6 +220,7 @@ export class DiagramView extends Backbone.Model {
                     }
                     renderDefaultHalo(selectedElement);
                 },
+                onAddToFilter: () => selectedElement.addToFilter(),
             }), container);
         };
 
@@ -296,9 +295,6 @@ export class DiagramView extends Backbone.Model {
         }
 
         this.selection.reset(elementsToSelect);
-        if (elementsToSelect.length === 1 && !this.options.disableDefaultHalo) {
-            elementsToSelect[0].addToFilter();
-        }
 
         this.model.storeBatchCommand();
     }
