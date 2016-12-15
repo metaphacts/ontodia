@@ -135,16 +135,27 @@ export class PaperArea extends React.Component<Props, {}> {
     }
 
     private updatePaperMargins() {
+        const previousPadding = this.padding;
         this.padding = {
-            x: this.area.clientWidth * 0.75,
-            y: this.area.clientHeight * 0.75,
+            x: Math.ceil(this.area.clientWidth * 0.75),
+            y: Math.ceil(this.area.clientHeight * 0.75),
         };
+
+        const paddingUnchanged =
+            this.padding.x === previousPadding.x &&
+            this.padding.y === previousPadding.y;
+        if (paddingUnchanged) { return; }
 
         const paperElement: HTMLElement = this.paper.el;
         paperElement.style.marginLeft = `${this.padding.x}px`;
         paperElement.style.marginRight = `${this.padding.x}px`;
         paperElement.style.marginTop = `${this.padding.y}px`;
         paperElement.style.marginBottom = `${this.padding.y}px`;
+
+        if (previousPadding) {
+            this.area.scrollLeft += this.padding.x - previousPadding.x;
+            this.area.scrollTop += this.padding.y - previousPadding.y;
+        }
     }
 
     private onPaperScale = (scaleX: number, scaleY: number, originX: number, originY: number) => {
