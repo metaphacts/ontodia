@@ -2,14 +2,17 @@ import * as React from 'react';
 
 import { TemplateProps } from './props';
 
+const CLASS_NAME = 'ontodia-default-template';
+
 export class DefaultTemplate extends React.Component<TemplateProps, {}> {
     render() {
         const props = this.props;
 
         const imageStyle: React.CSSProperties = {borderBottomColor: props.color};
         const image = props.imgUrl ? (
-            <img src={props.imgUrl} className='ontodia-default-template__image'
-                style={imageStyle} />
+            <div className={`${CLASS_NAME}__thumbnail`}>
+                <img src={props.imgUrl} style={imageStyle} />
+            </div>
         ) : undefined;
 
         let propertyTable: React.ReactElement<any>;
@@ -60,7 +63,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
             <div className='ontodia-default-template' style={{
                 backgroundColor: props.color,
                 borderColor: props.color,
-            }}>
+            }} data-expanded={this.props.isExpanded}>
                 <div className='ontodia-default-template_type-line' title={props.label}>
                     <div className={`${props.icon} ontodia-default-template_type-line__icon`} aria-hidden='true'>
                     </div>

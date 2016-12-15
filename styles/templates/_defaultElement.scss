@@ -1,9 +1,21 @@
 .ontodia-default-template {
-  max-width: 350px;
+  max-width: 450px;
   float: left;
   border-radius: 12px;
   border-style: solid;
   border-width: 1px;
+
+  &__thumbnail {
+    text-align: center;
+    > img {
+      max-width: 200px;
+      border-bottom: 1px solid;
+    }
+  } 
+
+  &[data-expanded='true'] &__thumbnail > img {
+    max-width: 350px;
+  }
 }
 
 .ontodia-default-template_type-line {
@@ -32,11 +44,6 @@ div.ontodia-default-template_type-line__icon {
   display: inline;
   white-space: nowrap;
   font-size: 12px;
-}
-
-.ontodia-default-template__image {
-  width: 100%; 
-  border-bottom: 1px solid;
 }
 
 .ontodia-default-template_body {
