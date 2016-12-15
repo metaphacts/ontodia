@@ -141,13 +141,13 @@ export class FilterModel extends Backbone.Model {
                 element.unset('selectedInFilter');
             }
         }
-        newItems = _.sortBy(newItems, item => chooseLocalizedText(
-            item.template.label.values, this.get('language')).text);
+
         if (this.currentRequest.offset > 0) {
             this.items.add(newItems);
         } else {
             this.items.reset(newItems);
         }
+
         this.set('moreItemsAvailable', newItems.length >= this.currentRequest.limit);
         this.trigger('state:endQuery');
     }

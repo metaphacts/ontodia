@@ -12,7 +12,7 @@ import {
     getLinkTypesInfo,
 } from './responseHandler';
 import {
-    SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    ClassBinding, ElementBinding, LinkBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
 } from './sparqlModels';
 import {executeSparqlQuery, SparqlDataProviderOptions} from './provider';
@@ -227,25 +227,26 @@ export class WikidataDataProvider implements DataProvider {
         const textSearchPart = params.text ?
             ` ?inst rdfs:label ?searchLabel. 
               SERVICE bds:search {
-                     ?searchLabel bds:search "${params.text}" ;  
-                                  bds:minRelevance '0.5';
-                                  bds:relevance ?score.
+                     ?searchLabel bds:search "${params.text}*" ;
+                                  bds:minRelevance '0.5' ;
+                                  bds:matchAllTerms 'true' .
               }
             ` : '';
         let query = DEFAULT_PREFIX + `
             SELECT ?inst ?class ?label
             WHERE {
                 {
-                    SELECT distinct ?inst ?score WHERE {
+                    SELECT DISTINCT ?inst ?score WHERE {
                         ${elementTypePart}
                         ${refQueryPart}
                         ${textSearchPart}
-                    } LIMIT ${params.limit} OFFSET ${params.offset}
+                        BIND(<http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(STR(?inst), 33)) AS ?score)
+                    } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
                 }
                 OPTIONAL {?inst wdt:P31 ?foundClass}
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}                
-            }
+                OPTIONAL {?inst rdfs:label ?label}
+            } ORDER BY ?score
         `;
 
         return executeSparqlQuery<ElementBinding>(
