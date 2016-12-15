@@ -176,13 +176,11 @@ export class WikidataDataProvider implements DataProvider {
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         const query = DEFAULT_PREFIX + `
-            SELECT ?link (count(?link) as ?instcount)
-            WHERE {{
-                ${escapeIri(params.elementId)} ?link ?obj.
-            } UNION {
-                [] ?link ${escapeIri(params.elementId)}.
-            }
-            FILTER regex(STR(?link), "direct") 
+            SELECT ?link (count(distinct ?object) as ?instcount)
+            WHERE {
+                { ${escapeIri(params.elementId)} ?link ?object }
+                UNION { ?object ?link ${escapeIri(params.elementId)} }
+                FILTER regex(STR(?link), "direct") 
             } GROUP BY ?link
         `;
 
