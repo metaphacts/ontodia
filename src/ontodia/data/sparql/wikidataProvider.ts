@@ -91,42 +91,33 @@ export class WikidataDataProvider implements DataProvider {
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
-        return Promise.all(params.elementIds.map(element => {
-            const iri = escapeIri(element);
-            const query = DEFAULT_PREFIX + `
+        const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
+        const query = DEFAULT_PREFIX + `
             SELECT ?inst ?class ?label ?propType ?propValue
             WHERE {
-                BIND(${iri} as ?inst)
-                            
                 OPTIONAL {
-                    {${iri} wdt:P31 ?class .} UNION {${iri} wdt:P31 ?realClass. ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class}
+                    { ?inst wdt:P31 ?class } UNION
+                    { ?inst wdt:P31 ?realClass .
+                        ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class }
                 }
-                OPTIONAL {${iri} rdfs:label ?label}
-                            
-                OPTIONAL {${iri} ?propType ?propValue.
-                FILTER (isLiteral(?propValue)) }
-            }
-            `;
-            return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
-                .then(elementsInfo => getElementsInfo(elementsInfo, [element]))
-                .then(elementsInfo => {
-                    if (this.options.prepareImages) {
-                        return this.prepareElementsImage(elementsInfo);
-                    } else if (this.options.imageClassUris && this.options.imageClassUris.length) {
-                        return this.enrichedElementsInfo(elementsInfo, this.options.imageClassUris);
-                    } else {
-                        return elementsInfo;
-                    }
-                });
-            }
-        )).then(results => {
-            let response = {};
-            for (const respElemInfo of results) {
-                response = _.assign(response, respElemInfo);
-            }
-            return response;
-        });
-
+                OPTIONAL {?inst rdfs:label ?label}
+                OPTIONAL {
+                    ?inst ?propType ?propValue .
+                    FILTER (isLiteral(?propValue))
+                }
+            } VALUES (?inst) {${ids}}
+        `;
+        return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
+            .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
+            .then(elementModels => {
+                if (this.options.prepareImages) {
+                    return this.prepareElementsImage(elementModels);
+                } else if (this.options.imageClassUris && this.options.imageClassUris.length) {
+                    return this.enrichedElementsInfo(elementModels, this.options.imageClassUris);
+                } else {
+                    return elementModels;
+                }
+            });
     }
 
     private enrichedElementsInfo(
@@ -141,7 +132,9 @@ export class WikidataDataProvider implements DataProvider {
             WHERE {{
                 VALUES (?inst) {${ids}}
                 VALUES (?linkType) {${typesString}} 
-                ?inst ?linkType ?image
+                ?inst ?linkType ?fullImage
+                BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
+                    STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
             }}
         `;
         return executeSparqlQuery<ElementImageBinding>(this.options.endpointUrl, query)
