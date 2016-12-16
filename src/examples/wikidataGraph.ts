@@ -55,12 +55,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         'http://www.wikidata.org/prop/direct/P154',
                     ],
                 });
+                const graphBuilder = new GraphBuilder(dataProvider, '/sparql-endpoint');
 
-                model.importLayout({
+                const loadingGraph = graphBuilder.getGraphFromConstruct(`
+                    CONSTRUCT { ?current ?p ?o. }
+                    WHERE {
+                      {
+                        ?current ?p ?o.
+                        ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label.
+                        FILTER(ISIRI(?o))
+                      }
+                    }
+                    LIMIT 20
+                    VALUES (?current) {
+                      (<http://www.wikidata.org/entity/Q2836593>)
+                    }`
+                );
+                workspace.showWaitIndicatorWhile(loadingGraph);
+
+                loadingGraph.then(response => model.importLayout({
                     dataProvider,
-                    preloadedElements: {},
-                    preloadedLinks: [],
-                    layoutData: undefined,
+                    preloadedElements: response.preloadedElements,
+                    preloadedLinks: response.preloadedLinks,
+                    layoutData: response.layout,
+                })).then(() => {
+                    workspace.forceLayout();
+                    workspace.zoomToFit();
                 });
             }
         },
