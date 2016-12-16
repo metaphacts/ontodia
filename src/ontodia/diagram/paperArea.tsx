@@ -1,9 +1,10 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import * as React from 'react';
+import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
 import { debounce } from 'lodash';
 
-import { Indicator, WrapIndicator } from '../viewUtils/indicator';
+import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { DiagramModel } from './model';
 
@@ -30,8 +31,7 @@ export class PaperArea extends React.Component<Props, {}> {
     private area: HTMLDivElement;
     private paper: joint.dia.Paper;
 
-    private indicator: WrapIndicator;
-    private loadingIndicator: Indicator;
+    private spinnerElement: SVGGElement;
 
     private pageSize: { x: number; y: number; };
 
@@ -61,6 +61,9 @@ export class PaperArea extends React.Component<Props, {}> {
         this.area.appendChild(this.paper.el);
         this.updatePaperMargins();
         this.centerTo();
+
+        this.spinnerElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.paper.svg.appendChild(this.spinnerElement);
 
         this.listener.listenTo(this.paper, 'scale', this.onPaperScale);
         this.listener.listenTo(this.paper, 'resize', this.onPaperResize);
@@ -94,7 +97,7 @@ export class PaperArea extends React.Component<Props, {}> {
         this.listener.listenTo(model, 'state:loadError',
             (error: any) => this.renderLoadingIndicator(undefined, error));
         this.listener.listenTo(model, 'state:renderStart', () => {
-            if (this.loadingIndicator) { this.loadingIndicator.remove(); }
+            unmountComponentAtNode(this.spinnerElement);
         });
         this.listener.listenTo(model, 'state:dataLoaded', () => {
             this.zoomToFit();
@@ -340,49 +343,37 @@ export class PaperArea extends React.Component<Props, {}> {
         }
     };
 
+    private renderSpinner(props: SpinnerProps = {}) {
+        const paperRect = this.paper.svg.getBoundingClientRect();
+        const x = props.statusText ? paperRect.width / 3 : paperRect.width / 2;
+        const position = {x, y: paperRect.height / 2};
+        reactDOMRender(<Spinner position={position} {...props} />, this.spinnerElement);
+    }
+
     showIndicator(operation?: Promise<any>) {
         this.centerTo();
-        const svgBoundingRect = this.paper.svg.getBoundingClientRect();
-        this.indicator = WrapIndicator.wrap(this.paper.svg, {
-            position: {
-                x: svgBoundingRect.width / 2,
-                y: svgBoundingRect.height / 2,
-            },
-        });
+        this.renderSpinner();
+
         if (operation) {
             operation.then(() => {
-                this.indicator.remove();
+                unmountComponentAtNode(this.spinnerElement);
             }).catch(error => {
                 console.error(error);
-                this.indicator.status('Unknown error occured');
-                this.indicator.error();
+                this.renderSpinner({statusText: 'Unknown error occured', errorOccured: true});
             });
         }
     }
 
     private renderLoadingIndicator(elementCount: number | undefined, error?: any) {
-        if (this.indicator) {
-            this.indicator.remove();
-        }
-        const createTemporaryIndicator = (status?: string) => {
-            const paperRect = this.paper.svg.getBoundingClientRect();
-            const x = status ? paperRect.width / 3 : paperRect.width / 2;
-            this.loadingIndicator = new Indicator(this.paper.svg, {
-                position: {x: x, y: paperRect.height / 2},
-            });
-            this.loadingIndicator.status(status);
-        };
         const WARN_ELEMENT_COUNT = 70;
         if (error) {
-            createTemporaryIndicator(error.statusText || error.message);
-            this.loadingIndicator.error();
+            this.renderSpinner({statusText: error.statusText || error.message, errorOccured: true});
         } else if (elementCount > WARN_ELEMENT_COUNT) {
-            createTemporaryIndicator(
+            this.renderSpinner({statusText:
                 `The diagram contains more than ${WARN_ELEMENT_COUNT} ` +
-                `elements. Please wait until it is fully loaded.`);
+                `elements. Please wait until it is fully loaded.`});
         } else {
-            createTemporaryIndicator();
+            this.renderSpinner();
         }
-        this.loadingIndicator.run();
     };
 }

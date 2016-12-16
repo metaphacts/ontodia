@@ -1,5 +1,5 @@
 import * as Backbone from 'backbone';
-import * as d3 from 'd3';
+import { hcl } from 'd3-color';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
 
@@ -124,8 +124,8 @@ class FilterElementView extends Backbone.View<Element> {
 
             const {h, c, l} = this.view.getTypeStyle(template.types).color;
             const frontColor = this.model.get('selectedInFilter')
-                ? d3.hcl(h, c, l * 1.2) : d3.hcl('white');
-            this.$el.css({ background: d3.hcl(h, c, l) });
+                ? hcl(h, c, l * 1.2) : hcl('white');
+            this.$el.css({ background: hcl(h, c, l) });
             this.$div.css({ background: frontColor });
 
             if (this.model.get('presentOnDiagram')) {

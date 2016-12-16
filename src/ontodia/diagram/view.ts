@@ -1,4 +1,4 @@
-import { hcl } from 'd3';
+import { hcl } from 'd3-color';
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import { merge, cloneDeep } from 'lodash';

@@ -36,7 +36,7 @@ module.exports = {
         libraryTarget: 'umd',
     },
     externals: {
-        'd3': true,
+        'd3-color': true,
         'detect-browser': true,
         'intro.js': true,
         'jointjs': true,

@@ -1,308 +1,307 @@
-
 declare module 'webcola' {
     import * as D3 from 'd3';
     function applyPacking(graphs: Array<any>, w: any, h: any, node_size: any, desired_ratio?: number): void;
     function separateGraphs(nodes: any, links: any): any[];
-export module vpsc{
+    export module vpsc {
 
-    class PositionStats {
-        scale: number;
-        AB: number;
-        AD: number;
-        A2: number;
-        constructor(scale: number);
-        addVariable(v: Variable): void;
-        getPosn(): number;
+        class PositionStats {
+            scale: number;
+            AB: number;
+            AD: number;
+            A2: number;
+            constructor(scale: number);
+            addVariable(v: Variable): void;
+            getPosn(): number;
+        }
+        class Constraint {
+            left: Variable;
+            right: Variable;
+            gap: number;
+            equality: boolean;
+            lm: number;
+            active: boolean;
+            unsatisfiable: boolean;
+            constructor(left: Variable, right: Variable, gap: number, equality?: boolean);
+            slack(): number;
+        }
+        class Variable {
+            desiredPosition: number;
+            weight: number;
+            scale: number;
+            offset: number;
+            block: Block;
+            cIn: Constraint[];
+            cOut: Constraint[];
+            constructor(desiredPosition: number, weight?: number, scale?: number);
+            dfdv(): number;
+            position(): number;
+            visitNeighbours(prev: Variable, f: (c: Constraint, next: Variable) => void): void;
+        }
+        class Block {
+            vars: Variable[];
+            posn: number;
+            ps: PositionStats;
+            blockInd: number;
+            constructor(v: Variable);
+            private addVariable(v);
+            updateWeightedPosition(): void;
+            private compute_lm(v, u, postAction);
+            private populateSplitBlock(v, prev);
+            traverse(visit: (c: Constraint) => any, acc: any[], v?: Variable, prev?: Variable): void;
+            findMinLM(): Constraint;
+            private findMinLMBetween(lv, rv);
+            private findPath(v, prev, to, visit);
+            isActiveDirectedPathBetween(u: Variable, v: Variable): boolean;
+            static split(c: Constraint): Block[];
+            private static createSplitBlock(startVar);
+            splitBetween(vl: Variable, vr: Variable): {
+                constraint: Constraint;
+                lb: Block;
+                rb: Block;
+            };
+            mergeAcross(b: Block, c: Constraint, dist: number): void;
+            cost(): number;
+        }
+        class Blocks {
+            vs: Variable[];
+            private list;
+            constructor(vs: Variable[]);
+            cost(): number;
+            insert(b: Block): void;
+            remove(b: Block): void;
+            merge(c: Constraint): void;
+            forEach(f: (b: Block, i: number) => void): void;
+            updateBlockPositions(): void;
+            split(inactive: Constraint[]): void;
+        }
+        class Solver {
+            vs: Variable[];
+            cs: Constraint[];
+            bs: Blocks;
+            inactive: Constraint[];
+            static LAGRANGIAN_TOLERANCE: number;
+            static ZERO_UPPERBOUND: number;
+            constructor(vs: Variable[], cs: Constraint[]);
+            cost(): number;
+            setStartingPositions(ps: number[]): void;
+            setDesiredPositions(ps: number[]): void;
+            private mostViolated();
+            satisfy(): void;
+            solve(): number;
+        }
     }
-    class Constraint {
-        left: Variable;
-        right: Variable;
-        gap: number;
-        equality: boolean;
-        lm: number;
-        active: boolean;
-        unsatisfiable: boolean;
-        constructor(left: Variable, right: Variable, gap: number, equality?: boolean);
-        slack(): number;
-    }
-    class Variable {
-        desiredPosition: number;
-        weight: number;
-        scale: number;
-        offset: number;
-        block: Block;
-        cIn: Constraint[];
-        cOut: Constraint[];
-        constructor(desiredPosition: number, weight?: number, scale?: number);
-        dfdv(): number;
-        position(): number;
-        visitNeighbours(prev: Variable, f: (c: Constraint, next: Variable) => void): void;
-    }
-    class Block {
-        vars: Variable[];
-        posn: number;
-        ps: PositionStats;
-        blockInd: number;
-        constructor(v: Variable);
-        private addVariable(v);
-        updateWeightedPosition(): void;
-        private compute_lm(v, u, postAction);
-        private populateSplitBlock(v, prev);
-        traverse(visit: (c: Constraint) => any, acc: any[], v?: Variable, prev?: Variable): void;
-        findMinLM(): Constraint;
-        private findMinLMBetween(lv, rv);
-        private findPath(v, prev, to, visit);
-        isActiveDirectedPathBetween(u: Variable, v: Variable): boolean;
-        static split(c: Constraint): Block[];
-        private static createSplitBlock(startVar);
-        splitBetween(vl: Variable, vr: Variable): {
-            constraint: Constraint;
-            lb: Block;
-            rb: Block;
-        };
-        mergeAcross(b: Block, c: Constraint, dist: number): void;
-        cost(): number;
-    }
-    class Blocks {
-        vs: Variable[];
-        private list;
-        constructor(vs: Variable[]);
-        cost(): number;
-        insert(b: Block): void;
-        remove(b: Block): void;
-        merge(c: Constraint): void;
-        forEach(f: (b: Block, i: number) => void): void;
-        updateBlockPositions(): void;
-        split(inactive: Constraint[]): void;
-    }
-    class Solver {
-        vs: Variable[];
-        cs: Constraint[];
-        bs: Blocks;
-        inactive: Constraint[];
-        static LAGRANGIAN_TOLERANCE: number;
-        static ZERO_UPPERBOUND: number;
-        constructor(vs: Variable[], cs: Constraint[]);
-        cost(): number;
-        setStartingPositions(ps: number[]): void;
-        setDesiredPositions(ps: number[]): void;
-        private mostViolated();
-        satisfy(): void;
-        solve(): number;
-    }
-}
-export module vpsc{
+    export module vpsc {
 
-    interface Leaf {
-        bounds: Rectangle;
-        variable: Variable;
+        interface Leaf {
+            bounds: Rectangle;
+            variable: Variable;
+        }
+        interface Group {
+            bounds: Rectangle;
+            padding: number;
+            stiffness: number;
+            leaves: Leaf[];
+            groups: Group[];
+            minVar: Variable;
+            maxVar: Variable;
+        }
+        function computeGroupBounds(g: Group): Rectangle;
+        class Rectangle {
+            x: number;
+            X: number;
+            y: number;
+            Y: number;
+            constructor(x: number, X: number, y: number, Y: number);
+            static empty(): Rectangle;
+            cx(): number;
+            cy(): number;
+            overlapX(r: Rectangle): number;
+            overlapY(r: Rectangle): number;
+            setXCentre(cx: number): void;
+            setYCentre(cy: number): void;
+            width(): number;
+            height(): number;
+            union(r: Rectangle): Rectangle;
+            /**
+             * return any intersection points between the given line and the sides of this rectangle
+             * @method lineIntersection
+             * @param x1 number first x coord of line
+             * @param y1 number first y coord of line
+             * @param x2 number second x coord of line
+             * @param y2 number second y coord of line
+             * @return any intersection points found
+             */
+            lineIntersections(x1: number, y1: number, x2: number, y2: number): Array<{
+                x: number;
+                y: number;
+            }>;
+            /**
+             * return any intersection points between a line extending from the centre of this rectangle to the given point,
+             *  and the sides of this rectangle
+             * @method lineIntersection
+             * @param x2 number second x coord of line
+             * @param y2 number second y coord of line
+             * @return any intersection points found
+             */
+            rayIntersection(x2: number, y2: number): {
+                x: number;
+                y: number;
+            };
+            vertices(): {
+                x: number;
+                y: number;
+            }[];
+            static lineIntersection(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number): {
+                x: number;
+                y: number;
+            };
+            inflate(pad: number): Rectangle;
+        }
+        function makeEdgeBetween(link: any, source: Rectangle, target: Rectangle, ah: number): void;
+        function makeEdgeTo(s: {
+            x: number;
+            y: number;
+        }, target: Rectangle, ah: number): {
+                x: number;
+                y: number;
+            };
+        function generateXConstraints(rs: Rectangle[], vars: Variable[]): Constraint[];
+        function generateYConstraints(rs: Rectangle[], vars: Variable[]): Constraint[];
+        function generateXGroupConstraints(root: Group): Constraint[];
+        function generateYGroupConstraints(root: Group): Constraint[];
+        function removeOverlaps(rs: Rectangle[]): void;
+        interface GraphNode extends Leaf {
+            fixed: boolean;
+            width: number;
+            height: number;
+            x: number;
+            y: number;
+            px: number;
+            py: number;
+        }
+        class IndexedVariable extends Variable {
+            index: number;
+            constructor(index: number, w: number);
+        }
+        class Projection {
+            private nodes;
+            private groups;
+            private rootGroup;
+            private avoidOverlaps;
+            private xConstraints;
+            private yConstraints;
+            private variables;
+            constructor(nodes: GraphNode[], groups: Group[], rootGroup?: Group, constraints?: any[], avoidOverlaps?: boolean);
+            private createSeparation(c);
+            private makeFeasible(c);
+            private createAlignment(c);
+            private createConstraints(constraints);
+            private setupVariablesAndBounds(x0, y0, desired, getDesired);
+            xProject(x0: number[], y0: number[], x: number[]): void;
+            yProject(x0: number[], y0: number[], y: number[]): void;
+            projectFunctions(): {
+                (x0: number[], y0: number[], r: number[]): void;
+            }[];
+            private project(x0, y0, start, desired, getDesired, cs, generateConstraints, updateNodeBounds, updateGroupBounds);
+            private solve(vs, cs, starting, desired);
+        }
     }
-    interface Group {
-        bounds: Rectangle;
-        padding: number;
-        stiffness: number;
-        leaves: Leaf[];
-        groups: Group[];
-        minVar: Variable;
-        maxVar: Variable;
-    }
-    function computeGroupBounds(g: Group): Rectangle;
-    class Rectangle {
-        x: number;
-        X: number;
-        y: number;
-        Y: number;
-        constructor(x: number, X: number, y: number, Y: number);
-        static empty(): Rectangle;
-        cx(): number;
-        cy(): number;
-        overlapX(r: Rectangle): number;
-        overlapY(r: Rectangle): number;
-        setXCentre(cx: number): void;
-        setYCentre(cy: number): void;
-        width(): number;
-        height(): number;
-        union(r: Rectangle): Rectangle;
-        /**
-         * return any intersection points between the given line and the sides of this rectangle
-         * @method lineIntersection
-         * @param x1 number first x coord of line
-         * @param y1 number first y coord of line
-         * @param x2 number second x coord of line
-         * @param y2 number second y coord of line
-         * @return any intersection points found
+    export module geom {
+
+        class Point {
+            x: number;
+            y: number;
+        }
+        class LineSegment {
+            x1: number;
+            y1: number;
+            x2: number;
+            y2: number;
+            constructor(x1: number, y1: number, x2: number, y2: number);
+        }
+        class PolyPoint extends Point {
+            polyIndex: number;
+        }
+        /** tests if a point is Left|On|Right of an infinite line.
+         * @param points P0, P1, and P2
+         * @return >0 for P2 left of the line through P0 and P1
+         *            =0 for P2 on the line
+         *            <0 for P2 right of the line
          */
-        lineIntersections(x1: number, y1: number, x2: number, y2: number): Array<{
-            x: number;
-            y: number;
-        }>;
+        function isLeft(P0: Point, P1: Point, P2: Point): number;
         /**
-         * return any intersection points between a line extending from the centre of this rectangle to the given point,
-         *  and the sides of this rectangle
-         * @method lineIntersection
-         * @param x2 number second x coord of line
-         * @param y2 number second y coord of line
-         * @return any intersection points found
+         * returns the convex hull of a set of points using Andrew's monotone chain algorithm
+         * see: http://geomalgorithms.com/a10-_hull-1.html#Monotone%20Chain
+         * @param S array of points
+         * @return the convex hull as an array of points
          */
-        rayIntersection(x2: number, y2: number): {
-            x: number;
-            y: number;
+        function ConvexHull(S: Point[]): Point[];
+        function clockwiseRadialSweep(p: Point, P: Point[], f: (point: Point) => void): void;
+        function tangent_PolyPolyC(V: Point[], W: Point[], t1: (a: Point, b: Point[]) => number, t2: (a: Point, b: Point[]) => number, cmp1: (a: Point, b: Point, c: Point) => boolean, cmp2: (a: Point, b: Point, c: Point) => boolean): {
+            t1: number;
+            t2: number;
         };
-        vertices(): {
-            x: number;
-            y: number;
-        }[];
-        static lineIntersection(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number): {
-            x: number;
-            y: number;
+        function LRtangent_PolyPolyC(V: Point[], W: Point[]): {
+            t1: number;
+            t2: number;
         };
-        inflate(pad: number): Rectangle;
-    }
-    function makeEdgeBetween(link: any, source: Rectangle, target: Rectangle, ah: number): void;
-    function makeEdgeTo(s: {
-        x: number;
-        y: number;
-    }, target: Rectangle, ah: number): {
-        x: number;
-        y: number;
-    };
-    function generateXConstraints(rs: Rectangle[], vars: Variable[]): Constraint[];
-    function generateYConstraints(rs: Rectangle[], vars: Variable[]): Constraint[];
-    function generateXGroupConstraints(root: Group): Constraint[];
-    function generateYGroupConstraints(root: Group): Constraint[];
-    function removeOverlaps(rs: Rectangle[]): void;
-    interface GraphNode extends Leaf {
-        fixed: boolean;
-        width: number;
-        height: number;
-        x: number;
-        y: number;
-        px: number;
-        py: number;
-    }
-    class IndexedVariable extends Variable {
-        index: number;
-        constructor(index: number, w: number);
-    }
-    class Projection {
-        private nodes;
-        private groups;
-        private rootGroup;
-        private avoidOverlaps;
-        private xConstraints;
-        private yConstraints;
-        private variables;
-        constructor(nodes: GraphNode[], groups: Group[], rootGroup?: Group, constraints?: any[], avoidOverlaps?: boolean);
-        private createSeparation(c);
-        private makeFeasible(c);
-        private createAlignment(c);
-        private createConstraints(constraints);
-        private setupVariablesAndBounds(x0, y0, desired, getDesired);
-        xProject(x0: number[], y0: number[], x: number[]): void;
-        yProject(x0: number[], y0: number[], y: number[]): void;
-        projectFunctions(): {
-            (x0: number[], y0: number[], r: number[]): void;
-        }[];
-        private project(x0, y0, start, desired, getDesired, cs, generateConstraints, updateNodeBounds, updateGroupBounds);
-        private solve(vs, cs, starting, desired);
-    }
-}
-export module geom{
-
-    class Point {
-        x: number;
-        y: number;
-    }
-    class LineSegment {
-        x1: number;
-        y1: number;
-        x2: number;
-        y2: number;
-        constructor(x1: number, y1: number, x2: number, y2: number);
-    }
-    class PolyPoint extends Point {
-        polyIndex: number;
-    }
-    /** tests if a point is Left|On|Right of an infinite line.
-     * @param points P0, P1, and P2
-     * @return >0 for P2 left of the line through P0 and P1
-     *            =0 for P2 on the line
-     *            <0 for P2 right of the line
-     */
-    function isLeft(P0: Point, P1: Point, P2: Point): number;
-    /**
-     * returns the convex hull of a set of points using Andrew's monotone chain algorithm
-     * see: http://geomalgorithms.com/a10-_hull-1.html#Monotone%20Chain
-     * @param S array of points
-     * @return the convex hull as an array of points
-     */
-    function ConvexHull(S: Point[]): Point[];
-    function clockwiseRadialSweep(p: Point, P: Point[], f: (point: Point) => void): void;
-    function tangent_PolyPolyC(V: Point[], W: Point[], t1: (a: Point, b: Point[]) => number, t2: (a: Point, b: Point[]) => number, cmp1: (a: Point, b: Point, c: Point) => boolean, cmp2: (a: Point, b: Point, c: Point) => boolean): {
-        t1: number;
-        t2: number;
-    };
-    function LRtangent_PolyPolyC(V: Point[], W: Point[]): {
-        t1: number;
-        t2: number;
-    };
-    function RLtangent_PolyPolyC(V: Point[], W: Point[]): {
-        t1: number;
-        t2: number;
-    };
-    function LLtangent_PolyPolyC(V: Point[], W: Point[]): {
-        t1: number;
-        t2: number;
-    };
-    function RRtangent_PolyPolyC(V: Point[], W: Point[]): {
-        t1: number;
-        t2: number;
-    };
-    class BiTangent {
-        t1: number;
-        t2: number;
-        constructor(t1: number, t2: number);
-    }
-    class BiTangents {
-        rl: BiTangent;
-        lr: BiTangent;
-        ll: BiTangent;
-        rr: BiTangent;
-    }
-    class TVGPoint extends Point {
-        vv: VisibilityVertex;
-    }
-    class VisibilityVertex {
-        id: number;
-        polyid: number;
-        polyvertid: number;
-        p: TVGPoint;
-        constructor(id: number, polyid: number, polyvertid: number, p: TVGPoint);
-    }
-    class VisibilityEdge {
-        source: VisibilityVertex;
-        target: VisibilityVertex;
-        constructor(source: VisibilityVertex, target: VisibilityVertex);
-        length(): number;
-    }
-    class TangentVisibilityGraph {
-        P: TVGPoint[][];
-        V: VisibilityVertex[];
-        E: VisibilityEdge[];
-        constructor(P: TVGPoint[][], g0?: {
+        function RLtangent_PolyPolyC(V: Point[], W: Point[]): {
+            t1: number;
+            t2: number;
+        };
+        function LLtangent_PolyPolyC(V: Point[], W: Point[]): {
+            t1: number;
+            t2: number;
+        };
+        function RRtangent_PolyPolyC(V: Point[], W: Point[]): {
+            t1: number;
+            t2: number;
+        };
+        class BiTangent {
+            t1: number;
+            t2: number;
+            constructor(t1: number, t2: number);
+        }
+        class BiTangents {
+            rl: BiTangent;
+            lr: BiTangent;
+            ll: BiTangent;
+            rr: BiTangent;
+        }
+        class TVGPoint extends Point {
+            vv: VisibilityVertex;
+        }
+        class VisibilityVertex {
+            id: number;
+            polyid: number;
+            polyvertid: number;
+            p: TVGPoint;
+            constructor(id: number, polyid: number, polyvertid: number, p: TVGPoint);
+        }
+        class VisibilityEdge {
+            source: VisibilityVertex;
+            target: VisibilityVertex;
+            constructor(source: VisibilityVertex, target: VisibilityVertex);
+            length(): number;
+        }
+        class TangentVisibilityGraph {
+            P: TVGPoint[][];
             V: VisibilityVertex[];
             E: VisibilityEdge[];
-        });
-        addEdgeIfVisible(u: TVGPoint, v: TVGPoint, i1: number, i2: number): void;
-        addPoint(p: TVGPoint, i1: number): VisibilityVertex;
-        private intersectsPolys(l, i1, i2);
+            constructor(P: TVGPoint[][], g0?: {
+                V: VisibilityVertex[];
+                E: VisibilityEdge[];
+            });
+            addEdgeIfVisible(u: TVGPoint, v: TVGPoint, i1: number, i2: number): void;
+            addPoint(p: TVGPoint, i1: number): VisibilityVertex;
+            private intersectsPolys(l, i1, i2);
+        }
+        function tangents(V: Point[], W: Point[]): BiTangents;
+        function polysOverlap(p: Point[], q: Point[]): boolean;
     }
-    function tangents(V: Point[], W: Point[]): BiTangents;
-    function polysOverlap(p: Point[], q: Point[]): boolean;
-}
-/**
- * @module cola
- */
+    /**
+     * @module cola
+     */
 
     /**
      * Descent respects a collection of locks over nodes that should not move
@@ -424,77 +423,77 @@ export module geom{
         getNext(): number;
         getNextBetween(min: number, max: number): number;
     }
-export module powergraph{
+    export module powergraph {
 
-    interface LinkAccessor<Link> {
-        getSourceIndex(l: Link): number;
-        getTargetIndex(l: Link): number;
-        getType(l: Link): number;
+        interface LinkAccessor<Link> {
+            getSourceIndex(l: Link): number;
+            getTargetIndex(l: Link): number;
+            getType(l: Link): number;
+        }
+        class PowerEdge {
+            source: any;
+            target: any;
+            type: number;
+            constructor(source: any, target: any, type: number);
+        }
+        class Configuration<Link> {
+            private linkAccessor;
+            modules: Module[];
+            roots: ModuleSet[];
+            R: number;
+            constructor(n: number, edges: Link[], linkAccessor: LinkAccessor<Link>, rootGroup?: any[]);
+            private initModulesFromGroup(group);
+            merge(a: Module, b: Module, k?: number): Module;
+            private rootMerges(k?);
+            greedyMerge(): boolean;
+            private nEdges(a, b);
+            getGroupHierarchy(retargetedEdges: PowerEdge[]): any[];
+            allEdges(): PowerEdge[];
+            static getEdges(modules: ModuleSet, es: PowerEdge[]): void;
+        }
+        class Module {
+            id: number;
+            outgoing: LinkSets;
+            incoming: LinkSets;
+            children: ModuleSet;
+            definition: any;
+            gid: number;
+            constructor(id: number, outgoing?: LinkSets, incoming?: LinkSets, children?: ModuleSet, definition?: any);
+            getEdges(es: PowerEdge[]): void;
+            isLeaf(): boolean;
+            isIsland(): boolean;
+            isPredefined(): boolean;
+        }
+        class ModuleSet {
+            table: any;
+            count(): number;
+            intersection(other: ModuleSet): ModuleSet;
+            intersectionCount(other: ModuleSet): number;
+            contains(id: number): boolean;
+            add(m: Module): void;
+            remove(m: Module): void;
+            forAll(f: (m: Module) => void): void;
+            modules(): Module[];
+        }
+        class LinkSets {
+            sets: any;
+            n: number;
+            count(): number;
+            contains(id: number): boolean;
+            add(linktype: number, m: Module): void;
+            remove(linktype: number, m: Module): void;
+            forAll(f: (ms: ModuleSet, linktype: number) => void): void;
+            forAllModules(f: (m: Module) => void): void;
+            intersection(other: LinkSets): LinkSets;
+        }
+        function getGroups<Link>(nodes: any[], links: Link[], la: LinkAccessor<Link>, rootGroup?: any[]): {
+            groups: any[];
+            powerEdges: PowerEdge[];
+        };
     }
-    class PowerEdge {
-        source: any;
-        target: any;
-        type: number;
-        constructor(source: any, target: any, type: number);
-    }
-    class Configuration<Link> {
-        private linkAccessor;
-        modules: Module[];
-        roots: ModuleSet[];
-        R: number;
-        constructor(n: number, edges: Link[], linkAccessor: LinkAccessor<Link>, rootGroup?: any[]);
-        private initModulesFromGroup(group);
-        merge(a: Module, b: Module, k?: number): Module;
-        private rootMerges(k?);
-        greedyMerge(): boolean;
-        private nEdges(a, b);
-        getGroupHierarchy(retargetedEdges: PowerEdge[]): any[];
-        allEdges(): PowerEdge[];
-        static getEdges(modules: ModuleSet, es: PowerEdge[]): void;
-    }
-    class Module {
-        id: number;
-        outgoing: LinkSets;
-        incoming: LinkSets;
-        children: ModuleSet;
-        definition: any;
-        gid: number;
-        constructor(id: number, outgoing?: LinkSets, incoming?: LinkSets, children?: ModuleSet, definition?: any);
-        getEdges(es: PowerEdge[]): void;
-        isLeaf(): boolean;
-        isIsland(): boolean;
-        isPredefined(): boolean;
-    }
-    class ModuleSet {
-        table: any;
-        count(): number;
-        intersection(other: ModuleSet): ModuleSet;
-        intersectionCount(other: ModuleSet): number;
-        contains(id: number): boolean;
-        add(m: Module): void;
-        remove(m: Module): void;
-        forAll(f: (m: Module) => void): void;
-        modules(): Module[];
-    }
-    class LinkSets {
-        sets: any;
-        n: number;
-        count(): number;
-        contains(id: number): boolean;
-        add(linktype: number, m: Module): void;
-        remove(linktype: number, m: Module): void;
-        forAll(f: (ms: ModuleSet, linktype: number) => void): void;
-        forAllModules(f: (m: Module) => void): void;
-        intersection(other: LinkSets): LinkSets;
-    }
-    function getGroups<Link>(nodes: any[], links: Link[], la: LinkAccessor<Link>, rootGroup?: any[]): {
-        groups: any[];
-        powerEdges: PowerEdge[];
-    };
-}
-/**
- * @module cola
- */
+    /**
+     * @module cola
+     */
 
     interface LinkAccessor<Link> {
         getSourceIndex(l: Link): number;
@@ -527,111 +526,111 @@ export module powergraph{
      * @class generateDirectedEdgeConstraints
      */
     function generateDirectedEdgeConstraints<Link>(n: number, links: Link[], axis: string, la: LinkSepAccessor<Link>): IConstraint[];
-export class PairingHeap<T> {
-    elem: T;
-    private subheaps;
-    constructor(elem: T);
-    toString(selector: any): string;
-    forEach(f: any): void;
-    count(): number;
-    min(): T;
-    empty(): boolean;
-    contains(h: PairingHeap<T>): boolean;
-    isHeap(lessThan: (a: T, b: T) => boolean): boolean;
-    insert(obj: T, lessThan: any): PairingHeap<T>;
-    merge(heap2: PairingHeap<T>, lessThan: any): PairingHeap<T>;
-    removeMin(lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
-    mergePairs(lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
-    decreaseKey(subheap: PairingHeap<T>, newValue: T, setHeapNode: (e: T, h: PairingHeap<T>) => void, lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
-}
-/**
- * @class PriorityQueue a min priority queue backed by a pairing heap
- */
-export class PriorityQueue<T> {
-    private lessThan;
-    private root;
-    constructor(lessThan: (a: T, b: T) => boolean);
-    /**
-     * @method top
-     * @return the top element (the min element as defined by lessThan)
-     */
-    top(): T;
-    /**
-     * @method push
-     * put things on the heap
-     */
-    push(...args: T[]): PairingHeap<T>;
-    /**
-     * @method empty
-     * @return true if no more elements in queue
-     */
-    empty(): boolean;
-    /**
-     * @method isHeap check heap condition (for testing)
-     * @return true if queue is in valid state
-     */
-    isHeap(): boolean;
-    /**
-     * @method forEach apply f to each element of the queue
-     * @param f function to apply
-     */
-    forEach(f: any): void;
-    /**
-     * @method pop remove and return the min element from the queue
-     */
-    pop(): T;
-    /**
-     * @method reduceKey reduce the key value of the specified heap node
-     */
-    reduceKey(heapNode: PairingHeap<T>, newKey: T, setHeapNode?: (e: T, h: PairingHeap<T>) => void): void;
-    toString(selector: any): string;
-    /**
-     * @method count
-     * @return number of elements in queue
-     */
-    count(): number;
-}
-/**
- * @module shortestpaths
- */
-export module shortestpaths{
-
-    /**
-     * calculates all-pairs shortest paths or shortest paths from a single node
-     * @class Calculator
-     * @constructor
-     * @param n {number} number of nodes
-     * @param es {Edge[]} array of edges
-     */
-    class Calculator<Link> {
-        n: number;
-        es: Link[];
-        private neighbours;
-        constructor(n: number, es: Link[], getSourceIndex: (link: Link) => number, getTargetIndex: (link: Link) => number, getLength: (link: Link) => number);
-        /**
-         * compute shortest paths for graph over n nodes with edges an array of source/target pairs
-         * edges may optionally have a length attribute.  1 is the default.
-         * Uses Johnson's algorithm.
-         *
-         * @method DistanceMatrix
-         * @return the distance matrix
-         */
-        DistanceMatrix(): number[][];
-        /**
-         * get shortest paths from a specified start node
-         * @method DistancesFromNode
-         * @param start node index
-         * @return array of path lengths
-         */
-        DistancesFromNode(start: number): number[];
-        PathFromNodeToNode(start: number, end: number): number[];
-        PathFromNodeToNodeWithPrevCost(start: number, end: number, prevCost: (u: number, v: number, w: number) => number): number[];
-        private dijkstraNeighbours(start, dest?);
+    export class PairingHeap<T> {
+        elem: T;
+        private subheaps;
+        constructor(elem: T);
+        toString(selector: any): string;
+        forEach(f: any): void;
+        count(): number;
+        min(): T;
+        empty(): boolean;
+        contains(h: PairingHeap<T>): boolean;
+        isHeap(lessThan: (a: T, b: T) => boolean): boolean;
+        insert(obj: T, lessThan: any): PairingHeap<T>;
+        merge(heap2: PairingHeap<T>, lessThan: any): PairingHeap<T>;
+        removeMin(lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
+        mergePairs(lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
+        decreaseKey(subheap: PairingHeap<T>, newValue: T, setHeapNode: (e: T, h: PairingHeap<T>) => void, lessThan: (a: T, b: T) => boolean): PairingHeap<T>;
     }
-}
-/**
- * @module cola
- */
+    /**
+     * @class PriorityQueue a min priority queue backed by a pairing heap
+     */
+    export class PriorityQueue<T> {
+        private lessThan;
+        private root;
+        constructor(lessThan: (a: T, b: T) => boolean);
+        /**
+         * @method top
+         * @return the top element (the min element as defined by lessThan)
+         */
+        top(): T;
+        /**
+         * @method push
+         * put things on the heap
+         */
+        push(...args: T[]): PairingHeap<T>;
+        /**
+         * @method empty
+         * @return true if no more elements in queue
+         */
+        empty(): boolean;
+        /**
+         * @method isHeap check heap condition (for testing)
+         * @return true if queue is in valid state
+         */
+        isHeap(): boolean;
+        /**
+         * @method forEach apply f to each element of the queue
+         * @param f function to apply
+         */
+        forEach(f: any): void;
+        /**
+         * @method pop remove and return the min element from the queue
+         */
+        pop(): T;
+        /**
+         * @method reduceKey reduce the key value of the specified heap node
+         */
+        reduceKey(heapNode: PairingHeap<T>, newKey: T, setHeapNode?: (e: T, h: PairingHeap<T>) => void): void;
+        toString(selector: any): string;
+        /**
+         * @method count
+         * @return number of elements in queue
+         */
+        count(): number;
+    }
+    /**
+     * @module shortestpaths
+     */
+    export module shortestpaths {
+
+        /**
+         * calculates all-pairs shortest paths or shortest paths from a single node
+         * @class Calculator
+         * @constructor
+         * @param n {number} number of nodes
+         * @param es {Edge[]} array of edges
+         */
+        class Calculator<Link> {
+            n: number;
+            es: Link[];
+            private neighbours;
+            constructor(n: number, es: Link[], getSourceIndex: (link: Link) => number, getTargetIndex: (link: Link) => number, getLength: (link: Link) => number);
+            /**
+             * compute shortest paths for graph over n nodes with edges an array of source/target pairs
+             * edges may optionally have a length attribute.  1 is the default.
+             * Uses Johnson's algorithm.
+             *
+             * @method DistanceMatrix
+             * @return the distance matrix
+             */
+            DistanceMatrix(): number[][];
+            /**
+             * get shortest paths from a specified start node
+             * @method DistancesFromNode
+             * @param start node index
+             * @return array of path lengths
+             */
+            DistancesFromNode(start: number): number[];
+            PathFromNodeToNode(start: number, end: number): number[];
+            PathFromNodeToNodeWithPrevCost(start: number, end: number, prevCost: (u: number, v: number, w: number) => number): number[];
+            private dijkstraNeighbours(start, dest?);
+        }
+    }
+    /**
+     * @module cola
+     */
 
     /**
      * The layout process fires three events:
@@ -944,10 +943,10 @@ export module shortestpaths{
             arrowpath: string;
         };
     }
-/**
- * Use cola to do a layout in 3D!! Yay.
- * Pretty simple for the moment.
- */
+    /**
+     * Use cola to do a layout in 3D!! Yay.
+     * Pretty simple for the moment.
+     */
 
     class Link3D {
         source: number;

@@ -1,7 +1,7 @@
 import * as joint from 'jointjs';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { hcl } from 'd3';
+import { hcl } from 'd3-color';
 import { compile as compileTemplate, registerHelper } from 'handlebars';
 
 import { Dictionary, Property } from '../data/model';

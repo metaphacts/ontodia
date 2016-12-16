@@ -1,0 +1,17 @@
+.ontodia-spinner {
+  &__arrow {
+    animation-name: ontodia-spinner-rotation;
+    animation-duration: 1.5s;
+    animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+    animation-iteration-count: infinite;
+  }
+
+  &[data-error='true'] &__arrow {
+    animation-iteration-count: 1;
+  }
+}
+
+@keyframes ontodia-spinner-rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
