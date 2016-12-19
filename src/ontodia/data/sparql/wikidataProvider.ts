@@ -180,6 +180,9 @@ export class WikidataDataProvider implements DataProvider {
             WHERE {
                 { ${escapeIri(params.elementId)} ?link ?object }
                 UNION { ?object ?link ${escapeIri(params.elementId)} }
+                #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
+                FILTER ISIRI(?object)
+                FILTER exists {?object ?someprop ?someobj}
                 FILTER regex(STR(?link), "direct") 
             } GROUP BY ?link
         `;
@@ -233,6 +236,7 @@ export class WikidataDataProvider implements DataProvider {
                         ${textSearchPart}
                         FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
+                        FILTER exists {?inst ?someprop ?someobj}
                         BIND(IF(STRLEN(?strInst) > 33,
                             <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
                             10000) as ?score)
