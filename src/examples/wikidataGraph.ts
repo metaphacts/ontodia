@@ -64,11 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         ?current ?p ?o.
                         ?p <http://www.w3.org/2000/01/rdf-schema#label> ?label.
                         FILTER(ISIRI(?o))
+                        FILTER exists{?o ?p1 ?o2}
                       }
                     }
                     LIMIT 20
                     VALUES (?current) {
-                      (<http://www.wikidata.org/entity/Q2836593>)
+                      (<http://www.wikidata.org/entity/Q567>)
                     }`
                 );
                 workspace.showWaitIndicatorWhile(loadingGraph);

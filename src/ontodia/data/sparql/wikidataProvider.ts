@@ -236,6 +236,7 @@ export class WikidataDataProvider implements DataProvider {
                         ${textSearchPart}
                         FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
+                        FILTER exists {?inst ?someprop ?someobj}
                         BIND(IF(STRLEN(?strInst) > 33,
                             <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
                             10000) as ?score)
