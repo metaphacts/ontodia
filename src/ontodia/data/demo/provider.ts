@@ -27,6 +27,10 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(CLASSES.filter(cl => classIds.indexOf(cl.id)));
     }
 
+    propertyInfo(params: {labelIds: string[]}) {
+        return Promise.reject('Not implemented!');
+    }
+
     linkTypes() {
         return this.simulateNetwork(LINK_TYPES);
     }

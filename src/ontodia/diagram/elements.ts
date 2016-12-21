@@ -4,6 +4,8 @@ import * as joint from 'jointjs';
 import { ClassModel, ElementModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
 
+export type Label = { values: LocalizedString[] };
+
 export class UIElement extends joint.shapes.basic.Generic {
     markup: string;
     defaults() {
@@ -56,13 +58,9 @@ export class Element extends UIElement {
 
 /**
  * Properties:
- *     typeId: string
- *     source: { id: string }
- *     target: { id: string }
- *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
- * 
- * Events:
- *     state:loaded
+ *     id: string
+ *     label: LocalizedString
+ *     count: number
  */
 export class FatClassModel extends Backbone.Model {
     model: ClassModel;
@@ -71,6 +69,18 @@ export class FatClassModel extends Backbone.Model {
         this.model = classModel;
         this.set('label', classModel.label);
         this.set('count', classModel.count);
+    }
+}
+
+/**
+ * Properties:
+ *     id: string
+ *     label: Label
+ */
+export class LazyLabel extends Backbone.Model {
+    constructor(model: { id: string, label: Label }) {
+        super({id: model.id});
+        this.set('label', model.label);
     }
 }
 

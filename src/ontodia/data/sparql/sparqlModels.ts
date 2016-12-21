@@ -33,6 +33,11 @@ export interface ClassBinding {
     parent?: RdfIri;
 }
 
+export interface PropertyBinding {
+    prop: RdfIri;
+    label?: RdfLiteral;
+}
+
 export interface LinkBinding {
     source: RdfIri;
     type: RdfIri;

@@ -8,7 +8,7 @@ import {
 import { DataProvider } from '../data/provider';
 
 import { LayoutData, normalizeImportedCell, cleanExportedLayout } from './layoutData';
-import { Element, Link, FatLinkType, FatClassModel } from './elements';
+import { Element, Link, FatLinkType, FatClassModel, LazyLabel } from './elements';
 import { DataFetchingThread } from './dataFetchingThread';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
@@ -44,6 +44,7 @@ export class DiagramModel extends Backbone.Model {
 
     classTree: ClassTreeElement[];
     private classesById: Dictionary<FatClassModel> = {};
+    private propertyLabelById: Dictionary<LazyLabel> = {};
 
     private nextLinkTypeIndex = 0;
     private linkTypes: Dictionary<FatLinkType>;
@@ -53,6 +54,7 @@ export class DiagramModel extends Backbone.Model {
 
     private classFetchingThread: DataFetchingThread;
     private linkFetchingThread: DataFetchingThread;
+    private propertyLabelFetchingThread: DataFetchingThread;
 
     constructor(isViewOnly = false) {
         super();
@@ -60,6 +62,7 @@ export class DiagramModel extends Backbone.Model {
         this.initializeExternalAddRemoveSupport();
         this.classFetchingThread = new DataFetchingThread();
         this.linkFetchingThread = new DataFetchingThread();
+        this.propertyLabelFetchingThread = new DataFetchingThread();
     }
 
     isViewOnly(): boolean { return this.get('isViewOnly'); }
@@ -367,6 +370,28 @@ export class DiagramModel extends Backbone.Model {
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => console.error(err));
+    }
+
+    getPropertyLabelById(labelId: string): LazyLabel {
+        if (!this.propertyLabelById[labelId]) {
+            this.propertyLabelById[labelId] = new LazyLabel({
+                id: labelId,
+                label: {
+                    values: [{lang: '', text: uri2name(labelId)}],
+                },
+            });
+            this.propertyLabelFetchingThread.startFetchingThread(labelId).then(labelIds => {
+                if (labelIds.length > 0) {
+                    this.dataProvider.propertyInfo({labelIds: labelIds}).then(propLabels => {
+                        for (const pl of propLabels) {
+                            if (!this.propertyLabelById[pl.id]) { continue; }
+                            this.propertyLabelById[pl.id].set('label', pl.label);
+                        }
+                    });
+                }
+            });
+        }
+        return this.propertyLabelById[labelId];
     }
 
     getClassesById(typeId: string): FatClassModel {

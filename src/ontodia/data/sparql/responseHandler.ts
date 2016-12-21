@@ -1,6 +1,6 @@
 import {
     RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
-    ElementImageBinding, LinkTypeBinding, LinkTypeInfoBinding,
+    ElementImageBinding, LinkTypeBinding, LinkTypeInfoBinding, PropertyBinding,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property,
@@ -77,6 +77,12 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const sparqlClasses = response.results.bindings;
     return sparqlClasses.map((sClass: ClassBinding) => getClassModel(sClass));
+}
+
+export type PropertyLabel = { id: string, label: { values: LocalizedString[] } };
+export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): PropertyLabel[] {
+    const sparqlClasses = response.results.bindings;
+    return sparqlClasses.map((sProp) => getPropertyModel(sProp));
 }
 
 export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
@@ -202,14 +208,16 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
         element.types.push(sInst.class.value);
     }
     if (sInst.propType && sInst.propType.value !== LABEL_URI) {
-        let properties = element.properties[sInst.propType.value];
-        if (!properties) {
-            properties = element.properties[sInst.propType.value] = [];
+        let property: Property = element.properties[sInst.propType.value];
+        if (!property) {
+            property = element.properties[sInst.propType.value] = {
+                type: 'string', // sInst.propType.value,
+                values: [],
+            };
         }
-        const property = getPropertyValue(sInst.propValue);
-        const propertyValue = property.value;
-        if (properties.every(({value}) => !isLocalizedEqual(value, propertyValue))) {
-            properties.push(property);
+        const propertyValue = getPropertyValue(sInst.propValue);
+        if (property.values.every(value => !isLocalizedEqual(value, propertyValue))) {
+            property.values.push(propertyValue);
         }
     }
 }
@@ -257,6 +265,13 @@ export function getClassModel(node: ClassBinding): ClassModel {
     };
 }
 
+export function getPropertyModel(node: PropertyBinding): PropertyLabel {
+    return {
+        id: node.prop.value,
+        label: { values: [getLocalizedString(node.label, node.prop.value)] },
+    };
+}
+
 export function getLinkType(sLinkType: LinkTypeBinding): LinkType {
     return {
         id: sLinkType.link.value,
@@ -265,11 +280,11 @@ export function getLinkType(sLinkType: LinkTypeBinding): LinkType {
     };
 }
 
-export function getPropertyValue(propValue?: RdfLiteral): Property {
+export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
     if (!propValue) { return undefined; }
     return {
-        type: 'string',
-        value: {lang: '', text: propValue.value},
+        lang: propValue['xml:lang'],
+        text: propValue.value,
     };
 }
 
@@ -282,7 +297,10 @@ export function getElementInfo(sInfo: ElementBinding): ElementModel {
     };
 
     if (sInfo.propType && sInfo.propType.value !== LABEL_URI) {
-        elementInfo.properties[sInfo.propType.value] = [getPropertyValue(sInfo.propValue)];
+        elementInfo.properties[sInfo.propType.value] = {
+            type: 'string', // sInst.propType.value,
+            values: [getPropertyValue(sInfo.propValue)],
+        };
     }
 
     return elementInfo;

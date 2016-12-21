@@ -1,8 +1,9 @@
 import { DataProvider, FilterParams } from '../provider';
-import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
+import { Dictionary, ClassModel, LocalizedString, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 import {
     getClassTree,
     getClassInfo,
+    getPropertyInfo,
     getLinkTypes,
     getElementsInfo,
     getLinksInfo,
@@ -12,7 +13,7 @@ import {
     getLinkTypesInfo,
 } from './responseHandler';
 import {
-    ClassBinding, ElementBinding, LinkBinding,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
 } from './sparqlModels';
 import {executeSparqlQuery, SparqlDataProviderOptions} from './provider';
@@ -61,6 +62,19 @@ export class WikidataDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassInfo);
+    }
+
+    propertyInfo(params: {labelIds: string[]}): Promise<{id: string, label: { values: LocalizedString[] }}[]> {
+        const ids = params.labelIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?prop ?label
+            WHERE {
+                ?prop rdfs:label ?label.
+                VALUES (?prop) {${ids}}.
+            }
+        `;
+        return executeSparqlQuery<PropertyBinding>(
+            this.options.endpointUrl, query).then(getPropertyInfo);
     }
 
     linkTypes(): Promise<LinkType[]> {

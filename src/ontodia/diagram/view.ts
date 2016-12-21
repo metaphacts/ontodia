@@ -226,6 +226,9 @@ export class DiagramView extends Backbone.Model {
 
         this.listenTo(this.selection, 'add remove reset', () => {
             const selected = this.selection.length === 1 ? this.selection.first() : undefined;
+            if (this.connectionsMenu && selected !== this.connectionsMenu.cellView.model) {
+                this.hideNavigationMenu();
+            }
             renderDefaultHalo(selected);
         });
 

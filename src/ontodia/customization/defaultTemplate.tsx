@@ -19,15 +19,15 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         if (props.propsAsList && props.propsAsList.length > 0) {
             propertyTable = <div className='ontodia-default-template_body_expander_property-table'>
                 {props.propsAsList.map(prop => {
-                    const values = prop.properties.map(({value}, index) =>
+                    const values = prop.property.values.map(({text}, index) =>
                         <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
-                            key={index} title={value.text}>
-                            {value.text}
+                            key={index} title={text}>
+                            {text}
                         </div>
                     );
                     return (
                         <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
-                            <div title={prop.id}
+                            <div title={prop.name + ' (' + prop.id + ')'}
                                 className='ontodia-default-template_body_expander_property-table_row__key'>
                                 {prop.name}
                             </div>

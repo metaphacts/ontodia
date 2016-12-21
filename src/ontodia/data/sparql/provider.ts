@@ -1,7 +1,7 @@
 import * as $ from 'jquery';
 
 import { DataProvider, FilterParams } from '../provider';
-import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
+import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, LocalizedString } from '../model';
 import {
     getClassTree,
     getClassInfo,
@@ -12,10 +12,12 @@ import {
     getFilteredData,
     getEnrichedElementsInfo,
     getLinkTypesInfo,
+    getPropertyInfo,
 } from './responseHandler';
 import {
     SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
+    PropertyBinding,
 } from './sparqlModels';
 
 const DEFAULT_PREFIX =
@@ -51,6 +53,21 @@ export class SparqlDataProvider implements DataProvider {
         `;
         return executeSparqlQuery<ClassBinding>(
             this.options.endpointUrl, query).then(getClassTree);
+    }
+
+    propertyInfo(params: {labelIds: string[]}): Promise<{
+        id: string, label: { values: LocalizedString[] }
+    }> {
+        const ids = params.labelIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = DEFAULT_PREFIX + `
+            SELECT ?prop ?label
+            WHERE {
+                ?prop rdfs:label ?label.
+                VALUES (?prop) {${ids}}.
+            }
+        `;
+        return executeSparqlQuery<PropertyBinding>(
+            this.options.endpointUrl, query).then(getPropertyInfo);
     }
 
     classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
