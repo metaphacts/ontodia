@@ -265,11 +265,16 @@ export class DiagramView extends Backbone.Model {
             try {
                 elementIds = JSON.parse(e.dataTransfer.getData('text')); // IE fix
             } catch (ex) {
-                const uriFromTree = e.dataTransfer.getData('text/uri-list');
-                elementIds = [uriFromTree.substr(uriFromTree.indexOf('#') + 1, uriFromTree.length)];
+                const draggedUri = e.dataTransfer.getData('text/uri-list');
+                // element dragged from the class tree has URI of the form:
+                // <window.location without hash>#<class URI>
+                const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
+                const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
+                    ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
+                elementIds = [uri];
             }
         }
-        if (!elementIds) { return; }
+        if (!elementIds || elementIds.length === 0) { return; }
 
         this.model.initBatchCommand();
 
