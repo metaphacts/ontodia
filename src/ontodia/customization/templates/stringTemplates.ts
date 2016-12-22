@@ -35,15 +35,15 @@ export const DefaultElementTemplate = `
                     {{#each propsAsList}}
                         <div  class="ontodia-default-template_body_expander_property-table_row">
                             <div class="ontodia-default-template_body_expander_property-table_row__key"
-                                title="{{id}}">
+                                title="{{name}} ({{id}})">
                                 {{name}}
                             </div>
                             <div class="ontodia-default-template_body_expander_property-table_row_key_values">
-                                {{#each properties}}
+                                {{#each property.values}}
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
-                                    title="{{value.text}}">
-                                        {{value.text}}
+                                    title="{{text}}">
+                                        {{text}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -95,15 +95,15 @@ export const LeftBarTemplate = `
                         {{#each propsAsList}}
                             <div  class="ontodia-default-template_body_expander_property-table_row">
                                 <div class="ontodia-default-template_body_expander_property-table_row__key"
-                                    title="{{id}}">
+                                    title="{{name}} ({{id}})">
                                     {{name}}
                                 </div>
                                 <div class="ontodia-default-template_body_expander_property-table_row_key_values">
-                                    {{#each properties}}
+                                    {{#each property.values}}
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
-                                        title="{{value.text}}">
-                                        {{value.text}}
+                                        title="{{text}}">
+                                        {{text}}
                                     </div>
                                     {{/each}}
                                 </div>
@@ -160,15 +160,15 @@ export const BigIconTemplate = `
                     {{#each propsAsList}}
                         <div  class="ontodia-big-icon-template_property_content_property-table_row">
                             <div class="ontodia-big-icon-template_property_content_property-table_row__key"
-                                title="{{id}}">
+                                title="{{name}} ({{id}})">
                                 {{name}}
                             </div>
                             <div class="ontodia-big-icon-template_property_content_property-table_row_key_values">
-                                {{#each properties}}
+                                {{#each property.values}}
                                     <div 
                                 class="ontodia-big-icon-template_property_content_property-table_row_key_values__value"
-                                    title="{{value.text}}">
-                                        {{value.text}}
+                                    title="{{text}}">
+                                        {{text}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -245,15 +245,15 @@ export const PersonTemplate = `
                     {{#each propsAsList}}
                         <div  class="ontodia-person-template_property_content_property-table_row">
                             <div class="ontodia-person-template_property_content_property-table_row__key"
-                                title="{{id}}">
+                                title="{{name}} ({{id}})">
                                 {{name}}
                             </div>
                             <div class="ontodia-person-template_property_content_property-table_row_key_values">
-                                {{#each properties}}
+                                {{#each property.values}}
                                     <div 
                                 class="ontodia-person-template_property_content_property-table_row_key_values__value"
-                                    title="{{value.text}}">
-                                        {{value.text}}
+                                    title="{{text}}">
+                                        {{text}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -312,15 +312,15 @@ export const OrganizationTemplate = `
                     {{#each propsAsList}}
                         <div  class="ontodia-default-template_body_expander_property-table_row">
                             <div class="ontodia-default-template_body_expander_property-table_row__key"
-                                title="{{id}}">
+                                title="{{name}} ({{id}})">
                                 {{name}}
                             </div>
                             <div class="ontodia-default-template_body_expander_property-table_row_key_values">
-                                {{#each properties}}
+                                {{#each property.values}}
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
-                                    title="{{value.text}}">
-                                        {{value.text}}
+                                    title="{{text}}">
+                                        {{text}}
                                     </div>
                                 {{/each}}
                             </div>

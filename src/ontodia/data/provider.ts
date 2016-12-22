@@ -1,5 +1,5 @@
 import {
-    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount,
+    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, LocalizedString,
 } from './model';
 
 export interface DataProvider {
@@ -8,6 +8,12 @@ export interface DataProvider {
     classInfo(params: {
         classIds: string[];
     }): Promise<ClassModel[]>;
+
+    propertyInfo(params: {
+        labelIds: string[]
+    }): Promise<{
+        id: string, label: { values: LocalizedString[] }
+    }[]>;
 
     linkTypes(): Promise<LinkType[]>;
 

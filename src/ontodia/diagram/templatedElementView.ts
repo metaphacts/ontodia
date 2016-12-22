@@ -7,13 +7,13 @@ import { compile as compileTemplate, registerHelper } from 'handlebars';
 import { Dictionary, Property } from '../data/model';
 import { TemplateProps } from '../customization/props';
 
-import { Element } from './elements';
+import { Element, LazyLabel } from './elements';
 import { uri2name } from './model';
 import { DiagramView } from './view';
 
-registerHelper('getProperty', function(props: Dictionary<Property[]>, id: string) {
-    if (props && props[id] && props[id].length > 0) {
-        return props[id].map(p => p.value.text).join(', ');
+registerHelper('getProperty', function(props: Dictionary<Property>, id: string) {
+    if (props && props[id]) {
+        return props[id].values.map(v => v.text).join(', ');
     } else {
         return undefined;
     }
@@ -27,6 +27,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     private view: DiagramView;
     private foreignObject: SVGForeignObjectElement;
     private isReactMounted = false;
+    private subscribedOnce = false;
 
     initialize() {
         joint.dia.ElementView.prototype.initialize.apply(this, arguments);
@@ -114,6 +115,18 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         body.removeEventListener('click', this.onClick);
     }
 
+    private subscribeOnLazyLabels(lazyLabels: LazyLabel[]) {
+        if (!this.subscribedOnce && this.model.get('isExpanded')) {
+            this.subscribedOnce = true;
+            for (const ll of lazyLabels) {
+                ll.on('change:label', () => {
+                    ll.off('change:label');
+                    this.updateUI();
+                });
+            }
+        }
+    }
+
     private updateUI() {
         if (this.model.template && this.view) {
             const template = this.getTemplate();
@@ -169,15 +182,30 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                         this.view.getElementTypeString(this.model.template) :
                         'Thing');
         const label = (this.view ? this.view.getLocalizedText(this.model.template.label.values).text : '');
-        let propTable: Array<{ id: string; name: string; properties: Property[]; }> = [];
+        let propTable: Array<{ id: string; name: string; property: Property; }> = [];
+
         if (this.model.template.properties) {
-            propTable = Object.keys(this.model.template.properties).map(key => ({
-                id: key,
-                name: uri2name(key),
-                properties: this.model.template.properties[key],
-            }));
+            const lazyLabels: LazyLabel[] = [];
+            propTable = Object.keys(this.model.template.properties).map(key => {
+
+                let lazyLabel: LazyLabel;
+                if (this.view) {
+                    lazyLabel = this.view.model.getPropertyLabelById(key);
+                    lazyLabels.push(lazyLabel);
+                }
+
+                const name = this.view ? this.view.getLocalizedText(lazyLabel.get('label').values).text : uri2name(key);
+
+                return {
+                    id: key,
+                    name: name,
+                    property: this.model.template.properties[key],
+                };
+            });
+            this.subscribeOnLazyLabels(lazyLabels);
         }
         const style = this.getStyle();
+
         return {
             types: types,
             label: label,

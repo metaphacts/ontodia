@@ -22,13 +22,13 @@ export interface TemplateProps {
     imgUrl?: string;
     isExpanded?: boolean;
     propsAsList?: PropArray;
-    props?: Dictionary<Property[]>;
+    props?: Dictionary<Property>;
 }
 
 export type PropArray = Array<{
     id: string;
     name: string;
-    properties: Property[];
+    property: Property;
 }>;
 
 export interface LinkStyle {

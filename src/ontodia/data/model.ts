@@ -5,14 +5,14 @@ export interface LocalizedString {
     lang: string;
 }
 
-export type Property = { type: 'string'; value: LocalizedString; };
+export type Property = { type: 'string'; values: LocalizedString[]; };
 
 export interface ElementModel {
     id: string;
     types: string[];
     label: { values: LocalizedString[] };
     image?: string;
-    properties: { [id: string]: Property[] };
+    properties: { [id: string]: Property };
 }
 
 export interface LinkModel {
