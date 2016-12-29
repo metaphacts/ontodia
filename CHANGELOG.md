@@ -5,8 +5,26 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+## [0.3.4] - 2016-12-29
+### Added
+- Ability display labels for element properties by implementing
+`DataProvider.propertyInfo()`.
+
 ### Fixed
 - Exported missing LayoutData types.
+- Error when `WikidataProvider.filter()` query execution encounters literals
+or non-entity IRIs.
+- Diagram area scroll jump on element click when workspace area size changed.
+- Filter trash nodes (hyperlinks to resources expressed as IRIs)
+in `WikidataProvider`.
+- Made diagram area scroll smoother in Webkit browsers.
+- Preserve full URI when drag'n'drop links with absolute URI with hashpart
+onto the diagram area.
+- Printing person template with expanded properties.
+
+### Changed
+- Replaced `d3` dependency with `d3-color`.
 
 ## [0.3.3] - 2016-12-15
 ### Added
@@ -98,7 +116,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.0...v0.3.1

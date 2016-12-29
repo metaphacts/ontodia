@@ -1,6 +1,6 @@
 {
   "name": "ontodia",
-  "version": "0.3.4-dev.20161215",
+  "version": "0.3.4",
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
     "owl",
     "graph",
     "rdf",
-    "owl2",
+    "diagram",
     "sparql"
   ],
   "author": {
