@@ -55,7 +55,7 @@ export class SparqlDataProvider implements DataProvider {
             this.options.endpointUrl, query).then(getClassTree);
     }
 
-    propertyInfo(params: { propertyIds: string[] }): Promise<PropertyModel> {
+    propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
         const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = DEFAULT_PREFIX + `
             SELECT ?prop ?label

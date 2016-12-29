@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
-## [0.3.4] - 2016-12-29
+## [0.3.5] - 2016-12-29
 ### Added
 - Ability display labels for element properties by implementing
 `DataProvider.propertyInfo()`.
@@ -116,8 +116,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.4...HEAD
-[0.3.4]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.4
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.5
 [0.3.3]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.0...v0.3.1

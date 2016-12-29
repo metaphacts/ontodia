@@ -22,7 +22,7 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(CLASSES);
     }
 
-    classInfo(params: {classIds: string[]}) {
+    classInfo(params: { classIds: string[] }) {
         let classIds = params.classIds || [];
         return this.simulateNetwork(CLASSES.filter(cl => classIds.indexOf(cl.id)));
     }
@@ -31,11 +31,10 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(LINK_TYPES);
     }
 
-    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+    linkTypesInfo(params: { linkTypeIds: string[] }): Promise<LinkType[]> {
         const types = keyBy(params.linkTypeIds);
-        const links = LINKS.filter(link =>
-        types[link.linkTypeId]);
-        return this.simulateNetwork(links);
+        const linkTypes = LINK_TYPES.filter(type => types[type.id]);
+        return this.simulateNetwork(linkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
