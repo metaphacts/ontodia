@@ -77,7 +77,7 @@ export class FatClassModel extends Backbone.Model {
  *     id: string
  *     label: Label
  */
-export class LazyLabel extends Backbone.Model {
+export class RichProperty extends Backbone.Model {
     constructor(model: { id: string, label: Label }) {
         super({id: model.id});
         this.set('label', model.label);

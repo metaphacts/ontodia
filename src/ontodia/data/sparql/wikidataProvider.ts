@@ -1,5 +1,5 @@
 import { DataProvider, FilterParams } from '../provider';
-import { Dictionary, ClassModel, LocalizedString, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
+import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
     getClassTree,
     getClassInfo,
@@ -64,8 +64,8 @@ export class WikidataDataProvider implements DataProvider {
             this.options.endpointUrl, query).then(getClassInfo);
     }
 
-    propertyInfo(params: {labelIds: string[]}): Promise<{id: string, label: { values: LocalizedString[] }}[]> {
-        const ids = params.labelIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+    propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
+        const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = DEFAULT_PREFIX + `
             SELECT ?prop ?label
             WHERE {

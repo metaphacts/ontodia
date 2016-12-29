@@ -3,7 +3,7 @@ import {
     ElementImageBinding, LinkTypeBinding, LinkTypeInfoBinding, PropertyBinding,
 } from './sparqlModels';
 import {
-    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property,
+    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel,
 } from '../model';
 
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
@@ -79,10 +79,13 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
     return sparqlClasses.map((sClass: ClassBinding) => getClassModel(sClass));
 }
 
-export type PropertyLabel = { id: string, label: { values: LocalizedString[] } };
-export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): PropertyLabel[] {
-    const sparqlClasses = response.results.bindings;
-    return sparqlClasses.map((sProp) => getPropertyModel(sProp));
+export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dictionary<PropertyModel> {
+    const models: Dictionary<PropertyModel> = {};
+    for (const sProp of response.results.bindings) {
+        const model = getPropertyModel(sProp);
+        models[model.id] = model;
+    }
+    return models;
 }
 
 export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
@@ -265,7 +268,7 @@ export function getClassModel(node: ClassBinding): ClassModel {
     };
 }
 
-export function getPropertyModel(node: PropertyBinding): PropertyLabel {
+export function getPropertyModel(node: PropertyBinding): PropertyModel {
     return {
         id: node.prop.value,
         label: { values: [getLocalizedString(node.label, node.prop.value)] },

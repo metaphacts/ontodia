@@ -36,3 +36,8 @@ export interface LinkCount {
 export interface LinkType extends LinkCount {
     label: { values: LocalizedString[] };
 }
+
+export interface PropertyModel {
+    id: string;
+    label: { values: LocalizedString[] };
+}

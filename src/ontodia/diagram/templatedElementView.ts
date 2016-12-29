@@ -7,7 +7,7 @@ import { compile as compileTemplate, registerHelper } from 'handlebars';
 import { Dictionary, Property } from '../data/model';
 import { TemplateProps } from '../customization/props';
 
-import { Element, LazyLabel } from './elements';
+import { Element, RichProperty } from './elements';
 import { uri2name } from './model';
 import { DiagramView } from './view';
 
@@ -115,14 +115,11 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         body.removeEventListener('click', this.onClick);
     }
 
-    private subscribeOnLazyLabels(lazyLabels: LazyLabel[]) {
+    private subscribeOnPropertyModels(properties: RichProperty[]) {
         if (!this.subscribedOnce && this.model.get('isExpanded')) {
             this.subscribedOnce = true;
-            for (const ll of lazyLabels) {
-                ll.on('change:label', () => {
-                    ll.off('change:label');
-                    this.updateUI();
-                });
+            for (const property of properties) {
+                this.listenToOnce(property, 'change:label', () => this.updateUI());
             }
         }
     }
@@ -185,13 +182,13 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         let propTable: Array<{ id: string; name: string; property: Property; }> = [];
 
         if (this.model.template.properties) {
-            const lazyLabels: LazyLabel[] = [];
+            const properties: RichProperty[] = [];
             propTable = Object.keys(this.model.template.properties).map(key => {
 
-                let lazyLabel: LazyLabel;
+                let lazyLabel: RichProperty;
                 if (this.view) {
-                    lazyLabel = this.view.model.getPropertyLabelById(key);
-                    lazyLabels.push(lazyLabel);
+                    lazyLabel = this.view.model.getPropertyById(key);
+                    properties.push(lazyLabel);
                 }
 
                 const name = this.view ? this.view.getLocalizedText(lazyLabel.get('label').values).text : uri2name(key);
@@ -202,7 +199,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
                     property: this.model.template.properties[key],
                 };
             });
-            this.subscribeOnLazyLabels(lazyLabels);
+            this.subscribeOnPropertyModels(properties);
         }
         const style = this.getStyle();
 

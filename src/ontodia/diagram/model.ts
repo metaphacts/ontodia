@@ -8,7 +8,7 @@ import {
 import { DataProvider } from '../data/provider';
 
 import { LayoutData, normalizeImportedCell, cleanExportedLayout } from './layoutData';
-import { Element, Link, FatLinkType, FatClassModel, LazyLabel } from './elements';
+import { Element, Link, FatLinkType, FatClassModel, RichProperty } from './elements';
 import { DataFetchingThread } from './dataFetchingThread';
 
 export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
@@ -44,7 +44,7 @@ export class DiagramModel extends Backbone.Model {
 
     classTree: ClassTreeElement[];
     private classesById: Dictionary<FatClassModel> = {};
-    private propertyLabelById: Dictionary<LazyLabel> = {};
+    private propertyLabelById: Dictionary<RichProperty> = {};
 
     private nextLinkTypeIndex = 0;
     private linkTypes: Dictionary<FatLinkType>;
@@ -372,23 +372,23 @@ export class DiagramModel extends Backbone.Model {
         .catch(err => console.error(err));
     }
 
-    getPropertyLabelById(labelId: string): LazyLabel {
+    getPropertyById(labelId: string): RichProperty {
         if (!this.propertyLabelById[labelId]) {
-            this.propertyLabelById[labelId] = new LazyLabel({
+            this.propertyLabelById[labelId] = new RichProperty({
                 id: labelId,
-                label: {
-                    values: [{lang: '', text: uri2name(labelId)}],
-                },
+                label: {values: [{lang: '', text: uri2name(labelId)}]},
             });
-            this.propertyLabelFetchingThread.startFetchingThread(labelId).then(labelIds => {
-                if (labelIds.length > 0) {
-                    this.dataProvider.propertyInfo({labelIds: labelIds}).then(propLabels => {
-                        for (const pl of propLabels) {
-                            if (!this.propertyLabelById[pl.id]) { continue; }
-                            this.propertyLabelById[pl.id].set('label', pl.label);
-                        }
-                    });
-                }
+            this.propertyLabelFetchingThread.startFetchingThread(labelId).then(propertyIds => {
+                if (!this.dataProvider.propertyInfo) { return; }
+                if (propertyIds.length === 0) { return; }
+                this.dataProvider.propertyInfo({propertyIds}).then(propertyModels => {
+                    for (const propertyId in propertyModels) {
+                        if (!Object.hasOwnProperty.call(propertyModels, propertyId)) { continue; }
+                        const propertyModel = propertyModels[propertyId];
+                        if (!this.propertyLabelById[propertyModel.id]) { continue; }
+                        this.propertyLabelById[propertyModel.id].set('label', propertyModel.label);
+                    }
+                });
             });
         }
         return this.propertyLabelById[labelId];
