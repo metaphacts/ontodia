@@ -66,7 +66,7 @@ namespace joint {
         class Element extends Cell {
             position(x: number, y: number): Element;
             translate(tx: number, ty?: number): Element;
-            resize(width: number, height: number): Element;
+            resize(width: number, height: number, opt?: any): Element;
             rotate(angle: number, absolute?: boolean): Element;
         }
 

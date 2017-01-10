@@ -41,6 +41,9 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         this.listenTo(this.model, 'focus-on-me', () => {
             (this.foreignObject.firstChild as HTMLElement).focus();
         });
+        // We recompute size during the render,
+        // and if size is equal to the expected size, then the resize-event won't be thrown.
+        this.model.set('size', { width: 0, height: 0 }, { silent: true });
     }
 
     render(): TemplatedUIElementView {
