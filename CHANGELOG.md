@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.3.6] - 2017-01-11
+
+### Fixed
+- When loading diagram, attachment of links to nodes was broken 
+
 ## [0.3.5] - 2016-12-29
 ### Added
 - Ability display labels for element properties by implementing
