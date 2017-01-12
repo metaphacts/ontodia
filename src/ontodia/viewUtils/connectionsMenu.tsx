@@ -519,11 +519,14 @@ export interface ObjectsPanelProps {
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
 }
 
-export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap: { [id: string]: boolean } }> {
+export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
+    checkMap: { [id: string]: boolean },
+    selectAll: string,
+}> {
 
     constructor(props: ObjectsPanelProps) {
         super(props);
-        this.state  = { checkMap: {} };
+        this.state  = { checkMap: {}, selectAll: 'checked' };
         this.updateCheckMap();
     }
 
@@ -536,8 +539,46 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
     };
 
     private onChackboxChanged = (object: ReactElementModel, value: boolean) => {
+        if (this.state.checkMap[object.model.id] === value) {
+            return;
+        }
         this.state.checkMap[object.model.id] = value;
+
+        const filtered = this.getFilteredObjects().map(o => o.model.id);
+        const keys = Object.keys(this.state.checkMap).filter(key => filtered.indexOf(key) !== -1);
+
+        const unchekedListElementLength = keys.filter(key => !this.state.checkMap[key]).length;
+        if (!value && unchekedListElementLength === keys.length) {
+            this.state.selectAll = 'unchecked';
+        } else if (unchekedListElementLength === 0) {
+            this.state.selectAll = 'checked';
+        } else {
+            this.state.selectAll = 'undefined';
+        }
         this.setState(this.state);
+    };
+
+    private onSelectAll = () => {
+        let checked = !this.selectAllValue();
+        if (checked) {
+            this.state.selectAll = 'checked';
+        } else {
+            this.state.selectAll = 'unchecked';
+        }
+        const filtered = this.getFilteredObjects().map(o => o.model.id);
+        const keys = Object.keys(this.state.checkMap).filter(key => filtered.indexOf(key) !== -1);
+        keys.forEach(key => {
+            this.state.checkMap[key] = checked;
+        });
+        this.setState(this.state);
+    };
+
+    private selectAllValue = () => {
+        if (this.state.selectAll === 'undefined' || this.state.selectAll === 'unchecked') {
+            return false;
+        } else {
+            return true;
+        }
     };
 
     private getFilteredObjects = (): ReactElementModel[] => {
@@ -564,7 +605,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
                 element={obj}
                 lang={this.props.lang}
                 filterKey={this.props.filterKey}
-                checked={this.state.checkMap[obj.model.id] ? true : false}
+                checked={this.state.checkMap[obj.model.id]}
                 onCheckboxChanged={this.onChackboxChanged}
             />;
         });
@@ -583,6 +624,12 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, { checkMap:
         const activeObjCount = objects.filter(el => this.state.checkMap[el.model.id]  && !el.presentOnDiagram).length;
         const countString = activeObjCount.toString() + '\u00A0of\u00A0' + this.props.data.objects.length;
         return <div className='ontodia-connections-menu_objects-panel'>
+            <div className='ontodia-connections-menu_objects-panel__select-all' onClick={this.onSelectAll}>
+                <input className={this.state.selectAll === 'undefined' ? 'undefined' : ''}
+                    type='checkbox' checked={this.selectAllValue()} onChange={() => {/*nothing*/}}
+                    disabled={this.props.data.objects.length === 0}/>
+                <span>Select All</span>
+            </div>
             {(
                 this.props.loading ?
                 <label className='ontodia-connections-menu__loading-objects'>Loading...</label>
@@ -631,7 +678,7 @@ export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps,
     };
 
     componentWillReceiveProps(props: ElementInPopupMenuProps) {
-        this.state = { checked: this.props.checked };
+        this.setState({ checked: props.checked });
     }
 
     render() {
@@ -645,7 +692,8 @@ export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps,
                 }
                 onClick={this.onCheckboxChange}
             >
-                <input type='checkbox' onChange={() => {/*nothing*/}} checked={this.state.checked}
+                <input type='checkbox' checked={this.state.checked}
+                    onChange={() => {/*nothing*/}}
                     className='element-in-popup-menu__checkbox'
                     disabled={this.props.element.presentOnDiagram}/>
                 <div className='element-in-popup-menu__link-label'

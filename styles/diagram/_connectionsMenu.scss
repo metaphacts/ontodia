@@ -189,7 +189,27 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  padding-top: 0px;
 }
+
+.ontodia-connections-menu_objects-panel__select-all {
+    white-space: nowrap;
+    margin-bottom: 5px;
+    display: flex;
+
+    input {
+      display: inline-block;  
+    }
+
+    .undefined {
+      opacity: 0.3;
+    }
+    
+    span {
+      margin-left: 5px;
+    }
+}
+
 
 .ontodia-connections-menu_objects-panel_bottom-panel {
   height: 25px;
