@@ -89,7 +89,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                         <PaperArea ref={el => this.paperArea = el}
                             model={this.props.view.model}
                             paper={this.props.view.paper}
-                            zoomOptions={{min: 0.2, max: 2, fitPadding: 20}}
+                            zoomOptions={{min: 0.2, max: 2, maxFit: 1, fitPadding: 20}}
                             preventTextSelection={() => this.preventTextSelection()}
                             onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)} />
                     </div>
