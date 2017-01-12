@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.3.7] - 2017-01-12
+### Added
+- Select/deselect all elements checkbox in navigation pop-up 
+### Fixed
+- Zoom to fit zoomed to close on small diagrams, making elements unnessesary big
+
 ## [0.3.6] - 2017-01-11
 ### Fixed
 - Broken attachment of links to nodes when loading a diagram.
