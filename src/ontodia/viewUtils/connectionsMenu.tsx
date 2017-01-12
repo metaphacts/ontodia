@@ -574,10 +574,10 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
     };
 
     private selectAllValue = () => {
-        if (this.state.selectAll === 'undefined' || this.state.selectAll === 'unchecked') {
-            return false;
-        } else {
+        if (this.state.selectAll === 'undefined' || this.state.selectAll === 'checked') {
             return true;
+        } else {
+            return false;
         }
     };
 

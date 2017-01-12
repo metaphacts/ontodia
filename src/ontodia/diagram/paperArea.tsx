@@ -15,6 +15,8 @@ export interface Props {
     zoomOptions?: {
         min?: number;
         max?: number;
+        //maxFit will be used when zooming to fit to limit zoom of small diagrams
+        maxFit?: number;
         fitPadding?: number;
     };
     panningAlwaysActive?: boolean;
@@ -319,7 +321,7 @@ export class PaperArea extends React.Component<Props, {}> {
             fittingBBox,
             padding: (this.props.zoomOptions || {}).fitPadding,
             minScale: zoomOptions.min,
-            maxScale: zoomOptions.max,
+            maxScale: zoomOptions.maxFit || zoomOptions.max,
         });
         this.paper.setOrigin(originX, originY);
 

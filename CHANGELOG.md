@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.3.6] - 2017-01-11
+### Fixed
+- Broken attachment of links to nodes when loading a diagram.
+
 ## [0.3.5] - 2016-12-29
 ### Added
 - Ability display labels for element properties by implementing
@@ -116,7 +120,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.5
 [0.3.3]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...v0.3.2
