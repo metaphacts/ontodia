@@ -206,6 +206,19 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
         }
         const style = this.getStyle();
 
+        propTable.sort((a, b) => {
+            const aLabel = (a.name || a.id).toLowerCase();
+            const bLabel = (b.name || b.id).toLowerCase();
+
+            if (aLabel > bLabel) {
+                return 1;
+            } else if (bLabel > aLabel ) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
         return {
             types: types,
             label: label,
