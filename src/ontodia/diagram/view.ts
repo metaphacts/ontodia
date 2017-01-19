@@ -64,8 +64,6 @@ export class DiagramView extends Backbone.Model {
 
     private colorSeed = 0x0BADBEEF;
 
-    public dragAndDropElements: Dictionary<Element>;
-
     private toSVGOptions: ToSVGOptions = {
         elementsToRemoveSelector: '.link-tools, .marker-vertices',
         convertImagesToDataUris: true,
@@ -286,42 +284,33 @@ export class DiagramView extends Backbone.Model {
         let totalXOffset = 0;
         let {x, y} = paperPosition;
         for (const elementId of elementIds) {
-            const element = this.getDragAndDropElement(elementId);
-            element.set('presentOnDiagram', true);
-            element.set('selectedInFilter', false);
-            const size: { width: number; height: number; } = element.get('size');
-            if (elementIds.length === 1) {
-                x -= size.width / 2;
-                y -= size.height / 2;
-            }
-            const ignoreHistory = {ignoreCommandManager: true};
-            element.set('position', {x: x + totalXOffset, y: y}, ignoreHistory);
-            totalXOffset += size.width + 20;
+            const center = elementIds.length === 1;
+            const element = this.createElementAt(elementId, {x: x + totalXOffset, y, center});
+            totalXOffset += element.get('size').width + 20;
 
             elementsToSelect.push(element);
             element.focus();
         }
 
+        this.model.requestElementData(elementsToSelect);
         this.selection.reset(elementsToSelect);
 
         this.model.storeBatchCommand();
     }
 
-    private getDragAndDropElement(elementId: string): Element {
-        if (this.model.elements[elementId]) {
-            return this.model.elements[elementId];
-        } else if (this.dragAndDropElements && this.dragAndDropElements[elementId]) {
-            const element = this.dragAndDropElements[elementId];
-            this.model.initializeElement(element, {requestData: true});
-            return element;
-        } else {
-            return this.model.createElement({
-                id: elementId,
-                types: [],
-                label: {values: [{lang: '', text: elementId}]},
-                properties: {},
-            });
+    private createElementAt(elementId: string, position: { x: number; y: number; center?: boolean; }) {
+        const element = this.model.createElement(elementId);
+
+        let {x, y} = position;
+        const size: { width: number; height: number; } = element.get('size');
+        if (position.center) {
+            x -= size.width / 2;
+            y -= size.height / 2;
         }
+        const ignoreHistory = {ignoreCommandManager: true};
+        element.set('position', {x, y}, ignoreHistory);
+
+        return element;
     }
 
     public getLocalizedText(texts: LocalizedString[]): LocalizedString {

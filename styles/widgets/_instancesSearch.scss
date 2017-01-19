@@ -1,0 +1,72 @@
+.ontodia-instances-search {
+  display: flex;
+  flex-direction: column;
+
+  &__criteria {
+    flex-shrink: 0;
+    margin: 10px 0 10px 0;
+  }
+
+  &__criterions {
+    padding-left: 15px;
+    margin-bottom: 10px;
+    &:empty { margin-bottom: 0; }
+  }
+
+  &__criterion {
+    display: block;
+    position: relative;
+    width: 100%;
+  }
+
+  &__criterion-class {
+    border: black 1px dashed;
+    background: rgb(255, 210, 33);
+    padding: 0 .5em 0 .5em;
+    word-wrap: break-word;
+  }
+
+  &__criterion-element {
+    border: black 1px dashed;
+    background: rgb(255, 131, 92);
+    padding: 0 .5em 0 .5em;
+    word-wrap: break-word;
+  }
+
+  &__criterion-link-type {
+    border: black 1px dashed;
+    background: rgb(202, 255, 206);
+    padding: 0 .5em 0 .5em;
+    word-wrap: break-word;
+  }
+
+  &__criterion-remove {
+    float: right;
+    margin: 0 10px 4px 4px;
+  }
+
+  &__text-criteria { margin: 0 10px; }
+
+  &__rest {
+    height: 0;
+    flex-grow: 1;
+    overflow-y: scroll;
+    border-top: 1px solid rgb(221, 221, 221);
+  }
+
+  &__results {
+    padding-left: 0;
+    padding-top: 10px;
+    margin: 0 10px 0 10px;
+  }
+
+  &[data-state='finished'] &__results:empty:before {
+    content: 'No items correspond to the specified criteria.';
+    font-style: italic;
+  }
+
+  &__rest-end { margin: 5px 10px 15px 10px; }
+  &__load-more {
+    width: 100%;
+  }
+}

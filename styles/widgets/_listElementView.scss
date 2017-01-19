@@ -1,0 +1,25 @@
+.ontodia-list-element-view {
+  display: block;
+  background: #808080;
+  padding: 1px 1px 1px 20px;
+  border-radius: 10px;
+  margin: 0 0 2px 0;
+  opacity: 1.0;
+  cursor: move;
+
+  &--disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &__label {
+    background: white;
+    border-radius: 10px;
+    font-family: "Andale Mono", sans-serif;
+    font-size: 15px;
+    min-height: 1.3em;
+    padding-left: 7px;
+    padding-right: 5px;
+    overflow-wrap: break-word;
+  }
+}

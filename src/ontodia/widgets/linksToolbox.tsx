@@ -329,15 +329,13 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
     }
 
     private updateLinks() {
-        if (this.linksOfElement) {
-            this.unsubscribeOnLinksEevents(this.linksOfElement);
-        }
+        this.unsubscribeOnLinksEevents();
 
         if (this.model.connectionsOfSelectedElement) {
             this.countMap = this.model.connectionsOfSelectedElement;
             const linkTypeIds = _.keys(this.model.connectionsOfSelectedElement);
             this.linksOfElement = linkTypeIds.map(id => {
-                return this.view.model.getLinkType(id);
+                return this.view.model.createLinkType(id);
             });
             this.subscribeOnLinksEevents(this.linksOfElement);
         } else {
@@ -355,10 +353,11 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         };
     }
 
-    private unsubscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
+    private unsubscribeOnLinksEevents() {
+        if (!this.linksOfElement) { return; }
+        for (const link of this.linksOfElement) {
             this.stopListening(link);
-        };
+        }
     }
 
     public getReactComponent() {
@@ -371,11 +370,13 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         />);
     }
 
-    public render(): LinkTypesToolboxShell {
-        ReactDOM.render(
-            this.getReactComponent(),
-            this.el,
-        );
+    render(): LinkTypesToolboxShell {
+        ReactDOM.render(this.getReactComponent(), this.el);
+        return this;
+    }
+
+    remove() {
+        this.unsubscribeOnLinksEevents();
         return this;
     }
 }

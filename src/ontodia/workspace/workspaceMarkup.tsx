@@ -2,12 +2,18 @@ import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
+
 import { TutorialProps } from '../tutorial/tutorial';
+
+import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 
 export interface Props {
     toolbar: React.ReactElement<any>;
     view: DiagramView;
     isViewOnly?: boolean;
+
+    searchCriteria?: SearchCriteria;
+    onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -33,10 +39,9 @@ const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present
 
 const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
 
-export class WorkspaceMarkup extends React.Component<Props, {}> {
+export class WorkspaceMarkup extends React.Component<Props, void> {
     element: HTMLElement;
     classTreePanel: HTMLElement;
-    filterPanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
 
@@ -44,8 +49,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
         let leftPanel = (
             <DragResizableColumn className='ontodia__left-panel' tutorialProps={{
                 'data-position': 'right', 'data-step': '7', 'data-intro-id': 'resize', 'data-intro': INTRO_RESIZE}}>
-                <ToggableColumnWidget heading='Classes'
-                    bodyClassName='tree-view' bodyRef={e => this.classTreePanel = e}
+                <ToggableColumnWidget heading='Classes' bodyRef={e => this.classTreePanel = e}
                     tutorialProps={{
                         'data-position': 'right',
                         'data-step': '1',
@@ -54,13 +58,16 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                     }}>
                 </ToggableColumnWidget>
                 <ToggableColumnWidget heading='Instances'
-                    bodyClassName='filter-view' bodyRef={e => this.filterPanel = e}
+                    bodyClassName='filter-view'
                     tutorialProps={{
                         'data-position': 'top',
                         'data-step': '2',
                         'data-intro-id': 'filter-view',
                         'data-intro': INTRO_INSTANCES,
                     }}>
+                    <InstancesSearch className='filter-item__body'
+                        view={this.props.view} criteria={this.props.searchCriteria || {}}
+                        onCriteriaChanged={this.props.onSearchCriteriaChanged} />
                 </ToggableColumnWidget>
             </DragResizableColumn>
         );
@@ -113,7 +120,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
 
     private onDocumentMouseUp = () => {
         this.element.classList.remove('ontodia--unselectable');
-    };
+    }
 }
 
 interface DragResizableColumnProps {
@@ -124,7 +131,7 @@ interface DragResizableColumnProps {
 
 class DragResizableColumn extends React.Component<DragResizableColumnProps, void> {
     render() {
-        return <div className={`filter-panel ${this.props.className || ''}`}>
+        return <div className={`filter-panel ${this.props.className || ''}`} {...this.props.tutorialProps}>
             {this.props.children}
             <div className='filter-panel__handle'>
                 <div className='filter-panel__handle-btn'></div>
@@ -146,10 +153,12 @@ class ToggableColumnWidget extends React.Component<ToggableColumnWidgetProps, vo
         return <div className='filter-item ontodia-widget' {...this.props.tutorialProps}>
             <div className='filter-item__inner'>
                 <div className='ontodia-widget-heading filter-item__header'>{this.props.heading}</div>
-                <div ref={this.props.bodyRef}
-                    className={`filter-item__body ${this.props.bodyClassName || ''}`}>
-                    {this.props.children}
-                </div>
+                {this.props.children ? this.props.children :
+                    <div ref={this.props.bodyRef}
+                        className={`filter-item__body ${this.props.bodyClassName || ''}`}>
+                        {this.props.children}
+                    </div>
+                }
             </div>
             <div className='filter-item__handle'></div>
         </div>;

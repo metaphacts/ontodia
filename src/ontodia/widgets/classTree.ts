@@ -7,11 +7,6 @@ import { Dictionary } from '../data/model';
 import { ClassTreeElement } from '../diagram/model';
 import DiagramView from '../diagram/view';
 
-import FilterModel from './filterModel';
-
-// WTF? why importing filter models/views view here?
-import { BaseFilterOptions } from './filter';
-
 // bundling jstree to solve issues with multiple jquery packages,
 // when jstree sets itself as plugin to wrong version of jquery
 const jstreeJQuery = require<JQueryStatic>('exports?require("jquery")!jstree');
@@ -22,37 +17,37 @@ interface TreeClassModel extends ClassTreeElement {
     type?: string;
 }
 
+export interface ClassTreeOptions extends Backbone.ViewOptions<Backbone.Model> {
+    view: DiagramView;
+}
+
+const CLASS_NAME = 'ontodia-class-tree';
+
 /**
  * Events:
  *     action:classSelected(classId: string)
  */
-export class ClassTree extends Backbone.View<FilterModel> {
+export class ClassTree extends Backbone.View<Backbone.Model> {
     private filter: JQuery = null;
     private tree: JQuery = null;
     private rest: JQuery = null;
     private view: DiagramView;
 
-    constructor(options: BaseFilterOptions<FilterModel>) {
-        super(_.extend({className: 'tree-view filter-view stateBasedProgress'}, options));
+    constructor(options: ClassTreeOptions) {
+        super(_.extend({className: CLASS_NAME}, options));
         let selfLink = this;
         this.$el.addClass(_.result(this, 'className') as string);
         this.view = options.view;
         this.model.set('language', this.view.getLanguage(), {silent: true});
         this.listenTo(this.view, 'change:language', this.onLanguageChanged);
 
-        this.rest = $('<div class="filter-rest"></div>');
-        this.tree = $('<div class="class-tree"></div>').appendTo(this.rest);
+        this.rest = $(`<div class="${CLASS_NAME}__rest"></div>`);
+        this.tree = $(`<div class="${CLASS_NAME}__tree"></div>`).appendTo(this.rest);
 
         // Input for search in classTree
-        this.filter = $(
-            '<div class="filter-criteria"' +
-            '   style="margin-bottom: 10px;border-color: black;">' +
-            '   <ul></ul>' +
-            '</div>');
+        this.filter = $(`<div class="${CLASS_NAME}__filter"></div>`);
 
-        let innerDiv =
-            $('<div style="margin-left: 10px; margin-right: 10px;"></div>')
-            .appendTo(this.filter);
+        let innerDiv = $(`<div class="${CLASS_NAME}__filter-group"></div>`).appendTo(this.filter);
         let searchInput =
             $('<input type="text" class="search-input form-control" placeholder="Search for..."/>')
             .appendTo(innerDiv);

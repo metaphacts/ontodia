@@ -134,12 +134,7 @@ export class ConnectionsMenu {
             results.forEach(elements => {
                 Object.keys(elements).forEach(key => this.objects.push({
                     model: elements[key],
-                    presentOnDiagram: (
-                        this.view.model.elements[key] &&
-                        this.view.model.elements[key].get('presentOnDiagram')
-                        ? true
-                        : false
-                    ),
+                    presentOnDiagram: Boolean(this.view.model.getElement(key)),
                 }));
             });
             this.render();
@@ -158,11 +153,13 @@ export class ConnectionsMenu {
         const startY = bBox.y - positionBoxSide * GRID_STEP / 2;
         let xi = 0;
         let yi = 0;
+
+        const addedElements: Element[] = [];
         selectedObjects.forEach(el => {
-            let element = this.view.model.elements[el.model.id];
-            if (!element) {
-                element = this.view.model.createElement(el.model);
-            }
+            let element = this.view.model.getElement(el.model.id);
+            if (!element) { element = this.view.model.createElement(el.model); }
+            addedElements.push(element);
+
             if (xi > positionBoxSide) {
                 xi = 0;
                 yi++;
@@ -174,8 +171,9 @@ export class ConnectionsMenu {
                 yi++;
             }
             element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
-            element.set('presentOnDiagram', true);
         });
+
+        this.view.model.requestElementData(addedElements);
         this.options.view.adjustPaper();
         this.options.onClose();
     };

@@ -15,7 +15,6 @@ export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
 export type PreventLinksLoading = { preventLoading?: boolean; };
 
 type ChangeVisibilityOptions = { isFromHandler?: boolean };
-type RegisteredLink = Link & { __existsInData?: boolean };
 
 /**
  * Model of diagram.
@@ -49,8 +48,7 @@ export class DiagramModel extends Backbone.Model {
     private nextLinkTypeIndex = 0;
     private linkTypes: Dictionary<FatLinkType>;
 
-    elements: { [id: string]: Element } = {};
-    linksByType: { [type: string]: Link[] } = {};
+    private linksByType: Dictionary<Link[]> = {};
 
     private classFetchingThread: DataFetchingThread;
     private linkFetchingThread: DataFetchingThread;
@@ -67,8 +65,26 @@ export class DiagramModel extends Backbone.Model {
 
     isViewOnly(): boolean { return this.get('isViewOnly'); }
 
-    sourceOf(link: Link) { return this.elements[link.get('source').id]; }
-    targetOf(link: Link) { return this.elements[link.get('target').id]; }
+    get cells(): Backbone.Collection<joint.dia.Cell> { return this.graph.get('cells'); }
+    get elements() { return this.graph.getElements() as Element[]; }
+    get links() { return this.graph.getLinks() as Link[]; }
+
+    getElement(elementId: string): Element | undefined {
+        const cell = this.cells.get(elementId);
+        return cell instanceof Element ? cell : undefined;
+    }
+
+    getLinkType(linkTypeId: string): FatLinkType | undefined {
+        return this.linkTypes[linkTypeId];
+    }
+
+    linksOfType(linkTypeId: string): ReadonlyArray<Link> { return this.linksByType[linkTypeId] || []; }
+
+    sourceOf(link: Link) { return this.getElement(link.get('source').id); }
+    targetOf(link: Link) { return this.getElement(link.get('target').id); }
+    isSourceAndTargetVisible(link: Link): boolean {
+        return Boolean(this.sourceOf(link) && this.targetOf(link));
+    }
 
     undo() { this.trigger('history:undo'); }
     redo() { this.trigger('history:redo'); }
@@ -90,25 +106,17 @@ export class DiagramModel extends Backbone.Model {
                 });
                 superAddCell.call(this.graph, link);
             } else {
-                superAddCell.call(this.graph, this.elements[cell.id]);
+                superAddCell.call(this.graph, cell);
             }
         };
         // listen to external add/remove calls to graph (Halo's remove for example)
         this.listenTo(this.graph, 'add', (cell: joint.dia.Cell) => {
-            if (cell instanceof Element) {
-                const options: ChangeVisibilityOptions = {isFromHandler: true};
-                cell.set('presentOnDiagram', true, options);
-            } else if (cell instanceof Link) {
+            if (cell instanceof Link) {
                 const linkType = this.getLinkType(cell.get('typeId'));
                 linkType.set('visible', true);
             }
         });
-        this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
-            if (cell instanceof Element) {
-                const options: ChangeVisibilityOptions = {isFromHandler: true};
-                cell.set('presentOnDiagram', false, options);
-            }
-        });
+        this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => { /* nothing */ });
     }
 
     createNewDiagram(dataProvider: DataProvider): Promise<void> {
@@ -123,7 +131,7 @@ export class DiagramModel extends Backbone.Model {
             this.initLinkTypes(linkTypes);
             this.trigger('state:endLoad', 0);
             this.initLinkSettings();
-            return this.initDiagram({elements: {}, links: []});
+            return this.initDiagram({preloadedElements: {}, markLinksAsLayoutOnly: false});
         }).catch(err => {
             console.error(err);
             this.trigger('state:endLoad', null, err.errorKind, err.message);
@@ -140,9 +148,9 @@ export class DiagramModel extends Backbone.Model {
 
     importLayout(params: {
         dataProvider: DataProvider;
-        preloadedElements: Dictionary<ElementModel>;
-        preloadedLinks: LinkModel[];
+        preloadedElements?: Dictionary<ElementModel>;
         layoutData?: LayoutData;
+        validateLinks?: boolean;
         linkSettings?: LinkTypeOptions[];
         hideUnusedLinkTypes?: boolean;
     }): Promise<void> {
@@ -158,11 +166,13 @@ export class DiagramModel extends Backbone.Model {
             this.trigger('state:endLoad', _.size(params.preloadedElements));
             this.initLinkSettings(params.linkSettings);
             return this.initDiagram({
-                elements: params.preloadedElements,
-                links: params.preloadedLinks,
                 layoutData: params.layoutData,
+                preloadedElements: params.preloadedElements || {},
+                markLinksAsLayoutOnly: params.validateLinks || false,
                 hideUnusedLinkTypes: params.hideUnusedLinkTypes,
-            }).then(() => this.requestLinksOfType());
+            }).then(() => {
+                if (params.validateLinks) { this.requestLinksOfType(); }
+            });
         }).catch(err => {
             console.error(err);
             this.trigger('state:endLoad', null, err.errorKind, err.message);
@@ -192,38 +202,30 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private initDiagram(params: {
-        elements: Dictionary<ElementModel>;
-        links: LinkModel[];
         layoutData?: LayoutData;
+        preloadedElements: Dictionary<ElementModel>;
+        markLinksAsLayoutOnly: boolean;
         hideUnusedLinkTypes?: boolean;
     }): Promise<void> {
+        const {layoutData, preloadedElements, markLinksAsLayoutOnly, hideUnusedLinkTypes} = params;
         return new Promise<void>((resolve, reject) => {
-            _.each(params.elements, normalizeTemplate);
+            _.each(preloadedElements, normalizeTemplate);
+
+            this.graph.trigger('batch:start', {batchName: 'to-back'});
 
             this.listenToOnce(this, 'state:renderDone', () => {
-                const beforeReturn = () => this.graph.trigger('batch:stop', {batchName: 'to-back'});
-
-                try {
-                    this.syncCellsWithLayout(
-                        params.elements, params.links);
-                    if (params.hideUnusedLinkTypes) {
-                        this.hideUnusedLinkTypes(params.links);
-                    }
-                } catch (err) {
-                    beforeReturn();
-                    reject(err);
+                if (hideUnusedLinkTypes) {
+                    this.hideUnusedLinkTypes();
                 }
+                this.graph.trigger('batch:stop', {batchName: 'to-back'});
 
-                beforeReturn();
                 resolve();
                 // notify when graph model is fully initialized
                 this.trigger('state:dataLoaded');
             });
 
-            this.graph.trigger('batch:start', {batchName: 'to-back'});
-
-            if (params.layoutData) {
-                this.initLayout(params.elements, params.layoutData);
+            if (layoutData) {
+                this.initLayout(layoutData, preloadedElements, markLinksAsLayoutOnly);
             } else {
                 this.trigger('state:renderStart');
                 this.trigger('state:renderDone');
@@ -247,68 +249,45 @@ export class DiagramModel extends Backbone.Model {
         }
     }
 
-    private initLayout(elements: Dictionary<ElementModel>, layoutData: LayoutData) {
+    private initLayout(
+        layoutData: LayoutData,
+        preloadedElements: Dictionary<ElementModel>,
+        markLinksAsLayoutOnly: boolean,
+    ) {
         const cellModels: joint.dia.Cell[] = [];
-        // create elements
-        for (let i = 0; i < layoutData.cells.length; i++) {
-            let cell = layoutData.cells[i];
-            if (cell.type !== 'link') {
-                cell = normalizeImportedCell(cell);
-                const elementCellModel = new Element(cell);
-                const template = elements[cell.id];
-                elementCellModel.template = template;
-                this.initializeElement(elementCellModel, {requestData: !template});
-                elementCellModel.set('presentOnDiagram', true);
-                cellModels.push(elementCellModel);
-            }
-        }
-        // create links
-        for (let i = 0; i < layoutData.cells.length; i++) {
-            let cell = layoutData.cells[i];
-            if (cell.type === 'link') {
-                cell = normalizeImportedCell(cell);
-                if (elements[cell.source.id] && elements[cell.target.id]) {
-                    const linkCellModel = new Link(cell);
-                    this.registerLink(linkCellModel);
-                    cellModels.push(linkCellModel);
+        const elementToRequestData: Element[] = [];
+
+        for (const layoutCell of layoutData.cells) {
+            let cell = normalizeImportedCell(layoutCell);
+            if (cell.type === 'element') {
+                const element = new Element(cell);
+                const template = preloadedElements[cell.id];
+                if (!template) {
+                    elementToRequestData.push(element);
                 }
+                element.template = template || placeholderTemplateFromIri(cell.id);
+                cellModels.push(element);
+            } else if (cell.type === 'link') {
+                const link = new Link(cell);
+                link.layoutOnly = markLinksAsLayoutOnly;
+                link.typeIndex = this.createLinkType(link.typeId).index;
+                cellModels.push(link);
             }
         }
+
+        this.requestElementData(elementToRequestData, {requestLinks: false});
         this.trigger('state:renderStart');
         this.graph.resetCells(cellModels);
-    }
 
-    private syncCellsWithLayout(elements: { [id: string]: ElementModel }, links: LinkModel[]) {
-        // create elements and links missing from layout
-        if (elements && links) {
-            for (const elementID in elements) {
-                if (elements.hasOwnProperty(elementID)) {
-                    const elementModel = elements[elementID];
-                    const element = this.createIfNeeded(elementModel);
-                    element.trigger('state:loaded');
-                }
-            }
-
-            for (const linkModel of links) {
-                // only keep link if it's type info exists
-                if (this.linkTypes[linkModel.linkTypeId]) {
-                    this.createLink(linkModel);
-                }
-            }
-
-            for (const link of this.graph.getLinks()) {
-                const registered: RegisteredLink = link as Link;
-                if (!registered.__existsInData) {
-                    registered.layoutOnly = true;
-                }
-            }
+        for (const link of this.links) {
+            this.registerLink(link);
         }
     }
 
-    private hideUnusedLinkTypes(links: LinkModel[]) {
+    private hideUnusedLinkTypes() {
         const unusedLinkTypes = _.clone(this.linkTypes);
-        for (const link of links) {
-            delete unusedLinkTypes[link.linkTypeId];
+        for (const link of this.links) {
+            delete unusedLinkTypes[link.typeId];
         }
         for (const typeId in unusedLinkTypes) {
             if (!unusedLinkTypes.hasOwnProperty(typeId)) { continue; }
@@ -317,45 +296,28 @@ export class DiagramModel extends Backbone.Model {
         }
     }
 
-    private createIfNeeded(elementModel: ElementModel, options?: {requestData?: boolean}): Element {
-        const existingElement = this.elements[elementModel.id];
-        if (existingElement) { return existingElement; }
+    createElement(idOrModel: string | ElementModel): Element {
+        const id = typeof idOrModel === 'string' ? idOrModel : idOrModel.id;
+        const existing = this.getElement(id);
+        if (existing) { return existing; }
 
-        const rect = new Element({id: elementModel.id});
-        rect.template = elementModel;
+        const model = typeof idOrModel === 'string'
+            ? placeholderTemplateFromIri(idOrModel) : idOrModel;
 
-        this.initializeElement(rect, options);
-        return rect;
+        const element = new Element({id: model.id});
+        element.template = model;
+
+        this.graph.addCell(element);
+        return element;
     }
 
-    createElement(elementModel: ElementModel): Element {
-        return this.createIfNeeded(elementModel, {requestData: true});
-    }
+    requestElementData(elements: Element[], params: {requestLinks?: boolean} = {}) {
+        this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+            .then(models => this.onElementInfoLoaded(models))
+            .catch(err => console.error(err));
 
-    initializeElement(element: Element, {requestData = false} = {}) {
-        this.elements[element.id] = element;
-
-        element.on('change:presentOnDiagram', (self: Element, value: boolean, options: ChangeVisibilityOptions) => {
-            if (options.isFromHandler) { return; }
-            const isPresentOnDiagram = element.get('presentOnDiagram');
-            if (isPresentOnDiagram) {
-                delete element.collection;
-                this.graph.addCell(element);
-                // restore links
-                for (const link of element.links) {
-                    if (this.isSourceAndTargetVisible(link) && this.getLinkType(link.get('typeId')).get('visible')) {
-                        this.graph.addCell(link);
-                    }
-                }
-            } else {
-                element.remove();
-            }
-        });
-
-        if (requestData) {
-            this.dataProvider.elementInfo({elementIds: [element.id]})
-                .then(elements => this.onElementInfoLoaded(elements))
-                .catch(err => console.error(err));
+        const {requestLinks = true} = params;
+        if (requestLinks) {
             this.requestLinksOfType();
         }
     }
@@ -366,7 +328,7 @@ export class DiagramModel extends Backbone.Model {
             linkTypeIds = _.values(this.linkTypes).map(type => type.id);
         }
         return this.dataProvider.linksInfo({
-            elementIds: _.keys(this.elements),
+            elementIds: this.graph.getElements().map(element => element.id),
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => console.error(err));
@@ -417,7 +379,7 @@ export class DiagramModel extends Backbone.Model {
         return this.classesById[typeId];
     }
 
-    getLinkType(linkTypeId: string): FatLinkType {
+    createLinkType(linkTypeId: string): FatLinkType {
         if (this.linkTypes.hasOwnProperty(linkTypeId)) {
             return this.linkTypes[linkTypeId];
         }
@@ -446,13 +408,14 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        _.each(elements, (template: ElementModel, id: string) => {
-            const element = this.elements[id];
+        for (const id of Object.keys(elements)) {
+            const element = this.getElement(id);
             if (element) {
+                const template = elements[id];
                 element.template = normalizeTemplate(template);
                 element.trigger('state:loaded');
             }
-        });
+        }
     }
 
     private onLinkInfoLoaded(links: LinkModel[]) {
@@ -463,46 +426,39 @@ export class DiagramModel extends Backbone.Model {
         this.storeBatchCommand();
     }
 
-    isSourceAndTargetVisible(link: Link) {
-        return this.sourceOf(link).get('presentOnDiagram')
-            && this.targetOf(link).get('presentOnDiagram');
-    }
-
-    createLink(linkModel: LinkModel, options?: IgnoreCommandHistory): Link {
-        const existingLink: RegisteredLink = this.getLink(linkModel);
+    createLink(linkModel: LinkModel, options?: IgnoreCommandHistory): Link | undefined {
+        const existingLink = this.getLink(linkModel);
         if (existingLink) {
           if (existingLink.layoutOnly) {
             existingLink.set('layoutOnly', false, {ignoreCommandManager: true} as IgnoreCommandHistory);
           }
-          existingLink.__existsInData = true;
           return existingLink;
         }
-        const link: RegisteredLink = new Link({
+
+        const link = new Link({
             id: _.uniqueId('link_'),
             typeId: linkModel.linkTypeId,
-            source: { id: linkModel.sourceId },
-            target: { id: linkModel.targetId },
+            source: {id: linkModel.sourceId},
+            target: {id: linkModel.targetId},
         });
-        link.__existsInData = true;
 
-        this.registerLink(link);
-
-        if (this.isSourceAndTargetVisible(link) && this.getLinkType(link.get('typeId')).get('visible')) {
+        if (this.isSourceAndTargetVisible(link) && this.createLinkType(link.typeId).visible) {
+            this.registerLink(link);
             this.graph.addCell(link, options);
+            return link;
         }
-
-        return link;
+        return undefined;
     }
 
     private registerLink(link: Link) {
-        const typeId = link.get('typeId');
+        const typeId = link.typeId;
         if (!this.linksByType.hasOwnProperty(typeId)) {
             this.linksByType[typeId] = [];
         }
         this.linksByType[typeId].push(link);
 
         if (link.typeIndex === undefined) {
-            link.typeIndex = this.getLinkType(typeId).index;
+            link.typeIndex = this.createLinkType(typeId).index;
         }
 
         this.sourceOf(link).links.push(link);
@@ -510,7 +466,7 @@ export class DiagramModel extends Backbone.Model {
     }
 
     getLink(linkModel: LinkModel): Link | undefined {
-        const source = this.elements[linkModel.sourceId];
+        const source = this.getElement(linkModel.sourceId);
         for (const link of source.links) {
             if (link.get('source').id === linkModel.sourceId &&
                 link.get('target').id === linkModel.targetId &&
@@ -537,6 +493,15 @@ export interface LinkTypeOptions {
     id: string;
     visible: boolean;
     showLabel?: boolean;
+}
+
+function placeholderTemplateFromIri(iri: string): ElementModel {
+    return {
+        id: iri,
+        types: [],
+        label: {values: [{lang: '', text: uri2name(iri)}]},
+        properties: {},
+    };
 }
 
 export function normalizeTemplate(template: ElementModel): ElementModel {

@@ -10,7 +10,6 @@ export interface LayoutElement {
     type: 'element';
     id: string;
     position: { x: number; y: number; };
-    presentOnDiagram?: boolean;
     size?: any;
     angle?: number;
     isExpanded?: boolean;
@@ -26,7 +25,7 @@ export interface LayoutLink {
 }
 
 const serializedCellProperties = [
-    'id', 'type', 'presentOnDiagram',          // common properties
+    'id', 'type',                              // common properties
     'size', 'angle', 'isExpanded', 'position', // element properties
     'typeId', 'source', 'target', 'vertices',  // link properties
 ];

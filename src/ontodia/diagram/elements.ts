@@ -19,7 +19,6 @@ UIElement.prototype.markup = '<g class="rotatable"><g class="nonscalable rootOfU
 
 /**
  * Properties:
- *     presentOnDiagram: boolean
  *     isExpanded: boolean
  *     position: { x: number, y: number }
  *     size: { width: number, height: number }
@@ -38,13 +37,9 @@ export class Element extends UIElement {
 
     initialize() {
         joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
-        // element is collapsed and hidden by default
         this.set('z', 1);
+        // element is collapsed by default
         if (!this.has('isExpanded')) { this.set('isExpanded', false); }
-        if (!this.has('presentOnDiagram')) {
-            this.set('presentOnDiagram', false);
-            this.unset('position');
-        }
     }
 
     addToFilter(linkType?: FatLinkType) {
@@ -59,11 +54,14 @@ export class Element extends UIElement {
 /**
  * Properties:
  *     id: string
- *     label: LocalizedString
+ *     label: { values: LocalizedString[] }
  *     count: number
  */
 export class FatClassModel extends Backbone.Model {
     model: ClassModel;
+
+    get label(): { values: LocalizedString[] } { return this.get('label'); }
+
     constructor(classModel: ClassModel) {
         super({id: classModel.id});
         this.model = classModel;
@@ -98,6 +96,7 @@ export class RichProperty extends Backbone.Model {
 export class Link extends joint.dia.Link {
     arrowheadMarkup: string;
     get markup() {
+        if (!this.typeIndex) { throw new Error('Missing typeIndex when intializing link\'s markup'); }
         return `<path class="connection" stroke="black" d="M 0 0 0 0"`
             + ` marker-start="url(#${linkMarkerKey(this.typeIndex, true)})"`
             + ` marker-end="url(#${linkMarkerKey(this.typeIndex, false)})" />`
@@ -109,6 +108,8 @@ export class Link extends joint.dia.Link {
 
     get typeIndex(): number { return this.get('typeIndex'); }
     set typeIndex(value: number) { this.set('typeIndex', value); }
+
+    get typeId(): string { return this.get('typeId'); }
 
     get layoutOnly(): boolean { return this.get('layoutOnly'); }
     set layoutOnly(value: boolean) { this.set('layoutOnly', value); }
@@ -131,11 +132,15 @@ export function linkMarkerKey(linkTypeIndex: number, startMarker: boolean) {
  *     label?: { values: LocalizedString[] }
  */
 export class FatLinkType extends Backbone.Model {
+    private diagram: DiagramModel;
+
     readonly index: number;
-    diagram: DiagramModel;
 
     get label(): { values: LocalizedString[] } { return this.get('label'); }
     set label(value: { values: LocalizedString[] }) { this.set('label', value); }
+
+    get visible(): boolean { return this.get('visible'); }
+    set visible(value: boolean) { this.set('visible', value); }
 
     constructor(params: {
         id: string;
@@ -154,16 +159,12 @@ export class FatLinkType extends Backbone.Model {
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }
 
-
     private onVisibilityChanged(self: FatLinkType, visible: boolean, options: PreventLinksLoading) {
-        const links = this.diagram.linksByType[this.id];
-        if (!links) { return; }
+        const links = this.diagram.linksOfType(this.id);
 
         if (visible) {
             for (const link of links) {
-                if (this.diagram.sourceOf(link).get('presentOnDiagram') &&
-                    this.diagram.targetOf(link).get('presentOnDiagram')
-                ) {
+                if (this.diagram.sourceOf(link) && this.diagram.targetOf(link)) {
                     this.diagram.graph.addCell(link);
                 }
             }

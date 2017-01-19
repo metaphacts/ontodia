@@ -3,6 +3,8 @@ import * as ReactDOM from 'react-dom';
 
 import { Workspace, WorkspaceProps, SparqlDataProvider, LinkStyle } from '../index';
 
+import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
+
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
 
@@ -34,60 +36,56 @@ const CUSTOM_LINK_STYLE: LinkStyle = {
     router: {name: 'orthogonal'},
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    const container = document.createElement('div');
-    container.id = 'root';
-    document.body.appendChild(container);
+function onWorkspaceMounted(workspace: Workspace) {
+    if (!workspace) { return; }
 
-    const props: WorkspaceProps & ClassAttributes<Workspace> = {
-        onSaveDiagram: workspace => {
-            const layout = workspace.getModel().exportLayout();
-            console.log(layout);
-        },
-        viewOptions: {
-            typeStyleResolvers: [
-                types => {
-                    if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
-                        return {icon: 'glyphicon glyphicon-certificate'};
-                    } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
-                        return {icon: 'glyphicon glyphicon-certificate'};
-                    } else if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
-                        return {icon: 'glyphicon glyphicon-cog'};
-                    } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
-                        return {color: '#046380'};
-                    } else {
-                        return undefined;
-                    }
-                },
-            ],
-            linkStyleResolvers: [
-                type => {
-                    return CUSTOM_LINK_STYLE;
-                },
-            ],
-        },
-        ref: workspace => {
-            // if you reuse this code you should check for workspace to be null on unmount
-            if (workspace) {
-                const model = workspace.getModel();
-                model.graph.on('action:iriClick', (iri: string) => {
-                    console.log(iri);
-                });
-                model.importLayout({
-                    dataProvider: new SparqlDataProvider({
-                        endpointUrl: '/sparql-endpoint',
-                        imageClassUris: [
-                            'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
-                            'http://xmlns.com/foaf/0.1/img',
-                        ],
-                    }),
-                    preloadedElements: {},
-                    preloadedLinks: [],
-                    layoutData: undefined,
-                });
-            }
-        },
-    };
+    const model = workspace.getModel();
+    model.graph.on('action:iriClick', (iri: string) => {
+        console.log(iri);
+    });
 
-    ReactDOM.render(createElement(Workspace, props), container);
-});
+    const layoutData = tryLoadLayoutFromLocalStorage();
+    model.importLayout({
+        layoutData,
+        dataProvider: new SparqlDataProvider({
+            endpointUrl: '/sparql-endpoint',
+            imageClassUris: [
+                'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
+                'http://xmlns.com/foaf/0.1/img',
+            ],
+        }),
+    });
+}
+
+const props: WorkspaceProps & ClassAttributes<Workspace> = {
+    ref: onWorkspaceMounted,
+    onSaveDiagram: workspace => {
+        const {layoutData} = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        window.location.reload();
+    },
+    viewOptions: {
+        typeStyleResolvers: [
+            types => {
+                if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
+                    return {icon: 'glyphicon glyphicon-certificate'};
+                } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
+                    return {icon: 'glyphicon glyphicon-certificate'};
+                } else if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
+                    return {icon: 'glyphicon glyphicon-cog'};
+                } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
+                    return {color: '#046380'};
+                } else {
+                    return undefined;
+                }
+            },
+        ],
+        linkStyleResolvers: [
+            type => {
+                return CUSTOM_LINK_STYLE;
+            },
+        ],
+    },
+};
+
+onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

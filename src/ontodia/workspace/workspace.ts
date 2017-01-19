@@ -1,25 +1,26 @@
 import * as $ from 'jquery';
 import { Component, createElement, ReactElement, DOM as D } from 'react';
+import * as Backbone from 'backbone';
 import * as browser from 'detect-browser';
 
 import { DiagramModel } from '../diagram/model';
-import { Link } from '../diagram/elements';
+import { Link, FatLinkType } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
     LayoutNode, LayoutLink,
 } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
-import { FilterView, FilterModel } from '../widgets/filter';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { resizePanel, setPanelHeight } from '../resizable-panels';
 import { resizeItem } from '../resizable-items';
 import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
+import { SearchCriteria } from '../widgets/instancesSearch';
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 
-import WorkspaceMarkup from './workspaceMarkup';
+import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
 export interface Props {
     onSaveDiagram?: (workspace: Workspace) => void;
@@ -31,19 +32,23 @@ export interface Props {
     viewOptions?: DiagramViewOptions;
 }
 
-export class Workspace extends Component<Props, {}> {
+export interface State {
+    readonly criteria?: SearchCriteria;
+}
+
+export class Workspace extends Component<Props, State> {
     private markup: WorkspaceMarkup;
 
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    private filter: FilterView;
     private linksToolbox: LinkTypesToolboxShell;
 
     constructor(props: Props) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
         this.diagram = new DiagramView(this.model, this.props.viewOptions);
+        this.state = {};
     }
 
     private isUnsupportedBrowser() {
@@ -61,6 +66,8 @@ export class Workspace extends Component<Props, {}> {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
             view: this.diagram,
+            searchCriteria: this.state.criteria,
+            onSearchCriteriaChanged: criteria => this.setState({criteria}),
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
                 onUndo: () => this.model.undo(),
                 onRedo: () => this.model.redo(),
@@ -84,7 +91,7 @@ export class Workspace extends Component<Props, {}> {
                 isEmbeddedMode: this.props.isViewOnly,
                 isDiagramSaved: this.props.isDiagramSaved,
             }),
-        });
+        } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {
@@ -93,20 +100,17 @@ export class Workspace extends Component<Props, {}> {
 
         this.diagram.initializePaperComponents();
 
-        this.filter = new FilterView({
-            model: new FilterModel(this.diagram.model),
-            view: this.diagram,
-            el: this.markup.filterPanel,
-        }).render();
-
         this.tree = new ClassTree({
-            model: new FilterModel(this.diagram.model),
+            model: new Backbone.Model(this.diagram.model),
             view: this.diagram,
             el: this.markup.classTreePanel,
         }).render();
 
         this.tree.on('action:classSelected', (classId: string) => {
-            this.filter.model.filterByType(classId);
+            this.setState({criteria: {elementTypeId: classId}});
+        });
+        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType) => {
+            this.setState({criteria: {refElementId: element.id, refElementLinkId: linkType && linkType.id}});
         });
 
         this.linksToolbox = new LinkTypesToolboxShell({
@@ -131,10 +135,6 @@ export class Workspace extends Component<Props, {}> {
     }
 
     componentWillUnmount() {
-        if (this.filter) {
-            this.filter.remove();
-        }
-
         if (this.tree) {
             this.tree.remove();
         }
@@ -162,40 +162,31 @@ export class Workspace extends Component<Props, {}> {
     forceLayout() {
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
-        for (const elementId in this.model.elements) {
-            if (this.model.elements.hasOwnProperty(elementId)) {
-                const element = this.model.elements[elementId];
-                if (!element.get('presentOnDiagram')) { continue; }
-                const size = element.get('size');
-                const position = element.get('position');
-                const node: LayoutNode = {
-                    id: elementId,
-                    x: position.x,
-                    y: position.y,
-                    width: size.width,
-                    height: size.height,
-                };
-                nodeById[elementId] = node;
-                nodes.push(node);
-            }
+        for (const element of this.model.elements) {
+            const size = element.get('size');
+            const position = element.get('position');
+            const node: LayoutNode = {
+                id: element.id,
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+            };
+            nodeById[element.id] = node;
+            nodes.push(node);
         }
 
         type LinkWithReference = LayoutLink & { link: Link };
         const links: LinkWithReference[] = [];
-        for (const linkId in this.model.linksByType) {
-            if (this.model.linksByType.hasOwnProperty(linkId)) {
-                const linksOfType = this.model.linksByType[linkId];
-                for (const link of linksOfType) {
-                    if (!this.model.isSourceAndTargetVisible(link)) { continue; }
-                    const source = this.model.sourceOf(link);
-                    const target = this.model.targetOf(link);
-                    links.push({
-                        link,
-                        source: nodeById[source.id],
-                        target: nodeById[target.id],
-                    });
-                }
-            }
+        for (const link of this.model.links) {
+            if (!this.model.isSourceAndTargetVisible(link)) { continue; }
+            const source = this.model.sourceOf(link);
+            const target = this.model.targetOf(link);
+            links.push({
+                link,
+                source: nodeById[source.id],
+                target: nodeById[target.id],
+            });
         }
 
         forceLayout({nodes, links, preferredLinkLength: 200});
@@ -203,7 +194,7 @@ export class Workspace extends Component<Props, {}> {
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
 
         for (const node of nodes) {
-            this.model.elements[node.id].position(node.x, node.y);
+            this.model.getElement(node.id).position(node.x, node.y);
         }
 
         for (const {link} of links) {

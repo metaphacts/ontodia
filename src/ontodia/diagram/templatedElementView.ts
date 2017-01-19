@@ -49,7 +49,7 @@ export class TemplatedUIElementView extends joint.dia.ElementView {
     render(): TemplatedUIElementView {
         const result: any = super.render();
         this.createUI();
-        this.update();
+        this.updateUI();
         if (!this.view && this.paper && this.paper.diagramView) {
             this.setView(this.paper.diagramView);
         }

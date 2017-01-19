@@ -22,9 +22,8 @@ export class GraphBuilder {
     ) {}
 
     getGraphFromConstruct(constructQuery: string): Promise<{
-        preloadedElements: any,
-        preloadedLinks: any[],
-        layout: LayoutData,
+        preloadedElements: Dictionary<ElementModel>,
+        layoutData: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
         return executeSparqlQuery<Triple>(this.endpointUrl, query)
@@ -33,15 +32,13 @@ export class GraphBuilder {
     };
 
     getGraphFromRDFGraph(graph: Triple[]): Promise<{
-        preloadedElements: any,
-        preloadedLinks: any[],
-        layout: LayoutData,
+        preloadedElements: Dictionary<ElementModel>,
+        layoutData: LayoutData,
     }> {
         let {elementIds, links} = this.getConstructElements(graph);
         return this.dataProvider.elementInfo({elementIds}).then(elementsInfo => ({
             preloadedElements: elementsInfo,
-            preloadedLinks: links,
-            layout: this.getLayout(elementsInfo, links),
+            layoutData: this.getLayout(elementsInfo, links),
         }));
     };
 
@@ -78,7 +75,6 @@ export class GraphBuilder {
                 id: element.id,
                 type: 'element',
                 position: {x, y},
-                presentOnDiagram: true,
             };
         });
         const layoutLinks = linksInfo.map<LayoutLink>((link, index) => {
