@@ -5,12 +5,33 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Added
+- Saving to/loading from LocalStorage examples.
+
+### Changed
+- Diagram content now centered at paper after performing force layout.
+
+### Fixed
+- Sorting elements properties by label.
+- Placement of newly added from Connections popup elements.
+- Lost links geometry when importing a layout.
+
+### Breaking changes
+- Replaced DiagramModel.importLayout()'s `preloadedLinks` parameter with
+`validateLinks`: when specified, marks all links from layout as `layoutOnly`
+and requests diagram links at the end of importing process.
+- Removed non-expiring "cache" `DiagramModel.elements`, replaced by
+`cells`/`elements`/`links`/`getElement` accessors.
+- Removed `presentOnDiagram` property from Element: now element is present
+if it's in a graph, otherwise it's considered to be absent.
 
 ## [0.3.7] - 2017-01-12
 ### Added
-- Select/deselect all elements checkbox in navigation pop-up 
+- Select/deselect all elements checkbox in Connections popup.
+
 ### Fixed
-- Zoom to fit zoomed to close on small diagrams, making elements unnessesary big
+- Too close zoom to fit on diagrams with small number of elements,
+making elements unnessesary big.
 
 ## [0.3.6] - 2017-01-11
 ### Fixed
@@ -20,6 +41,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Ability display labels for element properties by implementing
 `DataProvider.propertyInfo()`.
+
+### Changed
+- Replaced `d3` dependency with `d3-color`.
 
 ### Fixed
 - Exported missing LayoutData types.
@@ -33,19 +57,16 @@ in `WikidataProvider`.
 onto the diagram area.
 - Printing person template with expanded properties.
 
-### Changed
-- Replaced `d3` dependency with `d3-color`.
-
 ## [0.3.3] - 2016-12-15
 ### Added
 - "Search for connected elements" button to Halo.
 
 ### Changed
 - Disabled "click on element to search".
-- Hide "Connections" dialog when click on empty paper space.
+- Hide Connections popup when click on empty paper space.
 
 ### Fixed
-- Display error in Connection menu on failed request.
+- Display error in Connections popup on failed request.
 - Inconsistent thumbnail width in default element thumbnail.
 - Made paper adjust its size when element is expanded or collapsed.
 - `WikidataProvider`:
@@ -66,7 +87,7 @@ onto the diagram area.
 ### Fixed
 - Unable to export as PNG/SVG diagram that contains element with SVG thumbnail.
 - Unable to export as PNG/SVG in Firefox >= 50.
-- Connections dialog height overflow in Firefox.
+- Connections popup height overflow in Firefox.
 
 ### Breaking changes
 - Link arrowheads implementation replaced by native
@@ -126,7 +147,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.5
 [0.3.3]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3

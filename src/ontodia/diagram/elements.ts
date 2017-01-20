@@ -96,7 +96,9 @@ export class RichProperty extends Backbone.Model {
 export class Link extends joint.dia.Link {
     arrowheadMarkup: string;
     get markup() {
-        if (!this.typeIndex) { throw new Error('Missing typeIndex when intializing link\'s markup'); }
+        if (typeof this.typeIndex !== 'number') {
+            throw new Error('Missing typeIndex when intializing link\'s markup');
+        }
         return `<path class="connection" stroke="black" d="M 0 0 0 0"`
             + ` marker-start="url(#${linkMarkerKey(this.typeIndex, true)})"`
             + ` marker-end="url(#${linkMarkerKey(this.typeIndex, false)})" />`
