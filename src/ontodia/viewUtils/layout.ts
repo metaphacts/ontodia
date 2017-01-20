@@ -64,6 +64,24 @@ export function translateToPositiveQuadrant(params: {
     }
 }
 
+export function translateToCenter(params: {
+    nodes: LayoutNode[];
+    paperBox: { x: number, y: number, width: number; height: number; };
+    graphBox: { x: number, y: number, width: number; height: number; };
+}) {
+    const graphPos = {
+        x: (params.paperBox.width - params.graphBox.width) / 2 -
+           params. graphBox.x,
+        y: (params.paperBox.height - params.graphBox.height) / 2 -
+            params.graphBox.y,
+    };
+
+    for (const node of params.nodes) {
+        node.x = graphPos.x + node.x;
+        node.y = graphPos.y + node.y;
+    }
+}
+
 export function uniformGrid(params: {
     rows: number;
     cellSize: { x: number; y: number; };

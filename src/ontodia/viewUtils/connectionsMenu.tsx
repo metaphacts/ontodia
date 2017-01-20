@@ -148,9 +148,14 @@ export class ConnectionsMenu {
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
         const GRID_STEP = 100;
-        const bBox = this.cellView.getBBox();
-        const startX = bBox.x - positionBoxSide * GRID_STEP / 2;
-        const startY = bBox.y - positionBoxSide * GRID_STEP / 2;
+        let pos;
+        if (this.cellView.model instanceof joint.dia.Element) {
+            pos = this.cellView.model.position(); // the position() is more stable than getBBox
+        } else {
+            pos = this.cellView.getBBox();
+        }
+        const startX = pos.x - positionBoxSide * GRID_STEP / 2;
+        const startY = pos.y - positionBoxSide * GRID_STEP / 2;
         let xi = 0;
         let yi = 0;
 
@@ -536,7 +541,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
         });
     };
 
-    private onChackboxChanged = (object: ReactElementModel, value: boolean) => {
+    private onCheckboxChanged = (object: ReactElementModel, value: boolean) => {
         if (this.state.checkMap[object.model.id] === value) {
             return;
         }
@@ -563,7 +568,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
         } else {
             this.state.selectAll = 'unchecked';
         }
-        const filtered = this.getFilteredObjects().map(o => o.model.id);
+        const filtered = this.getFilteredObjects().filter(o => !o.presentOnDiagram).map(o => o.model.id);
         const keys = Object.keys(this.state.checkMap).filter(key => filtered.indexOf(key) !== -1);
         keys.forEach(key => {
             this.state.checkMap[key] = checked;
@@ -604,7 +609,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
                 lang={this.props.lang}
                 filterKey={this.props.filterKey}
                 checked={this.state.checkMap[obj.model.id]}
-                onCheckboxChanged={this.onChackboxChanged}
+                onCheckboxChanged={this.onCheckboxChanged}
             />;
         });
     };

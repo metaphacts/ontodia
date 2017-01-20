@@ -2,13 +2,14 @@ import * as $ from 'jquery';
 import { Component, createElement, ReactElement, DOM as D } from 'react';
 import * as Backbone from 'backbone';
 import * as browser from 'detect-browser';
+import * as joint from 'jointjs';
 
 import { DiagramModel } from '../diagram/model';
 import { Link, FatLinkType } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
-    LayoutNode, LayoutLink,
+    LayoutNode, LayoutLink, translateToCenter,
 } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
@@ -192,6 +193,19 @@ export class Workspace extends Component<Props, State> {
         forceLayout({nodes, links, preferredLinkLength: 200});
         padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
+        for (const node of nodes) {
+            this.model.getElement(node.id).position(node.x, node.y);
+        }
+        this.markup.paperArea.adjustPaper();
+        translateToCenter({
+            nodes, paperBox: {
+                x: 0,
+                y: 0,
+                width: this.diagram.paper.el.clientWidth / this.markup.paperArea.getScale(),
+                height: this.diagram.paper.el.clientHeight / this.markup.paperArea.getScale(),
+            },
+            graphBox: joint.V(this.diagram.paper.viewport).bbox(true, this.diagram.paper.svg)
+        });
 
         for (const node of nodes) {
             this.model.getElement(node.id).position(node.x, node.y);
