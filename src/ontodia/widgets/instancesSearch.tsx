@@ -72,7 +72,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 <div className={`${CLASS_NAME}__text-criteria input-group`}>
                     <input type='text' className='form-control' placeholder='Search for...'
                         value={searchTerm || ''}
-                        onChange={e => this.setState({inputText: e.target.value})}
+                        onChange={e => this.setState({inputText: e.currentTarget.value})}
                         onKeyUp={e => {
                             if (e.keyCode === ENTER_KEY_CODE) {
                                this.submitCriteriaUpdate();

@@ -152,7 +152,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
     }
 
     private onChangeInput = (e: React.SyntheticEvent<HTMLInputElement>) => {
-        this.setState({filterKey: e.target.value});
+        this.setState({filterKey: e.currentTarget.value});
     }
 
     private onDropFilter = () => {

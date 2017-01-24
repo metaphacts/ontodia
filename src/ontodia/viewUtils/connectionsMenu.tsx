@@ -269,7 +269,7 @@ export class ConnectionsMenuMarkup
     }
 
     private onChangeFilter = (e: React.FormEvent<HTMLInputElement>) => {
-        this.state.filterKey = e.target.value;
+        this.state.filterKey = e.currentTarget.value;
         this.setState(this.state);
     };
 

@@ -34,7 +34,7 @@ export class EditorToolbar extends React.Component<Props, State> {
     }
 
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
-        const value = event.target.value;
+        const value = event.currentTarget.value;
         this.props.onChangeLanguage(value);
     };
 

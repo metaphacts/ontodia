@@ -5,11 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+
+
+## [0.3.8] - 2017-01-24
 ### Added
 - Saving to/loading from LocalStorage examples.
 
 ### Changed
 - Diagram content now centered at paper after performing force layout.
+- Updated to recent react typings and fixed relevant errors
 
 ### Fixed
 - Sorting elements properties by label.
