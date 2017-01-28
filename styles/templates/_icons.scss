@@ -32,6 +32,7 @@
   overflow: hidden;
   font-style: normal;
 }
+
 .jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-object-property-icon {
   font-size: 11px;
   color: #34c7f3;
@@ -60,6 +61,16 @@
   overflow: hidden;
   font-style: normal;
 }
+
+.ontodia-country-icon::after {
+  content: "\2690"; //U+2690
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 100px;
+  overflow: hidden;
+  font-style: normal;
+}
+
 .jstree-icon.jstree-themeicon-custom.ontodia-tree-icon.ontodia-person-icon {
   color: #eb7777;
 }

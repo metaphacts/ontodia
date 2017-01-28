@@ -2,8 +2,8 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate,
-    GraphBuilder,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
+    GraphBuilder, WikidataSettings,
 } from '../index';
 
 import { onPageLoad } from './common';
@@ -40,14 +40,14 @@ function onWorkspaceMounted(workspace: Workspace) {
         console.log(iri);
     });
 
-    const dataProvider = new WikidataDataProvider({
+    const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
-        imageClassUris: [
+        imagePropertyUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    });
-    const graphBuilder = new GraphBuilder(dataProvider, '/sparql-endpoint');
+    }, WikidataSettings);
+    const graphBuilder = new GraphBuilder(dataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(`
         CONSTRUCT { ?current ?p ?o. }

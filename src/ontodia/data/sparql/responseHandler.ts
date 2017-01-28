@@ -10,68 +10,61 @@ const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
-    const sNodes = response.results.bindings;
     const tree: ClassModel[] = [];
-    const createdTreeNodes: Dictionary<ClassModel> = {};
-    const tempNodes: Dictionary<ClassModel> = {};
+    const treeNodes = createClassMap(response.results.bindings);
+    // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
+    for (const nodeId in treeNodes) {
+        const treeNode = treeNodes[nodeId];
+        if (treeNode.parent) {
+            const parent = treeNodes[treeNode.parent];
+            parent.children.push(treeNode);
+            parent.count += treeNode.count;
+        } else {
+            tree.push(treeNode);
+        }
+    }
 
+    calcCounts(tree);
+
+    return tree;
+}
+
+function createClassMap(sNodes: ClassBinding[]) : Dictionary<HierarchicalClassModel> {
+    let treeNodes: Dictionary<HierarchicalClassModel> = {};
     for (const sNode of sNodes) {
         const sNodeId: string = sNode.class.value;
-        if (createdTreeNodes[sNodeId]) {
+        var node = treeNodes[sNodeId];
+        if (node) {
             if (sNode.label) {
-                const label = createdTreeNodes[sNodeId].label;
+                const label = node.label;
                 if (label.values.length === 1 && !label.values[0].lang) {
                     label.values = [];
                 }
                 label.values.push(getLocalizedString(sNode.label));
             }
-            if (sNode.instcount && createdTreeNodes[sNodeId].count === 0) {
-                createdTreeNodes[sNodeId].count = getInstCount(sNode.instcount);
+            if (!node.parent && sNode.parent) {
+                node.parent = sNode.parent.value
             }
         } else {
-            const newNode = getClassModel(sNode);
-            createdTreeNodes[sNodeId] = newNode;
-
-            if (sNode.parent) {
-                const sParentNodeId: string = sNode.parent.value;
-                let parentNode: ClassModel;
-
-                // if we put the parent node in first time we create it, 
-                // then we miss the count value
-                // That's why we put the temp parent node in another list in first time
-                if (!createdTreeNodes[sParentNodeId]) {
-                    if (!tempNodes[sParentNodeId]) {
-                        parentNode = getClassModel({ class: sNode.parent });
-                    } else {
-                        parentNode = tempNodes[sParentNodeId];
-                    }
-                    tempNodes[sParentNodeId]  = parentNode;
-                } else {
-                    parentNode = createdTreeNodes[sParentNodeId];
-                }
-
-                parentNode.children.push(newNode);
-                parentNode.count += newNode.count;
-            } else {
-                tree.push(newNode);
-                if (tempNodes[sNodeId]) {
-                    newNode.count += tempNodes[sNodeId].count;
-                    newNode.children = tempNodes[sNodeId].children;
-                }
-            }
+            node = getClassModel(sNode);
+            treeNodes[sNodeId] = node;
         }
-    };
-
-    if (!createdTreeNodes[THING_URI]) {
-        tree.push({
-            id: THING_URI,
-            children: [],
-            label: { values: [getLocalizedString(undefined, THING_URI)] },
-            count: 0,
-        });
+        //ensuring parent will always be there
+        if (node.parent && !treeNodes[node.parent]) {
+            treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
+        }
     }
+    return treeNodes;
+}
 
-    return tree;
+function calcCounts(children: ClassModel[]) {
+    for (let node of children) {
+        // no more to count
+        if (!node.children) return;
+        // ensure all children have their counts completed;
+        calcCounts(node.children);
+        node.count += node.children.reduce((acc, val) => acc + val.count, 0)
+    }
 }
 
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
@@ -293,12 +286,20 @@ export function getInstCount(instcount: RdfLiteral): number {
     return (instcount ? +instcount.value : 0);
 }
 
-export function getClassModel(node: ClassBinding): ClassModel {
+/**
+ * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
+ */
+export interface HierarchicalClassModel extends ClassModel {
+    parent: string
+}
+
+export function getClassModel(node: ClassBinding): HierarchicalClassModel {
     return {
         id: node.class.value,
         children: [],
         label: { values: [getLocalizedString(node.label, node.class.value)] },
         count: getInstCount(node.instcount),
+        parent: node.parent ? node.parent.value : undefined
     };
 }
 
