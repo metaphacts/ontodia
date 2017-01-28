@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, Triple } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, GraphBuilder, Triple } from '../index';
 
 import { onPageLoad } from './common';
 
@@ -74,9 +74,9 @@ function onWorkspaceMounted(workspace: Workspace) {
     const endpointUrl = '/sparql-endpoint';
     const sparqlDataProvider = new SparqlDataProvider({
         endpointUrl: endpointUrl,
-        imageClassUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
-    });
-    const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
+        imagePropertyUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
+    }, OWLStatsSettings);
+    const graphBuilder = new GraphBuilder(sparqlDataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromRDFGraph(GRAPH);
     workspace.showWaitIndicatorWhile(loadingGraph);

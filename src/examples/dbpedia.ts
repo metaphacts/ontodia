@@ -1,9 +1,11 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
+import { SparqlQueryMethod } from "../ontodia/data/sparql/sparqlDataProvider";
+import { DBPediaSettings } from "../ontodia/data/sparql/sparqlDataProviderSettings";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -22,13 +24,13 @@ function onWorkspaceMounted(workspace: Workspace) {
         layoutData,
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
-            endpointUrl: '/sparql-endpoint',
+            endpointUrl: 'http://dbpedia.org/sparql',
             imagePropertyUris: [
-                'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
+                'http://xmlns.com/foaf/0.1/depiction',
                 'http://xmlns.com/foaf/0.1/img',
             ],
-            queryMethod: SparqlQueryMethod.GET
-        }, OWLStatsSettings),
+            queryMethod: SparqlQueryMethod.GET,
+        }, DBPediaSettings),
     });
 }
 

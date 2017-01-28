@@ -10,6 +10,8 @@ module.exports = {
     entry: {
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
+        dbpedia: path.join(__dirname, 'src', 'examples', 'dbpedia.ts'),
+        sparqlNoStats: path.join(__dirname, 'src', 'examples', 'sparqlNoStats.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
         sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
         styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),
@@ -50,6 +52,18 @@ module.exports = {
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
+            filename: 'dbpedia.html',
+            title: 'Ontodia DBPedia SparQL Demo',
+            chunks: ['commons', 'dbpedia'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'sparqlNoStats.html',
+            title: 'Ontodia SparQL Demo',
+            chunks: ['commons', 'sparqlNoStats'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
             filename: 'sparqlConstruct.html',
             title: 'Ontodia SparQL Construct Demo',
             chunks: ['commons', 'sparqlConstruct'],
@@ -69,13 +83,13 @@ module.exports = {
         }),
         new HtmlWebpackPlugin({
             filename: 'wikidata.html',
-            title: 'Ontodia Style Customization Demo',
+            title: 'Ontodia Wikidata Demo',
             chunks: ['commons', 'wikidata', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'wikidataGraph.html',
-            title: 'Ontodia Style Customization Demo',
+            title: 'Ontodia Wikidata with graph Demo',
             chunks: ['commons', 'wikidataGraph', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
@@ -90,9 +104,9 @@ module.exports = {
     devtool: '#source-map',
     devServer: {
         proxy: {
-            "/sparql-endpoint": {
+            "/sparql-endpoint**": {
                 target: process.env.SPARQL_ENDPOINT,
-                ignorePath: true,
+                pathRewrite: {'/sparql-endpoint' : ''},
                 changeOrigin: true,
                 secure: false,
             },
