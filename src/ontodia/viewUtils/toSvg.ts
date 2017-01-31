@@ -1,6 +1,8 @@
 import * as _ from 'lodash';
 import * as joint from 'jointjs';
 
+import { isIE11 } from './detectBrowser';
+
 export interface ToSVGOptions {
     preserveDimensions?: boolean;
     convertImagesToDataUris?: boolean;
@@ -11,6 +13,11 @@ export interface ToSVGOptions {
 type Bounds = { width: number; height: number; };
 
 export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
+    if (isIE11()) {
+        return Promise.reject(new Error(
+            'Export to SVG is not supported in the Internet Explorer'));
+    }
+
     const viewportTransform = paper.viewport.getAttribute('transform');
     paper.viewport.setAttribute('transform', '');
 

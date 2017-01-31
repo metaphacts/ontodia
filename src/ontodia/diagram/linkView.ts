@@ -1,6 +1,8 @@
 import * as joint from 'jointjs';
 import { merge } from 'lodash';
 
+import { isIE11 } from '../viewUtils/detectBrowser';
+
 import { Link, FatLinkType } from './elements';
 import { DiagramView } from './view';
 
@@ -68,4 +70,20 @@ export class LinkView extends joint.dia.LinkView {
         merge(linkAttributes, {labels: labelAttributes});
         this.model.set(linkAttributes, options);
     }
+}
+
+if (isIE11()) {
+    // workaround for "Dynamically updated SVG path with a marker-end does not update" issue
+    // https://connect.microsoft.com/IE/feedback/details/801938/
+    (LinkView.prototype as any).update = function (this: LinkView) {
+        (joint.dia.LinkView.prototype as any).update.apply(this, arguments);
+        const path = (this.el as HTMLElement).querySelector('.connection') as SVGPathElement;
+        if (path) {
+            const pathParent = path.parentNode;
+            if (pathParent) {
+                pathParent.removeChild(path);
+                pathParent.insertBefore(path, pathParent.firstChild);
+            }
+        }
+    };
 }

@@ -37,7 +37,6 @@ module.exports = {
     },
     externals: {
         'd3-color': true,
-        'detect-browser': true,
         'intro.js': true,
         'jointjs': true,
         'jquery': true,
