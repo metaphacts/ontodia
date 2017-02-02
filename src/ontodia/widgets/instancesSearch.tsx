@@ -10,7 +10,7 @@ import { DiagramView } from '../diagram/view';
 import { ListElementView } from './listElementView';
 
 export interface InstancesSearchProps {
-    className: string;
+    className?: string;
     view: DiagramView;
     criteria: SearchCriteria;
     onCriteriaChanged: (criteria: SearchCriteria) => void;

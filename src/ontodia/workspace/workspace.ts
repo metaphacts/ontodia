@@ -1,5 +1,4 @@
-import * as $ from 'jquery';
-import { Component, createElement, ReactElement, DOM as D } from 'react';
+import { Component, createElement, ReactElement } from 'react';
 import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
@@ -13,8 +12,6 @@ import { ClassTree } from '../widgets/classTree';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
-import { resizePanel, setPanelHeight } from '../resizable-panels';
-import { resizeItem } from '../resizable-items';
 import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
 import { SearchCriteria } from '../widgets/instancesSearch';
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
@@ -107,16 +104,6 @@ export class Workspace extends Component<Props, State> {
             el: this.markup.linkTypesPanel,
         });
 
-        resizePanel({
-            panel: this.markup.element.querySelector('.ontodia__left-panel') as HTMLElement,
-        });
-        resizePanel({
-            panel: this.markup.element.querySelector('.ontodia__right-panel') as HTMLElement,
-            initiallyClosed: true,
-        });
-        $(this.markup.element).find('.filter-item').each(resizeItem);
-        $(window).resize(this.onWindowResize);
-
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
         }
@@ -127,14 +114,7 @@ export class Workspace extends Component<Props, State> {
             this.tree.remove();
         }
 
-        $(window).off('resize', this.onWindowResize);
         this.diagram.dispose();
-    }
-
-    private onWindowResize = () => {
-        if (this.markup && !this.props.isViewOnly) {
-            $(this.markup.element).find('.filter-panel').each(setPanelHeight);
-        }
     }
 
     getModel() { return this.model; }
