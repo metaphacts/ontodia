@@ -1,0 +1,14 @@
+.ontodia-overlayed-element {
+  cursor: move;
+  outline: none;
+}
+
+.ontodia-overlayed-element,
+.ontodia-exported-element {
+  // set defaults for all inherited properties
+  box-sizing: border-box;
+  color: black;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 14px;
+  line-height: 1.42857143;
+}
