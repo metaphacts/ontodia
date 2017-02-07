@@ -293,7 +293,7 @@ export const OrganizationTemplate = `
                 </label>
             {{/if}}  
         </div>
-        <div>
+        <div class="ontodia-default-template__properties">
         {{#if isExpanded}}
             <div class="ontodia-default-template_body_expander">
                 <div class="ontodia-default-template_body_expander__iri_label">
