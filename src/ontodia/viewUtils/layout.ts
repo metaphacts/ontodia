@@ -66,14 +66,13 @@ export function translateToPositiveQuadrant(params: {
 
 export function translateToCenter(params: {
     nodes: LayoutNode[];
-    paperBox: { x: number, y: number, width: number; height: number; };
-    graphBox: { x: number, y: number, width: number; height: number; };
+    paperSize: { width: number; height: number; };
+    contentBBox: { x: number, y: number, width: number; height: number; };
 }) {
+    const {paperSize, contentBBox} = params;
     const graphPos = {
-        x: (params.paperBox.width - params.graphBox.width) / 2 -
-           params. graphBox.x,
-        y: (params.paperBox.height - params.graphBox.height) / 2 -
-            params.graphBox.y,
+        x: (paperSize.width - contentBBox.width) / 2 - contentBBox.x,
+        y: (paperSize.height - contentBBox.height) / 2 - contentBBox.y,
     };
 
     for (const node of params.nodes) {

@@ -21,7 +21,7 @@ export class Halo extends React.Component<Props, void> {
     private handler = new Backbone.Model();
 
     componentWillMount() {
-        this.handler.listenTo(this.props.paper, 'resize scale', () => this.forceUpdate());
+        this.handler.listenTo(this.props.paper, 'translate resize scale', () => this.forceUpdate());
         this.listenToCell(this.props.cellView);
     }
 

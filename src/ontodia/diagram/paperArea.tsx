@@ -15,7 +15,7 @@ export interface Props {
     zoomOptions?: {
         min?: number;
         max?: number;
-        //maxFit will be used when zooming to fit to limit zoom of small diagrams
+        /** Used when zooming to fit to limit zoom of small diagrams */
         maxFit?: number;
         fitPadding?: number;
     };
@@ -39,6 +39,7 @@ export class PaperArea extends React.Component<Props, {}> {
 
     private padding = {x: 0, y: 0};
     private center: { x: number; y: number; };
+    private previousOrigin: { x: number; y: number; };
 
     private isPanning = false;
     private panningOrigin: { pageX: number; pageY: number; };
@@ -69,6 +70,7 @@ export class PaperArea extends React.Component<Props, {}> {
 
         this.listener.listenTo(this.paper, 'scale', this.onPaperScale);
         this.listener.listenTo(this.paper, 'resize', this.onPaperResize);
+        this.listener.listenTo(this.paper, 'translate', this.onPaperTranslate);
         this.listener.listenTo(this.paper, 'blank:pointerdown', (e: MouseEvent) => {
             if (this.shouldStartPanning(e)) {
                 e.preventDefault();
@@ -115,6 +117,7 @@ export class PaperArea extends React.Component<Props, {}> {
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
+        unmountComponentAtNode(this.spinnerElement);
     }
 
     clientToPaperCoords(areaClientX: number, areaClientY: number) {
@@ -126,16 +129,61 @@ export class PaperArea extends React.Component<Props, {}> {
         return {x, y};
     }
 
+    /** Returns bounding box of paper content in paper coordinates. */
+    getContentFittingBox() {
+        return joint.V(this.paper.viewport).bbox(true, this.paper.svg);
+    }
+
+    /** Returns paper size in paper coordinates. */
+    getPaperSize(): { width: number; height: number; } {
+        const scale = this.getScale();
+        const {width, height} = this.paper.options;
+        return {width: width / scale, height: height / scale};
+    }
+
     adjustPaper = () => {
         this.center = this.clientToPaperCoords(
             this.area.clientWidth / 2, this.area.clientHeight / 2);
 
         const scale = this.getScale();
-        this.paper.fitToContent({
-            gridWidth: this.pageSize.x * scale,
-            gridHeight: this.pageSize.y * scale,
-            allowNewOrigin: 'negative',
-        });
+        // bbox in paper coordinates
+        const bboxPaper = this.getContentFittingBox();
+        // bbox in area client coordinates
+        const bboxArea = {
+            left: bboxPaper.x * scale,
+            right: (bboxPaper.x + bboxPaper.width) * scale,
+            top: bboxPaper.y * scale,
+            bottom: (bboxPaper.y + bboxPaper.height) * scale,
+        };
+
+        const gridWidth = this.pageSize.x * scale;
+        const gridHeight = this.pageSize.y * scale;
+
+        // bbox in integer grid coordinates (open-closed intervals)
+        const bboxGrid = {
+            left: Math.floor(bboxArea.left / gridWidth),
+            right: Math.ceil(bboxArea.right / gridWidth),
+            top: Math.floor(bboxArea.top / gridHeight),
+            bottom: Math.ceil(bboxArea.bottom / gridHeight),
+        };
+
+        const oldOrigin = this.paper.options.origin;
+        const newOrigin = {
+            x: (-bboxGrid.left) * gridWidth,
+            y: (-bboxGrid.top) * gridHeight,
+        };
+        if (newOrigin.x !== oldOrigin.x || newOrigin.y !== oldOrigin.y) {
+            this.paper.setOrigin(newOrigin.x, newOrigin.y);
+        }
+
+        const oldWidth = this.paper.options.width;
+        const oldHeight = this.paper.options.height;
+        const newWidth = Math.max(bboxGrid.right - bboxGrid.left, 1) * gridWidth;
+        const newHeight = Math.max(bboxGrid.bottom - bboxGrid.top, 1) * gridHeight;
+        if (newWidth !== oldWidth || newHeight !== oldHeight) {
+            this.paper.setDimensions(newWidth, newHeight);
+        }
+
         this.updatePaperMargins();
     }
 
@@ -175,6 +223,19 @@ export class PaperArea extends React.Component<Props, {}> {
             this.centerTo(this.center);
         }
     };
+
+    private onPaperTranslate = (originX: number, originY: number) => {
+        if (this.previousOrigin) {
+            const {x, y} = this.previousOrigin;
+            const translatedX = originX - x;
+            const translatedY = originY - y;
+            // update visible area when paper change origin without resizing
+            // e.g. paper shinks from left side and grows from right
+            this.area.scrollLeft += translatedX;
+            this.area.scrollTop += translatedY;
+        }
+        this.previousOrigin = {x: originX, y: originY};
+    }
 
     private shouldStartPanning(e: MouseEvent | React.MouseEvent<any>) {
         return e.ctrlKey || e.shiftKey || this.props.panningAlwaysActive;
