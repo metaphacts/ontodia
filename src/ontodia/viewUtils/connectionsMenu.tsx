@@ -179,6 +179,8 @@ export class ConnectionsMenu {
         });
 
         this.view.model.requestElementData(addedElements);
+        this.view.model.requestLinksOfType();
+
         this.options.view.adjustPaper();
         this.options.onClose();
     };

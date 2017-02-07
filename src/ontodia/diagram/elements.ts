@@ -4,8 +4,6 @@ import * as joint from 'jointjs';
 import { ClassModel, ElementModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
 
-export type Label = { values: LocalizedString[] };
-
 export class UIElement extends joint.shapes.basic.Generic {
     markup: string;
     defaults() {
@@ -35,6 +33,9 @@ export class Element extends UIElement {
     /** All in and out links of the element */
     links: Link[] = [];
 
+    get isExpanded(): boolean { return this.get('isExpanded'); }
+    set isExpanded(value: boolean) { this.set('isExpanded', value); }
+
     initialize() {
         joint.shapes.basic.Generic.prototype.initialize.apply(this, arguments);
         this.set('z', 1);
@@ -48,6 +49,10 @@ export class Element extends UIElement {
 
     focus() {
         this.trigger('focus-on-me', this);
+    }
+
+    iriClick(iri: string) {
+        this.trigger('action:iriClick', iri);
     }
 }
 
@@ -73,10 +78,15 @@ export class FatClassModel extends Backbone.Model {
 /**
  * Properties:
  *     id: string
- *     label: Label
+ *     label: { values: LocalizedString[] }
  */
 export class RichProperty extends Backbone.Model {
-    constructor(model: { id: string, label: Label }) {
+    get label(): { values: LocalizedString[] } { return this.get('label'); }
+
+    constructor(model: {
+        id: string;
+        label: { values: LocalizedString[] };
+    }) {
         super({id: model.id});
         this.set('label', model.label);
     }
@@ -112,6 +122,9 @@ export class Link extends joint.dia.Link {
     set typeIndex(value: number) { this.set('typeIndex', value); }
 
     get typeId(): string { return this.get('typeId'); }
+
+    get sourceId(): string { return this.get('source').id; }
+    get targetId(): string { return this.get('target').id; }
 
     get layoutOnly(): boolean { return this.get('layoutOnly'); }
     set layoutOnly(value: boolean) { this.set('layoutOnly', value); }

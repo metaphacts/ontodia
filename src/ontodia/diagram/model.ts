@@ -1,5 +1,5 @@
 import * as Backbone from 'backbone';
-import * as _ from 'lodash';
+import { each, size, values, keyBy, defaults, uniqueId } from 'lodash';
 import * as joint from 'jointjs';
 
 import {
@@ -7,7 +7,7 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
-import { LayoutData, normalizeImportedCell, cleanExportedLayout } from './layoutData';
+import { LayoutData, LayoutElement, normalizeImportedCell, cleanExportedLayout } from './layoutData';
 import { Element, Link, FatLinkType, FatClassModel, RichProperty } from './elements';
 import { DataFetchingThread } from './dataFetchingThread';
 
@@ -95,18 +95,26 @@ export class DiagramModel extends Backbone.Model {
     private initializeExternalAddRemoveSupport() {
         // override graph.addCell to support CommandManager's undo/redo
         const superAddCell = this.graph.addCell;
-        this.graph['addCell'] = (cell: any) => {
+        this.graph['addCell'] = (cell: any, options: any) => {
             if (cell instanceof Element || cell instanceof Link) {
-                superAddCell.call(this.graph, cell);
+                superAddCell.call(this.graph, cell, options);
             } else if (cell.type === 'link') {
-                const link = this.getLink({
+                this.createLink({
                     sourceId: cell.source.id,
                     targetId: cell.target.id,
                     linkTypeId: cell.typeId,
+                    suggestedId: cell.id,
+                    vertices: cell.vertices,
                 });
-                superAddCell.call(this.graph, link);
+            } else if (cell.type === 'element') {
+                const {id, position, angle, isExpanded} = cell as LayoutElement;
+                const element = new Element({id, position, angle, isExpanded});
+                element.template = placeholderTemplateFromIri(cell.id);
+                superAddCell.call(this.graph, element, options);
+                this.requestElementData([element]);
+                this.requestLinksOfType();
             } else {
-                superAddCell.call(this.graph, cell);
+                superAddCell.call(this.graph, cell, options);
             }
         };
         // listen to external add/remove calls to graph (Halo's remove for example)
@@ -116,7 +124,12 @@ export class DiagramModel extends Backbone.Model {
                 linkType.set('visible', true);
             }
         });
-        this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => { /* nothing */ });
+        this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
+            if (cell instanceof Link) {
+                const {typeId, sourceId, targetId} = cell;
+                this.removeLinkReferences({linkTypeId: typeId, sourceId, targetId});
+            }
+        });
     }
 
     createNewDiagram(dataProvider: DataProvider): Promise<void> {
@@ -140,7 +153,7 @@ export class DiagramModel extends Backbone.Model {
 
     private initLinkTypes(linkTypes: LinkType[]) {
         this.linkTypes = {};
-        _.each(linkTypes, ({id, label}: LinkType) => {
+        each(linkTypes, ({id, label}: LinkType) => {
             const linkType = new FatLinkType({id, label, diagram: this, index: this.nextLinkTypeIndex++});
             this.linkTypes[linkType.id] = linkType;
         });
@@ -163,7 +176,7 @@ export class DiagramModel extends Backbone.Model {
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
             this.initLinkTypes(linkTypes);
-            this.trigger('state:endLoad', _.size(params.preloadedElements));
+            this.trigger('state:endLoad', size(params.preloadedElements));
             this.initLinkSettings(params.linkSettings);
             return this.initDiagram({
                 layoutData: params.layoutData,
@@ -184,7 +197,7 @@ export class DiagramModel extends Backbone.Model {
         linkSettings: LinkTypeOptions[];
     } {
         const layoutData = cleanExportedLayout(this.graph.toJSON());
-        const linkSettings = _.map(this.linkTypes, (type: FatLinkType) => ({
+        const linkSettings = values(this.linkTypes).map((type: FatLinkType) => ({
             id: type.id,
             visible: type.get('visible'),
             showLabel: type.get('showLabel'),
@@ -196,9 +209,9 @@ export class DiagramModel extends Backbone.Model {
         this.classTree = rootClasses;
         const addClass = (cl: ClassTreeElement) => {
             this.classesById[cl.id] = new FatClassModel(cl);
-            _.each(cl.children, addClass);
+            each(cl.children, addClass);
         };
-        _.each(rootClasses, addClass);
+        each(rootClasses, addClass);
     }
 
     private initDiagram(params: {
@@ -209,8 +222,6 @@ export class DiagramModel extends Backbone.Model {
     }): Promise<void> {
         const {layoutData, preloadedElements, markLinksAsLayoutOnly, hideUnusedLinkTypes} = params;
         return new Promise<void>((resolve, reject) => {
-            _.each(preloadedElements, normalizeTemplate);
-
             this.graph.trigger('batch:start', {batchName: 'to-back'});
 
             this.listenToOnce(this, 'state:renderDone', () => {
@@ -224,28 +235,23 @@ export class DiagramModel extends Backbone.Model {
                 this.trigger('state:dataLoaded');
             });
 
-            if (layoutData) {
-                this.initLayout(layoutData, preloadedElements, markLinksAsLayoutOnly);
-            } else {
-                this.trigger('state:renderStart');
-                this.trigger('state:renderDone');
-            }
+            this.initLayout(layoutData || {cells: []}, preloadedElements, markLinksAsLayoutOnly);
         });
     }
 
     private initLinkSettings(linkSettings?: LinkTypeOptions[]) {
         if (linkSettings) {
             const existingDefaults = { visible: false, showLabel: true };
-            const indexedSettings = _.keyBy(linkSettings, 'id');
-            _.each(this.linkTypes, (type, typeId) => {
+            const indexedSettings = keyBy(linkSettings, 'id');
+            each(this.linkTypes, (type, typeId) => {
                 const settings = indexedSettings[typeId] || {isNew: true};
                 const options: PreventLinksLoading = {preventLoading: true};
-                type.set(_.defaults(settings, existingDefaults), options);
+                type.set(defaults(settings, existingDefaults), options);
             });
         } else {
             const newDefaults = { visible: true, showLabel: true };
             const options: PreventLinksLoading = {preventLoading: true};
-            _.each(this.linkTypes, type => type.set(newDefaults, options));
+            each(this.linkTypes, type => type.set(newDefaults, options));
         }
     }
 
@@ -254,6 +260,8 @@ export class DiagramModel extends Backbone.Model {
         preloadedElements: Dictionary<ElementModel>,
         markLinksAsLayoutOnly: boolean,
     ) {
+        this.linksByType = {};
+
         const cellModels: joint.dia.Cell[] = [];
         const elementToRequestData: Element[] = [];
 
@@ -275,7 +283,7 @@ export class DiagramModel extends Backbone.Model {
             }
         }
 
-        this.requestElementData(elementToRequestData, {requestLinks: false});
+        this.requestElementData(elementToRequestData);
         this.trigger('state:renderStart');
         this.graph.resetCells(cellModels);
 
@@ -285,7 +293,7 @@ export class DiagramModel extends Backbone.Model {
     }
 
     private hideUnusedLinkTypes() {
-        const unusedLinkTypes = _.clone(this.linkTypes);
+        const unusedLinkTypes = {...this.linkTypes};
         for (const link of this.links) {
             delete unusedLinkTypes[link.typeId];
         }
@@ -311,27 +319,28 @@ export class DiagramModel extends Backbone.Model {
         return element;
     }
 
-    requestElementData(elements: Element[], params: {requestLinks?: boolean} = {}) {
-        this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+    requestElementData(elements: Element[]) {
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
             .then(models => this.onElementInfoLoaded(models))
-            .catch(err => console.error(err));
-
-        const {requestLinks = true} = params;
-        if (requestLinks) {
-            this.requestLinksOfType();
-        }
+            .catch(err => {
+                console.error(err);
+                return Promise.reject(err);
+            });
     }
 
     requestLinksOfType(linkTypeIds?: string[]) {
         let linkTypes = linkTypeIds;
         if (!linkTypes) {
-            linkTypeIds = _.values(this.linkTypes).map(type => type.id);
+            linkTypeIds = values(this.linkTypes).map(type => type.id);
         }
         return this.dataProvider.linksInfo({
             elementIds: this.graph.getElements().map(element => element.id),
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error(err);
+            return Promise.reject(err);
+        });
     }
 
     getPropertyById(labelId: string): RichProperty {
@@ -411,8 +420,7 @@ export class DiagramModel extends Backbone.Model {
         for (const id of Object.keys(elements)) {
             const element = this.getElement(id);
             if (element) {
-                const template = elements[id];
-                element.template = normalizeTemplate(template);
+                element.template = elements[id];
                 element.trigger('state:loaded');
             }
         }
@@ -426,7 +434,10 @@ export class DiagramModel extends Backbone.Model {
         this.storeBatchCommand();
     }
 
-    createLink(linkModel: LinkModel, options?: IgnoreCommandHistory): Link | undefined {
+    createLink(linkModel: LinkModel & {
+        suggestedId?: string;
+        vertices?: Array<{ x: number; y: number; }>;
+    }, options?: IgnoreCommandHistory): Link | undefined {
         const existingLink = this.getLink(linkModel);
         if (existingLink) {
           if (existingLink.layoutOnly) {
@@ -435,11 +446,15 @@ export class DiagramModel extends Backbone.Model {
           return existingLink;
         }
 
+        const {linkTypeId, sourceId, targetId, suggestedId, vertices} = linkModel;
+        const suggestedIdAvailable = Boolean(suggestedId && !this.cells.get(suggestedId));
+
         const link = new Link({
-            id: _.uniqueId('link_'),
-            typeId: linkModel.linkTypeId,
-            source: {id: linkModel.sourceId},
-            target: {id: linkModel.targetId},
+            id: suggestedIdAvailable ? suggestedId : uniqueId('link_'),
+            typeId: linkTypeId,
+            source: {id: sourceId},
+            target: {id: targetId},
+            vertices,
         });
 
         if (this.isSourceAndTargetVisible(link) && this.createLinkType(link.typeId).visible) {
@@ -467,15 +482,20 @@ export class DiagramModel extends Backbone.Model {
 
     getLink(linkModel: LinkModel): Link | undefined {
         const source = this.getElement(linkModel.sourceId);
-        for (const link of source.links) {
-            if (link.get('source').id === linkModel.sourceId &&
-                link.get('target').id === linkModel.targetId &&
-                link.get('typeId') === linkModel.linkTypeId
-            ) {
-                return link;
-            }
-        }
-        return undefined;
+        if (!source) { return undefined; }
+        const index = findLinkIndex(source.links, linkModel);
+        return index >= 0 && source.links[index];
+    }
+
+    private removeLinkReferences(linkModel: LinkModel) {
+        const source = this.getElement(linkModel.sourceId);
+        removeLinkFrom(source && source.links, linkModel);
+
+        const target = this.getElement(linkModel.targetId);
+        removeLinkFrom(target && target.links, linkModel);
+
+        const linksOfType = this.linksByType[linkModel.linkTypeId];
+        removeLinkFrom(linksOfType, linkModel);
     }
 }
 
@@ -504,9 +524,24 @@ function placeholderTemplateFromIri(iri: string): ElementModel {
     };
 }
 
-export function normalizeTemplate(template: ElementModel): ElementModel {
-    template.types.sort();
-    return template;
+function removeLinkFrom(links: Link[], model: LinkModel) {
+    if (!links) { return; }
+    const index = findLinkIndex(links, model);
+    links.splice(index, 1);
+}
+
+function findLinkIndex(haystack: Link[], needle: LinkModel) {
+    const {sourceId, targetId, linkTypeId} = needle;
+    for (let i = 0; i < haystack.length; i++) {
+        const link = haystack[i];
+        if (link.sourceId === sourceId &&
+            link.targetId === targetId &&
+            link.typeId === linkTypeId
+        ) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 export function uri2name(uri: string): string {

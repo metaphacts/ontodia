@@ -21,7 +21,7 @@ export interface LayoutLink {
     typeId: string;
     source: { id: string };
     target: { id: string };
-    vertices?: any[];
+    vertices?: Array<{ x: number; y: number; }>;
 }
 
 const serializedCellProperties = [

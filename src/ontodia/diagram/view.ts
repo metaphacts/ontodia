@@ -298,6 +298,7 @@ export class DiagramView extends Backbone.Model {
         }
 
         this.model.requestElementData(elementsToSelect);
+        this.model.requestLinksOfType();
         this.selection.reset(elementsToSelect);
 
         this.model.storeBatchCommand();
@@ -312,8 +313,7 @@ export class DiagramView extends Backbone.Model {
             x -= size.width / 2;
             y -= size.height / 2;
         }
-        const ignoreHistory = {ignoreCommandManager: true};
-        element.set('position', {x, y}, ignoreHistory);
+        element.set('position', {x, y});
 
         return element;
     }
@@ -326,7 +326,7 @@ export class DiagramView extends Backbone.Model {
         return elementModel.types.map((typeId: string) => {
             const type = this.model.getClassesById(typeId);
             return this.getElementTypeLabel(type).text;
-        }).join(', ');
+        }).sort().join(', ');
     }
 
     public getElementTypeLabel(type: FatClassModel): LocalizedString {
@@ -340,10 +340,9 @@ export class DiagramView extends Backbone.Model {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    /**
-     * @param types Type signature, MUST BE sorted; see DiagramModel.normalizeData()
-     */
     public getTypeStyle(types: string[]): TypeStyle {
+        types.sort();
+
         let customStyle: CustomTypeStyle;
         for (const resolver of this.typeStyleResolvers) {
             const result = resolver(types);
