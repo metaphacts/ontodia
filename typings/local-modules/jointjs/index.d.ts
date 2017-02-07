@@ -162,6 +162,7 @@ namespace joint {
             origin?: { x: number; y: number; };
             async?: boolean;
             preventContextMenu?: boolean;
+            guard?: (evt: any, view: joint.dia.CellView) => boolean;
         }
         class Paper extends Backbone.View<joint.dia.Graph> {
             constructor(options?: PaperOptions);

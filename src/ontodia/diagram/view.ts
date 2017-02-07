@@ -89,6 +89,11 @@ export class DiagramView extends Backbone.Model {
             height: 800,
             async: true,
             preventContextMenu: false,
+            guard: (evt, view) => {
+                // filter right mouse button clicks
+                if (evt.type === 'mousedown' && evt.button !== 0) { return true; }
+                return false;
+            },
         });
         (this.paper as any).diagramView = this;
 
