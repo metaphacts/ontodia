@@ -30,7 +30,8 @@ import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element, FatClassModel, linkMarkerKey } from './elements';
 
 import { LinkView } from './linkView';
-import { TemplatedUIElementView } from './templatedElementView';
+import { SeparatedElementView } from './separatedElementView';
+import { ElementLayer } from './elementLayer';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -83,7 +84,7 @@ export class DiagramView extends Backbone.Model {
         this.paper = new joint.dia.Paper({
             model: this.model.graph,
             gridSize: 1,
-            elementView: TemplatedUIElementView,
+            elementView: SeparatedElementView,
             linkView: LinkView,
             width: 1500,
             height: 800,
@@ -141,10 +142,21 @@ export class DiagramView extends Backbone.Model {
     }
 
     initializePaperComponents() {
+        this.configureElementLayer();
         this.configureSelection();
         this.configureDefaultHalo();
         document.addEventListener('keyup', this.onKeyUp);
         this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+    }
+
+    private configureElementLayer() {
+        const container = document.createElement('div');
+        this.paper.el.appendChild(container);
+        reactDOMRender(createElement(ElementLayer, {paper: this.paper, view: this}), container);
+        this.onDispose(() => {
+            unmountComponentAtNode(container);
+            this.paper.el.removeChild(container);
+        });
     }
 
     private onKeyUp = (e: KeyboardEvent) => {

@@ -268,7 +268,8 @@ export class DiagramModel extends Backbone.Model {
         for (const layoutCell of layoutData.cells) {
             let cell = normalizeImportedCell(layoutCell);
             if (cell.type === 'element') {
-                const element = new Element(cell);
+                // set size to zero to always recompute it on the first render
+                const element = new Element({...cell, size: {width: 0, height: 0}});
                 const template = preloadedElements[cell.id];
                 if (!template) {
                     elementToRequestData.push(element);

@@ -13,7 +13,7 @@ export class UIElement extends joint.shapes.basic.Generic {
         }, joint.shapes.basic.Generic.prototype.defaults);
     }
 }
-UIElement.prototype.markup = '<g class="rotatable"><g class="nonscalable rootOfUI"/></g>';
+UIElement.prototype.markup = '<g class="rotatable"><rect class="rootOfUI"/></g>';
 
 /**
  * Properties:

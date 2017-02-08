@@ -1,6 +1,8 @@
 import * as _ from 'lodash';
 import * as joint from 'jointjs';
 
+import { isIE11 } from './detectBrowser';
+
 export interface ToSVGOptions {
     preserveDimensions?: boolean;
     convertImagesToDataUris?: boolean;
@@ -11,11 +13,16 @@ export interface ToSVGOptions {
 type Bounds = { width: number; height: number; };
 
 export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
+    if (isIE11()) {
+        return Promise.reject(new Error(
+            'Export to SVG is not supported in the Internet Explorer'));
+    }
+
     const viewportTransform = paper.viewport.getAttribute('transform');
     paper.viewport.setAttribute('transform', '');
 
     const bbox = paper.getContentBBox();
-    const svgClone = paper.svg.cloneNode(true) as SVGElement;
+    const {svgClone, imageBounds} = clonePaperSvg(paper);
 
     paper.viewport.setAttribute('transform', viewportTransform || '');
 
@@ -29,14 +36,6 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     }
     svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 
-    const imageBounds: { [path: string]: Bounds } = {};
-    foreachNode(paper.svg.querySelectorAll('img'), img => {
-        imageBounds[nodeRelativePath(img, paper.svg)] = {
-            width: img.clientWidth,
-            height: img.clientHeight,
-        };
-    });
-
     const nodes = svgClone.querySelectorAll('img');
     const convertImagesStartingAt = (index: number, done: () => void) => {
         if (index >= nodes.length) {
@@ -44,7 +43,7 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
             return;
         }
         const img = nodes[index];
-        const {width, height} = imageBounds[nodeRelativePath(img, svgClone)];
+        const {width, height} = imageBounds[nodeRelativePath(svgClone, img)];
         img.setAttribute('width', width.toString());
         img.setAttribute('height', height.toString());
         if (opt.convertImagesToDataUris) {
@@ -95,6 +94,50 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     });
 }
 
+function clonePaperSvg(paper: joint.dia.Paper): {
+    svgClone: SVGElement;
+    imageBounds: { [path: string]: Bounds };
+} {
+    const svgClone = paper.svg.cloneNode(true) as SVGElement;
+    const imageBounds: { [path: string]: Bounds } = {};
+
+    const cells: Backbone.Collection<joint.dia.Cell> = paper.model.get('cells');
+    foreachNode(svgClone.querySelectorAll('g.element'), separatedView => {
+        const modelId = separatedView.getAttribute('model-id');
+        const overlayedView = (paper.el as HTMLElement).querySelector(
+            `.ontodia-overlayed-element[model-id='${modelId}']`);
+        if (!overlayedView) { return; }
+
+        const newRoot = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        const model = cells.get(modelId);
+        const modelSize = model.get('size');
+        newRoot.setAttribute('width', modelSize.width);
+        newRoot.setAttribute('height', modelSize.height);
+        const overlayedViewContent = overlayedView.firstChild as HTMLElement;
+        newRoot.appendChild(overlayedViewContent.cloneNode(true));
+
+        separatedView.setAttribute('class',
+            `${separatedView.getAttribute('class')} ontodia-exported-element`);
+        const oldRoot = separatedView.querySelector('.rootOfUI');
+        const rootParent = oldRoot.parentElement;
+        rootParent.removeChild(oldRoot);
+        rootParent.appendChild(newRoot);
+
+        foreachNode(overlayedViewContent.querySelectorAll('img'), img => {
+            const rootPath = nodeRelativePath(svgClone, rootParent);
+            const imgPath = nodeRelativePath(overlayedViewContent, img);
+            // combine path "from SVG to root" and "from root to image"
+            // with additional separator to consider newly added nodes
+            imageBounds[rootPath + ':0:0:' + imgPath] = {
+                width: img.clientWidth,
+                height: img.clientHeight,
+            };
+        });
+    });
+
+    return {svgClone, imageBounds};
+}
+
 /**
  * Mock XMLHttpRequest for joint.util.imageToDataUri as workaround to uncatchable
  * DOMException in synchronous xhr.send() call when Joint trying to load SVG image.
@@ -135,7 +178,22 @@ function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T
     }
 }
 
-function nodeRelativePath(child: Node, parent: Node) {
+/**
+ * Returns colon-separeted path from `parent` to `child` where each part
+ * corresponds to child index at each tree level.
+ * 
+ * @example
+ * <div id='root'>
+ *   <span></span>
+ *   <ul>
+ *     <li id='target'></li>
+ *     <li></li>
+ *   </ul>
+ * </div>
+ * 
+ * nodeRelativePath(root, target) === '1:0'
+ */
+function nodeRelativePath(parent: Node, child: Node) {
     const path: number[] = [];
     let current = child;
     while (current && current !== parent) {
