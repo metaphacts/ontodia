@@ -155,7 +155,12 @@ export class FatLinkType extends Backbone.Model {
     set label(value: { values: LocalizedString[] }) { this.set('label', value); }
 
     get visible(): boolean { return this.get('visible'); }
-    set visible(value: boolean) { this.set('visible', value); }
+    setVisibility(
+        params: { visible: boolean; showLabel: boolean; },
+        options?: PreventLinksLoading,
+    ) {
+        this.set(params, options);
+    }
 
     constructor(params: {
         id: string;
@@ -174,19 +179,13 @@ export class FatLinkType extends Backbone.Model {
         this.listenTo(this, 'change:visible', this.onVisibilityChanged);
     }
 
-    private onVisibilityChanged(self: FatLinkType, visible: boolean, options: PreventLinksLoading) {
-        const links = this.diagram.linksOfType(this.id);
-
+    private onVisibilityChanged(self: this, visible: boolean, options: PreventLinksLoading) {
         if (visible) {
-            for (const link of links) {
-                if (this.diagram.sourceOf(link) && this.diagram.targetOf(link)) {
-                    this.diagram.graph.addCell(link);
-                }
-            }
             if (!options.preventLoading) {
                 this.diagram.requestLinksOfType([this.id]);
             }
         } else {
+            const links = [...this.diagram.linksOfType(this.id)];
             for (const link of links) {
                 link.remove();
             }

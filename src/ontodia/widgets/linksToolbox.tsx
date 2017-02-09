@@ -39,11 +39,11 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
     private changeState = (state: LinkTypeVisibility) => {
         if (state === 'invisible') {
-            this.props.link.set({visible: false, showLabel: false});
+            this.props.link.setVisibility({visible: false, showLabel: false});
         } else if (state === 'withoutLabels') {
-            this.props.link.set({visible: true, showLabel: false});
+            this.props.link.setVisibility({visible: true, showLabel: false});
         } else if (state === 'allVisible') {
-            this.props.link.set({visible: true, showLabel: true});
+            this.props.link.setVisibility({visible: true, showLabel: true});
         }
     };
 
@@ -162,15 +162,15 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
     private changeState = (state: LinkTypeVisibility, links: FatLinkType[]) => {
         if (state === 'invisible') {
             for (const link of links) {
-                link.set({visible: false, showLabel: false});
+                link.setVisibility({visible: false, showLabel: false});
             }
         } else if (state === 'withoutLabels') {
             for (const link of links) {
-                link.set({visible: true, showLabel: false});
+                link.setVisibility({visible: true, showLabel: false});
             }
         } else if (state === 'allVisible') {
             for (const link of links) {
-                link.set({visible: true, showLabel: true});
+                link.setVisibility({visible: true, showLabel: true});
             }
         }
     };
