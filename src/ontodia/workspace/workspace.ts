@@ -84,9 +84,9 @@ export class Workspace extends Component<Props, State> {
     }
 
     componentDidMount() {
-        if (this.props.isViewOnly) { return; }
-
         this.diagram.initializePaperComponents();
+
+        if (this.props.isViewOnly) { return; }
 
         this.tree = new ClassTree({
             model: new Backbone.Model(this.diagram.model),
@@ -117,7 +117,7 @@ export class Workspace extends Component<Props, State> {
         $(this.markup.element).find('.filter-item').each(resizeItem);
         $(window).resize(this.onWindowResize);
 
-        if (!this.props.isViewOnly && !this.props.hideTutorial) {
+        if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
         }
     }

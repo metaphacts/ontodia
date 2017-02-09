@@ -143,10 +143,12 @@ export class DiagramView extends Backbone.Model {
 
     initializePaperComponents() {
         this.configureElementLayer();
-        this.configureSelection();
-        this.configureDefaultHalo();
-        document.addEventListener('keyup', this.onKeyUp);
-        this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+        if (!this.model.isViewOnly()) {
+            this.configureSelection();
+            this.configureDefaultHalo();
+            document.addEventListener('keyup', this.onKeyUp);
+            this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+        }
     }
 
     private configureElementLayer() {
