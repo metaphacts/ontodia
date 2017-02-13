@@ -451,7 +451,7 @@ export class DiagramModel extends Backbone.Model {
         const suggestedIdAvailable = Boolean(suggestedId && !this.cells.get(suggestedId));
 
         const link = new Link({
-            id: suggestedIdAvailable ? suggestedId : uniqueId('link_'),
+            id: suggestedIdAvailable ? suggestedId : `link_${generateRandomID()}`,
             typeId: linkTypeId,
             source: {id: sourceId},
             target: {id: targetId},
@@ -543,6 +543,16 @@ function findLinkIndex(haystack: Link[], needle: LinkModel) {
         }
     }
     return -1;
+}
+
+/** Generates random 16-digit hexadecimal string. */
+function generateRandomID() {
+    function randomHalfDigits() {
+        return Math.floor((1 + Math.random()) * 0x100000000)
+            .toString(16).substring(1);
+    }
+    // generate by half because of restricted numerical precision
+    return randomHalfDigits() + randomHalfDigits();
 }
 
 export function uri2name(uri: string): string {
