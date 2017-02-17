@@ -58,3 +58,5 @@ Ontodia library is distributed under LGPL-2.1
 ### Who do I talk to? ###
 
 Feel free to write to [ontodia-people@vismart.biz](mailto:ontodia-people@vismart.biz).
+
+In order to simplify for you the access to our development team and to our growing community, we'd like to invite you to join our Slack channel. Here's the [form](https://goo.gl/forms/mfKFRRNU9ToHxGGM2) to fill out, so we can add you to the list of members. On our slack channel you can get answers to your questions regarding the library and ontodia.org service directly from developers and other users.
