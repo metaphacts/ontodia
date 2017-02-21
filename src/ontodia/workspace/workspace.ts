@@ -58,21 +58,21 @@ export class Workspace extends Component<Props, State> {
             searchCriteria: this.state.criteria,
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                onUndo: () => this.model.undo(),
-                onRedo: () => this.model.redo(),
-                onZoomIn: () => this.markup.paperArea.zoomBy(0.2),
-                onZoomOut: () => this.markup.paperArea.zoomBy(-0.2),
-                onZoomToFit: () => this.markup.paperArea.zoomToFit(),
-                onPrint: () => this.diagram.print(),
-                onExportSVG: link => this.onExportSvg(link),
-                onExportPNG: link => this.onExportPng(link),
+                onUndo: this.undo,
+                onRedo: this.redo,
+                onZoomIn: this.zoomIn,
+                onZoomOut: this.zoomOut,
+                onZoomToFit: this.zoomToFit,
+                onPrint: this.print,
+                onExportSVG: this.exportSvg,
+                onExportPNG: this.exportPng,
                 onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
                 onSaveDiagram: () => this.props.onSaveDiagram(this),
                 onForceLayout: () => {
                     this.forceLayout();
-                    this.markup.paperArea.zoomToFit();
+                    this.zoomToFit();
                 },
-                onChangeLanguage: language => this.diagram.setLanguage(language),
+                onChangeLanguage: this.changeLanguage,
                 onShowTutorial: () => {
                     if (!this.props.hideTutorial) { showTutorial(); }
                 },
@@ -141,13 +141,16 @@ export class Workspace extends Component<Props, State> {
     getDiagram() { return this.diagram; }
 
     preventTextSelectionUntilMouseUp() { this.markup.preventTextSelection(); }
-    zoomToFit() { this.markup.paperArea.zoomToFit(); }
+
+    zoomToFit = () => {
+        this.markup.paperArea.zoomToFit();
+    }
 
     showWaitIndicatorWhile(promise: Promise<any>) {
         this.markup.paperArea.showIndicator(promise);
     }
 
-    forceLayout() {
+    forceLayout = () => {
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
         for (const element of this.model.elements) {
@@ -199,7 +202,7 @@ export class Workspace extends Component<Props, State> {
         }
     }
 
-    private onExportSvg(link: HTMLAnchorElement) {
+    exportSvg = (link: HTMLAnchorElement) => {
         this.diagram.exportSVG().then(svg => {
             link.download = 'diagram.svg';
             const xmlEncodingHeader = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -209,12 +212,36 @@ export class Workspace extends Component<Props, State> {
         });
     }
 
-    private onExportPng(link: HTMLAnchorElement) {
+    exportPng = (link: HTMLAnchorElement) => {
         this.diagram.exportPNG({backgroundColor: 'white'}).then(dataUri => {
             link.download = 'diagram.png';
             link.href = window.URL.createObjectURL(dataURLToBlob(dataUri));
             link.click();
         });
+    }
+
+    undo = () => {
+        this.model.undo();
+    }
+
+    redo = () => {
+        this.model.redo();
+    }
+
+    zoomIn = () => {
+        this.markup.paperArea.zoomBy(0.2);
+    }
+
+    zoomOut = () => {
+        this.markup.paperArea.zoomBy(-0.2);
+    }
+
+    print = () => {
+        this.diagram.print();
+    }
+
+    changeLanguage = (language: string) => {
+        this.diagram.setLanguage(language);
     }
 }
 
