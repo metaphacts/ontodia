@@ -262,12 +262,16 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             delete selectedItems[element.id];
         }
 
-        const items = this.currentRequest.offset > 0
+        const requestedAdditionalItems = this.currentRequest.offset > 0;
+        const items = requestedAdditionalItems
             ? this.state.items.concat(newItems) : newItems;
+
+        let resultId = this.state.resultId;
+        if (!requestedAdditionalItems) { resultId += 1; }
 
         this.setState({
             quering: false,
-            resultId: this.state.resultId + 1,
+            resultId,
             items,
             error: undefined,
             moreItemsAvailable: newItems.length >= this.currentRequest.limit,
