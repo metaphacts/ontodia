@@ -75,8 +75,42 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
 }
 
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
-    const sparqlClasses = response.results.bindings;
-    return sparqlClasses.map((sClass: ClassBinding) => getClassModel(sClass));
+    const classes: { [id: string]: ClassModel } = {};
+    for (const binding of response.results.bindings) {
+        if (!binding.class) { continue; }
+        const id = binding.class.value;
+        const model = classes[id];
+        if (model) {
+            const newLabel = getLocalizedString(binding.label);
+            if (!model.label.values.some(label => isLocalizedEqual(label, newLabel))) {
+                model.label.values.push(newLabel);
+            }
+            const instanceCount = getInstCount(binding.instcount);
+            if (!isNaN(instanceCount)) {
+                model.count =  Math.max(model.count, instanceCount);
+            }
+        } else {
+            const label = getLocalizedString(binding.label);
+            classes[id] = {
+                id,
+                children: [],
+                label: {values: label ? [label] : []},
+                count: getInstCount(binding.instcount),
+            };
+        }
+    }
+
+    const classesList: ClassModel[] = [];
+    for (const id in classes) {
+        if (!classes.hasOwnProperty(id)) { continue; }
+        const model = classes[id];
+        if (model.label.values.length === 0) {
+            model.label.values.push(getLocalizedString(undefined, id));
+        }
+        classesList.push(model);
+    }
+
+    return classesList;
 }
 
 export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dictionary<PropertyModel> {

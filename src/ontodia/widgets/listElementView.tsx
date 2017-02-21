@@ -21,7 +21,7 @@ export class ListElementView extends React.Component<ListElementViewProps, void>
         const frontColor = (selected && !disabled) ? hcl(h, c, l * 1.2) : hcl('white');
 
         const disabledClass = disabled ? `${CLASS_NAME}--disabled` : '';
-        const className = `${CLASS_NAME} ${disabledClass} ${otherProps.className}`;
+        const className = `${CLASS_NAME} ${disabledClass} ${otherProps.className || ''}`;
 
         return <li {...otherProps} className={className} draggable={!disabled}
             title={`Classes: ${view.getElementTypeString(model)}`}

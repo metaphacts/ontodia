@@ -23,6 +23,7 @@ Connections menu.
 - Non-scrollable `Connection panel in Firefox.
 - Lost scroll position in Instances panel on 'Show more' button press
 (introduced in [0.3.8]).
+- Missing localized labels with different languages for classes.
 
 ### Breaking changes
 - `DiagramModel.requestElementData()` don't requests for links.
