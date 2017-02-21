@@ -1,0 +1,73 @@
+.ontodia-drag-resizable-column {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  &__handle {
+    background: #fff url("../images/resizable-column-handle.png") repeat;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    width: 8px;
+    z-index: 2;
+    -webkit-transition: 0.3s;
+    -moz-transition: 0.3s;
+    transition: 0.3s;
+    cursor: ew-resize;
+  }
+
+  &__handle-btn {
+    background: #eee;
+    cursor: pointer;
+    height: 40px;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    margin-top: -20px;
+    width: 100%;
+    z-index: 1;
+    -webkit-transition: 0.3s;
+    -moz-transition: 0.3s;
+    transition: 0.3s;
+
+    &::before {
+      background-position: 0 0 ;
+      background-repeat: no-repeat;
+      background-size: cover;
+      content: "";
+      height: 6px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -3px;
+      margin-left: -3px;
+      width: 6px;
+      -webkit-transition: 0.3s;
+      -moz-transition: 0.3s;
+      transition: 0.3s;
+    }
+
+    &:hover {
+      background: #b3b3b3;
+      transform: scale(1.2);
+    }
+  }
+
+  &--closed &__handle-btn {
+    &::before { transform: rotate(180deg); }
+  }
+
+  &--docked-left { margin-right: 8px; }
+  &--docked-left &__handle { right: -8px; }
+  &--docked-left &__handle-btn {
+    &::before { background-image: url("../images/arrow-left.png"); }
+    &:hover::before { background-image: url("../images/arrow-left1.png"); }
+  }
+
+  &--docked-right { margin-left: 8px; }
+  &--docked-right &__handle { left: -8px; }
+  &--docked-right &__handle-btn {
+    &::before { background-image: url("../images/arrow-right.png"); }
+    &:hover::before { background-image: url("../images/arrow-right1.png"); }
+  }
+}

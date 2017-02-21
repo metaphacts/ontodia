@@ -3,9 +3,11 @@ import * as React from 'react';
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
 
-import { TutorialProps } from '../tutorial/tutorial';
-
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
+
+import { ResizableSidebar, DockSide } from './resizableSidebar';
+import { Accordion } from './accordion';
+import { AccordionItem } from './accordionItem';
 
 export interface Props {
     toolbar: React.ReactElement<any>;
@@ -45,45 +47,69 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
 
+    private untilMouseUpClasses: string[] = [];
+
     render() {
         let leftPanel = (
-            <DragResizableColumn className='ontodia__left-panel' tutorialProps={{
-                'data-position': 'right', 'data-step': '7', 'data-intro-id': 'resize', 'data-intro': INTRO_RESIZE}}>
-                <ToggableColumnWidget heading='Classes' bodyRef={e => this.classTreePanel = e}
-                    tutorialProps={{
-                        'data-position': 'right',
-                        'data-step': '1',
-                        'data-intro-id': 'tree-view',
-                        'data-intro': INTRO_CLASSES,
-                    }}>
-                </ToggableColumnWidget>
-                <ToggableColumnWidget heading='Instances'
-                    bodyClassName='filter-view'
-                    tutorialProps={{
-                        'data-position': 'top',
-                        'data-step': '2',
-                        'data-intro-id': 'filter-view',
-                        'data-intro': INTRO_INSTANCES,
-                    }}>
-                    <InstancesSearch className='filter-item__body'
-                        view={this.props.view} criteria={this.props.searchCriteria || {}}
-                        onCriteriaChanged={this.props.onSearchCriteriaChanged} />
-                </ToggableColumnWidget>
-            </DragResizableColumn>
+            <ResizableSidebar dockSide={DockSide.Left}
+                onStartResize={() => this.untilMouseUp({
+                    preventTextSelection: true,
+                    horizontalResizing: true,
+                })}
+                tutorialProps={{
+                    'data-position': 'right',
+                    'data-step': '7',
+                    'data-intro-id': 'resize',
+                    'data-intro': INTRO_RESIZE,
+                }}>
+                <Accordion onStartResize={() => this.untilMouseUp({
+                    preventTextSelection: true,
+                    verticalResizing: true,
+                })}>
+                    <AccordionItem heading='Classes' bodyRef={e => this.classTreePanel = e}
+                        tutorialProps={{
+                            'data-position': 'right',
+                            'data-step': '1',
+                            'data-intro-id': 'tree-view',
+                            'data-intro': INTRO_CLASSES,
+                        }}>
+                    </AccordionItem>
+                    <AccordionItem heading='Instances'
+                        tutorialProps={{
+                            'data-position': 'top',
+                            'data-step': '2',
+                            'data-intro-id': 'filter-view',
+                            'data-intro': INTRO_INSTANCES,
+                        }}>
+                        <InstancesSearch view={this.props.view}
+                            criteria={this.props.searchCriteria || {}}
+                            onCriteriaChanged={this.props.onSearchCriteriaChanged} />
+                    </AccordionItem>
+                </Accordion>
+            </ResizableSidebar>
         );
 
         let rightPanel = (
-            <DragResizableColumn className='ontodia__right-panel'>
-                <ToggableColumnWidget heading='Connections'
-                    bodyClassName='link-types-toolbox' bodyRef={e => this.linkTypesPanel = e}
-                    tutorialProps={{
-                        'data-position': 'left',
-                        'data-step': '4',
-                        'data-intro-id': 'link-types-toolbox',
-                        'data-intro': INTRO_CONNECTIONS,
-                    }}>
-                </ToggableColumnWidget>
-            </DragResizableColumn>
+            <ResizableSidebar dockSide={DockSide.Right}
+                onStartResize={() => this.untilMouseUp({
+                    preventTextSelection: true,
+                    horizontalResizing: true,
+                })}>
+                <Accordion onStartResize={() => this.untilMouseUp({
+                    preventTextSelection: true,
+                    verticalResizing: true,
+                })}>
+                    <AccordionItem heading='Connections'
+                        bodyClassName='link-types-toolbox' bodyRef={e => this.linkTypesPanel = e}
+                        tutorialProps={{
+                            'data-position': 'left',
+                            'data-step': '4',
+                            'data-intro-id': 'link-types-toolbox',
+                            'data-intro': INTRO_CONNECTIONS,
+                        }}>
+                    </AccordionItem>
+                </Accordion>
+            </ResizableSidebar>
         );
 
         return (
@@ -115,53 +141,35 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     }
 
     preventTextSelection() {
-        this.element.classList.add('ontodia--unselectable');
+        this.untilMouseUp({preventTextSelection: true});
+    }
+
+    private untilMouseUp(params: {
+        preventTextSelection?: boolean;
+        horizontalResizing?: boolean;
+        verticalResizing?: boolean;
+    }) {
+        this.untilMouseUpClasses = [];
+        if (params.preventTextSelection) {
+            this.untilMouseUpClasses.push('ontodia--unselectable');
+        }
+        if (params.horizontalResizing) {
+            this.untilMouseUpClasses.push('ontodia--horizontal-resizing');
+        }
+        if (params.verticalResizing) {
+            this.untilMouseUpClasses.push('ontodia--vertical-resizing');
+        }
+
+        for (const className of this.untilMouseUpClasses) {
+            this.element.classList.add(className);
+        }
     }
 
     private onDocumentMouseUp = () => {
-        this.element.classList.remove('ontodia--unselectable');
-    }
-}
-
-interface DragResizableColumnProps {
-    className?: string;
-    tutorialProps?: TutorialProps;
-    children?: React.ReactNode;
-}
-
-class DragResizableColumn extends React.Component<DragResizableColumnProps, void> {
-    render() {
-        return <div className={`filter-panel ${this.props.className || ''}`} {...this.props.tutorialProps}>
-            {this.props.children}
-            <div className='filter-panel__handle'>
-                <div className='filter-panel__handle-btn'></div>
-            </div>
-        </div>;
-    }
-}
-
-interface ToggableColumnWidgetProps {
-    heading: string;
-    bodyClassName?: string;
-    bodyRef?: (body: HTMLDivElement) => void;
-    tutorialProps?: TutorialProps;
-    children?: React.ReactNode;
-}
-
-class ToggableColumnWidget extends React.Component<ToggableColumnWidgetProps, void> {
-    render() {
-        return <div className='filter-item ontodia-widget' {...this.props.tutorialProps}>
-            <div className='filter-item__inner'>
-                <div className='ontodia-widget-heading filter-item__header'>{this.props.heading}</div>
-                {this.props.children ? this.props.children :
-                    <div ref={this.props.bodyRef}
-                        className={`filter-item__body ${this.props.bodyClassName || ''}`}>
-                        {this.props.children}
-                    </div>
-                }
-            </div>
-            <div className='filter-item__handle'></div>
-        </div>;
+        for (const className of this.untilMouseUpClasses) {
+            this.element.classList.remove(className);
+        }
+        this.untilMouseUpClasses = [];
     }
 }
 

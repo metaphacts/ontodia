@@ -27,6 +27,9 @@
 
   &__rest {
     border-top: 1px solid #dddddd;
+    flex: auto;
+    display: flex;
+    flex-direction: column;
   }
 }
 

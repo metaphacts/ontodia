@@ -1,0 +1,82 @@
+.ontodia-accordion {
+  flex: auto;
+  flex-direction: column;
+  height: 100%;
+
+  &:not(&--resizing) .ontodia-accordion-item {
+    transition: height 0.3s ease-in-out;
+  }
+}
+
+.ontodia-accordion-item {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-top: 1px solid lightgray;
+  min-height: 22px;
+
+  &__handle {
+    position: absolute;
+    height: 5px;
+    bottom: -2.5px;
+    left: 0;
+    width: 100%;
+    z-index: 2;
+    cursor: ns-resize;
+  }
+
+  &__inner {
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  &__body {
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__header {
+    padding-left: 20px;
+    position: relative;
+
+    flex-shrink: 0;
+    font-size: 16px;
+    background: #E4E4E4;
+    cursor: default;
+    /* unselectable */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    &:before {
+      border-top: 6px solid #555555;
+      border-left: 3.5px solid transparent;
+      border-right: 3.5px solid transparent;
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 7px;
+      margin-top: -3px;
+
+      -webkit-transition: 0.1s;
+      -moz-transition: 0.1s;
+      transition: 0.1s;
+    }
+  }
+
+  &--collapsed &__header:before {
+    -webkit-transform: rotate(-90deg);
+    -moz-transform: rotate(-90deg);
+    -ms-transform: rotate(-90deg);
+    transform: rotate(-90deg);
+  }
+
+  &--collapsed &__body {
+    display: none;
+  }
+}
