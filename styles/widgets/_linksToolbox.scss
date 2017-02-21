@@ -1,4 +1,5 @@
 .link-types-toolbox {
+  flex: auto;
   display: flex;
   flex-direction: column;
   margin-bottom: 0;
@@ -38,9 +39,8 @@
   -webkit-flex-shrink: 0; /* safari 8 */
 }
 .link-types-toolbox .link-lists {
-  flex-grow: 1;
-  -webkit-flex-grow: 1; /* safari 8 */
-  /*height: 0;*/
+  flex: auto;
+  height: 0;
   overflow-y: scroll;
 }
 .link-types-toolbox ul {

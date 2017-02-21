@@ -20,7 +20,7 @@ Connections menu.
 - Expanded organization template width.
 - Paper always including initial canvas area when adjusting size to content.
 - Rendering `Halo` in a wrong place when paper origin changes.
-- Non-scrollable `Connection panel in Firefox.
+- Non-scrollable Connections panel in Firefox and IE11.
 - Lost scroll position in Instances panel on 'Show more' button press
 (introduced in [0.3.8]).
 - Missing localized labels with different languages for classes.
