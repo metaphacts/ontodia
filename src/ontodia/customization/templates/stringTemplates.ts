@@ -124,9 +124,9 @@ export const BigIconTemplate = `
         style="background-color: {{color}}; border-color: {{color}}">
         <div class="ontodia-big-icon-template_body" style="border-left-color: {{color}}">
             <div style="flex-grow: 1; text-overflow: ellipsis; overflow: hidden;">
-                <label title="{{label}}" class="ontodia-big-icon-template_body__label">
+                <span title="{{label}}" class="ontodia-big-icon-template_body__label">
                     {{label}}
-                </label>
+                </span>
                 <div title="{{types}}" class="ontodia-big-icon-template_body_type-container">
                     <div class="ontodia-big-icon-template_body_type-container__type">{{types}}</div>
                 </div>

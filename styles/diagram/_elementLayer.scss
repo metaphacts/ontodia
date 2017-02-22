@@ -11,4 +11,14 @@
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size: 14px;
   line-height: 1.42857143;
+
+  // http://stackoverflow.com/questions/6664460/line-height-affects-images
+  img { vertical-align: middle; }
+}
+
+// remove link fill on exported SVG
+.link .connection { fill: none; }
+.link .connection-wrap {
+  fill: none;
+  opacity: 0;
 }

@@ -17,7 +17,7 @@ HTML elements.
 Connections menu.
 
 ### Fixed
-- Expanded organization template width.
+- Inconsistent elements and links rendering between editor and exported SVG.
 - Paper always including initial canvas area when adjusting size to content.
 - Rendering `Halo` in a wrong place when paper origin changes.
 - Non-scrollable Connections panel in Firefox and IE11.

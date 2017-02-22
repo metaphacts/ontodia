@@ -12,6 +12,13 @@ export interface ToSVGOptions {
 
 type Bounds = { width: number; height: number; };
 
+/**
+ * Padding (in px) for <foreignObject> elements of exported SVG to
+ * mitigate issues with elements body overflow caused by missing styles
+ * in exported image.
+ */
+const ForeignObjectSizePadding = 2;
+
 export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
     if (isIE11()) {
         return Promise.reject(new Error(
@@ -22,7 +29,7 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     paper.viewport.setAttribute('transform', '');
 
     const bbox = paper.getContentBBox();
-    const {svgClone, imageBounds} = clonePaperSvg(paper);
+    const {svgClone, imageBounds} = clonePaperSvg(paper, ForeignObjectSizePadding);
 
     paper.viewport.setAttribute('transform', viewportTransform || '');
 
@@ -64,25 +71,11 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
             resolve();
         });
     }).then(() => {
-        const cssRuleTexts: string[] = [];
-        for (let i = 0; i < document.styleSheets.length; i++) {
-            let rules: CSSRuleList;
-            try {
-                const cssSheet = document.styleSheets[i] as CSSStyleSheet;
-                rules = cssSheet.cssRules || cssSheet.rules;
-                if (!rules) { continue; }
-            } catch (e) { continue; }
-
-            for (let j = 0; j < rules.length; j++) {
-                const rule = rules[j];
-                if (rule instanceof CSSStyleRule) {
-                    cssRuleTexts.push(rule.cssText);
-                }
-            }
-        }
+        // workaround to include only ontodia-related stylesheets
+        const cssTexts = extractCSSFromDocument(text => text.indexOf('.ontodia') >= 0);
 
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        defs.innerHTML = `<style>${cssRuleTexts.join('\n')}</style>`;
+        defs.innerHTML = `<style>${cssTexts.join('\n')}</style>`;
         svgClone.insertBefore(defs, svgClone.firstChild);
 
         if (opt.elementsToRemoveSelector) {
@@ -94,7 +87,38 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     });
 }
 
-function clonePaperSvg(paper: joint.dia.Paper): {
+function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): string[] {
+    const cssTexts: string[] = [];
+    for (let i = 0; i < document.styleSheets.length; i++) {
+        let rules: CSSRuleList;
+        try {
+            const cssSheet = document.styleSheets[i] as CSSStyleSheet;
+            rules = cssSheet.cssRules || cssSheet.rules;
+            if (!rules) { continue; }
+        } catch (e) { continue; }
+
+        const ruleTexts: string[] = [];
+        let allowToInclude = false;
+
+        for (let j = 0; j < rules.length; j++) {
+            const rule = rules[j];
+            if (rule instanceof CSSStyleRule) {
+                const text = rule.cssText;
+                ruleTexts.push(rule.cssText);
+                if (shouldInclude(text)) {
+                    allowToInclude = true;
+                }
+            }
+        }
+
+        if (allowToInclude) {
+            cssTexts.push(ruleTexts.join('\n'));
+        }
+    }
+    return cssTexts;
+}
+
+function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
     svgClone: SVGElement;
     imageBounds: { [path: string]: Bounds };
 } {
@@ -111,8 +135,8 @@ function clonePaperSvg(paper: joint.dia.Paper): {
         const newRoot = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
         const model = cells.get(modelId);
         const modelSize = model.get('size');
-        newRoot.setAttribute('width', modelSize.width);
-        newRoot.setAttribute('height', modelSize.height);
+        newRoot.setAttribute('width', modelSize.width + elementSizePadding);
+        newRoot.setAttribute('height', modelSize.height + elementSizePadding);
         const overlayedViewContent = overlayedView.firstChild as HTMLElement;
         newRoot.appendChild(overlayedViewContent.cloneNode(true));
 
@@ -276,7 +300,7 @@ export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): P
 
 export function fitRectKeepingAspectRatio(
     sourceWidth: number, sourceHeight: number,
-    targetWidth: number, targetHeight: number
+    targetWidth: number, targetHeight: number,
 ): { width: number; height: number; } {
     if (!targetWidth && !targetHeight) {
         return {width: sourceWidth, height: sourceHeight};

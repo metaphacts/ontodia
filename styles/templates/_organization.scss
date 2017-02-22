@@ -1,7 +1,6 @@
 .ontodia-organization-template {
   border: 2px solid;
 	max-width: 400px;
-	float: left;
 	border-radius: 2px;
 
   &__properties {
@@ -15,7 +14,7 @@
   padding: 3px 12px 3px 12px;
   background: white;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   overflow: hidden;
   flex-direction: column;
@@ -31,7 +30,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
 }
 
 .ontodia-organization-template_body_data {

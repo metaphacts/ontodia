@@ -45,6 +45,11 @@ export interface TypeStyle {
     icon?: string;
 }
 
+const DefaultToSVGOptions: ToSVGOptions = {
+    elementsToRemoveSelector: '.link-tools, .marker-vertices',
+    convertImagesToDataUris: true,
+};
+
 /**
  * Properties:
  *     language: string
@@ -64,11 +69,6 @@ export class DiagramView extends Backbone.Model {
     readonly selection = new Backbone.Collection<Element>();
 
     private colorSeed = 0x0BADBEEF;
-
-    private toSVGOptions: ToSVGOptions = {
-        elementsToRemoveSelector: '.link-tools, .marker-vertices',
-        convertImagesToDataUris: true,
-    };
 
     private linkMarkers: Dictionary<{
         start: SVGMarkerElement;
@@ -129,12 +129,14 @@ export class DiagramView extends Backbone.Model {
     }
 
     exportSVG(): Promise<string> {
-        return toSVG(this.paper, this.toSVGOptions);
+        return toSVG(this.paper, {...DefaultToSVGOptions, preserveDimensions: true});
     }
 
     exportPNG(options: ToDataURLOptions = {}): Promise<string> {
-        options.svgOptions = options.svgOptions || this.toSVGOptions;
-        return toDataURL(this.paper, options);
+        return toDataURL(this.paper, {
+            ...options,
+            svgOptions: {...DefaultToSVGOptions, ...options.svgOptions},
+        });
     }
 
     adjustPaper() {
