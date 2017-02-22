@@ -33,6 +33,10 @@ export interface State {
 }
 
 export class Workspace extends Component<Props, State> {
+    static readonly defaultProps: { [K in keyof Props]?: any } = {
+        hideTutorial: true,
+    };
+
     private markup: WorkspaceMarkup;
 
     private readonly model: DiagramModel;
@@ -70,9 +74,7 @@ export class Workspace extends Component<Props, State> {
                     this.zoomToFit();
                 },
                 onChangeLanguage: this.changeLanguage,
-                onShowTutorial: () => {
-                    if (!this.props.hideTutorial) { showTutorial(); }
-                },
+                onShowTutorial: showTutorial,
                 onEditAtMainSite: () => this.props.onEditAtMainSite(this),
                 isEmbeddedMode: this.props.isViewOnly,
                 isDiagramSaved: this.props.isDiagramSaved,
