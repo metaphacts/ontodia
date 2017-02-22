@@ -1,0 +1,23 @@
+.ontodia-toolbar {
+  &__language-selector {
+    padding: 5px;
+    margin-top: 4px;
+
+    > label > span { vertical-align: middle; }
+  }
+}
+
+.ontodia-toolbar {
+  background: rgba(0, 0, 0, 0.15);
+}
+.ontodia-toolbar > .btn-group {
+  margin-left: 10px;
+}
+.ontodia-toolbar > .btn-group > button {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.ontodia-toolbar .ontodia-toolbar__undo,
+.ontodia-toolbar .ontodia-toolbar__redo {
+  display: none;
+}

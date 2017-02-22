@@ -16,16 +16,6 @@
     overflow: hidden;
   }
 
-  &__left-panel {
-    width: 15%;
-    border-right: 1px solid lightgray;
-  }
-
-  &__right-panel {
-    width: 15%;
-    border-left: 1px solid lightgray;
-  }
-
   &__main-panel {
     display: flex;
     flex: auto;
@@ -43,35 +33,4 @@
 
   &--horizontal-resizing * { cursor: ew-resize !important; }
   &--vertical-resizing * { cursor: ns-resize !important; }
-}
-
-.ontodia-toolbar {
-  .languageSelector {
-    padding: 5px;
-    margin-top: 4px;
-  }
-  .languageSelector > label > span {
-    vertical-align: middle;
-  }
-}
-
-.ontodia-toolbar {
-  background: rgba(0, 0, 0, 0.15);
-}
-.ontodia-toolbar > .btn-group {
-  margin-left: 10px;
-}
-.ontodia-toolbar > .btn-group > button {
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-.ontodia-toolbar .ontodia-toolbar__undo,
-.ontodia-toolbar .ontodia-toolbar__redo {
-  display: none;
-}
-#saveToSelf span {
-  color: #0C8BFF;
-}
-#resetDiagram span {
-  color: #E2A000;
 }

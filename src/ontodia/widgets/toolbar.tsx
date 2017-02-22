@@ -25,6 +25,8 @@ export interface State {
     showModal: boolean;
 }
 
+const CLASS_NAME = 'ontodia-toolbar';
+
 export class EditorToolbar extends React.Component<Props, State> {
     private downloadImageLink: HTMLAnchorElement;
 
@@ -81,7 +83,7 @@ export class EditorToolbar extends React.Component<Props, State> {
 
         const nonEmbedded = !this.props.isEmbeddedMode;
         return (
-            <div className='ontodia-toolbar'>
+            <div className={CLASS_NAME}>
                 <div className='btn-group btn-group-sm'
                      data-position='bottom' data-step='6' data-intro={intro}>
                     {nonEmbedded
@@ -114,13 +116,13 @@ export class EditorToolbar extends React.Component<Props, State> {
                         <span className='fa fa-arrows-alt' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onUndo) ? (
-                        <button type='button' className='btn btn-default ontodia-toolbar__undo'
+                        <button type='button' className={`btn btn-default ${CLASS_NAME}__undo`}
                             title='Undo' onClick={this.props.onUndo}>
                             <span className='fa fa-undo' aria-hidden='true' />
                         </button>
                     ) : undefined}
                     {(nonEmbedded && this.props.onRedo) ? (
-                        <button type='button' className='btn btn-default ontodia-toolbar__redo'
+                        <button type='button' className={`btn btn-default ${CLASS_NAME}__redo`}
                             title='Redo' onClick={this.props.onRedo}>
                             <span className='fa fa-repeat' aria-hidden='true' />
                         </button>
@@ -138,13 +140,13 @@ export class EditorToolbar extends React.Component<Props, State> {
                         <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
-                    <div className='btn-group languageSelector'>
+                    <span className={`btn-group ${CLASS_NAME}__language-selector`}>
                         {nonEmbedded ? <label><span>Ontology Language:</span></label> : undefined}
                         <select defaultValue='en' onChange={this.onChangeLanguage}>
                             <option value='en'>English</option>
                             <option value='ru'>Russian</option>
                         </select>
-                    </div>
+                    </span>
                     {nonEmbedded ? btnHelp : undefined}
                 </div>
                 <a href='#' ref={link => { this.downloadImageLink = link; }}
