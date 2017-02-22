@@ -74,9 +74,9 @@ export const LeftBarTemplate = `
                     {{types}}
                 </div>
             </div>
-            <label title="{{label}}" class="ontodia-left-bar-template_body__label">
+            <span title="{{label}}" class="ontodia-left-bar-template_body__label">
                 {{label}}
-            </label>
+            </span>
             {{#if isExpanded}}
                 <div class="ontodia-default-template_body_expander">
                     <div class="ontodia-default-template_body_expander__iri_label">
