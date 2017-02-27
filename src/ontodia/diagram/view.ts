@@ -121,7 +121,7 @@ export class DiagramView extends Backbone.Model {
     cancelSelection() { this.selection.reset([]); }
 
     print() {
-        this.exportSVG().then(svg => {
+        toSVG(this.paper, DefaultToSVGOptions).then(svg => {
             const printWindow = window.open('', undefined, 'width=1280,height=720');
             printWindow.document.write(svg);
             printWindow.print();
