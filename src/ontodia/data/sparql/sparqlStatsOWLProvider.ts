@@ -46,7 +46,9 @@ export class SparqlDataProvider implements DataProvider {
                     GROUP BY ?class
                 }} UNION {
                     ?class a owl:Class
-                }
+                } UNION {
+                    ?class a rdfs:Class
+                }                
                 OPTIONAL { ?class rdfs:label ?label.}
                 OPTIONAL {?class rdfs:subClassOf ?parent}
             }
@@ -118,18 +120,15 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
-        const ids: string = params.elementIds.map(escapeIri).join(', ');
+        const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
         const query = DEFAULT_PREFIX + `
             SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {{
-                FILTER (?inst IN (${ids}))
+            WHERE {
                 OPTIONAL {?inst rdf:type ?class . }
                 OPTIONAL {?inst rdfs:label ?label}
-            } UNION {
-                FILTER (?inst IN (${ids}))
                 OPTIONAL {?inst ?propType ?propValue.
                 FILTER (isLiteral(?propValue)) }
-            }}
+            } VALUES (?inst) {${ids}}
         `;
         return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
@@ -148,14 +147,14 @@ export class SparqlDataProvider implements DataProvider {
         elementsInfo: Dictionary<ElementModel>,
         types: string[]
     ): Promise<Dictionary<ElementModel>> {
-        const ids = Object.keys(elementsInfo).map(escapeIri).join(', ');
-        const typesString = types.map(escapeIri).join(', ');
+        const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
 
         const query = DEFAULT_PREFIX + `
             SELECT ?inst ?linkType ?image
             WHERE {{
-                FILTER (?inst IN (${ids}))
-                FILTER (?linkType IN (${typesString}))
+                VALUES (?inst) {${ids}}
+                VALUES (?linkType) {${typesString}} 
                 ?inst ?linkType ?image
             }}
         `;
@@ -183,15 +182,15 @@ export class SparqlDataProvider implements DataProvider {
         elementIds: string[];
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
-        const ids = params.elementIds.map(escapeIri).join(', ');
-        const types = params.linkTypeIds.map(escapeIri).join(', ');
+        const ids = params.elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        //skip for now
+        //const types = params.linkTypeIds.map(escapeIri).join(', ');
         const query = DEFAULT_PREFIX + `
             SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.
-                FILTER (?source in (${ids}))
-                FILTER (?target in (${ids}))
-                FILTER (?type in (${types}))
+                VALUES (?source) {${ids}}
+                VALUES (?target) {${ids}}
             }
         `;
         return executeSparqlQuery<LinkBinding>(

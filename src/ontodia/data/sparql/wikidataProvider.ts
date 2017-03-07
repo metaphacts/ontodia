@@ -192,12 +192,13 @@ export class WikidataDataProvider implements DataProvider {
         const query = DEFAULT_PREFIX + `
             SELECT ?link (count(distinct ?object) as ?instcount)
             WHERE {
-                { ${escapeIri(params.elementId)} ?link ?object }
+                {select ?link ?object where { ${escapeIri(params.elementId)} ?link ?object }
                 UNION { ?object ?link ${escapeIri(params.elementId)} }
                 #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
                 FILTER ISIRI(?object)
                 FILTER exists {?object ?someprop ?someobj}
-                FILTER regex(STR(?link), "direct") 
+                FILTER regex(STR(?link), "direct")
+                 } limit 101
             } GROUP BY ?link
         `;
 
