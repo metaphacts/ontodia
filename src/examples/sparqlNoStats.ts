@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {SparqlNoStatsOWLRDFSDataProvider} from "../ontodia/data/sparql/sparqlnoStatsOWLRDFSProvider";
+import {SparqlNoStatsOWLRDFSDataProvider} from "../ontodia/data/sparql/sparqlNoStatsProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
