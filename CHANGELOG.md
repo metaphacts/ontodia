@@ -15,6 +15,7 @@ HTML elements.
 - Filter non-left mouse button clicks on paper.
 - Automatically set link type visible when adding elements through
 Connections menu.
+- Tutorial don't automatically show up on a first visit by default.
 
 ### Fixed
 - Inconsistent elements and links rendering between editor and exported SVG.
