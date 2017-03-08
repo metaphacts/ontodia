@@ -1,5 +1,3 @@
-import * as $ from 'jquery';
-
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {

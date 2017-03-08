@@ -17,25 +17,81 @@ import {
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
 } from './sparqlModels';
 import {executeSparqlQuery} from './sparqlStatsOWLProvider';
-import * as _ from 'lodash';
-import {SparqlDataProviderOptions} from "./sparqlDataProvider";
 
-const DEFAULT_PREFIX =
+// this is runtime settings
+export interface SparqlDataProviderOptions {
+    endpointUrl: string;
+    prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
+    imageClassUris?: string[];
+}
+
+// this is dataset-schema specific settings
+export interface SparqlDataProviderSettings {
+    // default prefix to be used in every query
+    defaultPrefix: string;
+    // property to use as label in schema (classes, properties)
+    schemaLabelProperty: string;
+
+    // property to use as instance label todo: make it an array
+    dataLabelProperty: string;
+
+    // full-text search settings
+    ftsSettings: {ftsPrefix: string, ftsQueryPattern: string}
+    // query to retreive class tree. Should return class, label, parent, instcount (optional)
+    classTreeQuery: string;
+
+    //link types pattern - what to consider a link on initial fetch
+    linkTypesPattern: string;
+
+    // query for fetching all information on element: labels, classes, properties
+    elementInfoQuery: string;
+
+    // this should return image URL for ?inst as instance and ?linkType for image property IRI todo: move to runtime settings instead? proxying is runtime stuff
+    imageQueryPattern: string;
+
+    // link types of returns possible link types from specified instance with statistics
+    linkTypesOfQuery: string;
+
+    // when fetching all links from element, we could specify additional filter
+    filterRefElementLinkPattern: string
+
+    // filter by type pattern. One could use transitive type resolution here.
+    filterTypePattern: string;
+
+    // how to fetch elements info when fetching data.
+    filterElementInfoPattern: string;
+}
+
+export const wikidataOptions : SparqlDataProviderSettings = {
+    defaultPrefix:
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX wdt: <http://www.wikidata.org/prop/direct/>
  PREFIX wd: <http://www.wikidata.org/entity/>
- PREFIX bds: <http://www.bigdata.com/rdf/search#>
- PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
+ PREFIX owl:  <http://www.w3.org/2002/07/owl#>
 
+`,
 
-export class WikidataDataProvider implements DataProvider {
-    constructor(private options: SparqlDataProviderOptions) {}
+    schemaLabelProperty: 'rdfs:label',
+    dataLabelProperty: 'rdfs:label',
 
-    classTree(): Promise<ClassModel[]> {
-        const query = DEFAULT_PREFIX + `
+    ftsSettings: {
+        ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
+        ftsQueryPattern: ` 
+              ?inst rdfs:label ?searchLabel. 
+              SERVICE bds:search {
+                     ?searchLabel bds:search "\${text}*" ;
+                                  bds:minRelevance '0.5' ;
+                                  bds:matchAllTerms 'true' .
+              }
+              BIND(IF(STRLEN(?strInst) > 33,
+                            <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
+                            10000) as ?score)
+            `
+    },
+
+    classTreeQuery: `
             SELECT distinct ?class ?label ?parent ?instcount WHERE {
-              
               ?class rdfs:label ?label.                            
               { ?class wdt:P279 wd:Q35120. }
                 UNION 
@@ -46,68 +102,12 @@ export class WikidataDataProvider implements DataProvider {
                 ?class wdt:P279 ?parent. }
               BIND("" as ?instcount)
             }
-        `;
-        return executeSparqlQuery<ClassBinding>(
-            this.options.endpointUrl, query).then(getClassTree);
-    }
+        `,
 
-    propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
-        const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = DEFAULT_PREFIX + `
-            SELECT ?prop ?label
-            WHERE {
-                ?prop rdfs:label ?label.
-                VALUES (?prop) {${ids}}.
-            }
-        `;
-        return executeSparqlQuery<PropertyBinding>(
-            this.options.endpointUrl, query).then(getPropertyInfo);
-    }
+    // todo: think more, maybe add a limit here?
+    linkTypesPattern: '?link wdt:P279* wd:Q18616576.',
 
-    classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
-        const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = DEFAULT_PREFIX + `
-            SELECT ?class ?label ?instcount
-            WHERE {
-                ?class rdfs:label ?label.
-                VALUES (?class) {${ids}}.
-                BIND("" as ?instcount)
-            }
-        `;
-        return executeSparqlQuery<ClassBinding>(
-            this.options.endpointUrl, query).then(getClassInfo);
-    }
-
-    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
-        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = DEFAULT_PREFIX + `
-            SELECT ?typeId ?label ?instcount
-            WHERE {
-                ?typeId rdfs:label ?label.
-                VALUES (?typeId) {${ids}}.
-                BIND("" as ?instcount)      
-            }
-        `;
-        return executeSparqlQuery<LinkTypeInfoBinding>(
-            this.options.endpointUrl, query).then(getLinkTypesInfo);
-    }
-
-    linkTypes(): Promise<LinkType[]> {
-        const query = DEFAULT_PREFIX + `
-            SELECT ?link ?instcount ?label
-            WHERE {
-                  ?link wdt:P279* wd:Q18616576.
-                  ?link rdfs:label ?label.
-                  BIND("" as ?instcount)
-            }
-        `;
-        return executeSparqlQuery<LinkTypeBinding>(
-            this.options.endpointUrl, query).then(getLinkTypes);
-    }
-
-    elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
-        const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const query = DEFAULT_PREFIX + `
+    elementInfoQuery: `
             SELECT ?inst ?class ?label ?propType ?propValue
             WHERE {
                 OPTIONAL {
@@ -120,8 +120,96 @@ export class WikidataDataProvider implements DataProvider {
                     ?inst ?propType ?propValue .
                     FILTER (isLiteral(?propValue))
                 }
-            } VALUES (?inst) {${ids}}
+            } VALUES (?inst) {\${ids}}
+        `,
+    imageQueryPattern: `?inst ?linkType ?fullImage
+                BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
+                    STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
+
+    linkTypesOfQuery: `
+        SELECT ?link (count(distinct ?object) as ?instcount)
+        WHERE {
+            { \${elementIri} ?link ?object }
+            UNION { ?object ?link \${elementIri} }
+            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
+            FILTER ISIRI(?object)
+            FILTER exists {?object ?someprop ?someobj}
+            FILTER regex(STR(?link), "direct")                
+        } GROUP BY ?link
+    `,
+    filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
+    filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* \${elementTypeIri} . ${'\n'}`,
+    filterElementInfoPattern: `OPTIONAL {?inst wdt:P31 ?foundClass}
+                BIND (coalesce(?foundClass, owl:Thing) as ?class)
+                OPTIONAL {?inst rdfs:label ?label}`
+    };
+
+export class SparqlDataProvider implements DataProvider {
+    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings) {}
+
+    classTree(): Promise<ClassModel[]> {
+        const query = this.settings.defaultPrefix + this.settings.classTreeQuery;
+        return executeSparqlQuery<ClassBinding>(
+            this.options.endpointUrl, query).then(getClassTree);
+    }
+
+    propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
+        const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = this.settings.defaultPrefix + `
+            SELECT ?prop ?label
+            WHERE {
+                ?prop ${this.settings.schemaLabelProperty} ?label.
+                VALUES (?prop) {${ids}}.
+            }
         `;
+        return executeSparqlQuery<PropertyBinding>(
+            this.options.endpointUrl, query).then(getPropertyInfo);
+    }
+
+    classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
+        const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = this.settings.defaultPrefix + `
+            SELECT ?class ?label ?instcount
+            WHERE {
+                ?class ${this.settings.schemaLabelProperty} ?label.
+                VALUES (?class) {${ids}}.
+                BIND("" as ?instcount)
+            }
+        `;
+        return executeSparqlQuery<ClassBinding>(
+            this.options.endpointUrl, query).then(getClassInfo);
+    }
+
+    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const query = this.settings.defaultPrefix + `
+            SELECT ?typeId ?label ?instcount
+            WHERE {
+                ?typeId ${this.settings.schemaLabelProperty} ?label.
+                VALUES (?typeId) {${ids}}.
+                BIND("" as ?instcount)      
+            }
+        `;
+        return executeSparqlQuery<LinkTypeInfoBinding>(
+            this.options.endpointUrl, query).then(getLinkTypesInfo);
+    }
+
+    linkTypes(): Promise<LinkType[]> {
+        const query = this.settings.defaultPrefix + `
+            SELECT ?link ?instcount ?label
+            WHERE {
+                  ${this.settings.linkTypesPattern}
+                  ?link ${this.settings.schemaLabelProperty} ?label.
+                  BIND("" as ?instcount)
+            }
+        `;
+        return executeSparqlQuery<LinkTypeBinding>(
+            this.options.endpointUrl, query).then(getLinkTypes);
+    }
+
+    elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
+        const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
+        const query = this.settings.defaultPrefix + this.settings.elementInfoQuery.replace(new RegExp('\\${ids}', 'g'), ids);
         return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
@@ -142,18 +230,16 @@ export class WikidataDataProvider implements DataProvider {
         const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
 
-        const query = DEFAULT_PREFIX + `
+        const query = this.settings.defaultPrefix + `
             SELECT ?inst ?linkType ?image
             WHERE {{
                 VALUES (?inst) {${ids}}
                 VALUES (?linkType) {${typesString}} 
-                ?inst ?linkType ?fullImage
-                BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
-                    STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
+                ${this.settings.imageQueryPattern}
             }}
         `;
         return executeSparqlQuery<ElementImageBinding>(this.options.endpointUrl, query)
-            .then(imageResponce => getEnrichedElementsInfo(imageResponce, elementsInfo)).catch((err) => {
+            .then(imageResponse => getEnrichedElementsInfo(imageResponse, elementsInfo)).catch((err) => {
                 console.log(err);
                 return elementsInfo;
             });
@@ -177,7 +263,7 @@ export class WikidataDataProvider implements DataProvider {
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
         const ids = params.elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = DEFAULT_PREFIX + `
+        const query = this.settings.defaultPrefix + `
             SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.
@@ -190,19 +276,8 @@ export class WikidataDataProvider implements DataProvider {
     }
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
-        const query = DEFAULT_PREFIX + `
-            SELECT ?link (count(distinct ?object) as ?instcount)
-            WHERE {
-                {select ?link ?object where { ${escapeIri(params.elementId)} ?link ?object }
-                UNION { ?object ?link ${escapeIri(params.elementId)} }
-                #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
-                FILTER ISIRI(?object)
-                FILTER exists {?object ?someprop ?someobj}
-                FILTER regex(STR(?link), "direct")
-                 } limit 101
-            } GROUP BY ?link
-        `;
-
+        const elementIri = escapeIri(params.elementId);
+        const query = this.settings.defaultPrefix + this.settings.linkTypesOfQuery.replace(new RegExp('\\${elementIri}', 'g'), elementIri);
         return executeSparqlQuery<LinkTypeBinding>(this.options.endpointUrl, query).then(getLinksTypesOf);
     };
 
@@ -210,21 +285,26 @@ export class WikidataDataProvider implements DataProvider {
         if (params.limit === 0) { params.limit = 100; }
 
         let refQueryPart = '';
+        // link to element with specified link type
         if (params.refElementId && params.refElementLinkId) {
+            const refElementIRI = escapeIri(params.refElementId);
+            const refElementLinkIRI = escapeIri(params.refElementLinkId);
             refQueryPart =  `{
-                ${escapeIri(params.refElementId)} ${escapeIri(params.refElementLinkId)} ?inst .
+                ${refElementIRI} ${refElementLinkIRI} ?inst .
                 } UNION {
-                    ?inst ${escapeIri(params.refElementLinkId)} ${escapeIri(params.refElementId)} .
+                    ?inst ${refElementLinkIRI} ${refElementIRI} .
                 }`;
         }
 
+        // all links to current element
         if (params.refElementId && !params.refElementLinkId) {
+            const refElementIRI = escapeIri(params.refElementId);
             refQueryPart = `{
-                ${escapeIri(params.refElementId)} ?link ?inst . 
+                ${refElementIRI} ?link ?inst . 
                 } UNION {
-                    ?inst ?link ${escapeIri(params.refElementId)} .
+                    ?inst ?link ${refElementIRI} .
                 }
-                FILTER regex(STR(?link), "direct") 
+                ${this.settings.filterRefElementLinkPattern}
                 `;
         }
 
@@ -232,17 +312,25 @@ export class WikidataDataProvider implements DataProvider {
             throw new Error(`Can't execute refElementLink filter without refElement`);
         }
 
-        const elementTypePart = params.elementTypeId
-            ? `?inst wdt:P31 ?instType. ?instType wdt:P279* ${escapeIri(params.elementTypeId)} . ${'\n'}` : '';
-        const textSearchPart = params.text ?
-            ` ?inst rdfs:label ?searchLabel. 
-              SERVICE bds:search {
-                     ?searchLabel bds:search "${params.text}*" ;
-                                  bds:minRelevance '0.5' ;
-                                  bds:matchAllTerms 'true' .
-              }
-            ` : '';
-        let query = DEFAULT_PREFIX + `
+        var elementTypePart: string;
+        if (params.elementTypeId) {
+            const elementTypeIri = escapeIri(params.elementTypeId);
+            elementTypePart = this.settings.filterTypePattern.replace(new RegExp('\\${elementTypeIri}', 'g'), elementTypeIri);
+        } else {
+            elementTypePart = '';
+        }
+
+        var textSearchPart: string;
+        if (params.text) {
+            const text = params.text;
+            textSearchPart = this.settings.ftsSettings.ftsQueryPattern.replace(new RegExp('\\${text}', 'g'), text);
+        } else {
+            textSearchPart = '';
+        }
+
+        let query = `${this.settings.defaultPrefix}
+            ${this.settings.ftsSettings.ftsPrefix}
+            
             SELECT ?inst ?class ?label
             WHERE {
                 {
@@ -253,24 +341,19 @@ export class WikidataDataProvider implements DataProvider {
                         FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
                         FILTER exists {?inst ?someprop ?someobj}
-                        BIND(IF(STRLEN(?strInst) > 33,
-                            <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
-                            10000) as ?score)
                     } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
                 }
-                OPTIONAL {?inst wdt:P31 ?foundClass}
-                BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}
+                ${this.settings.filterElementInfoPattern}
             } ORDER BY ?score
         `;
 
         return executeSparqlQuery<ElementBinding>(
             this.options.endpointUrl, query).then(getFilteredData);
     };
-};
+}
 
 function escapeIri(iri: string) {
     return `<${iri}>`;
 }
 
-export default WikidataDataProvider;
+export default SparqlDataProvider;

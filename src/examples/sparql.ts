@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
+import { Workspace, WorkspaceProps, SparqlStatsDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -21,7 +21,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     model.importLayout({
         layoutData,
         validateLinks: true,
-        dataProvider: new SparqlDataProvider({
+        dataProvider: new SparqlStatsDataProvider({
             endpointUrl: '/sparql-endpoint',
             imageClassUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',

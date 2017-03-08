@@ -2,10 +2,11 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
+import {wikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -40,13 +41,13 @@ function onWorkspaceMounted(workspace: Workspace) {
     });
 
     const layoutData = tryLoadLayoutFromLocalStorage();
-    const dataProvider = new WikidataDataProvider({
+    const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
         imageClassUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    });
+    }, wikidataOptions);
 
     model.importLayout({layoutData, dataProvider, validateLinks: true});
 }

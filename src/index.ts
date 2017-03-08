@@ -10,6 +10,7 @@ export * from './ontodia/data/provider';
 export * from './ontodia/data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparqlModels';
 export * from './ontodia/data/sparql/sparqlStatsOWLProvider';
+export * from './ontodia/data/sparql/sparqlDataProvider';
 export * from './ontodia/data/sparql/wikidataProvider';
 export * from './ontodia/data/sparql/graphBuilder';
 export { Element, Link } from './ontodia/diagram/elements';

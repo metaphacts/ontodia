@@ -4,6 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, Triple } from '../index';
 
 import { onPageLoad } from './common';
+import {SparqlStatsDataProvider} from "../ontodia/data/sparql/sparqlStatsOWLProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -72,7 +73,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
     const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlDataProvider({
+    const sparqlDataProvider = new SparqlStatsDataProvider({
         endpointUrl: endpointUrl,
         imageClassUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
     });
