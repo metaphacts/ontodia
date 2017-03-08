@@ -13,16 +13,19 @@ const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
-
+    // createClassMap ensures we get both elements and parents
     for (const nodeId in treeNodes) {
         const treeNode = treeNodes[nodeId];
         if (treeNode.parent) {
             const parent = treeNodes[treeNode.parent];
             parent.children.push(treeNode);
+            parent.count += treeNode.count;
         } else {
             tree.push(treeNode);
         }
     }
+
+    calcCounts(tree);
 
     return tree;
 }
@@ -59,6 +62,15 @@ function createClassMap(sNodes: ClassBinding[]) : Dictionary<ClassModel&{parent:
     return treeNodes;
 }
 
+function calcCounts(children: ClassModel[]) {
+    for (let node of children) {
+        // no more to count
+        if (!node.children) return;
+        // ensure all children have their counts completed;
+        calcCounts(node.children);
+        node.count += node.children.reduce((acc, val) => acc + val.count, 0)
+    }
+}
 
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const sparqlClasses = response.results.bindings;
