@@ -4,6 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder } from '../index';
 
 import { onPageLoad } from './common';
+import {SparqlStatsDataProvider} from "../ontodia/data/sparql/sparqlStatsOWLProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -13,7 +14,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
     const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlDataProvider({endpointUrl});
+    const sparqlDataProvider = new SparqlStatsDataProvider({endpointUrl});
     const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(

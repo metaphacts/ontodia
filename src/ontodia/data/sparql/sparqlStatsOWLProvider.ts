@@ -19,19 +19,16 @@ import {
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
     PropertyBinding,
 } from './sparqlModels';
+import {SparqlDataProviderOptions} from "./sparqlDataProvider";
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#>` + '\n\n';
 
-export interface SparqlDataProviderOptions {
-    endpointUrl: string;
-    prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
-    imageClassUris?: string[];
-}
 
-export class SparqlDataProvider implements DataProvider {
+
+export class SparqlStatsDataProvider implements DataProvider {
     constructor(private options: SparqlDataProviderOptions) {}
 
     classTree(): Promise<ClassModel[]> {
@@ -300,4 +297,4 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
     });
 }
 
-export default SparqlDataProvider;
+export default SparqlStatsDataProvider;
