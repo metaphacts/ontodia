@@ -9,70 +9,56 @@ import {
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
-export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
-    const sNodes = response.results.bindings;
-    const tree: ClassModel[] = [];
-    const createdTreeNodes: Dictionary<ClassModel> = {};
-    const tempNodes: Dictionary<ClassModel> = {};
 
+export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
+    const tree: ClassModel[] = [];
+    const treeNodes = createClassMap(response.results.bindings);
+
+    for (const nodeId in treeNodes) {
+        const treeNode = treeNodes[nodeId];
+        if (treeNode.parent) {
+            const parent = treeNodes[treeNode.parent];
+            parent.children.push(treeNode);
+        } else {
+            tree.push(treeNode);
+        }
+    }
+
+    return tree;
+}
+function createClassMap(sNodes: ClassBinding[]) : Dictionary<ClassModel&{parent: string}> {
+    let treeNodes: Dictionary<ClassModel&{parent: string}> = {};
     for (const sNode of sNodes) {
         const sNodeId: string = sNode.class.value;
-        if (createdTreeNodes[sNodeId]) {
+        var node = treeNodes[sNodeId];
+        if (node) {
             if (sNode.label) {
-                const label = createdTreeNodes[sNodeId].label;
+                const label = node.label;
                 if (label.values.length === 1 && !label.values[0].lang) {
                     label.values = [];
                 }
                 label.values.push(getLocalizedString(sNode.label));
             }
-            if (sNode.instcount && createdTreeNodes[sNodeId].count === 0) {
-                createdTreeNodes[sNodeId].count = getInstCount(sNode.instcount);
+            if (!node.parent && sNode.parent) {
+                node.parent = sNode.parent.value
             }
+            /* the way it's fetched right now count would
+             if (sNode.instcount && treeNodes[sNodeId].count === 0) {
+             treeNodes[sNodeId].count = getInstCount(sNode.instcount);
+             }*/
         } else {
-            const newNode = getClassModel(sNode);
-            createdTreeNodes[sNodeId] = newNode;
-
-            if (sNode.parent) {
-                const sParentNodeId: string = sNode.parent.value;
-                let parentNode: ClassModel;
-
-                // if we put the parent node in first time we create it, 
-                // then we miss the count value
-                // That's why we put the temp parent node in another list in first time
-                if (!createdTreeNodes[sParentNodeId]) {
-                    if (!tempNodes[sParentNodeId]) {
-                        parentNode = getClassModel({ class: sNode.parent });
-                    } else {
-                        parentNode = tempNodes[sParentNodeId];
-                    }
-                    tempNodes[sParentNodeId]  = parentNode;
-                } else {
-                    parentNode = createdTreeNodes[sParentNodeId];
-                }
-
-                parentNode.children.push(newNode);
-                parentNode.count += newNode.count;
-            } else {
-                tree.push(newNode);
-                if (tempNodes[sNodeId]) {
-                    newNode.count += tempNodes[sNodeId].count;
-                    newNode.children = tempNodes[sNodeId].children;
-                }
-            }
+            node = getClassModel(sNode);
+            treeNodes[sNodeId] = node;
         }
-    };
-
-    if (!createdTreeNodes[THING_URI]) {
-        tree.push({
-            id: THING_URI,
-            children: [],
-            label: { values: [getLocalizedString(undefined, THING_URI)] },
-            count: 0,
-        });
+        //ensuring parent will always be there
+        if (node.parent && !treeNodes[node.parent]) {
+            const parent = getClassModel({class : {value: node.parent, type: 'uri'}});
+            treeNodes[node.parent] = parent;
+        }
     }
-
-    return tree;
+    return treeNodes;
 }
+
 
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const sparqlClasses = response.results.bindings;
@@ -259,12 +245,13 @@ export function getInstCount(instcount: RdfLiteral): number {
     return (instcount ? +instcount.value : 0);
 }
 
-export function getClassModel(node: ClassBinding): ClassModel {
+export function getClassModel(node: ClassBinding): ClassModel & {parent: string} {
     return {
         id: node.class.value,
         children: [],
         label: { values: [getLocalizedString(node.label, node.class.value)] },
         count: getInstCount(node.instcount),
+        parent: node.parent ? node.parent.value : undefined
     };
 }
 
