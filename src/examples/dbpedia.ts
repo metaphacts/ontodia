@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {DBPediaOptions} from "../ontodia/data/sparql/sparqlDataProvider";
+import {DBPediaOptions, QueryMethod} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -28,6 +28,7 @@ function onWorkspaceMounted(workspace: Workspace) {
                 'http://xmlns.com/foaf/0.1/depiction',
                 'http://xmlns.com/foaf/0.1/img',
             ],
+            queryMethod: QueryMethod.GET,
         }, DBPediaOptions),
     });
 }

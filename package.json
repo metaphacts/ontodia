@@ -73,7 +73,7 @@
     "typescript": "2.1.4",
     "url-loader": "0.5.7",
     "webpack": "1.13.2",
-    "webpack-dev-server": "1.14.1"
+    "webpack-dev-server": "1.16.2"
   },
   "main": "dist/ontodia.js",
   "typings": "dist/ontodia.d.ts"

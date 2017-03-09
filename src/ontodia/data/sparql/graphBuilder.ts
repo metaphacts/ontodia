@@ -5,7 +5,7 @@ import { uniformGrid } from '../../viewUtils/layout';
 import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
-import { executeSparqlQuery } from './sparqlStatsOWLProvider';
+import { SparqlDataProvider} from './sparqlDataProvider';
 import { SparqlResponse, Triple } from './sparqlModels';
 
 const DEFAULT_PREFIX =
@@ -17,8 +17,7 @@ const GREED_STEP = 150;
 
 export class GraphBuilder {
     constructor(
-        public dataProvider: DataProvider,
-        public endpointUrl: string
+        public dataProvider: SparqlDataProvider
     ) {}
 
     getGraphFromConstruct(constructQuery: string): Promise<{
@@ -26,7 +25,7 @@ export class GraphBuilder {
         layoutData: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
-        return executeSparqlQuery<Triple>(this.endpointUrl, query)
+        return this.dataProvider.executeSparqlConstruct(query)
             .then(normalizeSparqlResults)
             .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
     };

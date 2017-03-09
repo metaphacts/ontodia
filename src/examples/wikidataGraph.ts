@@ -2,11 +2,12 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
     GraphBuilder,
 } from '../index';
 
 import { onPageLoad } from './common';
+import {WikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -40,14 +41,14 @@ function onWorkspaceMounted(workspace: Workspace) {
         console.log(iri);
     });
 
-    const dataProvider = new WikidataDataProvider({
+    const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
         imageClassUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    });
-    const graphBuilder = new GraphBuilder(dataProvider, '/sparql-endpoint');
+    }, WikidataOptions);
+    const graphBuilder = new GraphBuilder(dataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(`
         CONSTRUCT { ?current ?p ?o. }
