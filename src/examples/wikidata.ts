@@ -6,7 +6,7 @@ import {
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {wikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
+import {WikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -47,7 +47,7 @@ function onWorkspaceMounted(workspace: Workspace) {
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    }, wikidataOptions);
+    }, WikidataOptions);
 
     model.importLayout({layoutData, dataProvider, validateLinks: true});
 }

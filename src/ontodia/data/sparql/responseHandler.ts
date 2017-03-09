@@ -13,7 +13,7 @@ const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
-    // createClassMap ensures we get both elements and parents
+    // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
     for (const nodeId in treeNodes) {
         const treeNode = treeNodes[nodeId];
         if (treeNode.parent) {
