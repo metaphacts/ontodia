@@ -15,11 +15,11 @@ import {
     getPropertyInfo,
 } from './responseHandler';
 import {
-    SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    ClassBinding, ElementBinding, LinkBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
     PropertyBinding,
 } from './sparqlModels';
-import {SparqlDataProviderOptions} from "./sparqlDataProvider";
+import {SparqlDataProviderOptions, executeSparqlQuery} from "./sparqlDataProvider";
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -281,20 +281,6 @@ export function sparqlExtractLabel(subject: string, label: string): string {
     `;
 };
 
-export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
-    return new Promise<SparqlResponse<Binding>>((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: endpoint,
-            contentType: 'application/sparql-query',
-            headers: {
-                Accept: 'application/json, text/turtle',
-            },
-            data: query,
-            success: result => resolve(result),
-            error: (jqXHR, statusText, error) => reject(error || jqXHR),
-        });
-    });
-}
+
 
 export default SparqlStatsDataProvider;

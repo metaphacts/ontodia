@@ -14,9 +14,9 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse,
 } from './sparqlModels';
-import {executeSparqlQuery} from './sparqlStatsOWLProvider';
+
 
 // this is runtime settings
 export interface SparqlDataProviderOptions {
@@ -62,7 +62,7 @@ export interface SparqlDataProviderSettings {
     filterElementInfoPattern: string;
 }
 
-export const wikidataOptions : SparqlDataProviderSettings = {
+export const WikidataOptions : SparqlDataProviderSettings = {
     defaultPrefix:
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -144,6 +144,72 @@ export const wikidataOptions : SparqlDataProviderSettings = {
                 OPTIONAL {?inst rdfs:label ?label}`
     };
 
+export const DBPediaOptions : SparqlDataProviderSettings = {
+    defaultPrefix:
+        `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+ PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+ PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
+
+`,
+
+    schemaLabelProperty: 'rdfs:label',
+    dataLabelProperty: 'rdfs:label',
+
+    ftsSettings: {
+        ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
+        ftsQueryPattern: ` 
+              ?inst rdfs:label ?searchLabel.
+              ?searchLabel bif:contains "\${text}".
+              ?inst dbo:wikiPageID ?score              
+            `
+    },
+
+    classTreeQuery: `
+            SELECT ?class ?instcount ?label ?parent
+            WHERE {
+                {
+    				?class a rdfs:Class
+  				} UNION {
+                    ?class a owl:Class
+                }
+                OPTIONAL { ?class rdfs:label ?label.}
+                OPTIONAL {?class rdfs:subClassOf ?parent}
+                BIND(0 as ?instcount)
+            }
+        `,
+
+    // todo: think more, maybe add a limit here?
+    linkTypesPattern: `{	?link a rdf:Property
+  					} UNION {
+                    ?link a owl:ObjectProperty
+                }`,
+
+    elementInfoQuery: `
+            SELECT ?inst ?class ?label ?propType ?propValue
+            WHERE {
+                OPTIONAL {?inst rdf:type ?class . }
+                OPTIONAL {?inst rdfs:label ?label}
+                OPTIONAL {?inst ?propType ?propValue.
+                FILTER (isLiteral(?propValue)) }
+            } VALUES (?inst) {\${ids}}
+        `,
+    imageQueryPattern: `?inst ?linkType ?image`,
+
+    linkTypesOfQuery: `
+        SELECT ?link (count(distinct ?object) as ?instcount)
+        WHERE {
+            { \${elementIri} ?link ?object FILTER ISIRI(?object)}
+            UNION { ?object ?link \${elementIri} }
+            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
+        } GROUP BY ?link
+    `,
+    filterRefElementLinkPattern: '',
+    filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
+    filterElementInfoPattern: `OPTIONAL {?inst rdf:type ?foundClass}
+                BIND (coalesce(?foundClass, owl:Thing) as ?class)
+                OPTIONAL {?inst rdfs:label ?label}`
+};
+
 export class SparqlDataProvider implements DataProvider {
     constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings) {}
 
@@ -199,8 +265,8 @@ export class SparqlDataProvider implements DataProvider {
             SELECT ?link ?instcount ?label
             WHERE {
                   ${this.settings.linkTypesPattern}
-                  ?link ${this.settings.schemaLabelProperty} ?label.
-                  BIND("" as ?instcount)
+                  OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
+                  BIND(0 as ?instcount)
             }
         `;
         return executeSparqlQuery<LinkTypeBinding>(
@@ -351,6 +417,52 @@ export class SparqlDataProvider implements DataProvider {
             this.options.endpointUrl, query).then(getFilteredData);
     };
 }
+
+export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) {
+    return new Promise<SparqlResponse<Binding>>((resolve, reject) => {
+        $.ajax({
+            type: 'POST',
+            url: endpoint,
+            contentType: 'application/sparql-query',
+            headers: {
+                Accept: 'application/json, text/turtle',
+            },
+            data: query,
+            success: result => resolve(result),
+            error: (jqXHR, statusText, error) => reject(error || jqXHR),
+        });
+    });
+}
+
+export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
+    return executeSparqlQueryGET<Binding>(endpoint, query);
+}
+
+export function executeSparqlQueryGET<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {
+    return fetch(endpoint + '?' +
+            'query=' + encodeURIComponent(query) + '&' +
+            //'default-graph-uri=' + self.defaultGraphURI + '&' +
+            'format=' + encodeURIComponent('application/sparql-results+json') + '&',
+            //'with-imports=' + 'true',
+            {
+            method: 'GET',
+            credentials: 'same-origin',
+            mode: 'cors',
+            cache: 'default',
+            /*headers: {
+                'Accept': 'application/sparql-results+json'
+            },*/
+        }).then((response): Promise<SparqlResponse<Binding>> => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                var error = new Error(response.statusText);
+                (<any>error).response = response;
+                throw error;
+            }
+        });
+}
+
 
 function escapeIri(iri: string) {
     return `<${iri}>`;
