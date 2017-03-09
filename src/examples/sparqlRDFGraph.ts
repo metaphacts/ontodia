@@ -5,6 +5,7 @@ import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, Triple } f
 
 import { onPageLoad } from './common';
 import {SparqlStatsDataProvider} from "../ontodia/data/sparql/sparqlStatsOWLProvider";
+import {OWLStatsOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -73,11 +74,11 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
     const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlStatsDataProvider({
+    const sparqlDataProvider = new SparqlDataProvider({
         endpointUrl: endpointUrl,
         imageClassUris: ['http://collection.britishmuseum.org/id/ontology/PX_has_main_representation'],
-    });
-    const graphBuilder = new GraphBuilder(sparqlDataProvider, endpointUrl);
+    }, OWLStatsOptions);
+    const graphBuilder = new GraphBuilder(sparqlDataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromRDFGraph(GRAPH);
     workspace.showWaitIndicatorWhile(loadingGraph);

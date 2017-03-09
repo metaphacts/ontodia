@@ -14,15 +14,17 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple,
 } from './sparqlModels';
 
+export enum QueryMethod { GET = 1, POST }
 
 // this is runtime settings
 export interface SparqlDataProviderOptions {
     endpointUrl: string;
     prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
     imageClassUris?: string[];
+    queryMethod?: QueryMethod;
 }
 
 // this is dataset-schema specific settings
@@ -210,13 +212,78 @@ export const DBPediaOptions : SparqlDataProviderSettings = {
                 OPTIONAL {?inst rdfs:label ?label}`
 };
 
+export const OWLStatsOptions : SparqlDataProviderSettings = {
+    defaultPrefix:
+        `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+ PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+ PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
+
+`,
+
+    schemaLabelProperty: 'rdfs:label',
+    dataLabelProperty: 'rdfs:label',
+
+    ftsSettings: {
+        ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
+        ftsQueryPattern: ` 
+              ?inst rdfs:label ?searchLabel.
+              ?searchLabel bif:contains "\${text}".
+              ?inst dbo:wikiPageID ?score              
+            `
+    },
+
+    classTreeQuery: `
+            SELECT ?class ?instcount ?label ?parent
+            WHERE {
+                {
+    				?class a rdfs:Class
+  				} UNION {
+                    ?class a owl:Class
+                }
+                OPTIONAL { ?class rdfs:label ?label.}
+                OPTIONAL {?class rdfs:subClassOf ?parent}
+                BIND(0 as ?instcount)
+            }
+        `,
+
+    // todo: think more, maybe add a limit here?
+    linkTypesPattern: `{	?link a rdf:Property
+  					} UNION {
+                    ?link a owl:ObjectProperty
+                }`,
+
+    elementInfoQuery: `
+            SELECT ?inst ?class ?label ?propType ?propValue
+            WHERE {
+                OPTIONAL {?inst rdf:type ?class . }
+                OPTIONAL {?inst rdfs:label ?label}
+                OPTIONAL {?inst ?propType ?propValue.
+                FILTER (isLiteral(?propValue)) }
+            } VALUES (?inst) {\${ids}}
+        `,
+    imageQueryPattern: `?inst ?linkType ?image`,
+
+    linkTypesOfQuery: `
+        SELECT ?link (count(distinct ?object) as ?instcount)
+        WHERE {
+            { \${elementIri} ?link ?object FILTER ISIRI(?object)}
+            UNION { ?object ?link \${elementIri} }
+            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
+        } GROUP BY ?link
+    `,
+    filterRefElementLinkPattern: '',
+    filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
+    filterElementInfoPattern: `OPTIONAL {?inst rdf:type ?foundClass}
+                BIND (coalesce(?foundClass, owl:Thing) as ?class)
+                OPTIONAL {?inst rdfs:label ?label}`
+};
+
 export class SparqlDataProvider implements DataProvider {
     constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = this.settings.defaultPrefix + this.settings.classTreeQuery;
-        return executeSparqlQuery<ClassBinding>(
-            this.options.endpointUrl, query).then(getClassTree);
+        return this.executeSparqlQuery<ClassBinding>(query).then(getClassTree);
     }
 
     propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
@@ -228,8 +295,7 @@ export class SparqlDataProvider implements DataProvider {
                 VALUES (?prop) {${ids}}.
             }
         `;
-        return executeSparqlQuery<PropertyBinding>(
-            this.options.endpointUrl, query).then(getPropertyInfo);
+        return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
     }
 
     classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
@@ -242,8 +308,7 @@ export class SparqlDataProvider implements DataProvider {
                 BIND("" as ?instcount)
             }
         `;
-        return executeSparqlQuery<ClassBinding>(
-            this.options.endpointUrl, query).then(getClassInfo);
+        return this.executeSparqlQuery<ClassBinding>(query).then(getClassInfo);
     }
 
     linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
@@ -256,8 +321,7 @@ export class SparqlDataProvider implements DataProvider {
                 BIND("" as ?instcount)      
             }
         `;
-        return executeSparqlQuery<LinkTypeInfoBinding>(
-            this.options.endpointUrl, query).then(getLinkTypesInfo);
+        return this.executeSparqlQuery<LinkTypeInfoBinding>(query).then(getLinkTypesInfo);
     }
 
     linkTypes(): Promise<LinkType[]> {
@@ -269,14 +333,13 @@ export class SparqlDataProvider implements DataProvider {
                   BIND(0 as ?instcount)
             }
         `;
-        return executeSparqlQuery<LinkTypeBinding>(
-            this.options.endpointUrl, query).then(getLinkTypes);
+        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
         const query = this.settings.defaultPrefix + this.settings.elementInfoQuery.replace(new RegExp('\\${ids}', 'g'), ids);
-        return executeSparqlQuery<ElementBinding>(this.options.endpointUrl, query)
+        return this.executeSparqlQuery<ElementBinding>(query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
                 if (this.options.prepareImages) {
@@ -304,7 +367,7 @@ export class SparqlDataProvider implements DataProvider {
                 ${this.settings.imageQueryPattern}
             }}
         `;
-        return executeSparqlQuery<ElementImageBinding>(this.options.endpointUrl, query)
+        return this.executeSparqlQuery<ElementImageBinding>(query)
             .then(imageResponse => getEnrichedElementsInfo(imageResponse, elementsInfo)).catch((err) => {
                 console.log(err);
                 return elementsInfo;
@@ -337,15 +400,25 @@ export class SparqlDataProvider implements DataProvider {
                 VALUES (?target) {${ids}}                
             }
         `;
-        return executeSparqlQuery<LinkBinding>(
-            this.options.endpointUrl, query).then(getLinksInfo);
+        return this.executeSparqlQuery<LinkBinding>(query).then(getLinksInfo);
     }
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         const elementIri = escapeIri(params.elementId);
         const query = this.settings.defaultPrefix + this.settings.linkTypesOfQuery.replace(new RegExp('\\${elementIri}', 'g'), elementIri);
-        return executeSparqlQuery<LinkTypeBinding>(this.options.endpointUrl, query).then(getLinksTypesOf);
+        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
     };
+
+    executeSparqlQuery<Binding>(query: string) {
+        const method = this.options.queryMethod ? this.options.queryMethod : QueryMethod.POST;
+        if (method == QueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
+        else return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
+    }
+
+    executeSparqlConstruct(query: string) : Promise<SparqlResponse<Triple>> {
+        //not implemented yet
+        return null;
+    }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
@@ -413,9 +486,9 @@ export class SparqlDataProvider implements DataProvider {
             } ORDER BY ?score
         `;
 
-        return executeSparqlQuery<ElementBinding>(
-            this.options.endpointUrl, query).then(getFilteredData);
+        return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
     };
+
 }
 
 export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) {

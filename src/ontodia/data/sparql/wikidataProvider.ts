@@ -16,9 +16,7 @@ import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding,
 } from './sparqlModels';
-import {executeSparqlQuery} from './sparqlStatsOWLProvider';
-import * as _ from 'lodash';
-import {SparqlDataProviderOptions} from "./sparqlDataProvider";
+import {SparqlDataProviderOptions, executeSparqlQuery} from "./sparqlDataProvider";
 
 const DEFAULT_PREFIX =
 `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

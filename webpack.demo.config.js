@@ -83,13 +83,13 @@ module.exports = {
         }),
         new HtmlWebpackPlugin({
             filename: 'wikidata.html',
-            title: 'Ontodia Style Customization Demo',
+            title: 'Ontodia Wikidata Demo',
             chunks: ['commons', 'wikidata', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
             filename: 'wikidataGraph.html',
-            title: 'Ontodia Style Customization Demo',
+            title: 'Ontodia Wikidata with graph Demo',
             chunks: ['commons', 'wikidataGraph', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
@@ -104,9 +104,9 @@ module.exports = {
     devtool: '#source-map',
     devServer: {
         proxy: {
-            "/sparql-endpoint": {
+            "/sparql-endpoint**": {
                 target: process.env.SPARQL_ENDPOINT,
-                ignorePath: true,
+                pathRewrite: {'/sparql-endpoint' : ''},
                 changeOrigin: true,
                 secure: false,
             },
