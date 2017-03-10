@@ -54,7 +54,7 @@ export interface FullTextSearchSettings {
     extractLabel?: boolean
 }
 
-export const WikidataOptions : SparqlDataProviderSettings = {
+export const WikidataSettings : SparqlDataProviderSettings = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -143,7 +143,7 @@ export const WikidataOptions : SparqlDataProviderSettings = {
 `
 };
 
-export const OWLRDFSOptions : SparqlDataProviderSettings = {
+export const OWLRDFSSettings : SparqlDataProviderSettings = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -212,7 +212,7 @@ export const OWLRDFSOptions : SparqlDataProviderSettings = {
     filterAdditionalRestriction: '',
 };
 
-export const OWLStatsOptions : SparqlDataProviderSettings = {...OWLRDFSOptions, ...{
+export const OWLStatsSettings : SparqlDataProviderSettings = {...OWLRDFSSettings, ...{
     classTreeQuery: `
             SELECT ?class ?instcount ?label ?parent
             WHERE {
@@ -231,9 +231,7 @@ export const OWLStatsOptions : SparqlDataProviderSettings = {...OWLRDFSOptions, 
         `,
 }};
 
-
-
-export const DBPediaOptions : SparqlDataProviderSettings = {...OWLRDFSOptions, ... {
+export const DBPediaSettings : SparqlDataProviderSettings = {...OWLRDFSSettings, ... {
     ftsSettings: {
         ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
         ftsQueryPattern: ` 

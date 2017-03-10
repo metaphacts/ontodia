@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
-    GraphBuilder, WikidataOptions,
+    GraphBuilder, WikidataSettings,
 } from '../index';
 
 import { onPageLoad } from './common';
@@ -42,11 +42,11 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
-        imageClassUris: [
+        imagePropertyUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    }, WikidataOptions);
+    }, WikidataSettings);
     const graphBuilder = new GraphBuilder(dataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(`

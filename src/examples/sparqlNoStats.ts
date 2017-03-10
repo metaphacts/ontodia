@@ -1,10 +1,9 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, OWLRDFSSettings } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {SparqlNoStatsOWLRDFSDataProvider} from "../ontodia/data/sparql/sparqlNoStatsProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -22,12 +21,30 @@ function onWorkspaceMounted(workspace: Workspace) {
     model.importLayout({
         layoutData,
         validateLinks: true,
-        dataProvider: new SparqlNoStatsOWLRDFSDataProvider({
+        dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql-endpoint',
-            imageClassUris: [
+            imagePropertyUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
             ],
+        }, {...OWLRDFSSettings, ...{
+            defaultPrefix: OWLRDFSSettings.defaultPrefix + `
+PREFIX rso: <http://www.researchspace.org/ontology/>`,
+            dataLabelProperty: "rso:displayLabel",
+            ftsSettings: {
+                ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
+                ftsQueryPattern: ` 
+              ?inst rdfs:label ?searchLabel. 
+              SERVICE bds:search {
+                     ?searchLabel bds:search "\${text}*" ;
+                                  bds:minRelevance '0.5' ;
+                                  
+                                  bds:matchAllTerms 'true';
+                                  bds:relevance ?score.
+              }
+            `
+            }
+        }
         }),
     });
 }

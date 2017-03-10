@@ -2,7 +2,7 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate, WikidataOptions
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate, WikidataSettings
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -42,11 +42,11 @@ function onWorkspaceMounted(workspace: Workspace) {
     const layoutData = tryLoadLayoutFromLocalStorage();
     const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
-        imageClassUris: [
+        imagePropertyUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    }, WikidataOptions);
+    }, WikidataSettings);
 
     model.importLayout({layoutData, dataProvider, validateLinks: true});
 }

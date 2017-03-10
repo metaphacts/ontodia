@@ -16,20 +16,38 @@ import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple,
 } from './sparqlModels';
-import {SparqlDataProviderSettings, OWLStatsOptions} from "./sparqlDataProviderSettings";
+import {SparqlDataProviderSettings, OWLStatsSettings} from "./sparqlDataProviderSettings";
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
-// this is runtime settings
+// this is runtime settings.
 export interface SparqlDataProviderOptions {
+
+    // sparql endpoint URL to use
     endpointUrl: string;
+
+    // there are two options for fetching images: specify imagePropertyUris
+    // to use as image properties or specify a function to fetch image URLs
+
+    // properties to use as image URLs
+    imagePropertyUris?: string[];
+
+    // you can specify prepareImages function to extract image URL from element model
     prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
-    imageClassUris?: string[];
+
+    // wether to use GET (more compatible, more error-prone due to large request URLs)
+    // or POST(less compatible, better on large data sets)
     queryMethod?: SparqlQueryMethod;
+
+    // what property to use as instance labels. This will override dataLabelProperty from settings
+    labelProperty?: string;
 }
 
 export class SparqlDataProvider implements DataProvider {
-    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings = OWLStatsOptions) {}
+    dataLabelProperty: string;
+    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings = OWLStatsSettings) {
+        this.dataLabelProperty = options.labelProperty ? options.labelProperty : settings.dataLabelProperty;
+    }
 
     classTree(): Promise<ClassModel[]> {
         const query = this.settings.defaultPrefix + this.settings.classTreeQuery;
@@ -88,14 +106,14 @@ export class SparqlDataProvider implements DataProvider {
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.settings.dataLabelProperty});
+        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.dataLabelProperty});
         return this.executeSparqlQuery<ElementBinding>(query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
                 if (this.options.prepareImages) {
                     return this.prepareElementsImage(elementModels);
-                } else if (this.options.imageClassUris && this.options.imageClassUris.length) {
-                    return this.enrichedElementsInfo(elementModels, this.options.imageClassUris);
+                } else if (this.options.imagePropertyUris && this.options.imagePropertyUris.length) {
+                    return this.enrichedElementsInfo(elementModels, this.options.imagePropertyUris);
                 } else {
                     return elementModels;
                 }
@@ -212,7 +230,7 @@ export class SparqlDataProvider implements DataProvider {
         var textSearchPart: string;
         if (params.text) {
             const text = params.text;
-            textSearchPart = resolveTemplate(this.settings.ftsSettings.ftsQueryPattern, {text:text, dataLabelProperty: this.settings.dataLabelProperty});
+            textSearchPart = resolveTemplate(this.settings.ftsSettings.ftsQueryPattern, {text:text, dataLabelProperty: this.dataLabelProperty});
         } else {
             textSearchPart = '';
         }
@@ -231,7 +249,7 @@ export class SparqlDataProvider implements DataProvider {
                         ${this.settings.ftsSettings.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                     } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
                 }
-                ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.settings.dataLabelProperty})}
+                ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
             } ORDER BY ?score
         `;
 
@@ -245,7 +263,7 @@ function resolveTemplate(template:string, values: Dictionary<string>) {
     var result = template;
     for (const replaceKey in values) {
         const replaceValue = values[replaceKey];
-        result = result.replace(new RegExp(`\\${replaceKey}`, 'g'), replaceValue)
+        result = result.replace(new RegExp('\\${' + replaceKey+ '}', 'g'), replaceValue)
     }
     return result;
 }
