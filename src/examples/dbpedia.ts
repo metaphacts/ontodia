@@ -5,7 +5,7 @@ import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 import { SparqlQueryMethod } from "../ontodia/data/sparql/sparqlDataProvider";
-import { DBPediaOptions } from "../ontodia/data/sparql/sparqlDataProviderSettings";
+import { DBPediaSettings } from "../ontodia/data/sparql/sparqlDataProviderSettings";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -25,12 +25,12 @@ function onWorkspaceMounted(workspace: Workspace) {
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
             endpointUrl: 'http://dbpedia.org/sparql',
-            imageClassUris: [
+            imagePropertyUris: [
                 'http://xmlns.com/foaf/0.1/depiction',
                 'http://xmlns.com/foaf/0.1/img',
             ],
             queryMethod: SparqlQueryMethod.GET,
-        }, DBPediaOptions),
+        }, DBPediaSettings),
     });
 }
 

@@ -4,7 +4,6 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider, LinkStyle } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {SparqlStatsDataProvider} from "../ontodia/data/sparql/sparqlStatsOWLProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
@@ -48,9 +47,9 @@ function onWorkspaceMounted(workspace: Workspace) {
     const layoutData = tryLoadLayoutFromLocalStorage();
     model.importLayout({
         layoutData,
-        dataProvider: new SparqlStatsDataProvider({
+        dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql-endpoint',
-            imageClassUris: [
+            imagePropertyUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
             ],
