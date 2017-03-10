@@ -1,3 +1,4 @@
+import 'whatwg-fetch';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
@@ -247,10 +248,10 @@ export class SparqlDataProvider implements DataProvider {
                         ${textSearchPart}
                         ${this.settings.filterAdditionalRestriction}
                         ${this.settings.ftsSettings.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
-                    } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
+                    } ORDER BY DESC(?score) LIMIT ${params.limit} OFFSET ${params.offset}
                 }
                 ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
-            } ORDER BY ?score
+            } ORDER BY DESC(?score)
         `;
 
         return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
