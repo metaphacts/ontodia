@@ -77,8 +77,8 @@ export const WikidataSettings : SparqlDataProviderSettings = {
                                   bds:matchAllTerms 'true' .
               }
               BIND(IF(STRLEN(?strInst) > 33,
-                            <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
-                            10000) as ?score)
+                            0-<http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
+                            -10000) as ?score)
             `
     },
 
@@ -195,7 +195,7 @@ export const OWLRDFSSettings : SparqlDataProviderSettings = {
                 FILTER (isLiteral(?propValue)) }
             } VALUES (?inst) {\${ids}}
         `,
-    imageQueryPattern: `?inst ?linkType ?image`,
+    imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
 
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?object) as ?instcount)
@@ -237,18 +237,24 @@ export const DBPediaSettings : SparqlDataProviderSettings = {...OWLRDFSSettings,
         ftsQueryPattern: ` 
               ?inst rdfs:label ?searchLabel.
               ?searchLabel bif:contains "\${text}".
-              ?inst dbo:wikiPageID ?score              
+              ?inst dbo:wikiPageID ?origScore .
+              BIND(0-?origScore as ?score)
             `
     },
 
     elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                ?inst rdf:type ?class . 
-                {?inst rdfs:label ?label .
-                OPTIONAL {?inst ?propType ?propValue.
-                FILTER (isLiteral(?propValue)) }
-            } VALUES (?inst) {\${ids}}
+        SELECT ?inst ?class ?label ?propType ?propValue
+        WHERE {
+            ?inst rdf:type ?class . 
+            ?inst rdfs:label ?label .
+            OPTIONAL {?inst ?propType ?propValue.
+            FILTER (isLiteral(?propValue)) }
+        } VALUES (?inst) {\${ids}}
         `,
+    filterElementInfoPattern: `
+        OPTIONAL {?inst rdf:type ?foundClass. FILTER (!contains(str(?foundClass), 'http://dbpedia.org/class/yago'))}
+        BIND (coalesce(?foundClass, owl:Thing) as ?class)
+        OPTIONAL {?inst \${dataLabelProperty} ?label}`,
+
 }};
 

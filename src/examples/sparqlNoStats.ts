@@ -24,7 +24,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql-endpoint',
             imagePropertyUris: [
-                'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
+                'http://www.researchspace.org/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
             ],
         }, {...OWLRDFSSettings, ...{
@@ -34,7 +34,7 @@ PREFIX rso: <http://www.researchspace.org/ontology/>`,
             ftsSettings: {
                 ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
                 ftsQueryPattern: ` 
-              ?inst rdfs:label ?searchLabel. 
+              ?inst rso:displayLabel ?searchLabel. 
               SERVICE bds:search {
                      ?searchLabel bds:search "\${text}*" ;
                                   bds:minRelevance '0.5' ;
@@ -43,7 +43,17 @@ PREFIX rso: <http://www.researchspace.org/ontology/>`,
                                   bds:relevance ?score.
               }
             `
-            }
+            },
+            elementInfoQuery: `
+            SELECT ?inst ?class ?label ?propType ?propValue
+            WHERE {
+                OPTIONAL {?inst rdf:type ?class . }
+                OPTIONAL {?inst \${dataLabelProperty} ?label}
+                OPTIONAL {?inst ?propType ?propValue.
+                FILTER (isLiteral(?propValue)) }
+			    VALUES (?labelProp) { (rso:displayLabel) (rdfs:label) }
+            } VALUES (?inst) {\${ids}}
+        `,
         }
         }),
     });
