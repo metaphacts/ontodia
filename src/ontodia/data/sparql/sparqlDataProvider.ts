@@ -16,270 +16,20 @@ import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
     LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple,
 } from './sparqlModels';
+import {SparqlDataProviderSettings, OWLStatsOptions} from "./sparqlDataProviderSettings";
 
-export enum QueryMethod { GET = 1, POST }
+export enum SparqlQueryMethod { GET = 1, POST }
 
 // this is runtime settings
 export interface SparqlDataProviderOptions {
     endpointUrl: string;
     prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
     imageClassUris?: string[];
-    queryMethod?: QueryMethod;
+    queryMethod?: SparqlQueryMethod;
 }
-
-// this is dataset-schema specific settings
-export interface SparqlDataProviderSettings {
-    // default prefix to be used in every query
-    defaultPrefix: string;
-    // property to use as label in schema (classes, properties)
-    schemaLabelProperty: string;
-
-    // property to use as instance label todo: make it an array
-    dataLabelProperty: string;
-
-    // full-text search settings
-    ftsSettings: {ftsPrefix: string, ftsQueryPattern: string}
-    // query to retreive class tree. Should return class, label, parent, instcount (optional)
-    classTreeQuery: string;
-
-    //link types pattern - what to consider a link on initial fetch
-    linkTypesPattern: string;
-
-    // query for fetching all information on element: labels, classes, properties
-    elementInfoQuery: string;
-
-    // this should return image URL for ?inst as instance and ?linkType for image property IRI todo: move to runtime settings instead? proxying is runtime stuff
-    imageQueryPattern: string;
-
-    // link types of returns possible link types from specified instance with statistics
-    linkTypesOfQuery: string;
-
-    // when fetching all links from element, we could specify additional filter
-    filterRefElementLinkPattern: string
-
-    // filter by type pattern. One could use transitive type resolution here.
-    filterTypePattern: string;
-
-    // how to fetch elements info when fetching data.
-    filterElementInfoPattern: string;
-}
-
-export const WikidataOptions : SparqlDataProviderSettings = {
-    defaultPrefix:
-`PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
- PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
- PREFIX wdt: <http://www.wikidata.org/prop/direct/>
- PREFIX wd: <http://www.wikidata.org/entity/>
- PREFIX owl:  <http://www.w3.org/2002/07/owl#>
-
-`,
-
-    schemaLabelProperty: 'rdfs:label',
-    dataLabelProperty: 'rdfs:label',
-
-    ftsSettings: {
-        ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
-        ftsQueryPattern: ` 
-              ?inst rdfs:label ?searchLabel. 
-              SERVICE bds:search {
-                     ?searchLabel bds:search "\${text}*" ;
-                                  bds:minRelevance '0.5' ;
-                                  bds:matchAllTerms 'true' .
-              }
-              BIND(IF(STRLEN(?strInst) > 33,
-                            <http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
-                            10000) as ?score)
-            `
-    },
-
-    classTreeQuery: `
-            SELECT distinct ?class ?label ?parent ?instcount WHERE {
-              ?class rdfs:label ?label.                            
-              { ?class wdt:P279 wd:Q35120. }
-                UNION 
-              { ?parent wdt:P279 wd:Q35120.
-                ?class wdt:P279 ?parent. }
-                UNION 
-              { ?parent wdt:P279/wdt:P279 wd:Q35120.
-                ?class wdt:P279 ?parent. }
-              BIND("" as ?instcount)
-            }
-        `,
-
-    // todo: think more, maybe add a limit here?
-    linkTypesPattern: '?link wdt:P279* wd:Q18616576.',
-
-    elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                OPTIONAL {
-                    { ?inst wdt:P31 ?class } UNION
-                    { ?inst wdt:P31 ?realClass .
-                        ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class }
-                }
-                OPTIONAL {?inst rdfs:label ?label}
-                OPTIONAL {
-                    ?inst ?propType ?propValue .
-                    FILTER (isLiteral(?propValue))
-                }
-            } VALUES (?inst) {\${ids}}
-        `,
-    imageQueryPattern: `?inst ?linkType ?fullImage
-                BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
-                    STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
-
-    linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?object) as ?instcount)
-        WHERE {
-            { \${elementIri} ?link ?object }
-            UNION { ?object ?link \${elementIri} }
-            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
-            FILTER ISIRI(?object)
-            FILTER exists {?object ?someprop ?someobj}
-            FILTER regex(STR(?link), "direct")                
-        } GROUP BY ?link
-    `,
-    filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
-    filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* \${elementTypeIri} . ${'\n'}`,
-    filterElementInfoPattern: `OPTIONAL {?inst wdt:P31 ?foundClass}
-                BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}`
-    };
-
-export const DBPediaOptions : SparqlDataProviderSettings = {
-    defaultPrefix:
-        `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
- PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
- PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
-
-`,
-
-    schemaLabelProperty: 'rdfs:label',
-    dataLabelProperty: 'rdfs:label',
-
-    ftsSettings: {
-        ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
-        ftsQueryPattern: ` 
-              ?inst rdfs:label ?searchLabel.
-              ?searchLabel bif:contains "\${text}".
-              ?inst dbo:wikiPageID ?score              
-            `
-    },
-
-    classTreeQuery: `
-            SELECT ?class ?instcount ?label ?parent
-            WHERE {
-                {
-    				?class a rdfs:Class
-  				} UNION {
-                    ?class a owl:Class
-                }
-                OPTIONAL { ?class rdfs:label ?label.}
-                OPTIONAL {?class rdfs:subClassOf ?parent}
-                BIND(0 as ?instcount)
-            }
-        `,
-
-    // todo: think more, maybe add a limit here?
-    linkTypesPattern: `{	?link a rdf:Property
-  					} UNION {
-                    ?link a owl:ObjectProperty
-                }`,
-
-    elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                OPTIONAL {?inst rdf:type ?class . }
-                OPTIONAL {?inst rdfs:label ?label}
-                OPTIONAL {?inst ?propType ?propValue.
-                FILTER (isLiteral(?propValue)) }
-            } VALUES (?inst) {\${ids}}
-        `,
-    imageQueryPattern: `?inst ?linkType ?image`,
-
-    linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?object) as ?instcount)
-        WHERE {
-            { \${elementIri} ?link ?object FILTER ISIRI(?object)}
-            UNION { ?object ?link \${elementIri} }
-            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
-        } GROUP BY ?link
-    `,
-    filterRefElementLinkPattern: '',
-    filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
-    filterElementInfoPattern: `OPTIONAL {?inst rdf:type ?foundClass}
-                BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}`
-};
-
-export const OWLStatsOptions : SparqlDataProviderSettings = {
-    defaultPrefix:
-        `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
- PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
- PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
-
-`,
-
-    schemaLabelProperty: 'rdfs:label',
-    dataLabelProperty: 'rdfs:label',
-
-    ftsSettings: {
-        ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
-        ftsQueryPattern: ` 
-              ?inst rdfs:label ?searchLabel.
-              ?searchLabel bif:contains "\${text}".
-              ?inst dbo:wikiPageID ?score              
-            `
-    },
-
-    classTreeQuery: `
-            SELECT ?class ?instcount ?label ?parent
-            WHERE {
-                {
-    				?class a rdfs:Class
-  				} UNION {
-                    ?class a owl:Class
-                }
-                OPTIONAL { ?class rdfs:label ?label.}
-                OPTIONAL {?class rdfs:subClassOf ?parent}
-                BIND(0 as ?instcount)
-            }
-        `,
-
-    // todo: think more, maybe add a limit here?
-    linkTypesPattern: `{	?link a rdf:Property
-  					} UNION {
-                    ?link a owl:ObjectProperty
-                }`,
-
-    elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                OPTIONAL {?inst rdf:type ?class . }
-                OPTIONAL {?inst rdfs:label ?label}
-                OPTIONAL {?inst ?propType ?propValue.
-                FILTER (isLiteral(?propValue)) }
-            } VALUES (?inst) {\${ids}}
-        `,
-    imageQueryPattern: `?inst ?linkType ?image`,
-
-    linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?object) as ?instcount)
-        WHERE {
-            { \${elementIri} ?link ?object FILTER ISIRI(?object)}
-            UNION { ?object ?link \${elementIri} }
-            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
-        } GROUP BY ?link
-    `,
-    filterRefElementLinkPattern: '',
-    filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
-    filterElementInfoPattern: `OPTIONAL {?inst rdf:type ?foundClass}
-                BIND (coalesce(?foundClass, owl:Thing) as ?class)
-                OPTIONAL {?inst rdfs:label ?label}`
-};
 
 export class SparqlDataProvider implements DataProvider {
-    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings) {}
+    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings = OWLStatsOptions) {}
 
     classTree(): Promise<ClassModel[]> {
         const query = this.settings.defaultPrefix + this.settings.classTreeQuery;
@@ -330,7 +80,7 @@ export class SparqlDataProvider implements DataProvider {
             WHERE {
                   ${this.settings.linkTypesPattern}
                   OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
-                  BIND(0 as ?instcount)
+                  
             }
         `;
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
@@ -338,7 +88,7 @@ export class SparqlDataProvider implements DataProvider {
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const query = this.settings.defaultPrefix + this.settings.elementInfoQuery.replace(new RegExp('\\${ids}', 'g'), ids);
+        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.settings.dataLabelProperty});
         return this.executeSparqlQuery<ElementBinding>(query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
@@ -405,13 +155,13 @@ export class SparqlDataProvider implements DataProvider {
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         const elementIri = escapeIri(params.elementId);
-        const query = this.settings.defaultPrefix + this.settings.linkTypesOfQuery.replace(new RegExp('\\${elementIri}', 'g'), elementIri);
+        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
     };
 
     executeSparqlQuery<Binding>(query: string) {
-        const method = this.options.queryMethod ? this.options.queryMethod : QueryMethod.POST;
-        if (method == QueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
+        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.POST;
+        if (method == SparqlQueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
         else return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
     }
 
@@ -454,7 +204,7 @@ export class SparqlDataProvider implements DataProvider {
         var elementTypePart: string;
         if (params.elementTypeId) {
             const elementTypeIri = escapeIri(params.elementTypeId);
-            elementTypePart = this.settings.filterTypePattern.replace(new RegExp('\\${elementTypeIri}', 'g'), elementTypeIri);
+            elementTypePart = resolveTemplate(this.settings.filterTypePattern, {elementTypeIri: elementTypeIri});
         } else {
             elementTypePart = '';
         }
@@ -462,7 +212,7 @@ export class SparqlDataProvider implements DataProvider {
         var textSearchPart: string;
         if (params.text) {
             const text = params.text;
-            textSearchPart = this.settings.ftsSettings.ftsQueryPattern.replace(new RegExp('\\${text}', 'g'), text);
+            textSearchPart = resolveTemplate(this.settings.ftsSettings.ftsQueryPattern, {text:text, dataLabelProperty: this.settings.dataLabelProperty});
         } else {
             textSearchPart = '';
         }
@@ -477,18 +227,27 @@ export class SparqlDataProvider implements DataProvider {
                         ${elementTypePart}
                         ${refQueryPart}
                         ${textSearchPart}
-                        FILTER ISIRI(?inst)
-                        BIND(STR(?inst) as ?strInst)
-                        FILTER exists {?inst ?someprop ?someobj}
+                        ${this.settings.filterAdditionalRestriction}
+                        ${this.settings.ftsSettings.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                     } ORDER BY ?score LIMIT ${params.limit} OFFSET ${params.offset}
                 }
-                ${this.settings.filterElementInfoPattern}
+                ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.settings.dataLabelProperty})}
             } ORDER BY ?score
         `;
 
         return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
     };
 
+
+}
+
+function resolveTemplate(template:string, values: Dictionary<string>) {
+    var result = template;
+    for (const replaceKey in values) {
+        const replaceValue = values[replaceKey];
+        result = result.replace(new RegExp(`\\${replaceKey}`, 'g'), replaceValue)
+    }
+    return result;
 }
 
 export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) {
@@ -513,19 +272,20 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
 
 export function executeSparqlQueryGET<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {
     return fetch(endpoint + '?' +
-            'query=' + encodeURIComponent(query) + '&' +
-            //'default-graph-uri=' + self.defaultGraphURI + '&' +
-            'format=' + encodeURIComponent('application/sparql-results+json') + '&',
-            //'with-imports=' + 'true',
-            {
+        'query=' + encodeURIComponent(query),
+        //'default-graph-uri=' + self.defaultGraphURI + '&' +
+        //'format=' + encodeURIComponent('application/sparql-results+json') + '&',
+        //'with-imports=' + 'true',
+        {
             method: 'GET',
             credentials: 'same-origin',
             mode: 'cors',
             cache: 'default',
-            /*headers: {
+            headers: {
                 'Accept': 'application/sparql-results+json'
-            },*/
-        }).then((response): Promise<SparqlResponse<Binding>> => {
+            },
+        }
+        ).then((response): Promise<SparqlResponse<Binding>> => {
             if (response.ok) {
                 return response.json();
             } else {
@@ -536,6 +296,18 @@ export function executeSparqlQueryGET<Binding>(endpoint: string, query: string) 
         });
 }
 
+function sparqlExtractLabel(subject: string, label: string): string {
+    return  `
+        BIND ( str( ${subject} ) as ?uriStr)
+        BIND ( strafter(?uriStr, "#") as ?label3)
+        BIND ( strafter(strafter(?uriStr, "//"), "/") as ?label6) 
+        BIND ( strafter(?label6, "/") as ?label5)   
+        BIND ( strafter(?label5, "/") as ?label4)   
+        BIND (if (?label3 != "", ?label3, 
+            if (?label4 != "", ?label4, 
+            if (?label5 != "", ?label5, ?label6))) as ${label})
+    `;
+};
 
 function escapeIri(iri: string) {
     return `<${iri}>`;

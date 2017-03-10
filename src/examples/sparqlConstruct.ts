@@ -1,10 +1,10 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, OWLStatsOptions } from '../index';
 
 import { onPageLoad } from './common';
-import {OWLStatsOptions} from "../ontodia/data/sparql/sparqlDataProvider";
+import {} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');

@@ -3,11 +3,10 @@ import * as ReactDOM from 'react-dom';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
-    GraphBuilder,
+    GraphBuilder, WikidataOptions,
 } from '../index';
 
 import { onPageLoad } from './common';
-import {WikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');

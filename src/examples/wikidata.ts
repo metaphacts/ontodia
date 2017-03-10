@@ -2,11 +2,10 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate, WikidataOptions
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import {WikidataOptions} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
