@@ -268,7 +268,7 @@ function escapeIri(iri: string) {
     return `<${iri}>`;
 }
 
-export function sparqlExtractLabel(subject: string, label: string): string {
+function sparqlExtractLabel(subject: string, label: string): string {
     return  `
         BIND ( str( ${subject} ) as ?uriStr)
         BIND ( strafter(?uriStr, "#") as ?label3)
@@ -280,7 +280,6 @@ export function sparqlExtractLabel(subject: string, label: string): string {
             if (?label5 != "", ?label5, ?label6))) as ${label})
     `;
 };
-
 
 
 export default SparqlStatsDataProvider;
