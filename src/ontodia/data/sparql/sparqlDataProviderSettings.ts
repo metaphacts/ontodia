@@ -116,7 +116,7 @@ export const WikidataSettings : SparqlDataProviderSettings = {
                 }
             } VALUES (?inst) {\${ids}}
         `,
-    imageQueryPattern: `?inst ?linkType ?fullImage
+    imageQueryPattern: ` { ?inst ?linkType ?fullImage } union { ?inst wdt:P163/wdt:P18 ?fullImage }
                 BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
                     STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
 
