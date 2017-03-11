@@ -178,6 +178,17 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
     };
 
+
+    linkElements(params: {elementId: string; linkId: string; limit: number; offset: number}): Promise<Dictionary<ElementModel>> {
+        //for sparql we have rich filtering features and we just reuse filter.
+        return this.filter({
+            refElementId: params.elementId,
+            refElementLinkId: params.linkId,
+            limit: params.limit,
+            offset: params.offset,
+            languageCode: ""});
+    }
+
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
 
