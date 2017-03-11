@@ -178,17 +178,6 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
     };
 
-    executeSparqlQuery<Binding>(query: string) {
-        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.POST;
-        if (method == SparqlQueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
-        else return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
-    }
-
-    executeSparqlConstruct(query: string) : Promise<SparqlResponse<Triple>> {
-        //not implemented yet
-        return null;
-    }
-
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
 
@@ -257,7 +246,11 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
     };
 
-
+    executeSparqlQuery<Binding>(query: string) {
+        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.POST;
+        if (method == SparqlQueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
+        else return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
+    }
 }
 
 function resolveTemplate(template:string, values: Dictionary<string>) {
@@ -269,24 +262,26 @@ function resolveTemplate(template:string, values: Dictionary<string>) {
     return result;
 }
 
-export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) {
-    return new Promise<SparqlResponse<Binding>>((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: endpoint,
-            contentType: 'application/sparql-query',
-            headers: {
-                Accept: 'application/json, text/turtle',
+export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {
+    return fetch(endpoint, {
+        method: 'POST',
+        body: query,
+        credentials: 'same-origin',
+        mode: 'cors',
+        cache: 'default',
+        headers: {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/sparql-query'
             },
-            data: query,
-            success: result => resolve(result),
-            error: (jqXHR, statusText, error) => reject(error || jqXHR),
-        });
+        }).then((response): Promise<SparqlResponse<Binding>> => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            var error = new Error(response.statusText);
+            (<any>error).response = response;
+            throw error;
+        }
     });
-}
-
-export function executeSparqlQuery<Binding>(endpoint: string, query: string) {
-    return executeSparqlQueryGET<Binding>(endpoint, query);
 }
 
 export function executeSparqlQueryGET<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {

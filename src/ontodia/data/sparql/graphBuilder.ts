@@ -25,7 +25,7 @@ export class GraphBuilder {
         layoutData: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
-        return this.dataProvider.executeSparqlConstruct(query)
+        return this.dataProvider.executeSparqlQuery<Triple>(query)
             .then(normalizeSparqlResults)
             .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
     };

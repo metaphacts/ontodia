@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, OWLStatsSettings } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, OWLStatsSettings, SparqlQueryMethod } from '../index';
 
 import { onPageLoad } from './common';
 import {} from "../ontodia/data/sparql/sparqlDataProvider";
@@ -14,7 +14,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
     const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlDataProvider({endpointUrl}, OWLStatsSettings);
+    const sparqlDataProvider = new SparqlDataProvider({endpointUrl: endpointUrl, queryMethod: SparqlQueryMethod.GET}, OWLStatsSettings);
     const graphBuilder = new GraphBuilder(sparqlDataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(
