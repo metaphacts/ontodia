@@ -22,9 +22,8 @@ export class GraphBuilder {
         layoutData: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
-        return this.dataProvider.executeSparqlQuery<Triple>(query)
-            .then(normalizeSparqlResults)
-            .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
+        return this.dataProvider.executeSparqlConstruct(query)
+            .then(graph => this.getGraphFromRDFGraph(graph));
     };
 
     getGraphFromRDFGraph(graph: Triple[]): Promise<{
@@ -83,40 +82,6 @@ export class GraphBuilder {
             };
         });
         return {cells: layoutElements.concat(layoutLinks)};
-    }
-}
-
-function normalizeSparqlResults(result: string | SparqlResponse<Triple>) {
-    return new Promise<SparqlResponse<Triple>>((resolve, reject) => {
-        if (typeof result === 'string') {
-            const jsonResponse: SparqlResponse<any> = {
-                head: {vars: ['subject', 'predicate', 'object']},
-                results: {bindings: []},
-            };
-            N3.Parser().parse(result, (error, triple, hash) => {
-                if (triple) {
-                    jsonResponse.results.bindings.push({
-                        subject: toRdfNode(triple.subject),
-                        predicate: toRdfNode(triple.predicate),
-                        object: toRdfNode(triple.object),
-                    });
-                } else {
-                    resolve(jsonResponse);
-                }
-            });
-        } else if (typeof result === 'object' && result) {
-            resolve(result);
-        } else {
-            reject(result);
-        }
-    });
-}
-
-function toRdfNode(entity: string) {
-    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
-        return {type: 'literal', value: entity.substring(1, entity.length - 1)};
-    } else {
-        return {type: 'uri', value: entity};
     }
 }
 

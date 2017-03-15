@@ -281,6 +281,7 @@ export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
         WHERE {
             ?inst rdf:type ?class . 
             ?inst rdfs:label ?label .
+            FILTER (!contains(str(?class), 'http://dbpedia.org/class/yago'))
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
         } VALUES (?inst) {\${ids}}
@@ -289,6 +290,10 @@ export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
         OPTIONAL {?inst rdf:type ?foundClass. FILTER (!contains(str(?foundClass), 'http://dbpedia.org/class/yago'))}
         BIND (coalesce(?foundClass, owl:Thing) as ?class)
         OPTIONAL {?inst \${dataLabelProperty} ?label}`,
+    imageQueryPattern: ` { ?inst ?linkType ?fullImage } UNION { [] ?linkType ?inst. BIND(?inst as ?fullImage) }
+            BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
+            STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
+`,
 
 };
 

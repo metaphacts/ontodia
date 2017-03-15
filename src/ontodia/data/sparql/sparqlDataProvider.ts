@@ -1,4 +1,5 @@
 import 'whatwg-fetch';
+import * as N3 from 'n3';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
@@ -15,7 +16,7 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 
@@ -282,12 +283,13 @@ export class SparqlDataProvider implements DataProvider {
     };
 
     executeSparqlQuery<Binding>(query: string) {
-        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.POST;
-        if (method === SparqlQueryMethod.GET) {
-            return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
-        } else {
-            return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
-        }
+        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
+        return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method);
+    }
+
+    executeSparqlConstruct(query: string) : Promise<Triple[]> {
+        const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
+        return executeSparqlConstruct(this.options.endpointUrl, query, method);
     }
 }
 
@@ -300,18 +302,29 @@ function resolveTemplate(template: string, values: Dictionary<string>) {
     return result;
 }
 
-export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string): Promise<SparqlResponse<Binding>> {
-    return fetch(endpoint, {
-        method: 'POST',
-        body: query,
-        credentials: 'same-origin',
-        mode: 'cors',
-        cache: 'default',
-        headers: {
-            'Accept': 'application/sparql-results+json',
-            'Content-Type': 'application/sparql-query',
+export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod): Promise<SparqlResponse<Binding>> {
+    let internalQuery: Promise<Response>;
+    if (method == SparqlQueryMethod.GET) {
+        internalQuery = queryInternal({
+            url: `${endpoint}?query=` + encodeURIComponent(query),
+            body: null,
+            headers: {
+                'Accept': 'application/sparql-results+json',
             },
-        }).then((response): Promise<SparqlResponse<Binding>> => {
+            method: 'GET',
+        });
+    } else {
+        internalQuery = queryInternal({
+            url: endpoint,
+            body: query,
+            headers: {
+                'Accept': 'application/sparql-results+json',
+                'Content-Type': 'application/sparql-query',
+            },
+            method: 'POST',
+        });
+    }
+    return internalQuery.then((response): Promise<SparqlResponse<Binding>> => {
         if (response.ok) {
             return response.json();
         } else {
@@ -320,29 +333,80 @@ export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string)
             throw error;
         }
     });
-}
+};
 
-export function executeSparqlQueryGET<Binding>(endpoint: string, query: string): Promise<SparqlResponse<Binding>> {
-    return fetch(endpoint + '?' +
-        'query=' + encodeURIComponent(query),
-        {
-            method: 'GET',
-            credentials: 'same-origin',
-            mode: 'cors',
-            cache: 'default',
+export function executeSparqlConstruct(endpoint: string, query: string, method: SparqlQueryMethod): Promise<Triple[]> {
+    let internalQuery: Promise<Response>;
+    if (method == SparqlQueryMethod.GET) {
+        internalQuery = queryInternal({
+            url: `${endpoint}?query=` + encodeURIComponent(query),
+            body: null,
             headers: {
-                'Accept': 'application/sparql-results+json',
+                'Accept': 'text/turtle',
             },
-        }
-        ).then((response): Promise<SparqlResponse<Binding>> => {
+            method: 'GET',
+        });
+    } else {
+        internalQuery = queryInternal({
+            url: endpoint,
+            body: query,
+            headers: {
+                'Accept': 'text/turtle',
+                'Content-Type': 'application/sparql-query',
+            },
+            method: 'POST',
+        });
+    }
+    return new Promise<Triple[]>((resolve, reject) => {
+        internalQuery.then(response => {
             if (response.ok) {
-                return response.json();
+                return response.text();
             } else {
                 const error = new Error(response.statusText);
                 (<any>error).response = response;
                 throw error;
             }
+        }).then(turtleText => {
+            let triples: Triple[] = [];
+            N3.Parser().parse(turtleText, (error, triple, hash) => {
+                if (triple) {
+                    triples.push({
+                        subject: toRdfNode(triple.subject),
+                        predicate: toRdfNode(triple.predicate),
+                        object: toRdfNode(triple.object),
+                    });
+                } else {
+                    resolve(triples);
+                }
+            });
         });
+    });
+}
+
+
+
+function toRdfNode(entity: string): RdfNode {
+    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
+        return {type: 'literal', value: entity.substring(1, entity.length - 1), 'xml:lang': ''};
+    } else {
+        return {type: 'uri', value: entity};
+    }
+}
+
+function queryInternal(params: {
+    url: string,
+    body: string,
+    headers: any,
+    method: string,
+}) {
+    return fetch(params.url, {
+        method: params.method,
+        body: params.body,
+        credentials: 'same-origin',
+        mode: 'cors',
+        cache: 'default',
+        headers: params.headers,
+    });
 }
 
 function sparqlExtractLabel(subject: string, label: string): string {
