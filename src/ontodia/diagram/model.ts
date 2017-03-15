@@ -321,6 +321,7 @@ export class DiagramModel extends Backbone.Model {
     }
 
     requestElementData(elements: Element[]) {
+        if (elements.length == 0) return Promise.resolve([]);
         return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
