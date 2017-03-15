@@ -3,6 +3,9 @@ var path = require('path');
 
 var npmDir = path.join(__dirname, 'node_modules');
 
+// if BUNDLE_PEERS is set, we'll produce bundle with all dependencies
+var bundlePeers = Boolean(process.env.BUNDLE_PEERS);
+
 module.exports = {
     entry: {
         ontodia: path.join(__dirname, 'src', 'index.ts'),
@@ -35,7 +38,7 @@ module.exports = {
         library: 'Ontodia',
         libraryTarget: 'umd',
     },
-    externals: {
+    externals: !bundlePeers ? {
         'd3-color': true,
         'intro.js': true,
         'jointjs': true,
@@ -47,6 +50,6 @@ module.exports = {
         'react-dom': true,
         'backbone': true,
         'webcola': true,
-    },
+    } : {},
     devtool: '#source-map',
 };
