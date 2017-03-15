@@ -204,8 +204,8 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
             SELECT ?class ?instcount ?label ?parent
             WHERE {
                 {
-    				?class a rdfs:Class
-  				} UNION {
+                    ?class a rdfs:Class
+                } UNION {
                     ?class a owl:Class
                 }
                 OPTIONAL { ?class rdfs:label ?label.}
@@ -216,7 +216,7 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
 
     // todo: think more, maybe add a limit here?
     linkTypesPattern: `{	?link a rdf:Property
-  					} UNION {
+                    } UNION {
                     ?link a owl:ObjectProperty
                 }
                 BIND(0 as ?instcount)
@@ -246,29 +246,29 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
     filterAdditionalRestriction: '',
 };
 
-export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...{
+export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
     classTreeQuery: `
-            SELECT ?class ?instcount ?label ?parent
-            WHERE {
-                {SELECT ?class (count(?inst) as ?instcount)
-                    WHERE {
-                        ?inst rdf:type ?class.
-                    } GROUP BY ?class } UNION
-                {
-    				?class rdf:type rdfs:Class
-  				} UNION {
-                    ?class rdf:type owl:Class
-                }
-                OPTIONAL { ?class rdfs:label ?label.}
-                OPTIONAL {?class rdfs:subClassOf ?parent}
+        SELECT ?class ?instcount ?label ?parent
+        WHERE {
+            {SELECT ?class (count(?inst) as ?instcount)
+                WHERE {
+                    ?inst rdf:type ?class.
+                } GROUP BY ?class } UNION
+            {
+                ?class rdf:type rdfs:Class
+            } UNION {
+                ?class rdf:type owl:Class
             }
-        `,
-}};
+            OPTIONAL { ?class rdfs:label ?label.}
+            OPTIONAL {?class rdfs:subClassOf ?parent}
+        }
+    `,
+};
 
-export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ... {
-    ftsSettings: {
-        ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
-        ftsQueryPattern: ` 
+export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
+    fullTextSearch: {
+        prefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
+        queryPattern: ` 
               ?inst rdfs:label ?searchLabel.
               ?searchLabel bif:contains "\${text}".
               ?inst dbo:wikiPageID ?origScore .
@@ -290,5 +290,5 @@ export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, 
         BIND (coalesce(?foundClass, owl:Thing) as ?class)
         OPTIONAL {?inst \${dataLabelProperty} ?label}`,
 
-}};
+};
 

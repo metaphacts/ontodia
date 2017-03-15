@@ -2,7 +2,6 @@ import * as N3 from 'n3';
 
 import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
-import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
 import { SparqlDataProvider } from './sparqlDataProvider';
@@ -16,9 +15,7 @@ const DEFAULT_PREFIX =
 const GREED_STEP = 150;
 
 export class GraphBuilder {
-    constructor(
-        public dataProvider: SparqlDataProvider
-    ) {}
+    constructor(public dataProvider: SparqlDataProvider) {}
 
     getGraphFromConstruct(constructQuery: string): Promise<{
         preloadedElements: Dictionary<ElementModel>,
