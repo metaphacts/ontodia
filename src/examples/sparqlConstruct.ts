@@ -4,7 +4,6 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider, GraphBuilder, OWLStatsSettings, SparqlQueryMethod } from '../index';
 
 import { onPageLoad } from './common';
-import {} from "../ontodia/data/sparql/sparqlDataProvider";
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');

@@ -9,7 +9,6 @@ import {
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
-
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
@@ -29,8 +28,9 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
 
     return tree;
 }
-function createClassMap(sNodes: ClassBinding[]) : Dictionary<ClassModel&{parent: string}> {
-    let treeNodes: Dictionary<ClassModel&{parent: string}> = {};
+
+function createClassMap(sNodes: ClassBinding[]) : Dictionary<HierarchicalClassModel> {
+    let treeNodes: Dictionary<HierarchicalClassModel> = {};
     for (const sNode of sNodes) {
         const sNodeId: string = sNode.class.value;
         var node = treeNodes[sNodeId];
@@ -55,8 +55,7 @@ function createClassMap(sNodes: ClassBinding[]) : Dictionary<ClassModel&{parent:
         }
         //ensuring parent will always be there
         if (node.parent && !treeNodes[node.parent]) {
-            const parent = getClassModel({class : {value: node.parent, type: 'uri'}});
-            treeNodes[node.parent] = parent;
+            treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
         }
     }
     return treeNodes;
@@ -291,7 +290,14 @@ export function getInstCount(instcount: RdfLiteral): number {
     return (instcount ? +instcount.value : 0);
 }
 
-export function getClassModel(node: ClassBinding): ClassModel & {parent: string} {
+/**
+ * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
+ */
+export interface HierarchicalClassModel extends ClassModel {
+    parent: string
+}
+
+export function getClassModel(node: ClassBinding): HierarchicalClassModel {
     return {
         id: node.class.value,
         children: [],

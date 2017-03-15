@@ -15,38 +15,53 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple,
+    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse,
 } from './sparqlModels';
-import {SparqlDataProviderSettings, OWLStatsSettings} from "./sparqlDataProviderSettings";
+import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
-// this is runtime settings.
+/**
+ * Runtime settings of SPARQL data provider
+ */
 export interface SparqlDataProviderOptions {
 
-    // sparql endpoint URL to use
+    /**
+     *  sparql endpoint URL to use
+     */
     endpointUrl: string;
 
     // there are two options for fetching images: specify imagePropertyUris
     // to use as image properties or specify a function to fetch image URLs
 
-    // properties to use as image URLs
+    /**
+     * properties to use as image URLs
+     */
     imagePropertyUris?: string[];
 
-    // you can specify prepareImages function to extract image URL from element model
+    /**
+     * you can specify prepareImages function to extract image URL from element model
+     */
     prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
 
-    // wether to use GET (more compatible, more error-prone due to large request URLs)
-    // or POST(less compatible, better on large data sets)
+    /**
+     * wether to use GET (more compatible (Virtuozo), more error-prone due to large request URLs)
+     * or POST(less compatible, better on large data sets)
+     */
     queryMethod?: SparqlQueryMethod;
 
-    // what property to use as instance labels. This will override dataLabelProperty from settings
+    /*
+     * what property to use as instance labels. This will override dataLabelProperty from settings
+     */
     labelProperty?: string;
 }
 
 export class SparqlDataProvider implements DataProvider {
     dataLabelProperty: string;
-    constructor(private options: SparqlDataProviderOptions, private settings: SparqlDataProviderSettings = OWLStatsSettings) {
+    constructor(
+        private options: SparqlDataProviderOptions,
+        private settings: SparqlDataProviderSettings = OWLStatsSettings
+    ) {
         this.dataLabelProperty = options.labelProperty ? options.labelProperty : settings.dataLabelProperty;
     }
 
@@ -67,7 +82,7 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
     }
 
-    classInfo(params: {classIds: string[]}): Promise<ClassModel[]> {
+    classInfo(params: { classIds: string[] }): Promise<ClassModel[]> {
         const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = this.settings.defaultPrefix + `
             SELECT ?class ?label ?instcount
@@ -99,7 +114,6 @@ export class SparqlDataProvider implements DataProvider {
             WHERE {
                   ${this.settings.linkTypesPattern}
                   OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
-                  
             }
         `;
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
@@ -107,7 +121,8 @@ export class SparqlDataProvider implements DataProvider {
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.dataLabelProperty});
+        const query = this.settings.defaultPrefix
+            + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.dataLabelProperty});
         return this.executeSparqlQuery<ElementBinding>(query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
@@ -174,19 +189,25 @@ export class SparqlDataProvider implements DataProvider {
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         const elementIri = escapeIri(params.elementId);
-        const query = this.settings.defaultPrefix + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
+        const query = this.settings.defaultPrefix
+            + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
     };
 
 
-    linkElements(params: {elementId: string; linkId: string; limit: number; offset: number}): Promise<Dictionary<ElementModel>> {
-        //for sparql we have rich filtering features and we just reuse filter.
+    linkElements(params: {
+        elementId: string;
+        linkId: string;
+        limit: number;
+        offset: number
+    }): Promise<Dictionary<ElementModel>> {
+        // for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
             limit: params.limit,
             offset: params.offset,
-            languageCode: ""});
+            languageCode: ''});
     }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
@@ -220,7 +241,7 @@ export class SparqlDataProvider implements DataProvider {
             throw new Error(`Can't execute refElementLink filter without refElement`);
         }
 
-        var elementTypePart: string;
+        let elementTypePart: string;
         if (params.elementTypeId) {
             const elementTypeIri = escapeIri(params.elementTypeId);
             elementTypePart = resolveTemplate(this.settings.filterTypePattern, {elementTypeIri: elementTypeIri});
@@ -228,30 +249,33 @@ export class SparqlDataProvider implements DataProvider {
             elementTypePart = '';
         }
 
-        var textSearchPart: string;
+        let textSearchPart: string;
         if (params.text) {
             const text = params.text;
-            textSearchPart = resolveTemplate(this.settings.ftsSettings.ftsQueryPattern, {text:text, dataLabelProperty: this.dataLabelProperty});
+            textSearchPart = resolveTemplate(
+                this.settings.fullTextSearch.queryPattern,
+                {text: text, dataLabelProperty: this.dataLabelProperty}
+            );
         } else {
             textSearchPart = '';
         }
 
         let query = `${this.settings.defaultPrefix}
-            ${this.settings.ftsSettings.ftsPrefix}
+            ${this.settings.fullTextSearch.prefix}
             
-            SELECT ?inst ?class ?label
-            WHERE {
-                {
-                    SELECT DISTINCT ?inst ?score WHERE {
-                        ${elementTypePart}
-                        ${refQueryPart}
-                        ${textSearchPart}
-                        ${this.settings.filterAdditionalRestriction}
-                        ${this.settings.ftsSettings.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
-                    } ORDER BY DESC(?score) LIMIT ${params.limit} OFFSET ${params.offset}
-                }
-                ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
-            } ORDER BY DESC(?score)
+        SELECT ?inst ?class ?label
+        WHERE {
+            {
+                SELECT DISTINCT ?inst ?score WHERE {
+                    ${elementTypePart}
+                    ${refQueryPart}
+                    ${textSearchPart}
+                    ${this.settings.filterAdditionalRestriction}
+                    ${this.settings.fullTextSearch.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
+                } ORDER BY DESC(?score) LIMIT ${params.limit} OFFSET ${params.offset}
+            }
+            ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
+        } ORDER BY DESC(?score)
         `;
 
         return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
@@ -259,21 +283,24 @@ export class SparqlDataProvider implements DataProvider {
 
     executeSparqlQuery<Binding>(query: string) {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.POST;
-        if (method == SparqlQueryMethod.GET) return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
-        else return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
+        if (method === SparqlQueryMethod.GET) {
+            return executeSparqlQueryGET<Binding>(this.options.endpointUrl, query);
+        } else {
+            return executeSparqlQueryPOST<Binding>(this.options.endpointUrl, query);
+        }
     }
 }
 
-function resolveTemplate(template:string, values: Dictionary<string>) {
-    var result = template;
+function resolveTemplate(template: string, values: Dictionary<string>) {
+    let result = template;
     for (const replaceKey in values) {
         const replaceValue = values[replaceKey];
-        result = result.replace(new RegExp('\\${' + replaceKey+ '}', 'g'), replaceValue)
+        result = result.replace(new RegExp('\\${' + replaceKey + '}', 'g'), replaceValue);
     }
     return result;
 }
 
-export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {
+export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string): Promise<SparqlResponse<Binding>> {
     return fetch(endpoint, {
         method: 'POST',
         body: query,
@@ -282,39 +309,36 @@ export function executeSparqlQueryPOST<Binding>(endpoint: string, query: string)
         cache: 'default',
         headers: {
             'Accept': 'application/sparql-results+json',
-            'Content-Type': 'application/sparql-query'
+            'Content-Type': 'application/sparql-query',
             },
         }).then((response): Promise<SparqlResponse<Binding>> => {
         if (response.ok) {
             return response.json();
         } else {
-            var error = new Error(response.statusText);
+            const error = new Error(response.statusText);
             (<any>error).response = response;
             throw error;
         }
     });
 }
 
-export function executeSparqlQueryGET<Binding>(endpoint: string, query: string) : Promise<SparqlResponse<Binding>> {
+export function executeSparqlQueryGET<Binding>(endpoint: string, query: string): Promise<SparqlResponse<Binding>> {
     return fetch(endpoint + '?' +
         'query=' + encodeURIComponent(query),
-        //'default-graph-uri=' + self.defaultGraphURI + '&' +
-        //'format=' + encodeURIComponent('application/sparql-results+json') + '&',
-        //'with-imports=' + 'true',
         {
             method: 'GET',
             credentials: 'same-origin',
             mode: 'cors',
             cache: 'default',
             headers: {
-                'Accept': 'application/sparql-results+json'
+                'Accept': 'application/sparql-results+json',
             },
         }
         ).then((response): Promise<SparqlResponse<Binding>> => {
             if (response.ok) {
                 return response.json();
             } else {
-                var error = new Error(response.statusText);
+                const error = new Error(response.statusText);
                 (<any>error).response = response;
                 throw error;
             }

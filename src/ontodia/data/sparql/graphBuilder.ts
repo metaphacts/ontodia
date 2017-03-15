@@ -5,7 +5,7 @@ import { uniformGrid } from '../../viewUtils/layout';
 import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
-import { SparqlDataProvider} from './sparqlDataProvider';
+import { SparqlDataProvider } from './sparqlDataProvider';
 import { SparqlResponse, Triple } from './sparqlModels';
 
 const DEFAULT_PREFIX =

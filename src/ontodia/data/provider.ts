@@ -2,6 +2,30 @@ import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
 } from './model';
 
+/**
+ * DataProvider is responsible for getting data into Ontodia
+ *
+ * It has three parts:
+ *  - Schema extraction - classTree(), linkTypes()
+ *  - On-demand schema extraction - classInfo(), propertyInfo(), linkTypeInfo()
+ *  - elements and links extraction - elementsInfo() and linksInfo()
+ *  - navigation - linkTypesOf(), linkElements()
+ *  - filtering - filter
+ *
+ *  Schema extraction is executed on initialization and used to display class tree.
+ *
+ *  On-demand schema extraction occurs when element with yet unknown type or link type appears any part of Ontodia.
+ *
+ *  Elements and links extraction is executed when new element is placed on the diagram or diagram is restored from
+ *  saved state to get all the data for it
+ *
+ *  Navigation functions are called when user brings up navigation menu to display available links
+ *  and places chosen elements on the diagram.
+ *
+ *  When possible, Ontodia will group requests into batches to reduce round-trips and this will reduce calls to
+ *  data provider.
+ *
+ */
 export interface DataProvider {
     // schema extraction
 
@@ -14,10 +38,6 @@ export interface DataProvider {
      Since this list is not much use in UI, this method is subject to be removed.
       */
     linkTypes(): Promise<LinkType[]>;
-
-    // schema on-demand information extraction.
-    // If Ontodia does not know about some schema element in data, it would query it as needed.
-    // Ontodia combines requests for these elements into batch requests.
 
     /**
      * Class information
@@ -39,7 +59,7 @@ export interface DataProvider {
     }): Promise<LinkType[]>;
 
     /**
-     * getting the elements from the data source on diagram initialization and on navigation events
+     * Getting the elements from the data source on diagram initialization and on navigation events
      */
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>>;
 
@@ -62,10 +82,11 @@ export interface DataProvider {
      * Has overlapping functionality with filter, but easier less powerful and easier to implement
      * linkId could be null, if it's the case method should return all elements from all links from current element.
      */
-    linkElements(params: {elementId: string, linkId: string, limit: number, offset: number}) : Promise<Dictionary<ElementModel>>;
+    linkElements(params: { elementId: string, linkId: string, limit: number, offset: number }) : Promise<Dictionary<ElementModel>>;
 
     /**
      * Supports filter functionality with different filters - by type, by element and it's connection, by full-text search
+     * Implementation should implement all possible combinations
      */
     filter(params: FilterParams): Promise<Dictionary<ElementModel>>;
 }
@@ -73,19 +94,40 @@ export interface DataProvider {
 export default DataProvider;
 
 export interface FilterParams {
-    // element type filter
+    /**
+     * element type filter
+     */
     elementTypeId?: string;
-    // text search
+    /**
+     * text search
+     */
     text?: string;
-    // follow link filter
+
+    /**
+     * Reference element id to limit elements accessible through links from this elements only.
+     * Could be used with refElementLinkId to limit link types which to follow.
+     */
     refElementId?: string;
+
+    /**
+     * Reference element link type id. Is used only when refElementId is set.
+     */
     refElementLinkId?: string;
 
-    //support for pagination
+    /*
+     * Limit number of elements returned. Defaults depend on data provider implementation
+     */
     limit: number;
+
+    /**
+     * Offset within matched data set to use
+     */
     offset: number;
 
-    // right now this is unused in sparql data provider.
-    // It were introduced to order results by particular language when doing substring match for
+    /**
+     * Right now this is unused in sparql data provider.
+     * It was introduced to order results by particular language when doing substring match with regexps.
+     * It's subject to be removed.
+     */
     languageCode: string;
 }

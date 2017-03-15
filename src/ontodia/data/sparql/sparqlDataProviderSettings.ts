@@ -1,60 +1,99 @@
-// this is dataset-schema specific settings
+/**
+ * this is dataset-schema specific settings
+ */
 export interface SparqlDataProviderSettings {
-    // default prefix to be used in every query
+    /**
+     * default prefix to be used in every query
+     */
     defaultPrefix: string;
-    // property to use as label in schema (classes, properties)
+    /**
+     *  property to use as label in schema (classes, properties)
+     */
     schemaLabelProperty: string;
 
-    // property to use as instance label todo: make it an array
+    /**
+     * property to use as instance label
+     * todo: make it an array
+     */
     dataLabelProperty: string;
 
-    // full-text search settings
-    ftsSettings: FullTextSearchSettings;
+    /**
+     * full-text search settings
+     */
+    fullTextSearch: FullTextSearchSettings;
 
-    // query to retreive class tree. Should return class, label, parent, instcount (optional)
+    /**
+     * query to retreive class tree. Should return class, label, parent, instcount (optional)
+     */
     classTreeQuery: string;
 
-    //link types pattern - what to consider a link on initial fetch
+    /**
+     * link types pattern - what to consider a link on initial fetch
+     */
     linkTypesPattern: string;
 
-    // query for fetching all information on element: labels, classes, properties
+    /**
+     * query for fetching all information on element: labels, classes, properties
+     */
     elementInfoQuery: string;
 
-    // this should return image URL for ?inst as instance and ?linkType for image property IRI todo: move to runtime settings instead? proxying is runtime stuff
+    /**
+     * this should return image URL for ?inst as instance and ?linkType for image property IRI
+     * todo: move to runtime settings instead? proxying is runtime thing
+     */
     imageQueryPattern: string;
 
-    // link types of returns possible link types from specified instance with statistics
+    /**
+     * link types of returns possible link types from specified instance with statistics
+     */
     linkTypesOfQuery: string;
 
-    // when fetching all links from element, we could specify additional filter
-    filterRefElementLinkPattern: string
+    /**
+     * when fetching all links from element, we could specify additional filter
+     */
+    filterRefElementLinkPattern: string;
 
-    // filter by type pattern. One could use transitive type resolution here.
+    /**
+     * filter by type pattern. One could use transitive type resolution here.
+     */
     filterTypePattern: string;
 
-    // how to fetch elements info when fetching data.
+    /**
+     * how to fetch elements info when fetching data.
+     */
     filterElementInfoPattern: string;
 
-    // imposes additional filtering on elements within filter
+    /**
+     * imposes additional filtering on elements within filter
+     */
     filterAdditionalRestriction: string;
 }
 
-// Full text search settings, developer could use anything from search extensions of triplestore to regular expressions match
-// See wikidata and dbpedia examples for reusing full text search capabilities of Blazegraph and Virtuozo
+/**
+ * Full text search settings,
+ * developer could use anything from search extensions of triplestore to regular expressions match
+ * See wikidata and dbpedia examples for reusing full text search capabilities of Blazegraph and Virtuozo
+ */
 export interface FullTextSearchSettings {
-    // prefix to use in FTS queries
-    ftsPrefix: string
+    /**
+     * prefix to use in FTS queries
+     */
+    prefix: string;
 
-    // query pattern should return ?inst and ?score for given ${text}.
-    ftsQueryPattern: string
+    /**
+     * query pattern should return ?inst and ?score for given ${text}.
+     */
+    queryPattern: string;
 
-    // try to extract label from IRI for usage in search purposes.
-    // If you have no labels in the dataset and want to search, you
-    // can use ?extractedLabel as something to search for.
-    extractLabel?: boolean
+    /**
+     * try to extract label from IRI for usage in search purposes.
+     * If you have no labels in the dataset and want to search, you
+     * can use ?extractedLabel as something to search for.
+     */
+    extractLabel?: boolean;
 }
 
-export const WikidataSettings : SparqlDataProviderSettings = {
+export const WikidataSettings: SparqlDataProviderSettings = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -67,9 +106,9 @@ export const WikidataSettings : SparqlDataProviderSettings = {
     schemaLabelProperty: 'rdfs:label',
     dataLabelProperty: 'rdfs:label',
 
-    ftsSettings: {
-        ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
-        ftsQueryPattern: ` 
+    fullTextSearch: {
+        prefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
+        queryPattern: ` 
               ?inst rdfs:label ?searchLabel. 
               SERVICE bds:search {
                      ?searchLabel bds:search "\${text}*" ;
@@ -79,7 +118,7 @@ export const WikidataSettings : SparqlDataProviderSettings = {
               BIND(IF(STRLEN(?strInst) > 33,
                             0-<http://www.w3.org/2001/XMLSchema#integer>(SUBSTR(?strInst, 33)),
                             -10000) as ?score)
-            `
+            `,
     },
 
     classTreeQuery: `
@@ -140,30 +179,27 @@ export const WikidataSettings : SparqlDataProviderSettings = {
     filterElementInfoPattern: `OPTIONAL {?inst wdt:P31 ?foundClass}
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst rdfs:label ?label}
-`
+`,
 };
 
-export const OWLRDFSSettings : SparqlDataProviderSettings = {
+export const OWLRDFSSettings: SparqlDataProviderSettings = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
 
 `,
-
     schemaLabelProperty: 'rdfs:label',
     dataLabelProperty: 'rdfs:label',
-
-    ftsSettings: {
-        ftsPrefix: '',
-        ftsQueryPattern:
+    fullTextSearch: {
+        prefix: '',
+        queryPattern:
         ` OPTIONAL {?inst \${dataLabelProperty} ?search1}
         FILTER regex(COALESCE(str(?search1), str(?extractedLabel)), "\${text}", "i")
         BIND(0 as ?score)
 `,
-        extractLabel: true
+        extractLabel: true,
     },
-
     classTreeQuery: `
             SELECT ?class ?instcount ?label ?parent
             WHERE {
@@ -185,7 +221,6 @@ export const OWLRDFSSettings : SparqlDataProviderSettings = {
                 }
                 BIND(0 as ?instcount)
 `,
-
     elementInfoQuery: `
             SELECT ?inst ?class ?label ?propType ?propValue
             WHERE {
@@ -196,7 +231,6 @@ export const OWLRDFSSettings : SparqlDataProviderSettings = {
             } VALUES (?inst) {\${ids}}
         `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
-
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?object) as ?instcount)
         WHERE {
@@ -212,7 +246,7 @@ export const OWLRDFSSettings : SparqlDataProviderSettings = {
     filterAdditionalRestriction: '',
 };
 
-export const OWLStatsSettings : SparqlDataProviderSettings = {...OWLRDFSSettings, ...{
+export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...{
     classTreeQuery: `
             SELECT ?class ?instcount ?label ?parent
             WHERE {
@@ -231,7 +265,7 @@ export const OWLStatsSettings : SparqlDataProviderSettings = {...OWLRDFSSettings
         `,
 }};
 
-export const DBPediaSettings : SparqlDataProviderSettings = {...OWLRDFSSettings, ... {
+export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ... {
     ftsSettings: {
         ftsPrefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
         ftsQueryPattern: ` 
@@ -239,7 +273,7 @@ export const DBPediaSettings : SparqlDataProviderSettings = {...OWLRDFSSettings,
               ?searchLabel bif:contains "\${text}".
               ?inst dbo:wikiPageID ?origScore .
               BIND(0-?origScore as ?score)
-            `
+            `,
     },
 
     elementInfoQuery: `
