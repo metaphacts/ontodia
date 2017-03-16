@@ -35,7 +35,7 @@ Ontodia library is distributed under LGPL-2.1. Commercial license with additiona
 
 ## Developer documentation and contributing
 
-Developer documentation is available at [wiki page](https://github.com/ontodia-org/ontodia/wiki/Developer-Documentation).
+Developer documentation is available at [wiki page](https://github.com/ontodia-org/ontodia/wiki).
 
 ## Whom do I talk to? ###
 
