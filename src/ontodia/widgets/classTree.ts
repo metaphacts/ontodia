@@ -114,7 +114,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
                     element.type = (iconId ? iconId : 'has-not-children');
                 }
 
-                element.text = this.view.getLocalizedText(element.label.values).text + ' (' + element.count + ')';
+                element.text = this.view.getLocalizedText(element.label.values).text + (!isNaN(element.count) ? ' (' + element.count + ')' : '');
             }
         }
 

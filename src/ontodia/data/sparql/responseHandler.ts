@@ -63,7 +63,13 @@ function calcCounts(children: ClassModel[]) {
         if (!node.children) return;
         // ensure all children have their counts completed;
         calcCounts(node.children);
-        node.count += node.children.reduce((acc, val) => acc + val.count, 0)
+        // we have to preserve no data here. If nor element nor childs have no count information,
+        // we just pass NaN upwards.
+        const childCount = node.children.reduce((acc, val) =>
+                // if val.count is not NaN, turn result into number
+                !isNaN(val.count) ? (!isNaN(acc) ? acc + val.count : val.count) : acc
+            , NaN);
+        node.count = !isNaN(childCount) ? (!isNaN(node.count) ? node.count + childCount : childCount) : node.count;
     }
 }
 
@@ -283,7 +289,7 @@ export function getLocalizedString(label?: RdfLiteral, id?: string): LocalizedSt
 }
 
 export function getInstCount(instcount: RdfLiteral): number {
-    return (instcount ? +instcount.value : 0);
+    return (instcount ? +instcount.value : NaN);
 }
 
 /**

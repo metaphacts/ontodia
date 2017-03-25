@@ -122,7 +122,7 @@ export const WikidataSettings: SparqlDataProviderSettings = {
     },
 
     classTreeQuery: `
-            SELECT distinct ?class ?label ?parent ?instcount WHERE {
+            SELECT distinct ?class ?label ?parent WHERE {
               ?class rdfs:label ?label.                            
               { ?class wdt:P279 wd:Q35120. }
                 UNION 
@@ -131,7 +131,6 @@ export const WikidataSettings: SparqlDataProviderSettings = {
                 UNION 
               { ?parent wdt:P279/wdt:P279 wd:Q35120.
                 ?class wdt:P279 ?parent. }
-              BIND("" as ?instcount)
             }
         `,
 
@@ -201,7 +200,7 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
         extractLabel: true,
     },
     classTreeQuery: `
-            SELECT ?class ?instcount ?label ?parent
+            SELECT ?class ?label ?parent
             WHERE {
                 {
                     ?class a rdfs:Class
@@ -210,7 +209,6 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
                 }
                 OPTIONAL { ?class rdfs:label ?label.}
                 OPTIONAL {?class rdfs:subClassOf ?parent}
-                BIND(0 as ?instcount)
             }
         `,
 
@@ -219,7 +217,7 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
                     } UNION {
                     ?link a owl:ObjectProperty
                 }
-                BIND(0 as ?instcount)
+                BIND('' as ?instcount)
 `,
     elementInfoQuery: `
             SELECT ?inst ?class ?label ?propType ?propValue
