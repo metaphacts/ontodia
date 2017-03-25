@@ -274,6 +274,15 @@ export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
             `,
     },
 
+    classTreeQuery: `
+        SELECT distinct ?class ?label ?parent WHERE {
+            ?class rdfs:label ?label.                            
+            OPTIONAL {?class rdfs:subClassOf ?parent}
+            ?root rdfs:subClassOf owl:Thing.
+            ?class rdfs:subClassOf? | rdfs:subClassOf/rdfs:subClassOf ?root
+        }
+        `,
+
     elementInfoQuery: `
         SELECT ?inst ?class ?label ?propType ?propValue
         WHERE {
