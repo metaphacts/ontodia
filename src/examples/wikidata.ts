@@ -2,7 +2,8 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, WikidataDataProvider, OrganizationTemplate, PersonTemplate,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
+    WikidataSettings, SparqlQueryMethod
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -15,7 +16,10 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const diagram = workspace.getDiagram();
     diagram.registerTemplateResolver(types => {
-        if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
+        //using default template for country as a temporary solution
+        if (types.indexOf('http://www.wikidata.org/entity/Q6256') !== -1) {
+            return DefaultElementTemplate;
+        } else if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
             return OrganizationTemplate;
         } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
             return PersonTemplate;
@@ -24,7 +28,9 @@ function onWorkspaceMounted(workspace: Workspace) {
         }
     });
     diagram.registerElementStyleResolver(types => {
-        if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
+        if (types.indexOf('http://www.wikidata.org/entity/Q6256') !== -1) {
+            return {color: '#77ca98', icon: 'ontodia-country-icon'};
+        } else if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
             return {color: '#77ca98', icon: 'ontodia-organization-icon'};
         } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
             return {color: '#eb7777', icon: 'ontodia-person-icon'};
@@ -40,13 +46,14 @@ function onWorkspaceMounted(workspace: Workspace) {
     });
 
     const layoutData = tryLoadLayoutFromLocalStorage();
-    const dataProvider = new WikidataDataProvider({
+    const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
-        imageClassUris: [
+        imagePropertyUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',
         ],
-    });
+        queryMethod: SparqlQueryMethod.POST,
+    }, WikidataSettings);
 
     model.importLayout({layoutData, dataProvider, validateLinks: true});
 }

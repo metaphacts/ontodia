@@ -118,12 +118,11 @@ export class ConnectionsMenu {
         const requests: Promise<Dictionary<ElementModel>>[] = [];
         for (let i = 0; i < requestsCount; i++) {
             requests.push(
-                this.view.model.dataProvider.filter({
-                    refElementLinkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
-                    refElementId: this.cellView.model.id,
+                this.view.model.dataProvider.linkElements({
+                    elementId: this.cellView.model.id,
+                    linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
                     limit: 100,
-                    offset: i * 100,
-                    languageCode: this.view.getLanguage(),
+                    offset: i * 100
                 })
             );
         }

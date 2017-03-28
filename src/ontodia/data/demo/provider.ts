@@ -73,6 +73,16 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(map(counts));
     }
 
+    linkElements(params: { elementId: string; linkId: string; limit: number; offset: number }): Promise<Dictionary<ElementModel>> {
+        //for sparql we have rich filtering features and we just reuse filter.
+        return this.filter({
+            refElementId: params.elementId,
+            refElementLinkId: params.linkId,
+            limit: params.limit,
+            offset: params.offset,
+            languageCode: ""});
+    }
+
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.offset > 0) { return Promise.resolve({}); }
 

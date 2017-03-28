@@ -2,10 +2,9 @@ import * as N3 from 'n3';
 
 import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
-import { DataProvider } from '../provider';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
-import { executeSparqlQuery } from './provider';
+import { SparqlDataProvider } from './sparqlDataProvider';
 import { SparqlResponse, Triple } from './sparqlModels';
 
 const DEFAULT_PREFIX =
@@ -16,19 +15,15 @@ const DEFAULT_PREFIX =
 const GREED_STEP = 150;
 
 export class GraphBuilder {
-    constructor(
-        public dataProvider: DataProvider,
-        public endpointUrl: string
-    ) {}
+    constructor(public dataProvider: SparqlDataProvider) {}
 
     getGraphFromConstruct(constructQuery: string): Promise<{
         preloadedElements: Dictionary<ElementModel>,
         layoutData: LayoutData,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
-        return executeSparqlQuery<Triple>(this.endpointUrl, query)
-            .then(normalizeSparqlResults)
-            .then(graphLayout => this.getGraphFromRDFGraph(graphLayout.results.bindings));
+        return this.dataProvider.executeSparqlConstruct(query)
+            .then(graph => this.getGraphFromRDFGraph(graph));
     };
 
     getGraphFromRDFGraph(graph: Triple[]): Promise<{
@@ -87,40 +82,6 @@ export class GraphBuilder {
             };
         });
         return {cells: layoutElements.concat(layoutLinks)};
-    }
-}
-
-function normalizeSparqlResults(result: string | SparqlResponse<Triple>) {
-    return new Promise<SparqlResponse<Triple>>((resolve, reject) => {
-        if (typeof result === 'string') {
-            const jsonResponse: SparqlResponse<any> = {
-                head: {vars: ['subject', 'predicate', 'object']},
-                results: {bindings: []},
-            };
-            N3.Parser().parse(result, (error, triple, hash) => {
-                if (triple) {
-                    jsonResponse.results.bindings.push({
-                        subject: toRdfNode(triple.subject),
-                        predicate: toRdfNode(triple.predicate),
-                        object: toRdfNode(triple.object),
-                    });
-                } else {
-                    resolve(jsonResponse);
-                }
-            });
-        } else if (typeof result === 'object' && result) {
-            resolve(result);
-        } else {
-            reject(result);
-        }
-    });
-}
-
-function toRdfNode(entity: string) {
-    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
-        return {type: 'literal', value: entity.substring(1, entity.length - 1)};
-    } else {
-        return {type: 'uri', value: entity};
     }
 }
 

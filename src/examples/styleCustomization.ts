@@ -49,7 +49,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         layoutData,
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql-endpoint',
-            imageClassUris: [
+            imagePropertyUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
             ],
