@@ -50,6 +50,7 @@ module.exports = {
         'react-dom': true,
         'backbone': true,
         'webcola': true,
+        'whatwg-fetch': true,
     } : {},
     devtool: '#source-map',
 };
