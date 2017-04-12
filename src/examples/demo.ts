@@ -25,6 +25,8 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
+    leftPanelInitiallyOpen: true,
+    rightPanelInitiallyOpen: false
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

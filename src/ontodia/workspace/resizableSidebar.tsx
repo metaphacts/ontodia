@@ -66,7 +66,7 @@ export class ResizableSidebar extends React.Component<Props, State> {
         return <div className={className}
             style={{width: open ? width : 0}}
             {...this.props.tutorialProps}>
-            {this.props.children}
+            {open ? this.props.children : null}
             <DraggableHandle className={`${CLASS_NAME}__handle`}
                 onBeginDragHandle={this.onBeginDragHandle}
                 onDragHandle={this.onDragHandle}>

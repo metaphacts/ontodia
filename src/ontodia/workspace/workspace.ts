@@ -9,7 +9,6 @@ import {
     LayoutNode, LayoutLink, translateToCenter,
 } from '../viewUtils/layout';
 import { ClassTree } from '../widgets/classTree';
-import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
@@ -26,6 +25,8 @@ export interface Props {
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
+    leftPanelInitiallyOpen:boolean;
+    rightPanelInitiallyOpen:boolean;
 }
 
 export interface State {
@@ -42,8 +43,7 @@ export class Workspace extends Component<Props, State> {
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    private linksToolbox: LinkTypesToolboxShell;
-
+   
     constructor(props: Props) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
@@ -55,7 +55,10 @@ export class Workspace extends Component<Props, State> {
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
+            model:this.model,
             view: this.diagram,
+            leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
+            rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
@@ -96,6 +99,7 @@ export class Workspace extends Component<Props, State> {
         this.tree.on('action:classSelected', (classId: string) => {
             this.setState({criteria: {elementTypeId: classId}});
         });
+<<<<<<< HEAD
         this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType, direction?: 'in' | 'out') => {
             this.setState({
                 criteria: {
@@ -111,6 +115,11 @@ export class Workspace extends Component<Props, State> {
             view: this.diagram,
             el: this.markup.linkTypesPanel,
         });
+=======
+        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType) => {
+            this.setState({criteria: {refElementId: element.id, refElementLinkId: linkType && linkType.id}});
+        });        
+>>>>>>> add sidebar not render feature
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
