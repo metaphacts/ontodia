@@ -44,14 +44,14 @@ export interface LinkBinding {
     target: RdfIri;
 }
 
-export interface LinkTypeBinding {
+export interface LinkCountBinding {
     link: RdfIri;
-    instcount?: RdfLiteral;
-    label?: RdfLiteral;
+    inCount: RdfLiteral;
+    outCount: RdfLiteral;
 }
 
 export interface LinkTypeInfoBinding {
-    typeId: RdfIri;
+    link: RdfIri;
     label?: RdfLiteral;
     instcount?: RdfLiteral;
 }

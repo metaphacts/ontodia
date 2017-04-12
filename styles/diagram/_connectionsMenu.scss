@@ -170,6 +170,20 @@
   opacity: 1;
 }
 
+.link-in-popup-menu__in-direction {
+  background: url("../images/direction-in.png") 0 0 no-repeat;
+  height: 15px;
+  margin: 0 14px 0 0;
+  width: 22px;
+}
+
+.link-in-popup-menu__out-direction {
+  background: url("../images/direction-out.png") 0 0 no-repeat;
+  height: 15px;
+  margin: 0 8px 0 6px;
+  width: 22px;
+}
+
 .ontodia-connections-menu_links-list__loading {
   text-align: center;
   width: 100%;

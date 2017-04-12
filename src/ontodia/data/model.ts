@@ -30,11 +30,14 @@ export interface ClassModel {
 
 export interface LinkCount {
     id: string;
-    count: number;
+    inCount: number;
+    outCount: number;
 }
 
-export interface LinkType extends LinkCount {
+export interface LinkType {
+    id: string;
     label: { values: LocalizedString[] };
+    count: number;
 }
 
 export interface PropertyModel {

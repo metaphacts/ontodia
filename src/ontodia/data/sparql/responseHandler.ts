@@ -1,9 +1,9 @@
 import {
     RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
-    ElementImageBinding, LinkTypeBinding, LinkTypeInfoBinding, PropertyBinding,
+    ElementImageBinding, LinkCountBinding, LinkTypeInfoBinding, PropertyBinding,
 } from './sparqlModels';
 import {
-    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel,
+    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
 } from '../model';
 
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
@@ -121,7 +121,7 @@ export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dict
     return models;
 }
 
-export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
+export function getLinkTypes(response: SparqlResponse<LinkTypeInfoBinding>): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
     const instancesMap: Dictionary<LinkType> = {};
@@ -137,15 +137,12 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
                 }
                 label.values.push(getLocalizedString(sLink.label));
             }
-            if (sLink.instcount) {
-                instancesMap[sInstTypeId].count = getInstCount(sLink.instcount);
-            }
         } else {
-            instancesMap[sInstTypeId] = getLinkType(sLink);
+            instancesMap[sInstTypeId] = getLinkTypeInfo(sLink);
             linkTypes.push(instancesMap[sInstTypeId]);
         }
 
-    };
+    }
 
     return linkTypes;
 }
@@ -203,9 +200,9 @@ export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[]
     return sparqlLinks.map((sLink: LinkBinding) => getLinkInfo(sLink));
 }
 
-export function getLinksTypesOf(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
+export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
     const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => getLinkType(sLink));
+    return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkType(sLink));
 }
 
 export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
@@ -316,11 +313,11 @@ export function getPropertyModel(node: PropertyBinding): PropertyModel {
     };
 }
 
-export function getLinkType(sLinkType: LinkTypeBinding): LinkType {
+export function getLinkType(sLinkType: LinkCountBinding): LinkCount {
     return {
         id: sLinkType.link.value,
-        label: { values: [getLocalizedString(sLinkType.label, sLinkType.link.value)] },
-        count: getInstCount(sLinkType.instcount),
+        inCount: getInstCount(sLinkType.inCount),
+        outCount: getInstCount(sLinkType.outCount),
     };
 }
 
@@ -362,8 +359,8 @@ export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
 export function getLinkTypeInfo(sLinkInfo: LinkTypeInfoBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     return {
-        id: sLinkInfo.typeId.value,
-        label: { values: [getLocalizedString(sLinkInfo.label, sLinkInfo.typeId.value)] },
+        id: sLinkInfo.link.value,
+        label: { values: [getLocalizedString(sLinkInfo.label, sLinkInfo.link.value)] },
         count: getInstCount(sLinkInfo.instcount),
     };
 }

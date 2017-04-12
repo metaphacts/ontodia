@@ -63,21 +63,25 @@ export class DemoDataProvider implements DataProvider {
                 link.targetId === params.elementId
             ) {
                 const linkCount = counts[link.linkTypeId];
+                const isSource = link.sourceId === params.elementId;
                 if (linkCount) {
-                    linkCount.count++;
+                    isSource ? linkCount.outCount++ : linkCount.inCount++;
                 } else {
-                    counts[link.linkTypeId] = {id: link.linkTypeId, count: 1};
+                    counts[link.linkTypeId] = isSource
+                        ? {id: link.linkTypeId, inCount: 0, outCount: 1}
+                        : {id: link.linkTypeId, inCount: 1, outCount: 0};
                 }
             }
         }
         return this.simulateNetwork(map(counts));
     }
 
-    linkElements(params: { elementId: string; linkId: string; limit: number; offset: number }): Promise<Dictionary<ElementModel>> {
+    linkElements(params: { elementId: string; linkId: string; limit: number; offset: number, direction?: 'in' | 'out'}): Promise<Dictionary<ElementModel>> {
         //for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
+            linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
             languageCode: ""});
@@ -100,9 +104,9 @@ export class DemoDataProvider implements DataProvider {
             const nodeId = params.refElementId;
             for (const link of filteredLinks) {
                 let linkedElementId: string = undefined;
-                if (link.sourceId === nodeId) {
+                if (link.sourceId === nodeId && params.linkDirection !== 'in') {
                     linkedElementId = link.targetId;
-                } else if (link.targetId === nodeId) {
+                } else if (link.targetId === nodeId && params.linkDirection !== 'out') {
                     linkedElementId = link.sourceId;
                 }
                 if (linkedElementId !== undefined) {

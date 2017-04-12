@@ -9,6 +9,9 @@ import { DiagramView } from '../diagram/view';
 
 import { ListElementView } from './listElementView';
 
+const DirectionInImage = require<string>('../../../images/direction-in.png');
+const DirectionOutImage = require<string>('../../../images/direction-out.png');
+
 export interface InstancesSearchProps {
     className?: string;
     view: DiagramView;
@@ -21,6 +24,7 @@ export interface SearchCriteria {
     readonly elementTypeId?: string;
     readonly refElementId?: string;
     readonly refElementLinkId?: string;
+    readonly linkDirection?: 'in' | 'out';
 }
 
 export interface State {
@@ -129,11 +133,17 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                     {...this.props.criteria, refElementId: undefined, refElementLinkId: undefined}))}
                 Connected to <span className={`${CLASS_NAME}__criterion-element`}
                     title={element && element.id}>{elementLabel}</span>
-                {criteria.refElementLinkId ? [
-                    ' through ',
+                {criteria.refElementLinkId && <span>
+                    {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
-                        title={linkType && linkType.id}>{linkTypeLabel}</span>,
-                ] : []}
+                        title={linkType && linkType.id}>{linkTypeLabel}</span>
+                    {criteria.linkDirection === 'in' && <span>
+                        {' as '}<img src={DirectionInImage} />&nbsp;source
+                    </span>}
+                    {criteria.linkDirection === 'out' && <span>
+                        {' as '}<img src={DirectionOutImage} />&nbsp;target
+                    </span>}
+                </span>}
             </div>);
         }
 
@@ -286,6 +296,7 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
         elementTypeId: criteria.elementTypeId,
         refElementId: criteria.refElementId,
         refElementLinkId: criteria.refElementLinkId,
+        linkDirection: criteria.linkDirection,
         offset: 0,
         limit: 100,
         languageCode: language ? language : 'en',

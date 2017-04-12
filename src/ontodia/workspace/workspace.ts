@@ -96,8 +96,14 @@ export class Workspace extends Component<Props, State> {
         this.tree.on('action:classSelected', (classId: string) => {
             this.setState({criteria: {elementTypeId: classId}});
         });
-        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType) => {
-            this.setState({criteria: {refElementId: element.id, refElementLinkId: linkType && linkType.id}});
+        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType, direction?: 'in' | 'out') => {
+            this.setState({
+                criteria: {
+                    refElementId: element.id,
+                    refElementLinkId: linkType && linkType.id,
+                    linkDirection: direction
+                }
+            });
         });
 
         this.linksToolbox = new LinkTypesToolboxShell({
