@@ -12,6 +12,7 @@ export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparq
 export * from './ontodia/data/sparql/sparqlDataProvider';
 export * from './ontodia/data/sparql/sparqlDataProviderSettings';
 export * from './ontodia/data/sparql/graphBuilder';
+export * from './ontodia/data/sparql/sparqlGraphBuilder';
 export { Element, Link } from './ontodia/diagram/elements';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
