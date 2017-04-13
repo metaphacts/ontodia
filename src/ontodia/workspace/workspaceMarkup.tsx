@@ -152,12 +152,15 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
     }
 
-    bodyRefCallback(element:any) {
-        this.linksToolbox = new LinkTypesToolboxShell({
-            model: new LinkTypesToolboxModel(this.model),
-            view: this.view,
-            el: element,
-        });
+    bodyRefCallback(element:any) {       
+        if (element) 
+            this.linksToolbox = new LinkTypesToolboxShell({
+                model: new LinkTypesToolboxModel(this.model),
+                view: this.view,
+                el: element,
+            }).render();       
+        else 
+            this.linksToolbox.remove();
     }
 
     preventTextSelection() {
