@@ -18,3 +18,5 @@ export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/dia
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 export { Workspace, Props as WorkspaceProps } from './ontodia/workspace/workspace';
+
+export * from './ontodia/data/neo4j/neo4jDataProvider';

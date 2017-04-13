@@ -10,6 +10,7 @@ module.exports = {
     entry: {
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
+        neo4j: path.join(__dirname, 'src', 'examples', 'neo4j.ts'),
         dbpedia: path.join(__dirname, 'src', 'examples', 'dbpedia.ts'),
         sparqlNoStats: path.join(__dirname, 'src', 'examples', 'sparqlNoStats.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
@@ -43,6 +44,12 @@ module.exports = {
         new HtmlWebpackPlugin({
             title: 'Ontodia Local Demo',
             chunks: ['commons', 'demo'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'neo4j.html',
+            title: 'Ontodia Neo4j Demo',
+            chunks: ['commons', 'neo4j'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
@@ -110,6 +117,12 @@ module.exports = {
                 changeOrigin: true,
                 secure: false,
             },
+            "/neo4j-endpoint**": {
+                target: "http://localhost:7474/db/data/cypher",
+                pathRewrite: {'/neo4j-endpoint' : ''},
+                changeOrigin: true,
+                secure: false,
+            }
         },
     },
 };
