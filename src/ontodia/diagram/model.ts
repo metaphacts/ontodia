@@ -508,7 +508,10 @@ export interface ClassTreeElement {
     label: { values: LocalizedString[] };
     count: number;
     children: ClassTreeElement[];
-    a_attr?: { href: string };
+    a_attr?: {
+        href: string;
+        draggable: boolean;
+    };
 }
 
 export interface LinkTypeOptions {

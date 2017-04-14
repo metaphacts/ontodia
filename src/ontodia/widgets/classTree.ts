@@ -138,7 +138,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         });
     }
     private setUrlsRec(root: ClassTreeElement) {
-        root.a_attr = { href: '#' + root.id };
+        root.a_attr = { href: '#' + root.id, draggable: true };
         root.children.forEach(el => this.setUrlsRec(el));
     }
 
