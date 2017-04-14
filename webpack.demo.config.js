@@ -118,7 +118,7 @@ module.exports = {
                 secure: false,
             },
             "/neo4j-endpoint**": {
-                target: "http://localhost:7474/db/data/cypher",
+                target: process.env.NEO4J_ENDPOINT,
                 pathRewrite: {'/neo4j-endpoint' : ''},
                 changeOrigin: true,
                 secure: false,

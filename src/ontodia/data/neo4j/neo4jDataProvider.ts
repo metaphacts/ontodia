@@ -12,15 +12,7 @@ import {
 } from '../model';
 
 import {
-    getClassTree,
-    getLinkTypes,
-    getElementsInfo,
-    getLinkType,
-    getLinksInfo,
-    getLinksTypesOf,
-    getFilteredData,
-    getGeneralizationLinksInfo,
-    getElementTypesAsElements,
+    ResponseHandler,
     INSTANCE_OF,
 } from './responseHandler';
 
@@ -32,16 +24,20 @@ import {
 
 export interface Neo4jDataProviderOptions {
     endpointUrl: string;
+    useAsTitle?: string[];
+    titleMap?: Dictionary<string>;
     authorization?: string;
 }
 
 export class Neo4jDataProvider implements DataProvider {
     authorization: string;
+    calc: ResponseHandler;
 
     constructor(
         private options: Neo4jDataProviderOptions
     ) {
         this.authorization = options.authorization;
+        this.calc = new ResponseHandler(options.useAsTitle, options.titleMap);
     }
 
     classTree(): Promise<ClassModel[]> {
@@ -49,7 +45,8 @@ export class Neo4jDataProvider implements DataProvider {
             "query": "START n=node(*) RETURN labels(n), count(*);",
             "params" : { }
         }`;
-        return this.executeQuery<ClassBinding>(query).then(getClassTree);
+        return this.executeQuery<ClassBinding>(query)
+            .then(result => this.calc.getClassTree(result));
     }
 
     // For lazy loading (not implemented)
@@ -74,7 +71,8 @@ export class Neo4jDataProvider implements DataProvider {
             "query" : "START r=rel(*) RETURN type(r), count(*);",
             "params" : { }
         }`;
-        return this.executeQuery<LinkTypeBinding>(query).then(getLinkTypes);
+        return this.executeQuery<LinkTypeBinding>(query)
+            .then(result => this.calc.getLinkTypes(result));
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
@@ -88,9 +86,9 @@ export class Neo4jDataProvider implements DataProvider {
                 "params" : { }
             }`;
             return this.executeQuery<ElementBinding>(query)
-                .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds));
+                .then(elementsInfo => this.calc.getElementsInfo(elementsInfo, params.elementIds));
         } else {
-            return Promise.resolve(getElementsInfo(null, params.elementIds));
+            return Promise.resolve(this.calc.getElementsInfo(null, params.elementIds));
         }
     }
 
@@ -131,15 +129,16 @@ export class Neo4jDataProvider implements DataProvider {
             return Promise.all([
                 this.executeQuery<LinkBinding>(query),
                 this.executeQuery<ElementBinding>(secondQuery)
-                .then(elementsInfo => getElementsInfo(elementsInfo, nodeIds)),
+                .then(elementsInfo => this.calc.getElementsInfo(elementsInfo, nodeIds)),
             ]).then(results => {
                 const elements = Object.keys(results[1]).map(key => results[1][key]);
-                const links = getLinksInfo(results[0]);
-                const typeLinks = getGeneralizationLinksInfo(classIds, elements);
+                const links = this.calc.getLinksInfo(results[0]);
+                const typeLinks = this.calc.getGeneralizationLinksInfo(classIds, elements);
                 return links.concat(typeLinks);
             });
         } else {
-            return this.executeQuery<LinkBinding>(query).then(getLinksInfo);
+            return this.executeQuery<LinkBinding>(query)
+                .then(result => this.calc.getLinksInfo(result));
         }
     }
 
@@ -156,10 +155,10 @@ export class Neo4jDataProvider implements DataProvider {
                 this.executeQuery<LinkTypeBinding>(query),
                 this.elementInfo({ elementIds: [id]}),
             ]).then(results => {
-                const linkTypes = getLinksTypesOf(results[0]);
+                const linkTypes = this.calc.getLinksTypesOf(results[0]);
 
                 const element = results[1][Object.keys(results[1])[0]];
-                linkTypes.push(getLinkType([INSTANCE_OF, element.types.length]));
+                linkTypes.push(this.calc.getLinkType([INSTANCE_OF, element.types.length]));
 
                 return linkTypes;
             });
@@ -168,7 +167,8 @@ export class Neo4jDataProvider implements DataProvider {
                 "query" : "MATCH (n:${id}) RETURN 'typeOf', count(n);",
                 "params" : { }
             }`;
-            return this.executeQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
+            return this.executeQuery<LinkTypeBinding>(query)
+                .then(result => this.calc.getLinksTypesOf(result));
         }
     };
 
@@ -199,7 +199,8 @@ export class Neo4jDataProvider implements DataProvider {
                 if (linkId === 'typeOf') {
                     query = getQueryForClassId(eId);
                 } else {
-                    return this.elementInfo({ elementIds: [eId] }).then(getElementTypesAsElements);
+                    return this.elementInfo({ elementIds: [eId] })
+                        .then(result => this.calc.getElementTypesAsElements(result));
                 }
             } else {
                 query = getQueryForElementId(eId, linkId);
@@ -210,8 +211,9 @@ export class Neo4jDataProvider implements DataProvider {
                 query = getQueryForElementId(eId);
                 return Promise.all([
                     this.executeQuery<ElementBinding>(query)
-                        .then(responce => getFilteredData(responce, params.text)),
-                    this.elementInfo({ elementIds: [eId] }).then(getElementTypesAsElements),
+                        .then(result => this.calc.getFilteredData(result, params.text)),
+                    this.elementInfo({ elementIds: [eId] })
+                        .then(result => this.calc.getElementTypesAsElements(result)),
                 ]).then(results => {
                     return Object.assign(results[0], results[1]);
                 });
@@ -240,7 +242,7 @@ export class Neo4jDataProvider implements DataProvider {
         }
 
         return this.executeQuery<ElementBinding>(query)
-            .then(responce => getFilteredData(responce, params.text));
+            .then(result => this.calc.getFilteredData(result, params.text));
     };
 
     executeQuery<Binding>(query: string) {
