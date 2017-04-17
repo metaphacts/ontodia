@@ -22,7 +22,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         layoutData,
         validateLinks: true,
         dataProvider: new Neo4jDataProvider({
-            endpointUrl: '/neo4j-endpoint',
+            endpointUrl: '/neo4j-endpoint/movies',
         }),
     });
 }
