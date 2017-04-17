@@ -23,7 +23,6 @@ function onWorkspaceMounted(workspace: Workspace) {
         validateLinks: true,
         dataProvider: new Neo4jDataProvider({
             endpointUrl: '/neo4j-endpoint',
-            authorization: 'Basic bmVvNGo6MTIzNA==',
         }),
     });
 }

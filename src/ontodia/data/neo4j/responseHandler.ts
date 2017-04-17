@@ -26,11 +26,11 @@ export const POSSIBLE_LABELS = [
 
 export class ResponseHandler {
     public useAsTitle: string[];
-    public titleMap: Dictionary<string>;
+    private titleMap: Dictionary<string>;
 
     constructor (useAsTitle: string[], titleMap: Dictionary<string>) {
         this.useAsTitle = useAsTitle || POSSIBLE_LABELS;
-        this.titleMap = titleMap;
+        this.titleMap = titleMap || {};
     }
 
     public getClassTree (response: Neo4jResponse<ClassBinding>): ClassModel[] {
@@ -256,21 +256,30 @@ export class ResponseHandler {
     private getElementLabel (nElement: ElementBinding) {
         const eModel = nElement[0];
         const props = eModel.data;
-        if (this.titleMap) {
+
+        const catchResult = (prop: string) => {
             for (const type of eModel.metadata.labels) {
-                if (this.titleMap[type]) {
-                    return props[this.titleMap[type]];
+                if (!props[this.titleMap[type]] || !this.titleMap[type]) {
+                    this.titleMap[type] = prop;
                 }
+            }
+        };
+
+        for (const type of eModel.metadata.labels) {
+            if (this.titleMap[type] && props[this.titleMap[type]]) {
+                return props[this.titleMap[type]];
             }
         }
         for (const field of this.useAsTitle) {
             if (props[field]) {
+                catchResult(field);
                 return props[field];
             }
             for (const prop in props) {
                 if (props.hasOwnProperty(prop)) {
                     const clearPropId = prop.toLowerCase();
                     if (clearPropId.indexOf(field) !== -1) {
+                        catchResult(prop);
                         return props[prop];
                     }
                 }
@@ -279,4 +288,13 @@ export class ResponseHandler {
 
         return eModel.metadata.labels.join('_') + '_' + eModel.metadata.id;
     };
+
+    public getPropNameByTypes (types: string[]): string {
+        for (const t of types) {
+            if (this.titleMap[t]) {
+                return this.titleMap[t];
+            }
+        }
+        return undefined;
+    }
 }

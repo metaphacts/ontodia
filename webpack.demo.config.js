@@ -119,6 +119,7 @@ module.exports = {
             },
             "/neo4j-endpoint**": {
                 target: process.env.NEO4J_ENDPOINT,
+                auth: process.env.NEO4J_AUTH ? process.env.NEO4J_AUTH  : 'neo4j:neo4j',
                 pathRewrite: {'/neo4j-endpoint' : ''},
                 changeOrigin: true,
                 secure: false,

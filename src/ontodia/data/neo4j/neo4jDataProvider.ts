@@ -21,7 +21,6 @@ import {
     LinkTypeBinding, Neo4jResponse,
 } from './models';
 
-
 export interface Neo4jDataProviderOptions {
     endpointUrl: string;
     useAsTitle?: string[];
@@ -189,56 +188,82 @@ export class Neo4jDataProvider implements DataProvider {
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
 
+        const getQueryForClassId = (classId: string, filterKey?: string): string => {
+            const sortBy: string = this.calc.getPropNameByTypes([classId]);
+            const filterByKey = filterKey && sortBy ? `WHERE (n.${sortBy} CONTAINS '${filterKey}')` : '';
+
+            return `{
+                "query" : "MATCH (n:${classId}) ${filterByKey} RETURN n SKIP ${params.offset} LIMIT ${params.limit};",
+                "params" : { }
+            }`;
+        };
+
+        const getQueryForElementId = (
+            elementId: string,
+            linktId?: string,
+            elementInfo?: ElementModel,
+            filterKey?: string,
+        ): string => {
+            let filterByKey = '';
+            if (elementInfo) {
+                const types = elementInfo.types;
+                const sortBy = this.calc.getPropNameByTypes(types);
+                filterByKey = filterKey && sortBy ? ` AND (n.${sortBy} CONTAINS '${filterKey}')` : '';
+            }
+
+            const linkFilter = linktId ? `AND (type(r) = '${linktId}')` : '';
+
+            return `{
+                "query" : "MATCH (n)<-[r]->(n2) ` +
+                    `WHERE  ((ID(n) = ${elementId})${linkFilter}${filterByKey}) ` +
+                    `RETURN n2 SKIP ${params.offset} LIMIT ${params.limit}",
+                "params" : { }
+            }`;
+        };
+
         let query;
         if (params.elementTypeId) {
-            query = getQueryForClassId(params.elementTypeId);
+            query = getQueryForClassId(params.elementTypeId, params.text);
         } else if (params.refElementLinkId) {
             const linkId = params.refElementLinkId;
             const eId = params.refElementId;
             if (linkId === 'typeOf' || linkId === 'instanceOf') {
                 if (linkId === 'typeOf') {
-                    query = getQueryForClassId(eId);
+                    query = getQueryForClassId(eId, params.text);
                 } else {
                     return this.elementInfo({ elementIds: [eId] })
                         .then(result => this.calc.getElementTypesAsElements(result));
                 }
             } else {
-                query = getQueryForElementId(eId, linkId);
+                return this.elementInfo({ elementIds: [eId] }).then(elementResult => {
+                    const el = elementResult[Object.keys(elementResult)[0]];
+
+                    query = getQueryForElementId(eId, linkId, el, params.text);
+                    return this.executeQuery<ElementBinding>(query)
+                        .then(result => this.calc.getFilteredData(result, params.text))
+                        .then(results => {
+                            return Object.assign(results, elementResult);
+                        });
+                });
             }
         } else if (params.refElementId) {
             const eId = params.refElementId;
             if (+eId || +eId === 0) {
-                query = getQueryForElementId(eId);
-                return Promise.all([
-                    this.executeQuery<ElementBinding>(query)
-                        .then(result => this.calc.getFilteredData(result, params.text)),
-                    this.elementInfo({ elementIds: [eId] })
-                        .then(result => this.calc.getElementTypesAsElements(result)),
-                ]).then(results => {
-                    return Object.assign(results[0], results[1]);
+                return this.elementInfo({ elementIds: [eId] }).then(elementResult => {
+                    const el = elementResult[Object.keys(elementResult)[0]];
+
+                    query = getQueryForElementId(eId, null, el, params.text);
+                    return this.executeQuery<ElementBinding>(query)
+                        .then(result => this.calc.getFilteredData(result, params.text))
+                        .then(results => {
+                            return Object.assign(results, elementResult);
+                        });
                 });
             } else {
-                query = getQueryForClassId(eId);
+                query = getQueryForClassId(eId, params.text);
             }
         } else {
             return Promise.resolve({});
-        }
-
-        function getQueryForClassId (classId: string): string {
-            return `{
-                "query" : "MATCH (n:${classId}) RETURN n SKIP ${params.offset} LIMIT ${params.limit};",
-                "params" : { }
-            }`;
-        }
-
-        function getQueryForElementId (elementId: string, linktId?: string): string {
-            const linkFilter = linktId ? `AND (type(r) = '${linktId}')` : '';
-            return `{
-                "query" : "MATCH (n)<-[r]->(n2) ` +
-                    `WHERE  ((ID(n) = ${elementId}) ${linkFilter}) ` +
-                    `RETURN n2 SKIP ${params.offset} LIMIT ${params.limit}",
-                "params" : { }
-            }`;
         }
 
         return this.executeQuery<ElementBinding>(query)
@@ -282,7 +307,6 @@ function executeQuery<Binding>(
         }
     });
 };
-
 
 function queryInternal(params: {
     url: string,
