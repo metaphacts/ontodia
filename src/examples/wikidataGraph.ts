@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, PersonTemplate,
-    GraphBuilder, WikidataSettings,
+    SparqlGraphBuilder, WikidataSettings,
 } from '../index';
 
 import { onPageLoad } from './common';
@@ -47,7 +47,7 @@ function onWorkspaceMounted(workspace: Workspace) {
             'http://www.wikidata.org/prop/direct/P154',
         ],
     }, WikidataSettings);
-    const graphBuilder = new GraphBuilder(dataProvider);
+    const graphBuilder = new SparqlGraphBuilder(dataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(`
         CONSTRUCT { ?current ?p ?o. }
