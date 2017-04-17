@@ -230,10 +230,11 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
         `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?object) as ?instcount)
+        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
         WHERE {
-            { \${elementIri} ?link ?object FILTER ISIRI(?object)}
-            UNION { ?object ?link \${elementIri} }
+            { \${elementIri} ?link ?outObject FILTER ISIRI(?outObject)}
+            UNION 
+              { ?inObject ?link \${elementIri} FILTER ISIRI(?inObject)}
         } GROUP BY ?link
     `,
     filterRefElementLinkPattern: '',

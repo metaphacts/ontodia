@@ -33,7 +33,7 @@ export class LinkTypesToolboxModel extends Backbone.Model {
                 if (this.currentRequest !== request) { return; }
                 this.connectionsOfSelectedElement = {};
                 for (const linkType of linkTypes) {
-                    this.connectionsOfSelectedElement[linkType.id] = linkType.count;
+                    this.connectionsOfSelectedElement[linkType.id] = linkType.inCount + linkType.outCount;
                 }
                 this.trigger('state:endQuery');
             }).catch(error => {

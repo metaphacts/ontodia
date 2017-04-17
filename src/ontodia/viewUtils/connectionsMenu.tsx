@@ -10,6 +10,8 @@ import { chooseLocalizedText } from '../diagram/model';
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
 
 type Label = { values: LocalizedString[] };
+type ConnectionCount = { inCount: number; outCount: number };
+
 export interface ReactElementModel {
     model: ElementModel;
     presentOnDiagram: boolean;
@@ -37,10 +39,11 @@ export class ConnectionsMenu {
     private state: 'loading' | 'error' | 'completed';
 
     private links: FatLinkType[];
-    private countMap: { [linkTypeId: string]: number };
+    private countMap: { [linkTypeId: string]: ConnectionCount };
 
     private selectedLink: FatLinkType;
     private objects: ReactElementModel[];
+    private direction: 'in' | 'out';
 
     public cellView: joint.dia.CellView;
 
@@ -83,16 +86,21 @@ export class ConnectionsMenu {
             .then(linkTypes => {
                 this.state = 'completed';
 
-                const countMap: Dictionary<number> = {};
+                const countMap: Dictionary<ConnectionCount> = {};
                 const links: FatLinkType[] = [];
                 for (const linkCount of linkTypes) {
-                    countMap[linkCount.id] = linkCount.count;
+                    countMap[linkCount.id] = {
+                        inCount: linkCount.inCount,
+                        outCount: linkCount.outCount,
+                    };
                     links.push(this.view.model.getLinkType(linkCount.id));
                 }
 
-                let totalCount = 0;
-                Object.keys(countMap).forEach(key => totalCount += countMap[key]);
-                countMap['allRelatedElements'] = totalCount;
+                countMap[ALL_RELATED_ELEMENTS_LINK.id] = Object.keys(countMap)
+                    .map(key => countMap[key])
+                    .reduce((a, b) => {
+                        return {inCount: a.inCount + b.inCount, outCount: a.outCount + b.outCount};
+                    }, {inCount: 0, outCount: 0});
 
                 this.countMap = countMap;
 
@@ -109,11 +117,19 @@ export class ConnectionsMenu {
             });
     }
 
-    private loadObjects(link: FatLinkType) {
+    private loadObjects(link: FatLinkType, direction?: 'in' | 'out') {
         this.state = 'loading';
         this.selectedLink = link;
         this.objects = [];
-        const requestsCount = Math.ceil(this.countMap[link.id] / 100);
+        this.direction = direction;
+
+        const {inCount, outCount} = this.countMap[link.id];
+        const count =
+            direction === 'in' ? inCount :
+            direction === 'out' ? outCount :
+            (inCount + outCount);
+
+        const requestsCount = Math.ceil(count / 100);
 
         const requests: Promise<Dictionary<ElementModel>>[] = [];
         for (let i = 0; i < requestsCount; i++) {
@@ -122,7 +138,8 @@ export class ConnectionsMenu {
                     elementId: this.cellView.model.id,
                     linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
                     limit: 100,
-                    offset: i * 100
+                    offset: i * 100,
+                    direction,
                 })
             );
         }
@@ -190,21 +207,21 @@ export class ConnectionsMenu {
         this.options.onClose();
     };
 
-    private onExpandLink = (link: FatLinkType) => {
-        if (this.selectedLink !== link || !this.objects) {
-            this.loadObjects(link);
+    private onExpandLink = (link: FatLinkType, direction?: 'in' | 'out') => {
+        if (this.selectedLink !== link || !this.objects || this.direction !== direction) {
+            this.loadObjects(link, direction);
         }
         this.render();
     };
 
-    private onMoveToFilter = (link: FatLinkType) => {
+    private onMoveToFilter = (link: FatLinkType, direction?: 'in' | 'out') => {
         if (link === ALL_RELATED_ELEMENTS_LINK) {
             const element = this.cellView.model as Element;
             element.addToFilter();
             // this.options.onClose();
         } else {
             const selectedElement = this.view.model.getElement(this.cellView.model.id);
-            selectedElement.addToFilter(link);
+            selectedElement.addToFilter(link, direction);
             // this.options.onClose();
         }
     };
@@ -246,12 +263,12 @@ export class ConnectionsMenu {
     }
 }
 
-export interface ConnectionsMenuMarkupProps {
+interface ConnectionsMenuMarkupProps {
     cellView: joint.dia.CellView;
 
     connectionsData: {
         links: FatLinkType[];
-        countMap: { [linkTypeId: string]: number };
+        countMap: { [linkTypeId: string]: ConnectionCount };
     };
 
     objectsData?: {
@@ -262,13 +279,13 @@ export interface ConnectionsMenuMarkupProps {
     lang: string;
     state: 'loading' | 'error' | 'completed';
 
-    onExpandLink?: (link: FatLinkType) => void;
+    onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
-    onMoveToFilter?: (link: FatLinkType) => void;
+    onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 }
 
-export class ConnectionsMenuMarkup
-    extends React.Component<ConnectionsMenuMarkupProps, {filterKey: string, panel: string}> {
+class ConnectionsMenuMarkup extends React.Component<
+    ConnectionsMenuMarkupProps, { filterKey: string, panel: string }> {
 
     constructor (props: ConnectionsMenuMarkupProps) {
         super(props);
@@ -289,9 +306,9 @@ export class ConnectionsMenuMarkup
         return 'Error';
     };
 
-    private onExpandLink = (link: FatLinkType) => {
+    private onExpandLink = (link: FatLinkType, direction?: 'in' | 'out') => {
         this.setState({ filterKey: '',  panel: 'objects' });
-        this.props.onExpandLink(link);
+        this.props.onExpandLink(link, direction);
     };
 
     private onCollapseLink = () => {
@@ -377,20 +394,19 @@ export class ConnectionsMenuMarkup
     }
 }
 
-export interface ConnectionsListProps {
+interface ConnectionsListProps {
     data: {
         links: FatLinkType[];
-        countMap: { [linkTypeId: string]: number };
+        countMap: { [linkTypeId: string]: ConnectionCount };
     };
     lang: string;
     filterKey: string;
 
-    onExpandLink?: (link: FatLinkType) => void;
-    onMoveToFilter?: (link: FatLinkType) => void;
+    onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
+    onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 }
 
-export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
-
+class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
     constructor (props: ConnectionsListProps) {
         super(props);
     }
@@ -425,17 +441,30 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
         const countMap = this.props.data.countMap || {};
         const views: React.ReactElement<any>[] = [];
         for (const link of links) {
-            views.push(
-                <LinkInPopupMenu
-                    key={link.id}
-                    link={link}
-                    onExpandLink={this.props.onExpandLink}
-                    lang={this.props.lang}
-                    count={countMap[link.id] || 0}
-                    filterKey={this.props.filterKey}
-                    onMoveToFilter={this.props.onMoveToFilter}
-                />
-            );
+            ['in', 'out'].forEach((direction: 'in' | 'out') => {
+               let count = 0;
+
+               if (direction === 'in') {
+                   count = countMap[link.id].inCount;
+               } else if (direction === 'out') {
+                   count = countMap[link.id].outCount;
+               }
+
+               if (count !== 0) {
+                   views.push(
+                       <LinkInPopupMenu
+                           key={`${direction}-${link.id}`}
+                           link={link}
+                           onExpandLink={this.props.onExpandLink}
+                           lang={this.props.lang}
+                           count={count}
+                           direction={direction}
+                           filterKey={this.props.filterKey}
+                           onMoveToFilter={this.props.onMoveToFilter}
+                       />
+                   );
+               }
+            });
         }
         return views;
     };
@@ -451,13 +480,14 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
             viewList = views;
             if (links.length > 1) {
                 const countMap = this.props.data.countMap || {};
+                const allRelatedElements = countMap[ALL_RELATED_ELEMENTS_LINK.id];
                 viewList = [
                     <LinkInPopupMenu
-                        key={'allRelatedElements'}
+                        key={ALL_RELATED_ELEMENTS_LINK.id}
                         link={ALL_RELATED_ELEMENTS_LINK}
                         onExpandLink={this.props.onExpandLink}
                         lang={this.props.lang}
-                        count={countMap['allRelatedElements']}
+                        count={allRelatedElements.inCount + allRelatedElements.outCount}
                         onMoveToFilter={this.props.onMoveToFilter}
                     />,
                 <hr key='ontodia-hr-line' className='ontodia-connections-menu_links-list__hr'/>,
@@ -472,53 +502,55 @@ export class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
     }
 }
 
-export interface LinkInPopupMenuProps {
+interface LinkInPopupMenuProps {
     link: FatLinkType;
     count: number;
+    direction?: 'in' | 'out';
     lang?: string;
     filterKey?: string;
-    onExpandLink?: (link: FatLinkType) => void;
-    onMoveToFilter?: (link: FatLinkType) => void;
+    onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
+    onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 }
 
-export class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
+class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
     constructor(props: LinkInPopupMenuProps) {
         super(props);
     }
 
-    private onExpandLink = () => {
-        this.props.onExpandLink(this.props.link);
+    private onExpandLink = (direction?: 'in' | 'out') => {
+        this.props.onExpandLink(this.props.link, direction);
     };
 
     private onMoveToFilter = (evt: React.MouseEvent<any>) => {
         evt.stopPropagation();
-        this.props.onMoveToFilter(this.props.link);
+        this.props.onMoveToFilter(this.props.link, this.props.direction);
     };
 
     render() {
-        const countIcon = (this.props.count > 0 ?
-            <span className='badge link-in-popup-menu__count'>{this.props.count}</span> : '');
-
         const fullText = chooseLocalizedText(this.props.link.get('label').values, this.props.lang).text;
         const textLine = getColoredText(fullText, this.props.filterKey);
-
+        const directionName =
+            this.props.direction === 'in' ? 'source' :
+            this.props.direction === 'out' ? 'target' :
+            'all connected';
+        const navigationTitle = `Navigate to ${directionName} "${fullText}" elements`;
         return (
-            <li data-linkTypeId={this.props.link.id} className='link-in-popup-menu' onClick={this.onExpandLink}>
-                <div className='link-in-popup-menu__link-title'
-                    title={'Naviagte to connected by link \'' + fullText + '\' elements'}
-                >
-                    {textLine}
-                </div>
-                {countIcon}
-                <a className='filter-button' title='Move to filter panel' onClick={this.onMoveToFilter}><img/></a>
-                <div className='link-in-popup-menu__navigate-button'
-                    title={'Naviagte to connected by link \'' + fullText + '\' elements'}/>
+            <li data-linkTypeId={this.props.link.id}
+                className='link-in-popup-menu' title={navigationTitle}
+                onClick={() => this.onExpandLink(this.props.direction)}>
+                {this.props.direction === 'in' && <div className='link-in-popup-menu__in-direction' />}
+                {this.props.direction === 'out' && <div className='link-in-popup-menu__out-direction' />}
+                <div className='link-in-popup-menu__link-title'>{textLine}</div>
+                <span className='badge link-in-popup-menu__count'>{this.props.count}</span>
+                <a className='filter-button' onClick={this.onMoveToFilter}
+                    title='Set as filter in the Instances panel'><img/></a>
+                <div className='link-in-popup-menu__navigate-button' title={navigationTitle} />
             </li>
         );
     }
 }
 
-export interface ObjectsPanelProps {
+interface ObjectsPanelProps {
     data: {
         selectedLink?: FatLinkType;
         objects: ReactElementModel[]
@@ -529,7 +561,7 @@ export interface ObjectsPanelProps {
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
 }
 
-export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
+class ObjectsPanel extends React.Component<ObjectsPanelProps, {
     checkMap: { [id: string]: boolean },
     selectAll: string,
 }> {
@@ -664,7 +696,7 @@ export class ObjectsPanel extends React.Component<ObjectsPanelProps, {
     }
 }
 
-export interface ElementInPopupMenuProps {
+interface ElementInPopupMenuProps {
     element: ReactElementModel;
     onCheckboxChanged?: (object: ReactElementModel, value: boolean) => void;
     lang?: string;
@@ -672,7 +704,7 @@ export interface ElementInPopupMenuProps {
     filterKey?: string;
 }
 
-export class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { checked: boolean }> {
+class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { checked: boolean }> {
     constructor(props: ElementInPopupMenuProps) {
         super(props);
         this.state = { checked: this.props.checked };

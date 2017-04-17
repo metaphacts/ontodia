@@ -43,8 +43,8 @@ export class Element extends UIElement {
         if (!this.has('isExpanded')) { this.set('isExpanded', false); }
     }
 
-    addToFilter(linkType?: FatLinkType) {
-        this.trigger('add-to-filter', this, linkType);
+    addToFilter(linkType?: FatLinkType, direction?: 'in' | 'out') {
+        this.trigger('add-to-filter', this, linkType, direction);
     }
 
     focus() {

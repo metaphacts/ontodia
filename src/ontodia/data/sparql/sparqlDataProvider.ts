@@ -16,7 +16,7 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkTypeBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
+    LinkCountBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 
@@ -117,7 +117,7 @@ export class SparqlDataProvider implements DataProvider {
                   OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
             }
         `;
-        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
+        return this.executeSparqlQuery<LinkTypeInfoBinding>(query).then(getLinkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
@@ -192,7 +192,7 @@ export class SparqlDataProvider implements DataProvider {
         const elementIri = escapeIri(params.elementId);
         const query = this.settings.defaultPrefix
             + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
-        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinksTypesOf);
+        return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 
 
@@ -200,12 +200,14 @@ export class SparqlDataProvider implements DataProvider {
         elementId: string;
         linkId: string;
         limit: number;
-        offset: number
+        offset: number;
+        direction?: 'in' | 'out';
     }): Promise<Dictionary<ElementModel>> {
         // for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
+            linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
             languageCode: ''});
@@ -214,33 +216,15 @@ export class SparqlDataProvider implements DataProvider {
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
 
-        let refQueryPart = '';
-        // link to element with specified link type
-        if (params.refElementId && params.refElementLinkId) {
-            const refElementIRI = escapeIri(params.refElementId);
-            const refElementLinkIRI = escapeIri(params.refElementLinkId);
-            refQueryPart =  `{
-                ${refElementIRI} ${refElementLinkIRI} ?inst .
-                } UNION {
-                    ?inst ${refElementLinkIRI} ${refElementIRI} .
-                }`;
-        }
-
-        // all links to current element
-        if (params.refElementId && !params.refElementLinkId) {
-            const refElementIRI = escapeIri(params.refElementId);
-            refQueryPart = `{
-                ${refElementIRI} ?link ?inst . 
-                } UNION {
-                    ?inst ?link ${refElementIRI} .
-                }
-                ${this.settings.filterRefElementLinkPattern}
-                `;
-        }
-
         if (!params.refElementId && params.refElementLinkId) {
             throw new Error(`Can't execute refElementLink filter without refElement`);
         }
+
+        let refQueryPart = createRefQueryPart({
+            elementId: params.refElementId,
+            linkId: params.refElementLinkId,
+            direction: params.linkDirection
+        });
 
         let elementTypePart: string;
         if (params.elementTypeId) {
@@ -424,6 +408,29 @@ function sparqlExtractLabel(subject: string, label: string): string {
 
 function escapeIri(iri: string) {
     return `<${iri}>`;
+}
+
+function createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
+    let refQueryPart = '';
+    const refElementIRI = escapeIri(params.elementId);
+    const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
+
+    // link to element with specified link type
+    // if direction is not specified, provide both patterns and union them
+    // FILTER ISIRI is used to prevent blank nodes appearing in results
+    if (params.elementId && params.linkId) {
+        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction ? ' UNION ' : '';
+        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ${refElementLinkIRI} ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
+    }
+
+    // all links to current element
+    if (params.elementId && !params.linkId) {
+        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction ? ' UNION ' : '';
+        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ?link ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
+    }
+    return refQueryPart;
 }
 
 export default SparqlDataProvider;
