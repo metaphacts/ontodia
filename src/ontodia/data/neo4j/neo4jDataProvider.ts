@@ -271,7 +271,7 @@ export class Neo4jDataProvider implements DataProvider {
     };
 
     executeQuery<Binding>(query: string) {
-        return executeQuery<Binding>(this.options.endpointUrl, query, this.authorization);
+        return executeQuery<Binding>(`${this.options.endpointUrl}/db/data/cypher`, query, this.authorization);
     }
 }
 

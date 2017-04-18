@@ -119,20 +119,18 @@ module.exports = {
     devServer: {
         proxy: {
             "/sparql-endpoint**": {
-                target: process.env.SPARQL_ENDPOINT,
+                //preventing endpoint to be null, HPM will not initialize correctly
+                target: process.env.SPARQL_ENDPOINT ? process.env.SPARQL_ENDPOINT : 'http://example.com/sparql',
                 pathRewrite: {'/sparql-endpoint' : ''},
                 changeOrigin: true,
-                secure: false,
+                secure: false
             },
-            "/neo4j-endpoint**": {
-                target: process.env.NEO4J_ENDPOINT,
+            "/neo4j-endpoint/**": {
+                target: process.env.NEO4J_ENDPOINT ? process.env.NEO4J_ENDPOINT : 'http://localhost:7474',
                 auth: process.env.NEO4J_AUTH ? process.env.NEO4J_AUTH  : 'neo4j:neo4j',
-                pathRewrite: {
-                    '/neo4j-endpoint/movies' : '/movies',
-                    '/neo4j-endpoint/panama' : '/panama'
-                },
+                pathRewrite: { '/neo4j-endpoint' : ''},
                 changeOrigin: true,
-                secure: false,
+                secure: false
             },
         },
     },
