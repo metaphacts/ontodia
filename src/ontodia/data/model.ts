@@ -19,6 +19,7 @@ export interface LinkModel {
     linkTypeId: string;
     sourceId: string;
     targetId: string;
+    properties?: { [id: string]: Property };
 }
 
 export interface ClassModel {

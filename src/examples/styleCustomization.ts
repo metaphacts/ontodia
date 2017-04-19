@@ -1,18 +1,14 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, LinkStyle } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, LinkTemplate } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
 
-const CUSTOM_LINK_STYLE: LinkStyle = {
-    connection: {
-        stroke: '#3c4260',
-        'stroke-width': 2,
-    },
+const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
     markerSource: {
         fill: '#4b4a67',
         stroke: '#4b4a67',
@@ -27,13 +23,17 @@ const CUSTOM_LINK_STYLE: LinkStyle = {
         width: 20,
         height: 12,
     },
-    labels: [{
-        attrs: {
-            text: {fill: '#3c4260'},
-        },
-    }],
-    connector: {name: 'rounded'},
     router: {name: 'orthogonal'},
+    renderLink: () => ({
+        connection: {
+            stroke: '#3c4260',
+            'stroke-width': 2,
+        },
+        connector: {name: 'rounded'},
+        label: {
+            attrs: {text: {fill: '#3c4260'}},
+        },
+    }),
 };
 
 function onWorkspaceMounted(workspace: Workspace) {
@@ -80,10 +80,8 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
                 }
             },
         ],
-        linkStyleResolvers: [
-            type => {
-                return CUSTOM_LINK_STYLE;
-            },
+        linkTemplateResolvers: [
+            type => CUSTOM_LINK_TEMPLATE,
         ],
     },
 };
