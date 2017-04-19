@@ -2,3 +2,20 @@ language: node_js
 node_js:
   - "6"
   - "4"
+deploy:
+  - provider: script
+    script: ./travis-dist-deploy.sh
+    skip_cleanup: true
+    on:
+      branch: master
+      node: 6
+  - provider: script
+    script: ./travis-dist-deploy.sh
+    skip_cleanup: true
+    on:
+      node: 6
+      tags: true
+sudo: false
+cache:
+  directories:
+  - node_modules
