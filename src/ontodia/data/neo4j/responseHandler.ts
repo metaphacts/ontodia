@@ -289,7 +289,17 @@ export class ResponseHandler {
         return eModel.metadata.labels.join('_') + '_' + eModel.metadata.id;
     };
 
-    public getPropNameByTypes (types: string[]): string {
+    public getPossibleTitles(): string[] {
+        const list = Object.keys(this.titleMap);
+        for (const t of POSSIBLE_LABELS) {
+            if (list.indexOf(t) === -1) {
+                list.push(t);
+            }
+        }
+        return list;
+    }
+
+    public getTitleFieldByTypes (types?: string[]): string {
         for (const t of types) {
             if (this.titleMap[t]) {
                 return this.titleMap[t];

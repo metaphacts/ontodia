@@ -189,7 +189,7 @@ export class Neo4jDataProvider implements DataProvider {
         if (params.limit === 0) { params.limit = 100; }
 
         const getQueryForClassId = (classId: string, filterKey?: string): string => {
-            const sortBy: string = this.calc.getPropNameByTypes([classId]);
+            const sortBy: string = this.calc.getTitleFieldByTypes([classId]);
             const filterByKey = filterKey && sortBy ? `WHERE (n.${sortBy} CONTAINS '${filterKey}')` : '';
 
             return `{
@@ -207,7 +207,7 @@ export class Neo4jDataProvider implements DataProvider {
             let filterByKey = '';
             if (elementInfo) {
                 const types = elementInfo.types;
-                const sortBy = this.calc.getPropNameByTypes(types);
+                const sortBy = this.calc.getTitleFieldByTypes(types);
                 filterByKey = filterKey && sortBy ? ` AND (n.${sortBy} CONTAINS '${filterKey}')` : '';
             }
 
@@ -262,12 +262,24 @@ export class Neo4jDataProvider implements DataProvider {
             } else {
                 query = getQueryForClassId(eId, params.text);
             }
+        } else if (params.text) {
+            let titles = this.calc.getPossibleTitles();
+            const conditionString = titles.map(t => {
+                return `(n.${t} CONTAINS '${params.text}')`;
+            }).join(' OR ');
+
+            query = `{
+                "query" : "MATCH (n) ` +
+                    `WHERE (${conditionString})` +
+                    `RETURN n SKIP ${params.offset} LIMIT ${params.limit}",
+                "params" : { }
+            }`;
         } else {
             return Promise.resolve({});
         }
 
         return this.executeQuery<ElementBinding>(query)
-            .then(result => this.calc.getFilteredData(result, params.text));
+            .then(result => this.calc.getFilteredData(result));
     };
 
     executeQuery<Binding>(query: string) {
