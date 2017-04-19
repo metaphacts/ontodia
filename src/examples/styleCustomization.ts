@@ -27,11 +27,11 @@ const CUSTOM_LINK_STYLE: LinkStyle = {
         width: 20,
         height: 12,
     },
-    labels: [{
+    label: {
         attrs: {
             text: {fill: '#3c4260'},
         },
-    }],
+    },
     connector: {name: 'rounded'},
     router: {name: 'orthogonal'},
 };

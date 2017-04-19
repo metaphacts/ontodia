@@ -5,6 +5,8 @@ import { isIE11 } from '../viewUtils/detectBrowser';
 
 import { Link, FatLinkType } from './elements';
 import { DiagramView } from './view';
+import {lab} from "d3-color";
+import { LocalizedString } from "../data/model";
 
 export class LinkView extends joint.dia.LinkView {
     model: Link;
@@ -19,6 +21,7 @@ export class LinkView extends joint.dia.LinkView {
         this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
         this.listenTo(this.model, 'updateRouting', this.onRoutingUpdate);
     }
+
     render(): LinkView {
         if (!this.view && this.paper && this.paper.diagramView) {
             this.setView(this.paper.diagramView);
@@ -26,6 +29,7 @@ export class LinkView extends joint.dia.LinkView {
         const result: any = super.render();
         return result;
     }
+
     getTypeModel(): FatLinkType {
         return this.view.model.getLinkType(this.model.get('typeId'));
     }
@@ -61,11 +65,10 @@ export class LinkView extends joint.dia.LinkView {
         const linkTypeId: string = this.model.get('typeId');
         const typeModel = this.view.model.getLinkType(linkTypeId);
 
-        const style = this.view.getLinkStyle(this.model.get('typeId'));
+        const style = this.view.getLinkStyle(this.model.get('template'));
         merge(style, {connection: {'stroke-dasharray': this.model.layoutOnly ? '5,5' : null}});
 
         let linkAttributes: joint.dia.LinkAttributes = {
-            labels: style.labels,
             connector: style.connector,
             router: style.router,
             z: 0,
@@ -75,14 +78,28 @@ export class LinkView extends joint.dia.LinkView {
         }
 
         const showLabels = typeModel && typeModel.get('showLabel');
-        const labelAttributes = showLabels ? [{
-            position: 0.5,
-            attrs: {text: {
-                text: this.view.getLinkLabel(linkTypeId).text,
-            }},
-        }] : [];
+        const labelAttributes: joint.dia.LinkLabelAttributes[] = [];
 
-        merge(linkAttributes, {labels: labelAttributes});
+        if (showLabels) {
+            const label = {...style.label};
+            const value = _.get<LocalizedString[]>(style, 'label.attrs.text.text');
+            const text = value ? this.view.getLocalizedText(value).text : this.view.getLinkLabel(linkTypeId).text;
+            merge(label, {position: _.get(style, 'label.position', 0.5), attrs: {text: {text}}});
+            labelAttributes.push(label);
+        }
+
+        if (style.properties) {
+            style.properties.forEach(p => {
+                const property = {...p};
+                const value = _.get<LocalizedString[]>(property, 'attrs.text.text');
+                const text = showLabels && value ? this.view.getLocalizedText(value).text : '';
+                merge(property, {position: property.position || 0.5, attrs: {text: {text}}});
+                labelAttributes.push(property);
+            });
+        }
+
+        linkAttributes.labels = labelAttributes;
+
         this.model.set(linkAttributes, options);
     }
 }

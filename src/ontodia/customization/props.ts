@@ -1,10 +1,10 @@
 import { ComponentClass } from 'react';
 import { LinkView } from '../diagram/linkView';
 
-import { Dictionary, Property } from '../data/model';
+import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
 export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
-export type LinkStyleResolver = (type: string) => LinkStyle | undefined;
+export type LinkStyleResolver = (link: LinkModel) => LinkStyle | undefined;
 export type TemplateResolver = (types: string[]) => ElementTemplate | undefined;
 
 export interface CustomTypeStyle {
@@ -41,7 +41,8 @@ export interface LinkStyle {
     };
     markerSource?: LinkMarkerStyle;
     markerTarget?: LinkMarkerStyle;
-    labels?: LinkLabelStyle[];
+    label?: LinkLabelStyle;
+    properties?: LinkLabelStyle[];
     connector?: {
         name?: string;
         args?: {
@@ -90,6 +91,7 @@ export interface LinkLabelStyle {
             fill?: string;
             'stroke'?: string;
             'stroke-width'?: number;
+            text?: LocalizedString[];
         };
     };
 }

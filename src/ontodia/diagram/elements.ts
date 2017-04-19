@@ -1,7 +1,7 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
-import { ClassModel, ElementModel, LocalizedString } from '../data/model';
+import { ClassModel, ElementModel, LinkModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
 
 export class UIElement extends joint.shapes.basic.Generic {
@@ -105,6 +105,7 @@ export class RichProperty extends Backbone.Model {
  *     updateRouting
  */
 export class Link extends joint.dia.Link {
+    template: LinkModel;
     arrowheadMarkup: string;
     get markup() {
         if (typeof this.typeIndex !== 'number') {

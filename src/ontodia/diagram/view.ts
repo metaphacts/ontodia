@@ -25,7 +25,7 @@ import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { Dictionary, ElementModel, LocalizedString } from '../data/model';
+import { Dictionary, ElementModel, LinkModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element, FatClassModel, linkMarkerKey } from './elements';
@@ -418,19 +418,19 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    getLinkStyle(linkTypeId: string): LinkStyle {
+    getLinkStyle(link: LinkModel): LinkStyle {
         let style = getDefaultLinkStyle();
         for (const resolver of this.linkStyleResolvers) {
-            const result = resolver(linkTypeId);
+            const result = resolver(link);
             if (result) {
                 merge(style, cloneDeep(result));
                 break;
             }
         }
-        if (!this.linkMarkers[linkTypeId]) {
-            this.linkMarkers[linkTypeId] = {
-                start: this.createLinkMarker(linkTypeId, true, style.markerSource),
-                end: this.createLinkMarker(linkTypeId, false, style.markerTarget),
+        if (!this.linkMarkers[link.linkTypeId]) {
+            this.linkMarkers[link.linkTypeId] = {
+                start: this.createLinkMarker(link.linkTypeId, true, style.markerSource),
+                end: this.createLinkMarker(link.linkTypeId, false, style.markerTarget),
             };
         }
         if (!style.router) {
