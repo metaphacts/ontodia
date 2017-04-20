@@ -159,14 +159,20 @@ export const WikidataSettings: SparqlDataProviderSettings = {
                     STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
 
     linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?object) as ?instcount)
+        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
         WHERE {
-            { \${elementIri} ?link ?object }
-            UNION { ?object ?link \${elementIri} }
-            #this is to prevent some junk appear on diagram, but can really slow down execution on complex objects
-            FILTER ISIRI(?object)
-            FILTER exists {?object ?someprop ?someobj}
-            FILTER regex(STR(?link), "direct")                
+            { \${elementIri} ?link ?outObject .
+              # this is to prevent some junk appear on diagram,
+              # but can really slow down execution on complex objects
+              FILTER ISIRI(?outObject)
+              FILTER EXISTS { ?outObject ?someprop ?someobj }
+            }
+            UNION
+            { ?inObject ?link \${elementIri} .
+              FILTER ISIRI(?inObject)
+              FILTER EXISTS { ?inObject ?someprop ?someobj }
+            }
+            FILTER regex(STR(?link), "direct")
         } GROUP BY ?link
     `,
     filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
@@ -186,7 +192,6 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
  PREFIX owl:  <http://www.w3.org/2002/07/owl#> 
-
 `,
     schemaLabelProperty: 'rdfs:label',
     dataLabelProperty: 'rdfs:label',
@@ -245,7 +250,7 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
     filterAdditionalRestriction: '',
 };
 
-export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
+const OWLStatsOverride: Partial<SparqlDataProviderSettings> = {
     classTreeQuery: `
         SELECT ?class ?instcount ?label ?parent
         WHERE {
@@ -263,8 +268,9 @@ export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
         }
     `,
 };
+export const OWLStatsSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...OWLStatsOverride};
 
-export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
+const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
     fullTextSearch: {
         prefix: 'PREFIX dbo: <http://dbpedia.org/ontology/>\n',
         queryPattern: ` 
@@ -301,7 +307,6 @@ export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings,
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } UNION { [] ?linkType ?inst. BIND(?inst as ?fullImage) }
             BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
             STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
-`,
-
+    `,
 };
-
+export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...DBPediaOverride};
