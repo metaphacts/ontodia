@@ -50,7 +50,7 @@ export interface LinkCountBinding {
     outCount: RdfLiteral;
 }
 
-export interface LinkTypeInfoBinding {
+export interface LinkTypeBinding {
     link: RdfIri;
     label?: RdfLiteral;
     instcount?: RdfLiteral;

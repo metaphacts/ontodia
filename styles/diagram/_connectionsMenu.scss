@@ -148,11 +148,8 @@
 }
 
 .link-in-popup-menu__count {
-  float: right;
+  flex-shrink: 0;
   margin-left: 10px;
-}
-.link-in-popup-menu__count.badge {
-  min-width: 21px;
 }
 
 .link-in-popup-menu__navigate-button {
@@ -172,16 +169,18 @@
 
 .link-in-popup-menu__in-direction {
   background: url("../images/direction-in.png") 0 0 no-repeat;
+  flex-shrink: 0;
+  width: 22px;
   height: 15px;
   margin: 0 14px 0 0;
-  width: 22px;
 }
 
 .link-in-popup-menu__out-direction {
   background: url("../images/direction-out.png") 0 0 no-repeat;
+  flex-shrink: 0;
+  width: 22px;
   height: 15px;
   margin: 0 8px 0 6px;
-  width: 22px;
 }
 
 .ontodia-connections-menu_links-list__loading {

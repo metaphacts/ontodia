@@ -16,7 +16,7 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkCountBinding, LinkTypeInfoBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
+    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 
@@ -99,14 +99,14 @@ export class SparqlDataProvider implements DataProvider {
     linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
         const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = this.settings.defaultPrefix + `
-            SELECT ?typeId ?label ?instcount
+            SELECT ?link ?label ?instcount
             WHERE {
-                ?typeId ${this.settings.schemaLabelProperty} ?label.
-                VALUES (?typeId) {${ids}}.
-                BIND("" as ?instcount)      
+                ?link ${this.settings.schemaLabelProperty} ?label.
+                VALUES (?link) {${ids}}.
+                BIND("" as ?instcount)
             }
         `;
-        return this.executeSparqlQuery<LinkTypeInfoBinding>(query).then(getLinkTypesInfo);
+        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypesInfo);
     }
 
     linkTypes(): Promise<LinkType[]> {
@@ -117,7 +117,7 @@ export class SparqlDataProvider implements DataProvider {
                   OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
             }
         `;
-        return this.executeSparqlQuery<LinkTypeInfoBinding>(query).then(getLinkTypes);
+        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {

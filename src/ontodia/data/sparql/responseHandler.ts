@@ -1,6 +1,6 @@
 import {
     RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
-    ElementImageBinding, LinkCountBinding, LinkTypeInfoBinding, PropertyBinding,
+    ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
@@ -121,7 +121,7 @@ export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dict
     return models;
 }
 
-export function getLinkTypes(response: SparqlResponse<LinkTypeInfoBinding>): LinkType[] {
+export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
     const instancesMap: Dictionary<LinkType> = {};
@@ -190,9 +190,9 @@ export function getEnrichedElementsInfo(
     return elementsInfo;
 }
 
-export function getLinkTypesInfo(response: SparqlResponse<LinkTypeInfoBinding>): LinkType[] {
+export function getLinkTypesInfo(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLinkType: LinkTypeInfoBinding) => getLinkTypeInfo(sLinkType));
+    return sparqlLinkTypes.map((sLinkType: LinkTypeBinding) => getLinkTypeInfo(sLinkType));
 }
 
 export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
@@ -202,7 +202,7 @@ export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[]
 
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
     const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkType(sLink));
+    return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
 export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
@@ -313,7 +313,7 @@ export function getPropertyModel(node: PropertyBinding): PropertyModel {
     };
 }
 
-export function getLinkType(sLinkType: LinkCountBinding): LinkCount {
+export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     return {
         id: sLinkType.link.value,
         inCount: getInstCount(sLinkType.inCount),
@@ -356,7 +356,7 @@ export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     };
 }
 
-export function getLinkTypeInfo(sLinkInfo: LinkTypeInfoBinding): LinkType {
+export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     return {
         id: sLinkInfo.link.value,
