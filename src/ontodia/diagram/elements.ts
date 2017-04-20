@@ -102,6 +102,7 @@ export class RichProperty extends Backbone.Model {
  * 
  * Events:
  *     state:loaded
+ *     updateRouting
  */
 export class Link extends joint.dia.Link {
     arrowheadMarkup: string;
@@ -131,6 +132,10 @@ export class Link extends joint.dia.Link {
 
     initialize(attributes?: {id: string}) {
         this.set('labels', [{position: 0.5}]);
+    }
+
+    updateRouting(bendingPoint: { x: number, y: number }): void {
+        this.trigger('updateRouting', bendingPoint);
     }
 }
 Link.prototype.arrowheadMarkup = null;

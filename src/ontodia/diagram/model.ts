@@ -1,5 +1,5 @@
 import * as Backbone from 'backbone';
-import { each, size, values, keyBy, defaults, uniqueId } from 'lodash';
+import { each, size, values, keyBy, defaults, omit, partial } from 'lodash';
 import * as joint from 'jointjs';
 
 import {
