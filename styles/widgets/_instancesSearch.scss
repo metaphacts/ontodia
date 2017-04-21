@@ -41,6 +41,11 @@
     word-wrap: break-word;
   }
 
+  &__link-direction {
+    height: 1em;
+    opacity: 0.5;
+  }
+
   &__criterion-remove {
     float: right;
     margin: 0 10px 4px 4px;

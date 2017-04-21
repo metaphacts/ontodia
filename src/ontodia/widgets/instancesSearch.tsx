@@ -138,10 +138,10 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                     <span className={`${CLASS_NAME}__criterion-link-type`}
                         title={linkType && linkType.id}>{linkTypeLabel}</span>
                     {criteria.linkDirection === 'in' && <span>
-                        {' as '}<img src={DirectionInImage} />&nbsp;source
+                        {' as '}<img className={`${CLASS_NAME}__link-direction`} src={DirectionInImage} />&nbsp;source
                     </span>}
                     {criteria.linkDirection === 'out' && <span>
-                        {' as '}<img src={DirectionOutImage} />&nbsp;target
+                        {' as '}<img className={`${CLASS_NAME}__link-direction`} src={DirectionOutImage} />&nbsp;target
                     </span>}
                 </span>}
             </div>);
