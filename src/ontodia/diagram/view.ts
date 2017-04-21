@@ -461,7 +461,11 @@ export class DiagramView extends Backbone.Model {
                 return vertices;
             }
 
-            const links: Link[] = this.model.links;
+            const links: Link[] = getLinksBetweenElements (this.model, srcId, trgId);
+            if (links.length < 2) {
+                return vertices;
+            }
+
             const siblings: Link[] = links.filter((l) => {
                 const verts = l.get('vertices');
                 if (verts && verts.length !== 0) {
@@ -473,10 +477,6 @@ export class DiagramView extends Backbone.Model {
                 return (_srcId === srcId && _trgId === trgId) ||
                        (_srcId === trgId && _trgId === srcId);
             });
-
-            if (siblings.length < 2) {
-                return vertices;
-            }
 
             // There is more than one siblings. We need to create vertices.
             // First of all we'll find the middle point of the link.
@@ -507,6 +507,8 @@ export class DiagramView extends Backbone.Model {
                 i++;
             };
 
+            return vertices;
+
             function updateSibling (sib: Link, i: number): Vertex {
                 const index = i + indexModifyer;
                 // We want the offset values to be calculated as follows 0, 50, 50, 100, 100, 150, 150 ..
@@ -535,7 +537,14 @@ export class DiagramView extends Backbone.Model {
                 return vertex;
             }
 
-            return vertices;
+            function getLinksBetweenElements(model: DiagramModel, eID1: string, eID2: string): Link[] {
+                const linksOfSource = model.graph.getConnectedLinks(model.getElement(eID1));
+                const linksOfTarget = model.graph.getConnectedLinks(model.getElement(eID2));
+
+                return linksOfSource.filter(l => {
+                    return linksOfTarget.indexOf(l) !== -1;
+                }) as Link[];
+            }
         };
     }
 
