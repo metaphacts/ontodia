@@ -105,6 +105,7 @@ export class Neo4jDataProvider implements DataProvider {
         const idLine = '[' + nodeIds.join(', ') + ']';
         const linkIdsLine = '[' + params.linkTypeIds.map(lid => '\'' + lid + '\'').join(', ') + ']';
 
+        // neo4j breaks if the query contains line feeds, so we construct a query without LFs
         const query = [
             `{`,
                 `"query" : "`,
