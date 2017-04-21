@@ -2,7 +2,7 @@
 /dist
 /*.sh
 /*.bat
-
+!travis-dist-deploy.sh
 .idea/
 .vscode/
 

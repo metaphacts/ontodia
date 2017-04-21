@@ -6,6 +6,14 @@ var npmDir = path.join(__dirname, 'node_modules');
 // if BUNDLE_PEERS is set, we'll produce bundle with all dependencies
 var bundlePeers = Boolean(process.env.BUNDLE_PEERS);
 
+var plugins = [];
+
+if (bundlePeers) plugins.push(new webpack.optimize.UglifyJsPlugin({
+    compress: {
+        warnings: false
+    }
+}));
+
 module.exports = {
     entry: {
         ontodia: path.join(__dirname, 'src', 'index.ts'),
@@ -31,10 +39,10 @@ module.exports = {
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
         ],
     },
-    plugins: [],
+    plugins: plugins,
     output: {
         path: path.join(__dirname, 'dist'),
-        filename: 'ontodia.js',
+        filename: !bundlePeers ? 'ontodia.js' : 'ontodia-full.min.js',
         library: 'Ontodia',
         libraryTarget: 'umd',
     },
