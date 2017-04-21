@@ -1,3 +1,4 @@
+#!/usr/bin/env sh
 #get latest heroku build
 
 echo \
@@ -12,17 +13,13 @@ machine api.heroku.com
 git config --global user.email "travis-build@ontodia.org"
 git config --global user.name "Travis CI"
 
-#curl -n https://api.heroku.com/apps
-
 git clone https://git.heroku.com/library-ontodia-org.git $TRAVIS_BUILD_DIR/heroku-app
 cd $TRAVIS_BUILD_DIR/heroku-app
 
-#append/rewrite current build under assets
+#append/rewrite current build under assets. $TRAVIS_BRANCH will hold either branch name or tag name.
 
 mkdir -p assets/$TRAVIS_BRANCH
 cp $TRAVIS_BUILD_DIR/dist/* assets/$TRAVIS_BRANCH
-
-[ -n "$TRAVIS_TAG" ]; then mkdir -p assets/$TRAVIS_TAG && cp $TRAVIS_BUILD_DIR/dist/* assets/$TRAVIS_TAG; fi
 
 #push it back
 
