@@ -538,8 +538,12 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
             <li data-linkTypeId={this.props.link.id}
                 className='link-in-popup-menu' title={navigationTitle}
                 onClick={() => this.onExpandLink(this.props.direction)}>
-                {this.props.direction === 'in' && <div className='link-in-popup-menu__in-direction' />}
-                {this.props.direction === 'out' && <div className='link-in-popup-menu__out-direction' />}
+                {this.props.direction === 'in' || this.props.direction === 'out' ?
+                <div className='link-in-popup-menu_direction'>
+                    {this.props.direction === 'in' && <div className='link-in-popup-menu_direction__in-direction' />}
+                    {this.props.direction === 'out' && <div className='link-in-popup-menu_direction__out-direction' />}
+                </div>
+                : null}
                 <div className='link-in-popup-menu__link-title'>{textLine}</div>
                 <span className='badge link-in-popup-menu__count'>{this.props.count}</span>
                 <a className='filter-button' onClick={this.onMoveToFilter}

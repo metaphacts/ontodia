@@ -129,7 +129,8 @@
 
 .link-in-popup-menu {
   display: flex;
-  padding: 5px 5px 5px 10px;
+  overflow: hidden;
+  padding: 0px 5px 0px 0px;
   border-radius: 5px;
   align-items: center;
   margin-bottom: 4px;
@@ -167,20 +168,33 @@
   opacity: 1;
 }
 
-.link-in-popup-menu__in-direction {
+.link-in-popup-menu_direction {
+    background: rgba(219, 219, 219, 0.35);
+    min-height: 30px;
+    margin-right: 5px;
+    padding: 5px 0px 5px 10px;
+    display: flex;
+    align-items: center;
+}
+
+.link-in-popup-menu_direction__in-direction {
   background: url("../images/direction-in.png") 0 0 no-repeat;
   flex-shrink: 0;
   width: 22px;
   height: 15px;
   margin: 0 14px 0 0;
+  background-size: contain;
+  opacity: 0.5;
 }
 
-.link-in-popup-menu__out-direction {
+.link-in-popup-menu_direction__out-direction {
   background: url("../images/direction-out.png") 0 0 no-repeat;
   flex-shrink: 0;
   width: 22px;
   height: 15px;
   margin: 0 8px 0 6px;
+  background-size: contain;
+  opacity: 0.5;
 }
 
 .ontodia-connections-menu_links-list__loading {
