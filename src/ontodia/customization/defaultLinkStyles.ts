@@ -1,5 +1,4 @@
 import { LinkStyle, LinkStyleResolver } from './props';
-import { uri2name } from '../diagram/model';
 
 const LINK_SUB_CLASS_OF: LinkStyle = {
     connection: {
@@ -46,17 +45,17 @@ const LINK_TYPE_OF: LinkStyle = {
 };
 
 export const DefaultLinkStyleBundle: LinkStyleResolver[] = [
-    ({linkTypeId}) => {
-        if (linkTypeId === 'http://www.w3.org/2000/01/rdf-schema#subClassOf') {
-            return LINK_SUB_CLASS_OF;
-        } else if (linkTypeId === 'http://www.w3.org/2000/01/rdf-schema#domain') {
-            return LINK_DOMAIN;
-        } else if (linkTypeId === 'http://www.w3.org/2000/01/rdf-schema#range') {
-            return LINK_RANGE;
-        } else if (linkTypeId === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
-            return LINK_TYPE_OF;
+    type => {
+        if (type === 'http://www.w3.org/2000/01/rdf-schema#subClassOf') {
+            return link => LINK_SUB_CLASS_OF;
+        } else if (type === 'http://www.w3.org/2000/01/rdf-schema#domain') {
+            return link => LINK_DOMAIN;
+        } else if (type === 'http://www.w3.org/2000/01/rdf-schema#range') {
+            return link => LINK_RANGE;
+        } else if (type === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
+            return link => LINK_TYPE_OF;
         } else {
-            return undefined;
+            return link => undefined;
         }
     },
 ];

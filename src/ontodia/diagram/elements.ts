@@ -105,7 +105,6 @@ export class RichProperty extends Backbone.Model {
  *     updateRouting
  */
 export class Link extends joint.dia.Link {
-    template: LinkModel;
     arrowheadMarkup: string;
     get markup() {
         if (typeof this.typeIndex !== 'number') {

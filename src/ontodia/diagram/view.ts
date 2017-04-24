@@ -421,7 +421,7 @@ export class DiagramView extends Backbone.Model {
     getLinkStyle(link: LinkModel): LinkStyle {
         let style = getDefaultLinkStyle();
         for (const resolver of this.linkStyleResolvers) {
-            const result = resolver(link);
+            const result = resolver(link.linkTypeId)(link);
             if (result) {
                 merge(style, cloneDeep(result));
                 break;

@@ -82,7 +82,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         ],
         linkStyleResolvers: [
             type => {
-                return CUSTOM_LINK_STYLE;
+                return link => CUSTOM_LINK_STYLE;
             },
         ],
     },
