@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Support for IE11 (without exporting to SVG/PNG).
 - Workspace API for external toolbar.
+- Support for DBPedia Sparql endpoints.
+- Link direction in Connections menu and Instances panel.
 
 ### Changed
 - Replaced `foreignObject`-based element rendering with overlayed
@@ -16,6 +18,7 @@ HTML elements.
 - Automatically set link type visible when adding elements through
 Connections menu.
 - Tutorial don't automatically show up on a first visit by default.
+- Pan canvas without requiring to hold any modifier keys.
 
 ### Fixed
 - Inconsistent elements and links rendering between editor and exported SVG.
@@ -25,10 +28,14 @@ Connections menu.
 - Lost scroll position in Instances panel on 'Show more' button press
 (introduced in [0.3.8]).
 - Missing localized labels with different languages for classes.
+- Drag and drop classes from tree in Opera.
 
 ### Breaking changes
 - `DiagramModel.requestElementData()` don't requests for links.
 - Connected links data cleared from model on element remove.
+- Replaced `WikidataDataProvider` with extensive options for `SparqlDataProvider`
+- Introduced `linkElements()` and link direction in `DataProvider`.
+- Simplified `GraphBuilder` interface.
 
 ## [0.3.8] - 2017-01-24
 ### Added
