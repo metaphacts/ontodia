@@ -19,7 +19,7 @@ export interface Props {
         maxFit?: number;
         fitPadding?: number;
     };
-    panningAlwaysActive?: boolean;
+    panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
 }
 
@@ -238,7 +238,8 @@ export class PaperArea extends React.Component<Props, {}> {
     }
 
     private shouldStartPanning(e: MouseEvent | React.MouseEvent<any>) {
-        return e.ctrlKey || e.shiftKey || this.props.panningAlwaysActive;
+        const modifierPressed = e.ctrlKey || e.shiftKey;
+        return Boolean(modifierPressed) === Boolean(this.props.panningRequireModifiers);
     }
 
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
