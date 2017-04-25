@@ -124,7 +124,8 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                             paper={this.props.view.paper}
                             zoomOptions={{min: 0.2, max: 2, maxFit: 1, fitPadding: 20}}
                             preventTextSelection={() => this.preventTextSelection()}
-                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)} />
+                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
+                            panningAlwaysActive={true}/>
                     </div>
                     {!this.props.isViewOnly ? rightPanel : null}
                 </div>
