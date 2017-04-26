@@ -1,8 +1,9 @@
 import * as React from 'react';
+import * as Backbone from 'backbone';
 import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
-
+import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { ResizableSidebar, DockSide } from './resizableSidebar';
@@ -14,8 +15,8 @@ export interface Props {
     view: DiagramView;
     isViewOnly?: boolean;
     model: DiagramModel;
-    leftPanelInitiallyOpen:boolean;
-    rightPanelInitiallyOpen: boolean;
+    leftPanelInitiallyOpen?:boolean;
+    rightPanelInitiallyOpen?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
 }
@@ -49,14 +50,14 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
     model:DiagramModel;
-    view: DiagramView;
+    view: DiagramView;   
+    private tree: ClassTree;
     private linksToolbox: LinkTypesToolboxShell;
-    private untilMouseUpClasses: string[] = [];
-
+    private untilMouseUpClasses: string[] = [];   
     constructor(props: Props) {
         super(props);
         this.model = this.props.model;
-        this.view = this.props.view;
+        this.view = this.props.view;        
     }
 
     render() {
@@ -77,7 +78,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Classes' bodyRef={e => this.classTreePanel = e}
+                    <AccordionItem heading='Classes' bodyRef={this.intializeClassTree}
                         tutorialProps={{
                             'data-position': 'right',
                             'data-step': '1',
@@ -112,7 +113,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     verticalResizing: true,
                 })}>
                     <AccordionItem heading='Connections'
-                        bodyClassName='link-types-toolbox' bodyRef={e => this.bodyRefCallback(e)}
+                        bodyClassName='link-types-toolbox' bodyRef={this.initializeLinksToolbox}
                         tutorialProps={{
                             'data-position': 'left',
                             'data-step': '4',
@@ -152,7 +153,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
     }
 
-    bodyRefCallback(element:any) {       
+    initializeLinksToolbox = (element:any) => {       
         if (element) 
             this.linksToolbox = new LinkTypesToolboxShell({
                 model: new LinkTypesToolboxModel(this.model),
@@ -161,6 +162,23 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
             }).render();       
         else 
             this.linksToolbox.remove();
+    }
+
+    intializeClassTree = (element:any) => {      
+        if (element) {        
+            this.tree = new ClassTree({
+                model: new Backbone.Model(this.view.model),
+                view: this.view,
+                el: element,
+            }).render();
+
+            this.tree.on('action:classSelected', (classId: string) => {                
+                this.props.onSearchCriteriaChanged({elementTypeId: classId});               
+            });            
+        }        
+        else 
+            this.tree.remove();           
+              
     }
 
     preventTextSelection() {

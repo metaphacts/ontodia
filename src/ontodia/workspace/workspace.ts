@@ -25,8 +25,8 @@ export interface Props {
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
-    leftPanelInitiallyOpen:boolean;
-    rightPanelInitiallyOpen:boolean;
+    leftPanelInitiallyOpen?:boolean;
+    rightPanelInitiallyOpen?:boolean;
 }
 
 export interface State {
@@ -60,7 +60,7 @@ export class Workspace extends Component<Props, State> {
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
-            onSearchCriteriaChanged: criteria => this.setState({criteria}),
+            onSearchCriteriaChanged: criteria => this.setState({criteria}),        
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
                 onUndo: this.undo,
                 onRedo: this.redo,
@@ -89,6 +89,7 @@ export class Workspace extends Component<Props, State> {
         this.diagram.initializePaperComponents();
 
         if (this.props.isViewOnly) { return; }
+<<<<<<< HEAD
 
         this.tree = new ClassTree({
             model: new Backbone.Model(this.diagram.model),
@@ -116,6 +117,9 @@ export class Workspace extends Component<Props, State> {
             el: this.markup.linkTypesPanel,
         });
 =======
+=======
+       
+>>>>>>> add create/dispose feature for classTree
         this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType) => {
             this.setState({criteria: {refElementId: element.id, refElementLinkId: linkType && linkType.id}});
         });        
@@ -127,10 +131,6 @@ export class Workspace extends Component<Props, State> {
     }
 
     componentWillUnmount() {
-        if (this.tree) {
-            this.tree.remove();
-        }
-
         this.diagram.dispose();
     }
 

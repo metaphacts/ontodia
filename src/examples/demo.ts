@@ -25,7 +25,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
-    leftPanelInitiallyOpen: true,
+    leftPanelInitiallyOpen: false,
     rightPanelInitiallyOpen: false
 };
 

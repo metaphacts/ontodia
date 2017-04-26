@@ -39,7 +39,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         this.$el.addClass(_.result(this, 'className') as string);
         this.view = options.view;
         this.model.set('language', this.view.getLanguage(), {silent: true});
-        this.listenTo(this.view, 'change:language', this.onLanguageChanged);
+        this.listenTo(this.view, 'change:language', this.onLanguageChanged);     
 
         this.rest = $(`<div class="${CLASS_NAME}__rest"></div>`);
         this.tree = $(`<div class="${CLASS_NAME}__tree"></div>`).appendTo(this.rest);
@@ -51,16 +51,11 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         let searchInput =
             $('<input type="text" class="search-input form-control" placeholder="Search for..."/>')
             .appendTo(innerDiv);
-
-        this.listenTo(this.view.model, 'state:dataLoaded', () => {
-            let model = this.view.model;
-            let tree = model.classTree;
-            const iconMap = this.updateClassLabels(tree);
-            this.setUrls(tree);
-            this.getJSTree().jstree({
-                'plugins': ['types', 'sort', 'search'],
-                'core': {'data': tree},
-                'types': iconMap,
+        
+        let model = this.view.model;
+        let tree = model.classTree;
+        this.getJSTree().jstree({
+                'plugins': ['types', 'sort', 'search'],                
                 'sort': (firstClassId: string, secondClassId: string) => {
                     return (model.getClassesById(firstClassId).model as TreeClassModel).text.localeCompare(
                         (model.getClassesById(secondClassId).model as TreeClassModel).text);
@@ -70,16 +65,31 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
                     'show_only_matches': true,
                 },
             });
+        
+        if (tree) 
+            this.refreshClassTree();   
 
-            this.getJSTree().on('select_node.jstree', (e, data) => {
-                this.trigger('action:classSelected', data.selected[0]);
-            });
-
-            searchInput.keyup(function (this: HTMLInputElement) {
-                let searchString = $(this).val();
-                selfLink.getJSTree().jstree('search', searchString);
-            });
+        this.getJSTree().on('select_node.jstree', (e, data) => {
+            this.trigger('action:classSelected', data.selected[0]);
         });
+
+        searchInput.keyup(function (this: HTMLInputElement) {
+            let searchString = $(this).val();
+            selfLink.getJSTree().jstree('search', searchString);
+        });          
+
+        this.listenTo(this.view.model, 'state:dataLoaded', () => {
+            this.refreshClassTree();                 
+        });
+    }
+
+
+    private refreshClassTree() {
+        const iconMap = this.updateClassLabels(this.view.model.classTree);
+        this.setUrls(this.view.model.classTree);
+        (this.getJSTree().jstree(true) as any).settings.core.data = this.view.model.classTree;
+        (this.getJSTree().jstree(true) as any).settings.types = iconMap;       
+        this.getJSTree().jstree(true).refresh(/* do not show loading indicator */ true, undefined);      
     }
 
     private updateClassLabels(roots: ClassTreeElement[]): Dictionary<{icon: string}> {
