@@ -1,4 +1,5 @@
 import { ComponentClass } from 'react';
+import * as joint from 'jointjs';
 
 import { Dictionary, Property } from '../data/model';
 
@@ -47,14 +48,31 @@ export interface LinkStyle {
             radius?: number;
         };
     };
-    router?: {
-        name?: string;
-        args?: {
-            startDirections?: string[];
-            endDirections?: string[];
-            excludeTypes?: string[];
-        };
-    };
+    router?: LinkRouter;
+}
+
+export type LinkRouter = RouterDescription | RouterFunction;
+
+export type RouterFunction = (
+    vertices: Vertex[],
+    args: RouterProps,
+    linkView: joint.dia.LinkView
+) => Vertex[];
+
+export interface RouterDescription {
+    name?: string;
+    args?: RouterProps;
+}
+
+export interface Vertex {
+    x: number;
+    y: number;
+};
+
+export interface RouterProps {
+    startDirections?: string[];
+    endDirections?: string[];
+    excludeTypes?: string[];
 }
 
 export interface LinkMarkerStyle {

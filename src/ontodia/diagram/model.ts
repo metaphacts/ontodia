@@ -1,5 +1,5 @@
 import * as Backbone from 'backbone';
-import { each, size, values, keyBy, defaults, uniqueId } from 'lodash';
+import { each, size, values, keyBy, defaults, omit, partial } from 'lodash';
 import * as joint from 'jointjs';
 
 import {
@@ -508,10 +508,7 @@ export interface ClassTreeElement {
     label: { values: LocalizedString[] };
     count: number;
     children: ClassTreeElement[];
-    a_attr?: {
-        href: string;
-        draggable: boolean;
-    };
+    a_attr?: { href: string; draggable: boolean; };
 }
 
 export interface LinkTypeOptions {
