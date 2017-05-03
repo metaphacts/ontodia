@@ -12,10 +12,20 @@ export class LinkView extends joint.dia.LinkView {
     paper?: { diagramView?: DiagramView };
 
     private view: DiagramView;
+    private bendingPoint: { x: number, y: number } = null;
 
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
+        this.listenTo(this.model, 'updateRouting', (bp: { x: number, y: number }) => {
+            if (!this.bendingPoint ||
+                this.bendingPoint.x !== bp.x ||
+                this.bendingPoint.y !== bp.y
+            ) {
+                this.bendingPoint = bp;
+                this.update();
+            }
+        });
     }
     render(): LinkView {
         if (!this.view && this.paper && this.paper.diagramView) {
