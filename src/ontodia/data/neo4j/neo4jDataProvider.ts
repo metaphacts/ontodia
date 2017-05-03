@@ -14,6 +14,7 @@ import {
 import {
     ResponseHandler,
     INSTANCE_OF,
+    TYPE_OF,
 } from './responseHandler';
 
 import {
@@ -145,22 +146,39 @@ export class Neo4jDataProvider implements DataProvider {
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         const id = params.elementId;
         if (+id || +id === 0) {
-            const query = `
+            const query1 = `
             {
                 "query" : 
-                "MATCH (n)<-[r]->(n2) WHERE (ID(n) = ${id}) RETURN type(r), count(r);",
+                "MATCH (n)-[r]->(n1) WHERE (ID(n1) = ${id}) RETURN type(r), count(r);",
+                "params" : { }
+            }`;
+            const query2 = `
+            {
+                "query" : 
+                "MATCH (n)<-[r]-(n1) WHERE (ID(n1) = ${id}) RETURN type(r), count(r);",
                 "params" : { }
             }`;
             return Promise.all([
-                this.executeQuery<LinkTypeBinding>(query),
+                this.executeQuery<LinkTypeBinding>(query1),
+                this.executeQuery<LinkTypeBinding>(query2),
                 this.elementInfo({ elementIds: [id]}),
             ]).then(results => {
-                const linkTypes = this.calc.getLinksTypesOf(results[0]);
+                const linkCounts = this.calc.getLinkCount(results[0], results[1]);
 
-                const element = results[1][Object.keys(results[1])[0]];
-                linkTypes.push(this.calc.getLinkType([INSTANCE_OF, element.types.length]));
+                const element = results[2][Object.keys(results[2])[0]];
+                linkCounts.push({
+                    id: INSTANCE_OF,
+                    inCount: 0,
+                    outCount: element.types.length,
+                });
 
-                return linkTypes;
+                linkCounts.push({
+                    id: TYPE_OF,
+                    inCount: element.types.length,
+                    outCount: 0,
+                });
+
+                return linkCounts;
             });
         } else {
             const query = `{
@@ -168,7 +186,15 @@ export class Neo4jDataProvider implements DataProvider {
                 "params" : { }
             }`;
             return this.executeQuery<LinkTypeBinding>(query)
-                .then(result => this.calc.getLinksTypesOf(result));
+                .then(result => {
+                    const types = this.calc.getLinksTypesOf(result);
+                    const linkCounts: LinkCount[] = types.map(t => ({
+                        id: t.id,
+                        inCount: 0,
+                        outCount: t.count,
+                    }));
+                    return linkCounts;
+                });
         }
     };
 
@@ -229,7 +255,7 @@ export class Neo4jDataProvider implements DataProvider {
             const linkId = params.refElementLinkId;
             const eId = params.refElementId;
             if (linkId === 'typeOf' || linkId === 'instanceOf') {
-                if (linkId === 'typeOf') {
+                if (linkId === 'typeOf' && (!+eId && +eId !== 0)) {
                     query = getQueryForClassId(eId, params.text);
                 } else {
                     return this.elementInfo({ elementIds: [eId] })

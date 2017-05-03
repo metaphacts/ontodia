@@ -6,7 +6,7 @@ import {
     LinkTypeBinding,
 } from './models';
 import {
-    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
+    Dictionary, LocalizedString, LinkType, LinkCount, ClassModel, ElementModel, LinkModel,
 } from '../model';
 
 export const CLASS_URL = 'Class';
@@ -142,6 +142,35 @@ export class ResponseHandler {
         const linkTypes: LinkType[] = [];
         neo4jLinks.forEach(nLink => linkTypes.push(this.getLinkType(nLink)));
         return linkTypes;
+    }
+
+    public getLinkCount (inc: Neo4jResponse<LinkTypeBinding>, out?: Neo4jResponse<LinkTypeBinding>): LinkCount[] {
+        const linkCounts: Dictionary<LinkCount> = {};
+
+        const incoming = this.getLinksTypesOf(inc);
+        for (const type of incoming) {
+            if (!linkCounts[type.id]) {
+                linkCounts[type.id] = {
+                    id: type.id,
+                    inCount: type.count,
+                    outCount: 0,
+                };
+            }
+        }
+        const outgoing = this.getLinksTypesOf(out);
+        for (const type of outgoing) {
+            if (!linkCounts[type.id]) {
+                linkCounts[type.id] = {
+                    id: type.id,
+                    inCount: 0,
+                    outCount: type.count,
+                };
+            } else {
+                linkCounts[type.id].outCount = type.count;
+            }
+        }
+
+        return Object.keys(linkCounts).map(key => linkCounts[key]);
     }
 
     public getFilteredData (
