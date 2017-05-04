@@ -348,7 +348,7 @@ namespace joint {
         interface point {
             x: number;
             y: number;
-            theta(point: point): number;
+            theta?(point: point): number;
         }
 
         function line(p1: point, p2: point): any;

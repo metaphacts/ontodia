@@ -1,7 +1,7 @@
 import * as joint from 'jointjs';
 import { LinkRouter, Vertex, RouterProps } from '../customization/props';
 import { DiagramModel } from './model';
-import { Link } from './elements';
+import { Link, Element } from './elements';
 import { LinkView } from './linkView';
 
 const LEFT_LABEL_POSITION = {
@@ -19,6 +19,8 @@ const MIDDLE_LABEL_POSITION = {
     text: {'text-anchor': 'middle'},
 };
 
+const GAP = 20;
+
 export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
     return (vertices: Vertex[], args: RouterProps, linkView: LinkView): Vertex[] => {
         const currentLink = linkView.model;
@@ -30,6 +32,27 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
         // The cell is a link. Let's find its source and target models.
         let sourceId = currentLink.get('source').id || currentLink.previous('source').id;
         let targetId = currentLink.get('target').id || currentLink.previous('target').id;
+
+        if (sourceId === targetId) {
+            const element = diagramModel.getElement(sourceId);
+            const siblings = element.links.filter(link => {
+                const verts = link.get('vertices');
+                return link.get('source').id === link.get('target').id && (!verts || verts.length === 0);
+            });
+            const currentLinkIndex = siblings.indexOf(currentLink);
+
+            if (currentLinkIndex !== -1) {
+                vertices = updateFeedbackSibling(currentLink, element, currentLinkIndex);
+            }
+
+            let i = 0;
+            for (const link of siblings) {
+                if (link !== currentLink) {
+                    updateFeedbackSibling(link, element, i);
+                }
+                i++;
+            };
+        }
 
         // Use the same direction for all siblings.
         // We don't know whether the link goes from
@@ -63,8 +86,8 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
             const _targetId = link.get('target').id;
 
             return _sourceId !== _targetId && (
-                    (_sourceId === sourceId && _targetId === targetId) ||
-                    (_sourceId === targetId && _targetId === sourceId)
+                  (_sourceId === sourceId && _targetId === targetId) ||
+                  (_sourceId === targetId && _targetId === sourceId)
             );
         });
 
@@ -77,8 +100,6 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
         // Then find the angle it forms.
         const theta = srcCenter.theta(trgCenter);
 
-        // This is the maximum distance between links
-        const gap = 20;
         // For mor beautifull positioning
         const indexModifyer = siblings.length % 2 ? 0 : 1;
 
@@ -106,7 +127,7 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
         function updateSibling (sib: Link, clearIndex: number, length: number): Vertex {
             const index = clearIndex + indexModifyer;
             // We want the offset values to be calculated as follows 0, 50, 50, 100, 100, 150, 150 ..
-            const offset = gap * Math.ceil(index / 2) - (indexModifyer ? gap / 2 : 0);
+            const offset = GAP * Math.ceil(index / 2) - (indexModifyer ? GAP / 2 : 0);
             // Now we need the vertices to be placed at points which are 'offset' pixels distant
             // from the first link and forms a perpendicular angle to it. And as index goes up
             // alternate left and right.
@@ -130,7 +151,7 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
                 ) {
                     angleKoaff *= -1;
                 }
-                const labeloffset = (sign / (siblings.length * 3)) * i * angleKoaff;
+                const labeloffset = (sign / (siblings.length * 3)) * clearIndex * angleKoaff;
                 const labelPos = 0.5 + (direction ? labeloffset : -labeloffset);
 
                 sib.label(0, {
@@ -141,6 +162,23 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
                 sib.updateRouting(vertex);
             }
             return vertex;
+        }
+
+        function updateFeedbackSibling (link: Link, element: Element, index: number): Vertex[] {
+            const elementSize = element.get('size');
+            const elementPosition = element.position();
+            const offset = index + 1;
+            const resultVertices = [
+                {x: elementPosition.x - GAP * offset, y: elementPosition.y + elementSize.height / 2},
+                {x: elementPosition.x - GAP * offset, y: elementPosition.y - GAP * offset},
+                {x: elementPosition.x  + elementSize.width / 2, y: elementPosition.y - GAP * offset},
+            ];
+            if (link === currentLink) {
+                return resultVertices;
+            } else {
+                link.updateRouting(resultVertices[0]);
+                return null;
+            }
         }
 
         function getLinksBetweenElements(model: DiagramModel, eID1: string, eID2: string): Link[] {
