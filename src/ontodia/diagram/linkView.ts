@@ -30,13 +30,15 @@ export class LinkView extends joint.dia.LinkView {
         return this.view.model.getLinkType(this.model.get('typeId'));
     }
 
-    private onRoutingUpdate (bp: { x: number, y: number }) {
+    private onRoutingUpdate (_bendingPoint: { x: number, y: number }, properties?: { silent: boolean }) {
         if (!this.bendingPoint ||
-            this.bendingPoint.x !== bp.x ||
-            this.bendingPoint.y !== bp.y
+            this.bendingPoint.x !== _bendingPoint.x ||
+            this.bendingPoint.y !== _bendingPoint.y
         ) {
-            this.bendingPoint = bp;
-            this.update();
+            this.bendingPoint = _bendingPoint;
+            if (!properties || properties.silent) {
+                this.update();
+            }
         }
     }
 

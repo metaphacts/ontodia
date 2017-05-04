@@ -158,6 +158,7 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
                     position: labelPos,
                     attrs: getAlignment(clearIndex, length, clearAngle),
                 });
+                sib.updateRouting(vertex, {silent: true});
             } else {
                 sib.updateRouting(vertex);
             }
@@ -174,6 +175,7 @@ export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
                 {x: elementPosition.x  + elementSize.width / 2, y: elementPosition.y - GAP * offset},
             ];
             if (link === currentLink) {
+                link.updateRouting(resultVertices[0], {silent: true});
                 return resultVertices;
             } else {
                 link.updateRouting(resultVertices[0]);

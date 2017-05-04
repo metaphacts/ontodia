@@ -134,8 +134,8 @@ export class Link extends joint.dia.Link {
         this.set('labels', [{position: 0.5}]);
     }
 
-    updateRouting(bendingPoint: { x: number, y: number }): void {
-        this.trigger('updateRouting', bendingPoint);
+    updateRouting(bendingPoint: { x: number, y: number }, props?: { silent: boolean }): void {
+        this.trigger('updateRouting', bendingPoint, props);
     }
 }
 Link.prototype.arrowheadMarkup = null;
