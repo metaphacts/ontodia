@@ -4,6 +4,7 @@ import * as joint from 'jointjs';
 import { merge, cloneDeep } from 'lodash';
 import { createElement } from 'react';
 import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
+import getDefaultLinkRouter from './defaultLinkRouter';
 
 import {
     TypeStyleResolver,
@@ -11,7 +12,7 @@ import {
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
-    LinkStyle, LinkMarkerStyle, LinkRouter, Vertex, RouterProps
+    LinkStyle, LinkMarkerStyle,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
@@ -53,7 +54,7 @@ const DefaultToSVGOptions: ToSVGOptions = {
 /**
  * Properties:
  *     language: string
- * 
+ *
  * Events:
  *     (private) dispose - fires on view dispose
  */
@@ -417,7 +418,7 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    public getLinkStyle(linkTypeId: string): LinkStyle {
+    getLinkStyle(linkTypeId: string): LinkStyle {
         let style = getDefaultLinkStyle();
         for (const resolver of this.linkStyleResolvers) {
             const result = resolver(linkTypeId);
@@ -432,174 +433,10 @@ export class DiagramView extends Backbone.Model {
                 end: this.createLinkMarker(linkTypeId, false, style.markerTarget),
             };
         }
-        style.router = this.getLinkRouter();
+        if (!style.router) {
+            style.router = getDefaultLinkRouter(this.model);
+        }
         return style;
-    }
-
-    private getLinkRouter(): LinkRouter {
-        return (vertices: Vertex[], args: RouterProps, linkView: LinkView): Vertex[] => {
-            const link = linkView.model;
-            if (!vertices) {
-                vertices = [];
-            }
-            // If the cell is a view, find its model.
-
-            // The cell is a link. Let's find its source and target models.
-            let srcId = link.get('source').id || link.previous('source').id;
-            let trgId = link.get('target').id || link.previous('target').id;
-
-            // Use the same direction for all siblings
-            const direction = srcId > trgId;
-            if (direction) {
-                const temp = srcId;
-                srcId = trgId;
-                trgId = temp;
-            }
-
-            // If one of the ends is not a model, the link has no siblings.
-            if (!srcId || !trgId) {
-                return vertices;
-            }
-
-            const links: Link[] = getLinksBetweenElements (this.model, srcId, trgId);
-            if (links.length < 2) {
-                return vertices;
-            }
-
-            const siblings: Link[] = links.filter((l) => {
-                const verts = l.get('vertices');
-                if (verts && verts.length !== 0) {
-                    return false;
-                }
-                const _srcId = l.get('source').id;
-                const _trgId = l.get('target').id;
-
-                return _srcId !== _trgId && (
-                       (_srcId === srcId && _trgId === trgId) ||
-                       (_srcId === trgId && _trgId === srcId)
-                );
-            });
-
-            // There is more than one siblings. We need to create vertices.
-            // First of all we'll find the middle point of the link.
-            const srcCenter = this.model.graph.getCell(srcId).getBBox().center();
-            const trgCenter = this.model.graph.getCell(trgId).getBBox().center();
-            const midPoint = joint.g.line(srcCenter, trgCenter).midpoint();
-
-            // Then find the angle it forms.
-            const theta = srcCenter.theta(trgCenter);
-
-            // This is the maximum distance between links
-            const gap = 20;
-            // For mor beautifull positioning
-            const indexModifyer = siblings.length % 2 ? 0 : 1;
-
-            const myIndex = siblings.indexOf(link);
-            if (myIndex !== -1) {
-                const v = updateSibling(link, myIndex, siblings.length);
-                vertices = [v];
-            } else {
-                link.label(0, {
-                    position: 0.5,
-                    attrs: {
-                        rect: { 'x-alignment': 'middle' },
-                        text: { 'text-anchor': 'middle' },
-                    },
-                });
-            }
-
-            let i = 0;
-            for (const sib of siblings) {
-                if (sib !== link) {
-                    updateSibling(sib, i, siblings.length);
-                }
-                i++;
-            };
-
-            return vertices;
-
-            function updateSibling (sib: Link, i: number, length: number): Vertex {
-                const index = i + indexModifyer;
-                // We want the offset values to be calculated as follows 0, 50, 50, 100, 100, 150, 150 ..
-                const offset = gap * Math.ceil(index / 2) - (indexModifyer ? gap / 2 : 0);
-                // Now we need the vertices to be placed at points which are 'offset' pixels distant
-                // from the first link and forms a perpendicular angle to it. And as index goes up
-                // alternate left and right.
-                //
-                //  ^  odd indexes
-                //  |
-                //  |---->  index 0 line (straight line between a source center and a target center.
-                //  |
-                //  v  even indexes
-                const sign = index % 2 ? 1 : -1;
-                const angle = joint.g.toRad(theta + sign * 90);
-                const clearAngle = joint.g.toRad(theta + sign);
-                // We found the vertex.
-                const vertex = joint.g.point.fromPolar(offset, angle, midPoint);
-                if (link === sib) {
-                    // calculate label position and save vertices
-                    let angleKoaff = 1 - Math.abs(Math.cos(clearAngle));
-                    if (
-                        (clearAngle > 0) && (clearAngle < Math.PI / 2) ||
-                        (clearAngle > Math.PI) && (clearAngle < Math.PI * 3 / 2)
-                    ) {
-                        angleKoaff *= -1;
-                    }
-                    const labeloffset = (sign / (siblings.length * 3)) * i * angleKoaff;
-                    const labelPos = 0.5 + (direction ? labeloffset : -labeloffset);
-
-                    sib.label(0, {
-                        position: labelPos,
-                        attrs: getAlignment(i, length, clearAngle),
-                    });
-                } else {
-                    sib.updateRouting(vertex);
-                }
-                return vertex;
-            }
-
-            function getLinksBetweenElements(model: DiagramModel, eID1: string, eID2: string): Link[] {
-                const linksOfSource = model.graph.getConnectedLinks(model.getElement(eID1));
-                const linksOfTarget = model.graph.getConnectedLinks(model.getElement(eID2));
-
-                return linksOfSource.filter(l => {
-                    return linksOfTarget.indexOf(l) !== -1;
-                }) as Link[];
-            }
-
-            function getAlignment (index: number, length: number, angle: number): {
-                rect: { 'x-alignment': string },
-                text: { 'text-anchor': string },
-            } {
-                const inTopSector = (angle > Math.PI * 1 / 8) && (angle < Math.PI * 7 / 8);
-                const inBottomSector = (angle > Math.PI * 9 / 8) && (angle < Math.PI * 15 / 8);
-                const setOffset = length > 1 && (inTopSector || inBottomSector);
-
-                if (setOffset) {
-                    if (inTopSector && index === (length - 2) || inBottomSector && index === (length - 1)) {
-                        return {
-                            rect: { 'x-alignment': 'left' },
-                            text: { 'text-anchor': 'end' },
-                        };
-                    } else if (inTopSector && index === (length - 1) || inBottomSector && index === (length - 2)) {
-                        return {
-                            rect: { 'x-alignment': 'right' },
-                            text: { 'text-anchor': 'left' },
-                        };
-                    } else {
-                        return {
-                            rect: { 'x-alignment': 'middle' },
-                            text: { 'text-anchor': 'middle' },
-                        };
-                    }
-                } else {
-                    return {
-                        rect: { 'x-alignment': 'middle' },
-                        text: { 'text-anchor': 'middle' },
-                    };
-                }
-            }
-        };
     }
 
     private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {

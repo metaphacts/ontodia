@@ -1,5 +1,5 @@
 import { ComponentClass } from 'react';
-import * as joint from 'jointjs';
+import { LinkView } from '../diagram/linkView';
 
 import { Dictionary, Property } from '../data/model';
 
@@ -56,7 +56,7 @@ export type LinkRouter = RouterDescription | RouterFunction;
 export type RouterFunction = (
     vertices: Vertex[],
     args: RouterProps,
-    linkView: joint.dia.LinkView
+    linkView: LinkView,
 ) => Vertex[];
 
 export interface RouterDescription {
@@ -67,7 +67,7 @@ export interface RouterDescription {
 export interface Vertex {
     x: number;
     y: number;
-};
+}
 
 export interface RouterProps {
     startDirections?: string[];

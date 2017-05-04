@@ -55,7 +55,7 @@ namespace joint {
             remove(options?: any): void;
             toFront(): void;
             toBack(): void;
-            getBBox(): any;
+            getBBox(): g.rect;
             embed(cell: Cell): void;
             unembed(cell: Cell): void;
             getEmbeddedCells(): Cell[];
@@ -348,6 +348,7 @@ namespace joint {
         interface point {
             x: number;
             y: number;
+            theta(point: point): number;
         }
 
         function line(p1: point, p2: point): any;
