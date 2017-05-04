@@ -25,8 +25,8 @@ export interface Props {
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
-    leftPanelInitiallyOpen?:boolean;
-    rightPanelInitiallyOpen?:boolean;
+    leftPanelInitiallyOpen?: boolean;
+    rightPanelInitiallyOpen?: boolean;
 }
 
 export interface State {
@@ -43,7 +43,6 @@ export class Workspace extends Component<Props, State> {
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-   
     constructor(props: Props) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
@@ -55,12 +54,12 @@ export class Workspace extends Component<Props, State> {
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
-            model:this.model,
+            model: this.model,
             view: this.diagram,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
-            onSearchCriteriaChanged: criteria => this.setState({criteria}),        
+            onSearchCriteriaChanged: criteria => this.setState({criteria}),
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
                 onUndo: this.undo,
                 onRedo: this.redo,

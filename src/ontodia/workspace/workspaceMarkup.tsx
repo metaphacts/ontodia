@@ -15,7 +15,7 @@ export interface Props {
     view: DiagramView;
     isViewOnly?: boolean;
     model: DiagramModel;
-    leftPanelInitiallyOpen?:boolean;
+    leftPanelInitiallyOpen?: boolean;
     rightPanelInitiallyOpen?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
@@ -49,15 +49,15 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
-    model:DiagramModel;
-    view: DiagramView;   
+    model: DiagramModel;
+    view: DiagramView;
     private tree: ClassTree;
     private linksToolbox: LinkTypesToolboxShell;
-    private untilMouseUpClasses: string[] = [];   
+    private untilMouseUpClasses: string[] = [];
     constructor(props: Props) {
         super(props);
         this.model = this.props.model;
-        this.view = this.props.view;        
+        this.view = this.props.view;
     }
 
     render() {
@@ -153,32 +153,32 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
     }
 
-    initializeLinksToolbox = (element:any) => {       
-        if (element) 
+    initializeLinksToolbox = (element: any) => {
+        if (element) {
             this.linksToolbox = new LinkTypesToolboxShell({
                 model: new LinkTypesToolboxModel(this.model),
                 view: this.view,
                 el: element,
-            }).render();       
-        else 
+            }).render();
+        } else {
             this.linksToolbox.remove();
+        }
     }
 
-    intializeClassTree = (element:any) => {      
-        if (element) {        
+    intializeClassTree = (element: any) => {
+        if (element) {
             this.tree = new ClassTree({
                 model: new Backbone.Model(this.view.model),
                 view: this.view,
                 el: element,
             }).render();
 
-            this.tree.on('action:classSelected', (classId: string) => {                
-                this.props.onSearchCriteriaChanged({elementTypeId: classId});               
-            });            
-        }        
-        else 
-            this.tree.remove();           
-              
+            this.tree.on('action:classSelected', (classId: string) => {
+                this.props.onSearchCriteriaChanged({elementTypeId: classId});
+            });
+        } else {
+            this.tree.remove();
+        }
     }
 
     preventTextSelection() {

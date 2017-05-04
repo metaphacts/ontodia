@@ -51,11 +51,10 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         let searchInput =
             $('<input type="text" class="search-input form-control" placeholder="Search for..."/>')
             .appendTo(innerDiv);
-        
         let model = this.view.model;
         let tree = model.classTree;
         this.getJSTree().jstree({
-                'plugins': ['types', 'sort', 'search'],                
+                'plugins': ['types', 'sort', 'search'],
                 'sort': (firstClassId: string, secondClassId: string) => {
                     return (model.getClassesById(firstClassId).model as TreeClassModel).text.localeCompare(
                         (model.getClassesById(secondClassId).model as TreeClassModel).text);
@@ -65,9 +64,10 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
                     'show_only_matches': true,
                 },
             });
-        
-        if (tree) 
-            this.refreshClassTree();   
+
+        if (tree) {
+             this.refreshClassTree();
+        }
 
         this.getJSTree().on('select_node.jstree', (e, data) => {
             this.trigger('action:classSelected', data.selected[0]);
@@ -76,10 +76,10 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         searchInput.keyup(function (this: HTMLInputElement) {
             let searchString = $(this).val();
             selfLink.getJSTree().jstree('search', searchString);
-        });          
+        });
 
         this.listenTo(this.view.model, 'state:dataLoaded', () => {
-            this.refreshClassTree();                 
+            this.refreshClassTree();
         });
     }
 
@@ -88,8 +88,8 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         const iconMap = this.updateClassLabels(this.view.model.classTree);
         this.setUrls(this.view.model.classTree);
         (this.getJSTree().jstree(true) as any).settings.core.data = this.view.model.classTree;
-        (this.getJSTree().jstree(true) as any).settings.types = iconMap;       
-        this.getJSTree().jstree(true).refresh(/* do not show loading indicator */ true, undefined);      
+        (this.getJSTree().jstree(true) as any).settings.types = iconMap;
+        this.getJSTree().jstree(true).refresh(/* do not show loading indicator */ true, undefined);
     }
 
     private updateClassLabels(roots: ClassTreeElement[]): Dictionary<{icon: string}> {
