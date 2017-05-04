@@ -89,18 +89,7 @@ export class Workspace extends Component<Props, State> {
         this.diagram.initializePaperComponents();
 
         if (this.props.isViewOnly) { return; }
-<<<<<<< HEAD
 
-        this.tree = new ClassTree({
-            model: new Backbone.Model(this.diagram.model),
-            view: this.diagram,
-            el: this.markup.classTreePanel,
-        }).render();
-
-        this.tree.on('action:classSelected', (classId: string) => {
-            this.setState({criteria: {elementTypeId: classId}});
-        });
-<<<<<<< HEAD
         this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType, direction?: 'in' | 'out') => {
             this.setState({
                 criteria: {
@@ -110,20 +99,6 @@ export class Workspace extends Component<Props, State> {
                 }
             });
         });
-
-        this.linksToolbox = new LinkTypesToolboxShell({
-            model: new LinkTypesToolboxModel(this.model),
-            view: this.diagram,
-            el: this.markup.linkTypesPanel,
-        });
-=======
-=======
-       
->>>>>>> add create/dispose feature for classTree
-        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType) => {
-            this.setState({criteria: {refElementId: element.id, refElementLinkId: linkType && linkType.id}});
-        });        
->>>>>>> add sidebar not render feature
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
