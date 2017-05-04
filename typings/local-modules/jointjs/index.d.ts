@@ -84,11 +84,13 @@ namespace joint {
                     fill?: string;
                     'stroke'?: string;
                     'stroke-width'?: number;
+                    'x-alignment'?: string;
                 };
                 text?: {
                     fill?: string;
                     'stroke'?: string;
                     'stroke-width'?: number;
+                    'text-anchor'?: string;
                 };
             };
         }

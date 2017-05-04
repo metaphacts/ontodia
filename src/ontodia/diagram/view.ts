@@ -474,8 +474,10 @@ export class DiagramView extends Backbone.Model {
                 const _srcId = l.get('source').id;
                 const _trgId = l.get('target').id;
 
-                return (_srcId === srcId && _trgId === trgId) ||
-                       (_srcId === trgId && _trgId === srcId);
+                return _srcId !== _trgId && (
+                       (_srcId === srcId && _trgId === trgId) ||
+                       (_srcId === trgId && _trgId === srcId)
+                );
             });
 
             // There is more than one siblings. We need to create vertices.
@@ -494,22 +496,29 @@ export class DiagramView extends Backbone.Model {
 
             const myIndex = siblings.indexOf(link);
             if (myIndex !== -1) {
-                const v = updateSibling(link, myIndex);
-
+                const v = updateSibling(link, myIndex, siblings.length);
                 vertices = [v];
+            } else {
+                link.label(0, {
+                    position: 0.5,
+                    attrs: {
+                        rect: { 'x-alignment': 'middle' },
+                        text: { 'text-anchor': 'middle' },
+                    },
+                });
             }
 
             let i = 0;
             for (const sib of siblings) {
                 if (sib !== link) {
-                    updateSibling(sib, i);
+                    updateSibling(sib, i, siblings.length);
                 }
                 i++;
             };
 
             return vertices;
 
-            function updateSibling (sib: Link, i: number): Vertex {
+            function updateSibling (sib: Link, i: number, length: number): Vertex {
                 const index = i + indexModifyer;
                 // We want the offset values to be calculated as follows 0, 50, 50, 100, 100, 150, 150 ..
                 const offset = gap * Math.ceil(index / 2) - (indexModifyer ? gap / 2 : 0);
@@ -524,13 +533,25 @@ export class DiagramView extends Backbone.Model {
                 //  v  even indexes
                 const sign = index % 2 ? 1 : -1;
                 const angle = joint.g.toRad(theta + sign * 90);
+                const clearAngle = joint.g.toRad(theta + sign);
                 // We found the vertex.
                 const vertex = joint.g.point.fromPolar(offset, angle, midPoint);
                 if (link === sib) {
                     // calculate label position and save vertices
-                    const labeloffset = (sign / (siblings.length * 3)) * i * Math.abs(Math.cos(angle));
+                    let angleKoaff = 1 - Math.abs(Math.cos(clearAngle));
+                    if (
+                        (clearAngle > 0) && (clearAngle < Math.PI / 2) ||
+                        (clearAngle > Math.PI) && (clearAngle < Math.PI * 3 / 2)
+                    ) {
+                        angleKoaff *= -1;
+                    }
+                    const labeloffset = (sign / (siblings.length * 3)) * i * angleKoaff;
                     const labelPos = 0.5 + (direction ? labeloffset : -labeloffset);
-                    sib.label(0, { position: labelPos });
+
+                    sib.label(0, {
+                        position: labelPos,
+                        attrs: getAlignment(i, length, clearAngle),
+                    });
                 } else {
                     sib.updateRouting(vertex);
                 }
@@ -544,6 +565,39 @@ export class DiagramView extends Backbone.Model {
                 return linksOfSource.filter(l => {
                     return linksOfTarget.indexOf(l) !== -1;
                 }) as Link[];
+            }
+
+            function getAlignment (index: number, length: number, angle: number): {
+                rect: { 'x-alignment': string },
+                text: { 'text-anchor': string },
+            } {
+                const inTopSector = (angle > Math.PI * 1 / 8) && (angle < Math.PI * 7 / 8);
+                const inBottomSector = (angle > Math.PI * 9 / 8) && (angle < Math.PI * 15 / 8);
+                const setOffset = length > 1 && (inTopSector || inBottomSector);
+
+                if (setOffset) {
+                    if (inTopSector && index === (length - 2) || inBottomSector && index === (length - 1)) {
+                        return {
+                            rect: { 'x-alignment': 'left' },
+                            text: { 'text-anchor': 'end' },
+                        };
+                    } else if (inTopSector && index === (length - 1) || inBottomSector && index === (length - 2)) {
+                        return {
+                            rect: { 'x-alignment': 'right' },
+                            text: { 'text-anchor': 'left' },
+                        };
+                    } else {
+                        return {
+                            rect: { 'x-alignment': 'middle' },
+                            text: { 'text-anchor': 'middle' },
+                        };
+                    }
+                } else {
+                    return {
+                        rect: { 'x-alignment': 'middle' },
+                        text: { 'text-anchor': 'middle' },
+                    };
+                }
             }
         };
     }
