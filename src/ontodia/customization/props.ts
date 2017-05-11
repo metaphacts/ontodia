@@ -55,24 +55,18 @@ export type LinkRouter = RouterDescription | RouterFunction;
 
 export type RouterFunction = (
     vertices: Vertex[],
-    args: RouterProps,
+    args: {},
     linkView: LinkView,
 ) => Vertex[];
 
 export interface RouterDescription {
     name?: string;
-    args?: RouterProps;
+    args?: {};
 }
 
 export interface Vertex {
     x: number;
     y: number;
-}
-
-export interface RouterProps {
-    startDirections?: string[];
-    endDirections?: string[];
-    excludeTypes?: string[];
 }
 
 export interface LinkMarkerStyle {

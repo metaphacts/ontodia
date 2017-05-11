@@ -28,7 +28,7 @@ import {
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { Element, FatClassModel, linkMarkerKey, Link } from './elements';
+import { Element, FatClassModel, linkMarkerKey } from './elements';
 
 import { LinkView } from './linkView';
 import { SeparatedElementView } from './separatedElementView';
