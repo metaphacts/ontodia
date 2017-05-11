@@ -31,7 +31,7 @@
     "test": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings",
     "_webpack": "./node_modules/.bin/webpack",
     "start": "./node_modules/.bin/webpack-dev-server --port 5000 --host 0.0.0.0 --config webpack.demo.config.js --content-base dist/",
-    "lint": "./node_modules/.bin/tslint -c tslint.json 'src/**/*.ts'"
+    "lint": "./node_modules/.bin/tslint -c tslint.json 'src/**/*.ts' 'src/**/*.tsx' -t stylish"
   },
   "dependencies": {
     "d3-color": "~1.0.2",
