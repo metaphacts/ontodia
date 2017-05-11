@@ -1,10 +1,11 @@
 import * as React from 'react';
-
+import * as Backbone from 'backbone';
+import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
-
+import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
-
+import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
@@ -13,7 +14,8 @@ export interface Props {
     toolbar: React.ReactElement<any>;
     view: DiagramView;
     isViewOnly?: boolean;
-
+    leftPanelInitiallyOpen?: boolean;
+    rightPanelInitiallyOpen?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
 }
@@ -46,12 +48,14 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
-
+    private tree: ClassTree;
+    private linksToolbox: LinkTypesToolboxShell;
     private untilMouseUpClasses: string[] = [];
 
     render() {
         let leftPanel = (
             <ResizableSidebar dockSide={DockSide.Left}
+                initiallyOpen={this.props.leftPanelInitiallyOpen}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -66,7 +70,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Classes' bodyRef={e => this.classTreePanel = e}
+                    <AccordionItem heading='Classes' bodyRef={this.intializeClassTree}
                         tutorialProps={{
                             'data-position': 'right',
                             'data-step': '1',
@@ -91,6 +95,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
         let rightPanel = (
             <ResizableSidebar dockSide={DockSide.Right}
+                initiallyOpen={this.props.rightPanelInitiallyOpen}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -100,7 +105,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     verticalResizing: true,
                 })}>
                     <AccordionItem heading='Connections'
-                        bodyClassName='link-types-toolbox' bodyRef={e => this.linkTypesPanel = e}
+                        bodyClassName='link-types-toolbox' bodyRef={this.initializeLinksToolbox}
                         tutorialProps={{
                             'data-position': 'left',
                             'data-step': '4',
@@ -138,6 +143,34 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
     componentWillUnmount() {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
+    }
+
+    initializeLinksToolbox = (element: HTMLDivElement) => {
+        if (element) {
+            this.linksToolbox = new LinkTypesToolboxShell({
+                model: new LinkTypesToolboxModel(this.props.view.model),
+                view: this.props.view,
+                el: element,
+            }).render();
+        } else {
+            this.linksToolbox.remove();
+        }
+    }
+
+    intializeClassTree = (element: HTMLDivElement) => {
+        if (element) {
+            this.tree = new ClassTree({
+                model: new Backbone.Model(this.props.view.model),
+                view: this.props.view,
+                el: element,
+            }).render();
+
+            this.tree.on('action:classSelected', (classId: string) => {
+                this.props.onSearchCriteriaChanged({elementTypeId: classId});
+            });
+        } else {
+            this.tree.remove();
+        }
     }
 
     preventTextSelection() {
