@@ -377,7 +377,7 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
 
     remove() {
         this.unsubscribeOnLinksEevents();
-        return this;
+        return super.remove();
     }
 }
 

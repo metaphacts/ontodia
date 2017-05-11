@@ -37,7 +37,7 @@ export class Workspace extends Component<Props, State> {
     static readonly defaultProps: { [K in keyof Props]?: any } = {
         hideTutorial: true,
         leftPanelInitiallyOpen: true,
-        rightPanelInitiallyOpen: true,
+        rightPanelInitiallyOpen: false,
     };
 
     private markup: WorkspaceMarkup;
