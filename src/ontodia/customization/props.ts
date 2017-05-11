@@ -1,4 +1,5 @@
 import { ComponentClass } from 'react';
+import { LinkView } from '../diagram/linkView';
 
 import { Dictionary, Property } from '../data/model';
 
@@ -47,14 +48,25 @@ export interface LinkStyle {
             radius?: number;
         };
     };
-    router?: {
-        name?: string;
-        args?: {
-            startDirections?: string[];
-            endDirections?: string[];
-            excludeTypes?: string[];
-        };
-    };
+    router?: LinkRouter;
+}
+
+export type LinkRouter = RouterDescription | RouterFunction;
+
+export type RouterFunction = (
+    vertices: Vertex[],
+    args: {},
+    linkView: LinkView,
+) => Vertex[];
+
+export interface RouterDescription {
+    name?: string;
+    args?: {};
+}
+
+export interface Vertex {
+    x: number;
+    y: number;
 }
 
 export interface LinkMarkerStyle {

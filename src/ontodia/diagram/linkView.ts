@@ -12,10 +12,12 @@ export class LinkView extends joint.dia.LinkView {
     paper?: { diagramView?: DiagramView };
 
     private view: DiagramView;
+    private bendingPoint: { x: number, y: number };
 
     initialize() {
         joint.dia.LinkView.prototype.initialize.apply(this, arguments);
         this.listenTo(this.model, 'change:layoutOnly', this.updateLabel);
+        this.listenTo(this.model, 'updateRouting', this.onRoutingUpdate);
     }
     render(): LinkView {
         if (!this.view && this.paper && this.paper.diagramView) {
@@ -27,6 +29,19 @@ export class LinkView extends joint.dia.LinkView {
     getTypeModel(): FatLinkType {
         return this.view.model.getLinkType(this.model.get('typeId'));
     }
+
+    private onRoutingUpdate(_bendingPoint: { x: number, y: number }, properties: { silent?: boolean } = {}) {
+        if (!this.bendingPoint ||
+            this.bendingPoint.x !== _bendingPoint.x ||
+            this.bendingPoint.y !== _bendingPoint.y
+        ) {
+            this.bendingPoint = _bendingPoint;
+            if (!properties.silent) {
+                this.update();
+            }
+        }
+    }
+
     private setView(view: DiagramView) {
         this.view = view;
         this.listenTo(this.view, 'change:language', this.updateLabel);

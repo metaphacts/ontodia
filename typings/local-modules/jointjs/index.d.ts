@@ -47,6 +47,7 @@ namespace joint {
              */
             resetCells(cells: Cell[], options?: any): void;
             hasActiveBatch(name: string): void;
+            getCell(name: string): Cell;
         }
 
         class Cell extends Backbone.Model {
@@ -54,7 +55,7 @@ namespace joint {
             remove(options?: any): void;
             toFront(): void;
             toBack(): void;
-            getBBox(): void;
+            getBBox(): g.rect;
             embed(cell: Cell): void;
             unembed(cell: Cell): void;
             getEmbeddedCells(): Cell[];
@@ -83,11 +84,13 @@ namespace joint {
                     fill?: string;
                     'stroke'?: string;
                     'stroke-width'?: number;
+                    'x-alignment'?: string;
                 };
                 text?: {
                     fill?: string;
                     'stroke'?: string;
                     'stroke-width'?: number;
+                    'text-anchor'?: string;
                 };
             };
         }
@@ -204,6 +207,7 @@ namespace joint {
         class LinkView extends CellView {
             getConnectionLength(): number;
             getPointAtLength(length: number): { x: number; y: number; };
+            update(): void;
         }
 
         /** Rappid only */
@@ -336,12 +340,18 @@ namespace joint {
     }
     
     export namespace g {
-        function point(x: number, y: number): point;
-        function point(p: {x: number; y: number;}): point;
+        const point: {
+            (x: number, y: number): point;
+            (p: {x: number; y: number;}): point;
+            fromPolar(offset: number, angle: number, midPoint: any): point;
+        }
         interface point {
             x: number;
             y: number;
+            theta?(point: point): number;
         }
+
+        function line(p1: point, p2: point): any;
         
         function rect(x: number, y: number, w: number, h: number): rect;
         interface rect {
@@ -367,6 +377,7 @@ namespace joint {
             normalize(): rect;
             bbox(angle: number): rect;
         }
+        function toRad(angle: number): number;
     }
 }
 	export = joint;

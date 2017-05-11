@@ -4,6 +4,7 @@ import * as joint from 'jointjs';
 import { merge, cloneDeep } from 'lodash';
 import { createElement } from 'react';
 import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
+import getDefaultLinkRouter from './defaultLinkRouter';
 
 import {
     TypeStyleResolver,
@@ -53,7 +54,7 @@ const DefaultToSVGOptions: ToSVGOptions = {
 /**
  * Properties:
  *     language: string
- * 
+ *
  * Events:
  *     (private) dispose - fires on view dispose
  */
@@ -431,6 +432,9 @@ export class DiagramView extends Backbone.Model {
                 start: this.createLinkMarker(linkTypeId, true, style.markerSource),
                 end: this.createLinkMarker(linkTypeId, false, style.markerTarget),
             };
+        }
+        if (!style.router) {
+            style.router = getDefaultLinkRouter(this.model);
         }
         return style;
     }
