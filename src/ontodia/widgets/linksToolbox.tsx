@@ -320,7 +320,7 @@ export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> 
         this.filterCallback = (linkType: FatLinkType) => {
             let selectedElement: Element = this.model.get('selectedElement');
             selectedElement.addToFilter(linkType);
-        };        
+        };
     }
 
     private setDataState(dataState: string) {

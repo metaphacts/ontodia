@@ -36,6 +36,8 @@ export interface State {
 export class Workspace extends Component<Props, State> {
     static readonly defaultProps: { [K in keyof Props]?: any } = {
         hideTutorial: true,
+        leftPanelInitiallyOpen: true,
+        rightPanelInitiallyOpen: true,
     };
 
     private markup: WorkspaceMarkup;
@@ -54,7 +56,6 @@ export class Workspace extends Component<Props, State> {
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
-            model: this.model,
             view: this.diagram,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,

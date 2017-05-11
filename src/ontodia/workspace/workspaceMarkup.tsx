@@ -14,7 +14,6 @@ export interface Props {
     toolbar: React.ReactElement<any>;
     view: DiagramView;
     isViewOnly?: boolean;
-    model: DiagramModel;
     leftPanelInitiallyOpen?: boolean;
     rightPanelInitiallyOpen?: boolean;
     searchCriteria?: SearchCriteria;
@@ -49,21 +48,14 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
-    model: DiagramModel;
-    view: DiagramView;
     private tree: ClassTree;
     private linksToolbox: LinkTypesToolboxShell;
     private untilMouseUpClasses: string[] = [];
-    constructor(props: Props) {
-        super(props);
-        this.model = this.props.model;
-        this.view = this.props.view;
-    }
 
     render() {
         let leftPanel = (
             <ResizableSidebar dockSide={DockSide.Left}
-                initiallyOpen = {this.props.leftPanelInitiallyOpen}
+                initiallyOpen={this.props.leftPanelInitiallyOpen}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -103,7 +95,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
         let rightPanel = (
             <ResizableSidebar dockSide={DockSide.Right}
-                initiallyOpen = {this.props.rightPanelInitiallyOpen}
+                initiallyOpen={this.props.rightPanelInitiallyOpen}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -153,11 +145,11 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
     }
 
-    initializeLinksToolbox = (element: any) => {
+    initializeLinksToolbox = (element: HTMLDivElement) => {
         if (element) {
             this.linksToolbox = new LinkTypesToolboxShell({
-                model: new LinkTypesToolboxModel(this.model),
-                view: this.view,
+                model: new LinkTypesToolboxModel(this.props.view.model),
+                view: this.props.view,
                 el: element,
             }).render();
         } else {
@@ -165,11 +157,11 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
         }
     }
 
-    intializeClassTree = (element: any) => {
+    intializeClassTree = (element: HTMLDivElement) => {
         if (element) {
             this.tree = new ClassTree({
-                model: new Backbone.Model(this.view.model),
-                view: this.view,
+                model: new Backbone.Model(this.props.view.model),
+                view: this.props.view,
                 el: element,
             }).render();
 

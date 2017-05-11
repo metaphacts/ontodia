@@ -39,7 +39,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         this.$el.addClass(_.result(this, 'className') as string);
         this.view = options.view;
         this.model.set('language', this.view.getLanguage(), {silent: true});
-        this.listenTo(this.view, 'change:language', this.onLanguageChanged);     
+        this.listenTo(this.view, 'change:language', this.onLanguageChanged);
 
         this.rest = $(`<div class="${CLASS_NAME}__rest"></div>`);
         this.tree = $(`<div class="${CLASS_NAME}__tree"></div>`).appendTo(this.rest);
@@ -51,13 +51,12 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
         let searchInput =
             $('<input type="text" class="search-input form-control" placeholder="Search for..."/>')
             .appendTo(innerDiv);
-        let model = this.view.model;
-        let tree = model.classTree;
+
         this.getJSTree().jstree({
                 'plugins': ['types', 'sort', 'search'],
                 'sort': (firstClassId: string, secondClassId: string) => {
-                    return (model.getClassesById(firstClassId).model as TreeClassModel).text.localeCompare(
-                        (model.getClassesById(secondClassId).model as TreeClassModel).text);
+                    return (this.view.model.getClassesById(firstClassId).model as TreeClassModel).text.localeCompare(
+                        (this.view.model.getClassesById(secondClassId).model as TreeClassModel).text);
                 },
                 'search': {
                     'case_insensitive': true,
@@ -65,7 +64,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
                 },
             });
 
-        if (tree) {
+        if (this.view.model.classTree) {
              this.refreshClassTree();
         }
 
