@@ -176,7 +176,9 @@ export class Workspace extends Component<Props, State> {
 
     exportSvg = (link: HTMLAnchorElement) => {
         this.diagram.exportSVG().then(svg => {
-            link.download = 'diagram.svg';
+            if (!link.download) {
+                link.download = 'diagram.svg';
+            }
             const xmlEncodingHeader = '<?xml version="1.0" encoding="UTF-8"?>';
             link.href = window.URL.createObjectURL(
                 new Blob([xmlEncodingHeader + svg], {type: 'image/svg+xml'}));
@@ -186,7 +188,9 @@ export class Workspace extends Component<Props, State> {
 
     exportPng = (link: HTMLAnchorElement) => {
         this.diagram.exportPNG({backgroundColor: 'white'}).then(dataUri => {
-            link.download = 'diagram.png';
+            if (!link.download) {
+                link.download = 'diagram.png';
+            }
             link.href = window.URL.createObjectURL(dataURLToBlob(dataUri));
             link.click();
         });
