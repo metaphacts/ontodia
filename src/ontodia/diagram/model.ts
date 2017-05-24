@@ -479,7 +479,9 @@ export class DiagramModel extends Backbone.Model {
         }
 
         this.sourceOf(link).links.push(link);
-        this.targetOf(link).links.push(link);
+        if (link.sourceId !== link.targetId) {
+            this.targetOf(link).links.push(link);
+        }
     }
 
     getLink(linkModel: LinkModel): Link | undefined {
@@ -532,7 +534,9 @@ function placeholderTemplateFromIri(iri: string): ElementModel {
 function removeLinkFrom(links: Link[], model: LinkModel) {
     if (!links) { return; }
     const index = findLinkIndex(links, model);
-    links.splice(index, 1);
+    if (index >= 0) {
+        links.splice(index, 1);
+    }
 }
 
 function findLinkIndex(haystack: Link[], needle: LinkModel) {

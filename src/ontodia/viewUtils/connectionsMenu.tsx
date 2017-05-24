@@ -88,12 +88,9 @@ export class ConnectionsMenu {
 
                 const countMap: Dictionary<ConnectionCount> = {};
                 const links: FatLinkType[] = [];
-                for (const linkCount of linkTypes) {
-                    countMap[linkCount.id] = {
-                        inCount: linkCount.inCount,
-                        outCount: linkCount.outCount,
-                    };
-                    links.push(this.view.model.getLinkType(linkCount.id));
+                for (const {id: linkTypeId, inCount, outCount} of linkTypes) {
+                    countMap[linkTypeId] = {inCount, outCount};
+                    links.push(this.view.model.createLinkType(linkTypeId));
                 }
 
                 countMap[ALL_RELATED_ELEMENTS_LINK.id] = Object.keys(countMap)
