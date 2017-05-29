@@ -34,7 +34,7 @@ export interface State {
     readonly error?: any;
     readonly items?: ReadonlyArray<ElementModel>;
     readonly moreItemsAvailable?: boolean;
-    readonly selectedItems?: Readonly<Dictionary<boolean>>;
+    readonly selectedItems?: Readonly<Dictionary<true>>;
 }
 
 const CLASS_NAME = 'ontodia-instances-search';
@@ -166,12 +166,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 view={this.props.view}
                 disabled={Boolean(this.props.view.model.getElement(model.id))}
                 selected={this.state.selectedItems[model.id] || false}
-                onClick={() => this.setState({
-                    selectedItems: {
-                        ...this.state.selectedItems,
-                        [model.id]: !this.state.selectedItems[model.id],
-                    },
-                })}
+                onClick={() => this.toggleSelectedItem(model.id)}
                 onDragStart={e => {
                     const elementIds = Object.keys({...this.state.selectedItems, [model.id]: true});
                     try {
@@ -185,6 +180,18 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         </ul>;
     }
 
+    private toggleSelectedItem(itemId: string) {
+        this.setState((state): State => {
+            const selectedItems: Dictionary<true> = {...state.selectedItems};
+            if (selectedItems[itemId]) {
+                delete selectedItems[itemId];
+            } else {
+                selectedItems[itemId] = true;
+            }
+            return {selectedItems};
+        });
+    }
+
     private submitCriteriaUpdate() {
         let text = this.state.inputText === undefined ? this.props.criteria.text : this.state.inputText;
         text = text === '' ? undefined : text;
@@ -194,7 +201,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     componentDidMount() {
         this.listener.listenTo(this.props.view, 'change:language', () => this.forceUpdate());
         this.listener.listenTo(this.props.view.model.cells, 'add remove reset', () => {
-            const selectedItems: Dictionary<boolean> = {...this.state.selectedItems};
+            const selectedItems: Dictionary<true> = {...this.state.selectedItems};
             for (const id of Object.keys(selectedItems)) {
                 if (selectedItems[id] && this.props.view.model.getElement(id)) {
                     delete selectedItems[id];
@@ -260,7 +267,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     }
 
     private processFilterData(elements: Dictionary<ElementModel>) {
-        const selectedItems: Dictionary<boolean> = {...this.state.selectedItems};
+        const selectedItems: Dictionary<true> = {...this.state.selectedItems};
 
         const newItems: ElementModel[] = [];
         for (const elementId in elements) {
