@@ -24,24 +24,25 @@
   "homepage": "https://github.com/ontodia-org/ontodia#readme",
   "scripts": {
     "build": "npm run _webpack && npm run _typings",
-    "demo": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --port 10444 --config webpack.demo.config.js --content-base dist/",
-    "_typings-tsc": "node ./node_modules/typescript/bin/tsc --declaration --outDir dist/dts",
-    "_typings-dts-bundle": "node ./node_modules/dts-bundle/lib/dts-bundle.js --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
+    "demo": "./node_modules/.bin/webpack-dev-server --port 10444 --config webpack.demo.config.js --content-base dist/",
+    "_typings-tsc": "./node_modules/.bin/tsc --declaration --outDir dist/dts",
+    "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
     "_typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
     "test": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings",
-    "_webpack": "node ./node_modules/webpack/bin/webpack.js",
-    "start" : "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --port 5000 --host 0.0.0.0 --config webpack.demo.config.js --content-base dist/"
+    "_webpack": "./node_modules/.bin/webpack",
+    "start": "./node_modules/.bin/webpack-dev-server --port 5000 --host 0.0.0.0 --config webpack.demo.config.js --content-base dist/",
+    "lint": "./node_modules/.bin/tslint -c tslint.json 'src/**/*.ts' 'src/**/*.tsx' -t stylish"
   },
   "dependencies": {
-    "d3-color": "1.0.2",
-    "handlebars": "4.0.5",
+    "d3-color": "~1.0.2",
+    "handlebars": "~4.0.5",
     "intro.js": "1.1.1",
     "jointjs": "0.9.10",
-    "jquery": "2.2.1",
-    "lodash": "4.15.0",
-    "n3": "0.6.1",
-    "webcola": "3.1.3",
-    "whatwg-fetch": "2.0.2"
+    "jquery": "~2.2.1",
+    "lodash": "~4.17.4",
+    "n3": "~0.10.0",
+    "webcola": "~3.1.3",
+    "whatwg-fetch": "~2.0.2"
   },
   "peerDependencies": {
     "@types/backbone": "*",
@@ -50,10 +51,9 @@
     "react-dom": "^15.0.0"
   },
   "devDependencies": {
-    "@types/whatwg-fetch": "0.0.33",
     "@types/backbone": "1.3.33",
     "@types/d3-color": "1.0.4",
-    "@types/lodash": "4.14.37",
+    "@types/lodash": "4.14.63",
     "@types/react": "0.14.55",
     "@types/react-dom": "0.14.19",
     "css-loader": "0.23.1",
@@ -69,8 +69,9 @@
     "react-dom": "15.3.2",
     "sass-loader": "4.0.2",
     "style-loader": "0.13.1",
-    "ts-loader": "0.8.2",
-    "typescript": "2.1.4",
+    "ts-loader": "1.3.3",
+    "tslint": "4.5.1",
+    "typescript": "2.3.2",
     "url-loader": "0.5.7",
     "webpack": "1.13.2",
     "webpack-dev-server": "1.16.2"
