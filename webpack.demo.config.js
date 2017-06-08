@@ -8,6 +8,7 @@ var npmDir = path.join(__dirname, 'node_modules');
 
 module.exports = {
     entry: {
+        rdf: path.join(__dirname, 'src', 'examples', 'rdf.ts'),
         demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         dbpedia: path.join(__dirname, 'src', 'examples', 'dbpedia.ts'),
@@ -16,6 +17,7 @@ module.exports = {
         sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
         styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),
         wikidata: path.join(__dirname, 'src', 'examples', 'wikidata.ts'),
+        composite: path.join(__dirname, 'src', 'examples', 'composite.ts'),
         wikidataGraph: path.join(__dirname, 'src', 'examples', 'wikidataGraph.ts'),
     },
     resolve: {
@@ -36,7 +38,17 @@ module.exports = {
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
         ],
     },
+    node: {
+        fs: "empty",
+        child_process: "empty"
+    },
     plugins: [
+        new HtmlWebpackPlugin({
+            filename: 'rdf.html',
+            title: 'Ontodia RDF Demo',
+            chunks: ['commons', 'rdf'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
         new HtmlWebpackPlugin({
             title: 'Ontodia Local Demo',
             chunks: ['commons', 'demo'],
@@ -90,6 +102,12 @@ module.exports = {
             chunks: ['commons', 'wikidataGraph', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
+        new HtmlWebpackPlugin({
+            filename: 'composite.html',
+            title: 'Ontodia composite DP Demo',
+            chunks: ['commons', 'composite'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
         new CommonsChunkPlugin('commons', 'commons.chunk.js'),
     ],
     output: {
@@ -101,12 +119,19 @@ module.exports = {
     devtool: '#source-map',
     devServer: {
         proxy: {
-            "/sparql-endpoint**": {
+            '/sparql-endpoint**': {
                 target: process.env.SPARQL_ENDPOINT,
                 pathRewrite: {'/sparql-endpoint' : ''},
                 changeOrigin: true,
                 secure: false,
             },
+            '/lod-proxy/**': {
+                target: process.env.LOD_PROXY,
+                // pathRewrite: {'/lod-proxy/*' : ''},
+                changeOrigin: true,
+                secure: false,
+            },
         },
+        
     },
 };
