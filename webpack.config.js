@@ -26,6 +26,9 @@ module.exports = {
             'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
         },
     },
+    node: {
+        child_process: "empty"
+    },
     module: {
         loaders: [
             {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
