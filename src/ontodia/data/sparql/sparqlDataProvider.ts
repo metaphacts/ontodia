@@ -24,7 +24,7 @@ export enum SparqlQueryMethod { GET = 1, POST }
 
 export type QueryFunction = (params: {
     url: string,
-    body: string,
+    body?: string,
     headers: { [header: string]: string },
     method: string,
 }) => Promise<Response>;
@@ -168,8 +168,9 @@ export class SparqlDataProvider implements DataProvider {
             }}
         `;
         return this.executeSparqlQuery<ElementImageBinding>(query)
-            .then(imageResponse => getEnrichedElementsInfo(imageResponse, elementsInfo)).catch((err) => {
-                console.log(err);
+            .then(imageResponse => getEnrichedElementsInfo(imageResponse, elementsInfo))
+            .catch(err => {
+                console.error(err);
                 return elementsInfo;
             });
     }
@@ -317,8 +318,6 @@ export class SparqlDataProvider implements DataProvider {
         }
         return refQueryPart;
     }
-
-
 }
 
 function resolveTemplate(template: string, values: Dictionary<string>) {
@@ -330,13 +329,16 @@ function resolveTemplate(template: string, values: Dictionary<string>) {
     return result;
 }
 
-export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod, queryFunction: QueryFunction):
-    Promise<SparqlResponse<Binding>> {
+export function executeSparqlQuery<Binding>(
+    endpoint: string,
+    query: string,
+    method: SparqlQueryMethod,
+    queryFunction: QueryFunction,
+): Promise<SparqlResponse<Binding>> {
     let internalQuery: Promise<Response>;
     if (method === SparqlQueryMethod.GET) {
         internalQuery = queryFunction({
-            url: `${endpoint}?query=` + encodeURIComponent(query),
-            body: null,
+            url: appendQueryParams(endpoint, {query}),
             headers: {
                 'Accept': 'application/sparql-results+json',
             },
@@ -358,7 +360,7 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string, met
             return response.json();
         } else {
             const error = new Error(response.statusText);
-            (<any>error).response = response;
+            (error as any).response = response;
             throw error;
         }
     });
@@ -368,12 +370,12 @@ export function executeSparqlConstruct(
     endpoint: string,
     query: string,
     method: SparqlQueryMethod,
-    queryFunction: QueryFunction): Promise<Triple[]> {
+    queryFunction: QueryFunction,
+): Promise<Triple[]> {
     let internalQuery: Promise<Response>;
     if (method === SparqlQueryMethod.GET) {
         internalQuery = queryFunction({
-            url: `${endpoint}?query=` + encodeURIComponent(query),
-            body: null,
+            url: appendQueryParams(endpoint, {query}),
             headers: {
                 'Accept': 'text/turtle',
             },
@@ -424,9 +426,17 @@ function toRdfNode(entity: string): RdfNode {
     }
 }
 
+function appendQueryParams(endpoint: string, queryParams: { [key: string]: string } = {}) {
+    const initialSeparator = endpoint.indexOf('?') < 0 ? '?' : '&';
+    const additionalParams = initialSeparator + Object.keys(queryParams)
+        .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
+        .join('&');
+    return endpoint + additionalParams;
+}
+
 function queryInternal(params: {
     url: string,
-    body: string,
+    body?: string,
     headers: any,
     method: string,
 }) {
