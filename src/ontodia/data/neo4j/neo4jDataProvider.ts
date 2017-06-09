@@ -202,11 +202,13 @@ export class Neo4jDataProvider implements DataProvider {
         elementId: string;
         linkId: string;
         limit: number;
-        offset: number
+        offset: number;
+        direction?: 'in' | 'out';
     }): Promise<Dictionary<ElementModel>> {
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
+            linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
             languageCode: ''});
@@ -230,6 +232,7 @@ export class Neo4jDataProvider implements DataProvider {
             linktId?: string,
             elementInfo?: ElementModel,
             filterKey?: string,
+            direction?: 'in' | 'out',
         ): string => {
             let filterByKey = '';
             if (elementInfo) {
@@ -240,8 +243,17 @@ export class Neo4jDataProvider implements DataProvider {
 
             const linkFilter = linktId ? `AND (type(r) = '${linktId}')` : '';
 
+            let directString = '<-[r]->';
+            if (direction) {
+                if (direction === 'in') {
+                    directString = '<-[r]-';
+                } else {
+                    directString = '-[r]->';
+                }
+            }
+
             return `{
-                "query" : "MATCH (n)<-[r]->(n2) ` +
+                "query" : "MATCH (n)${directString}(n2) ` +
                     `WHERE  ((ID(n) = ${elementId})${linkFilter}${filterByKey}) ` +
                     `RETURN n2 SKIP ${params.offset} LIMIT ${params.limit}",
                 "params" : { }
@@ -265,11 +277,11 @@ export class Neo4jDataProvider implements DataProvider {
                 return this.elementInfo({ elementIds: [eId] }).then(elementResult => {
                     const el = elementResult[Object.keys(elementResult)[0]];
 
-                    query = getQueryForElementId(eId, linkId, el, params.text);
+                    query = getQueryForElementId(eId, linkId, el, params.text, params.linkDirection);
                     return this.executeQuery<ElementBinding>(query)
                         .then(result => this.calc.getFilteredData(result, params.text))
                         .then(results => {
-                            return Object.assign(results, elementResult);
+                            return results;
                         });
                 });
             }
