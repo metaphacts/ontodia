@@ -48,7 +48,7 @@ export interface LinkStyle {
     };
     label?: LinkLabel;
     properties?: LinkLabel[];
-    connector?: { name?: string; args?: object };
+    connector?: { name?: string; args?: {}; };
 }
 
 export type LinkRouter = RouterDescription | RouterFunction;

@@ -425,15 +425,16 @@ export class DiagramView extends Backbone.Model {
             return existingTemplate.template;
         }
 
-        const template = getDefaultLinkTemplate(this.model);
+        let template: LinkTemplate;
         for (const resolver of this.linkTemplateResolvers) {
             const result = resolver(linkTypeId);
             if (result) {
-                merge(template, cloneDeep(result));
+                template = cloneDeep(result);
                 break;
             }
         }
 
+        fillLinkTemplateDefaults(template, this.model);
         this.linkTemplates[linkTypeId] = {
             template,
             start: this.createLinkMarker(linkTypeId, true, template.markerSource),
@@ -510,12 +511,16 @@ function getHueFromClasses(classes: string[], seed?: number): number {
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
 }
 
-function getDefaultLinkTemplate(model: DiagramModel): LinkTemplate {
-    return {
+function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
+    merge(template, {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
-        router: getDefaultLinkRouter(model),
-        renderLink: () => ({}),
-    };
+    });
+    if (!template.renderLink) {
+        template.renderLink = () => ({});
+    }
+    if (!template.router) {
+        template.router = getDefaultLinkRouter(model);
+    }
 }
 
 /**
