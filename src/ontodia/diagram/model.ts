@@ -457,8 +457,8 @@ export class DiagramModel extends Backbone.Model {
             source: {id: sourceId},
             target: {id: targetId},
             vertices,
-            template: linkModel,
         });
+        link.template = linkModel;
 
         if (this.isSourceAndTargetVisible(link) && this.createLinkType(link.typeId).visible) {
             this.registerLink(link);

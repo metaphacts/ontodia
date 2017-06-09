@@ -8,14 +8,14 @@ import getDefaultLinkRouter from './defaultLinkRouter';
 
 import {
     TypeStyleResolver,
-    LinkStyleResolver,
+    LinkTemplateResolver,
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
-    LinkStyle, LinkMarkerStyle,
+    LinkTemplate, LinkMarkerStyle,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
-import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
+import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { DefaultTemplate } from '../customization/defaultTemplate';
 import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
 
@@ -25,7 +25,7 @@ import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
-import { Dictionary, ElementModel, LinkModel, LocalizedString } from '../data/model';
+import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element, FatClassModel, linkMarkerKey } from './elements';
@@ -36,7 +36,7 @@ import { ElementLayer } from './elementLayer';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
-    linkStyleResolvers?: LinkStyleResolver[];
+    linkTemplateResolvers?: LinkTemplateResolver[];
     templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
 }
@@ -60,7 +60,7 @@ const DefaultToSVGOptions: ToSVGOptions = {
  */
 export class DiagramView extends Backbone.Model {
     private typeStyleResolvers: TypeStyleResolver[];
-    private linkStyleResolvers: LinkStyleResolver[];
+    private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
     paper: joint.dia.Paper;
@@ -71,14 +71,15 @@ export class DiagramView extends Backbone.Model {
 
     private colorSeed = 0x0BADBEEF;
 
-    private linkMarkers: Dictionary<{
+    private linkTemplates: Dictionary<{
+        template: LinkTemplate;
         start: SVGMarkerElement;
         end: SVGMarkerElement;
     }> = {};
 
     constructor(
         public readonly model: DiagramModel,
-        public readonly options: DiagramViewOptions = {}
+        public readonly options: DiagramViewOptions = {},
     ) {
         super();
         this.setLanguage('en');
@@ -102,8 +103,8 @@ export class DiagramView extends Backbone.Model {
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
 
-        this.linkStyleResolvers = options.linkStyleResolvers
-            ? this.options.linkStyleResolvers : DefaultLinkStyleBundle;
+        this.linkTemplateResolvers = options.linkTemplateResolvers
+            ? this.options.linkTemplateResolvers : DefaultLinkTemplateBundle;
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
@@ -171,7 +172,7 @@ export class DiagramView extends Backbone.Model {
         ) {
             this.removeSelectedElements();
         }
-    };
+    }
 
     private removeSelectedElements() {
         const elementsToRemove = this.selection.toArray();
@@ -183,7 +184,7 @@ export class DiagramView extends Backbone.Model {
             element.remove();
         }
         this.model.graph.trigger('batch:stop');
-    };
+    }
 
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
@@ -418,25 +419,27 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    getLinkStyle(link: LinkModel): LinkStyle {
-        let style = getDefaultLinkStyle();
-        for (const resolver of this.linkStyleResolvers) {
-            const result = resolver(link.linkTypeId)(link);
+    getLinkTemplate(linkTypeId: string): LinkTemplate {
+        const existingTemplate = this.linkTemplates[linkTypeId];
+        if (existingTemplate) {
+            return existingTemplate.template;
+        }
+
+        const template = getDefaultLinkTemplate(this.model);
+        for (const resolver of this.linkTemplateResolvers) {
+            const result = resolver(linkTypeId);
             if (result) {
-                merge(style, cloneDeep(result));
+                merge(template, cloneDeep(result));
                 break;
             }
         }
-        if (!this.linkMarkers[link.linkTypeId]) {
-            this.linkMarkers[link.linkTypeId] = {
-                start: this.createLinkMarker(link.linkTypeId, true, style.markerSource),
-                end: this.createLinkMarker(link.linkTypeId, false, style.markerTarget),
-            };
-        }
-        if (!style.router) {
-            style.router = getDefaultLinkRouter(this.model);
-        }
-        return style;
+
+        this.linkTemplates[linkTypeId] = {
+            template,
+            start: this.createLinkMarker(linkTypeId, true, template.markerSource),
+            end: this.createLinkMarker(linkTypeId, false, template.markerTarget),
+        };
+        return template;
     }
 
     private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {
@@ -467,15 +470,15 @@ export class DiagramView extends Backbone.Model {
         return marker;
     }
 
-    public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
-        this.linkStyleResolvers.unshift(resolver);
+    public registerLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+        this.linkTemplateResolvers.unshift(resolver);
         return resolver;
     }
 
-    public unregisterLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
-        const index = this.linkStyleResolvers.indexOf(resolver);
+    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+        const index = this.linkTemplateResolvers.indexOf(resolver);
         if (index !== -1) {
-            return this.linkStyleResolvers.splice(index, 1)[0];
+            return this.linkTemplateResolvers.splice(index, 1)[0];
         } else {
             return undefined;
         }
@@ -507,9 +510,11 @@ function getHueFromClasses(classes: string[], seed?: number): number {
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
 }
 
-function getDefaultLinkStyle(): LinkStyle {
+function getDefaultLinkTemplate(model: DiagramModel): LinkTemplate {
     return {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
+        router: getDefaultLinkRouter(model),
+        renderLink: () => ({}),
     };
 }
 

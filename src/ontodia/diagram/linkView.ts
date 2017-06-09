@@ -61,13 +61,14 @@ export class LinkView extends joint.dia.LinkView {
     }
 
     private updateLabelWithOptions(options?: { silent?: boolean }) {
-        const style = this.view.getLinkStyle(this.model.get('template'));
+        const template = this.view.getLinkTemplate(this.model.typeId);
+        const style = template.renderLink(this.model.template);
         merge(style, {connection: {'stroke-dasharray': this.model.layoutOnly ? '5,5' : null}});
 
-        let linkAttributes: joint.dia.LinkAttributes = {
+        const linkAttributes: joint.dia.LinkAttributes = {
             labels: this.createLabelsAttributes(style),
             connector: style.connector,
-            router: style.router,
+            router: template.router,
             z: 0,
         };
         if (style.connection) {
@@ -78,7 +79,7 @@ export class LinkView extends joint.dia.LinkView {
     }
 
     private createLabelsAttributes = (style: LinkStyle): joint.dia.LinkLabelAttributes[] => {
-        const linkTypeId: string = this.model.get('typeId');
+        const linkTypeId = this.model.typeId;
         const typeModel = this.view.model.getLinkType(linkTypeId);
         const showLabels = typeModel && typeModel.get('showLabel');
         const labelAttributes: joint.dia.LinkLabelAttributes[] = [];
