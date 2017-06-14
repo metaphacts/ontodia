@@ -154,31 +154,25 @@ export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: s
     for (const sInst of sInstances) {
         let sInstTypeId: string = sInst.inst.value;
 
-        if (instancesMap[sInstTypeId]) {
-            enrichElement(instancesMap[sInst.inst.value], sInst);
-        } else {
-            instancesMap[sInstTypeId] = getElementInfo(sInst);
+        if (isThereAnyData(sInst)) {
+            if (instancesMap[sInstTypeId]) {
+                enrichElement(instancesMap[sInst.inst.value], sInst);
+            } else {
+                instancesMap[sInstTypeId] = getElementInfo(sInst);
+            }
         }
-    };
+    }
 
-    const proccesedIds = Object.keys(instancesMap);
-    for (const id of ids) {
-        if (proccesedIds.indexOf(id) === -1) {
-            instancesMap[id] = {
-                id: id,
-                label: { values: [getLocalizedString(undefined, id)] },
-                types: [THING_URI],
-                properties: {},
-            };
-        }
-    };
+    function isThereAnyData(sInst: ElementBinding) {
+        return sInst.class || sInst.label ||  sInst.propType ||  sInst.propValue;
+    }
 
     return instancesMap;
 }
 
 export function getEnrichedElementsInfo(
     response: SparqlResponse<ElementImageBinding>,
-    elementsInfo: Dictionary<ElementModel>
+    elementsInfo: Dictionary<ElementModel>,
 ): Dictionary<ElementModel> {
     const respElements = response.results.bindings;
     for (const respEl of respElements) {
@@ -218,7 +212,7 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
         } else {
             enrichElement(instancesMap[sInst.inst.value], sInst);
         }
-    };
+    }
     return instancesMap;
 }
 
