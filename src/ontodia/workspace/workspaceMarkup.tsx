@@ -1,11 +1,14 @@
 import * as React from 'react';
 import * as Backbone from 'backbone';
+
 import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea } from '../diagram/paperArea';
+import { ElementLayer } from '../diagram/elementLayer';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
+
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
@@ -129,7 +132,9 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                             paper={this.props.view.paper}
                             zoomOptions={{min: 0.2, max: 2, maxFit: 1, fitPadding: 20}}
                             preventTextSelection={() => this.preventTextSelection()}
-                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)} />
+                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}>
+                            <ElementLayer view={this.props.view} paper={this.props.view.paper} />
+                        </PaperArea>
                     </div>
                     {!this.props.isViewOnly ? rightPanel : null}
                 </div>
