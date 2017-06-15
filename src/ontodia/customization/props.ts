@@ -4,7 +4,7 @@ import { LinkView } from '../diagram/linkView';
 import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
 export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
-export type LinkTemplateResolver = (linkType: string) => LinkStyle | undefined;
+export type LinkTemplateResolver = (linkType: string) => LinkTemplate | undefined;
 export type TemplateResolver = (types: string[]) => ElementTemplate | undefined;
 
 export interface CustomTypeStyle {

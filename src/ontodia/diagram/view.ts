@@ -1,7 +1,7 @@
 import { hcl } from 'd3-color';
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
-import { merge, cloneDeep } from 'lodash';
+import { defaultsDeep, cloneDeep } from 'lodash';
 import { createElement } from 'react';
 import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
 import getDefaultLinkRouter from './defaultLinkRouter';
@@ -425,7 +425,7 @@ export class DiagramView extends Backbone.Model {
             return existingTemplate.template;
         }
 
-        let template: LinkTemplate;
+        let template: LinkTemplate = {};
         for (const resolver of this.linkTemplateResolvers) {
             const result = resolver(linkTypeId);
             if (result) {
@@ -512,9 +512,10 @@ function getHueFromClasses(classes: string[], seed?: number): number {
 }
 
 function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
-    merge(template, {
+    const defaults: Partial<LinkTemplate> = {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
-    });
+    };
+    defaultsDeep(template, defaults);
     if (!template.renderLink) {
         template.renderLink = () => ({});
     }
@@ -529,10 +530,8 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
  * Ref.: http://isthe.com/chongo/tech/comp/fnv/
  *
  * @param {string} str the input value
- * @param {boolean} [asString=false] set to true to return the hash value as
- *     8-digit hex string instead of an integer
  * @param {integer} [seed] optionally pass the hash of the previous chunk
- * @returns {integer | string}
+ * @returns {integer}
  */
 function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:disable:no-bitwise */
