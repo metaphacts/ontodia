@@ -76,7 +76,7 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?prop ?label
             WHERE {
-                ?prop ${this.settings.schemaLabelProperty} ?label.
+                OPTIONAL {?prop ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?prop) {${ids}}.
             }
         `;
@@ -88,7 +88,7 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?class ?label ?instcount
             WHERE {
-                ?class ${this.settings.schemaLabelProperty} ?label.
+                OPTIONAL {?class ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?class) {${ids}}.
                 BIND("" as ?instcount)
             }
@@ -101,7 +101,7 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?link ?label ?instcount
             WHERE {
-                ?link ${this.settings.schemaLabelProperty} ?label.
+                OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?link) {${ids}}.
                 BIND("" as ?instcount)
             }
@@ -177,14 +177,8 @@ export class SparqlDataProvider implements DataProvider {
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
         const ids = params.elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = this.settings.defaultPrefix + `
-            SELECT ?source ?type ?target
-            WHERE {
-                ?source ?type ?target.
-                VALUES (?source) {${ids}}
-                VALUES (?target) {${ids}}                
-            }
-        `;
+        const linksInfoQuery = resolveTemplate(this.settings.linksInfoQuery, {ids: ids});
+        const query = this.settings.defaultPrefix + linksInfoQuery;
         return this.executeSparqlQuery<LinkBinding>(query).then(getLinksInfo);
     }
 
@@ -220,10 +214,10 @@ export class SparqlDataProvider implements DataProvider {
             throw new Error(`Can't execute refElementLink filter without refElement`);
         }
 
-        let refQueryPart = createRefQueryPart({
+        let refQueryPart = this.createRefQueryPart({
             elementId: params.refElementId,
             linkId: params.refElementLinkId,
-            direction: params.linkDirection
+            direction: params.linkDirection,
         });
 
         let elementTypePart: string;
@@ -275,6 +269,40 @@ export class SparqlDataProvider implements DataProvider {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
         return executeSparqlConstruct(this.options.endpointUrl, query, method);
     }
+
+    createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
+    let refQueryPart = '';
+    const refElementIRI = escapeIri(params.elementId);
+    const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
+
+    // link to element with specified link type
+    // if direction is not specified, provide both patterns and union them
+    // FILTER ISIRI is used to prevent blank nodes appearing in results
+    if (params.elementId && params.linkId) {
+        const refElementLinkQueryOut = resolveTemplate(
+            this.settings.refElementLinkQueryOut,
+            {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
+        );
+        const refElementLinkQueryIn = resolveTemplate(
+            this.settings.refElementLinkQueryIn,
+            {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
+        );
+        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementLinkQueryOut} }` : '';
+        refQueryPart += !params.direction ? ' UNION ' : '';
+        refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementLinkQueryIn} }` : '';
+    }
+
+    // all links to current element
+    if (params.elementId && !params.linkId) {
+        const refElementQueryOut = resolveTemplate(this.settings.refElementQueryOut, {refElementIRI: refElementIRI});
+        const refElementQueryIn = resolveTemplate(this.settings.refElementQueryIn, {refElementIRI: refElementIRI});
+
+        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementQueryOut} }` : '';
+        refQueryPart += !params.direction ? ' UNION ' : '';
+        refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementQueryIn} }` : '';
+    }
+    return refQueryPart;
+}
 }
 
 function resolveTemplate(template: string, values: Dictionary<string>) {
@@ -410,27 +438,6 @@ function escapeIri(iri: string) {
     return `<${iri}>`;
 }
 
-function createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
-    let refQueryPart = '';
-    const refElementIRI = escapeIri(params.elementId);
-    const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
 
-    // link to element with specified link type
-    // if direction is not specified, provide both patterns and union them
-    // FILTER ISIRI is used to prevent blank nodes appearing in results
-    if (params.elementId && params.linkId) {
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)}` : '';
-        refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ${refElementLinkIRI} ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
-    }
-
-    // all links to current element
-    if (params.elementId && !params.linkId) {
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)}` : '';
-        refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ?link ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
-    }
-    return refQueryPart;
-}
 
 export default SparqlDataProvider;

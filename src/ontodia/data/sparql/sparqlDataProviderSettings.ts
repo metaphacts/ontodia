@@ -1,17 +1,18 @@
 /**
  * this is dataset-schema specific settings
  */
-export interface SparqlDataProviderSettings {
+    export interface SparqlDataProviderSettings {
     /**
      * default prefix to be used in every query
      */
     defaultPrefix: string;
+
     /**
      *  property to use as label in schema (classes, properties)
      */
     schemaLabelProperty: string;
 
-    /**
+     /**
      * property to use as instance label
      * todo: make it an array
      */
@@ -36,6 +37,11 @@ export interface SparqlDataProviderSettings {
      * query for fetching all information on element: labels, classes, properties
      */
     elementInfoQuery: string;
+
+    /**
+     * Query on all links between said instances. Should return source type target
+     */
+    linksInfoQuery: string;
 
     /**
      * this should return image URL for ?inst as instance and ?linkType for image property IRI
@@ -67,6 +73,14 @@ export interface SparqlDataProviderSettings {
      * imposes additional filtering on elements within filter
      */
     filterAdditionalRestriction: string;
+
+    /**
+     * Link reference resolving. Developer can use it to transform how link navigation is performed.
+     */
+    refElementLinkQueryOut: string; // '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
+    refElementLinkQueryIn: string; // '?inst \${refElementLinkIRI} \${refElementIRI}. ',
+    refElementQueryOut: string; // '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
+    refElementQueryIn: string; // '?inst ?link \${refElementIRI} .',
 }
 
 /**
@@ -93,7 +107,44 @@ export interface FullTextSearchSettings {
     extractLabel?: boolean;
 }
 
-export const WikidataSettings: SparqlDataProviderSettings = {
+export const RDFSettings: SparqlDataProviderSettings = {
+    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
+    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
+    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
+    refElementQueryIn: '?inst ?link \${refElementIRI} .',
+
+    linksInfoQuery: `SELECT ?source ?type ?target
+            WHERE {
+                ?source ?type ?target.
+                VALUES (?source) {\${ids}}
+                VALUES (?target) {\${ids}}                
+            }`,
+
+    defaultPrefix: ``,
+
+    schemaLabelProperty: 'rdfs:label',
+    dataLabelProperty: 'rdfs:label',
+
+    fullTextSearch: {
+        prefix: '',
+        queryPattern: ``,
+    },
+
+    classTreeQuery: ``,
+
+    linkTypesPattern: ``,
+
+    elementInfoQuery: ``,
+    imageQueryPattern: ``,
+
+    linkTypesOfQuery: ``,
+    filterRefElementLinkPattern: '',
+    filterTypePattern: ``,
+    filterAdditionalRestriction: ``,
+    filterElementInfoPattern: ``,
+};
+
+const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -185,9 +236,12 @@ export const WikidataSettings: SparqlDataProviderSettings = {
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst rdfs:label ?label}
 `,
+
 };
 
-export const OWLRDFSSettings: SparqlDataProviderSettings = {
+export const WikidataSettings: SparqlDataProviderSettings = {...RDFSettings, ...WikidataSettingsOverride};
+
+export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
     defaultPrefix:
         `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
  PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -248,7 +302,13 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst \${dataLabelProperty} ?label}`,
     filterAdditionalRestriction: '',
+    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
+    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
+    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
+    refElementQueryIn: '?inst ?link \${refElementIRI} .',
 };
+
+export const OWLRDFSSettings: SparqlDataProviderSettings = {...RDFSettings, ...OWLRDFSSettingsOverride};
 
 const OWLStatsOverride: Partial<SparqlDataProviderSettings> = {
     classTreeQuery: `
