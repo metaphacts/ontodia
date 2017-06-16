@@ -22,6 +22,13 @@ import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProvid
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
+export type QueryFunction = (params: {
+    url: string,
+    body: string,
+    headers: any,
+    method: string,
+}) => Promise<Response>;
+
 /**
  * Runtime settings of SPARQL data provider
  */
@@ -55,6 +62,11 @@ export interface SparqlDataProviderOptions {
      * what property to use as instance labels. This will override dataLabelProperty from settings
      */
     labelProperty?: string;
+
+    /*
+     * function to send sparql requests
+     */
+    queryFunction?: QueryFunction;
 }
 
 export class SparqlDataProvider implements DataProvider {
@@ -64,6 +76,9 @@ export class SparqlDataProvider implements DataProvider {
         private settings: SparqlDataProviderSettings = OWLStatsSettings
     ) {
         this.dataLabelProperty = options.labelProperty ? options.labelProperty : settings.dataLabelProperty;
+        if (this.options.queryFunction == null) {
+            this.options.queryFunction = queryInternal;
+        }
     }
 
     classTree(): Promise<ClassModel[]> {
@@ -189,7 +204,6 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 
-
     linkElements(params: {
         elementId: string;
         linkId: string;
@@ -262,12 +276,12 @@ export class SparqlDataProvider implements DataProvider {
 
     executeSparqlQuery<Binding>(query: string) {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
-        return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method);
+        return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method, this.options.queryFunction);
     }
 
     executeSparqlConstruct(query: string) : Promise<Triple[]> {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
-        return executeSparqlConstruct(this.options.endpointUrl, query, method);
+        return executeSparqlConstruct(this.options.endpointUrl, query, method, this.options.queryFunction);
     }
 
     createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
@@ -303,6 +317,8 @@ export class SparqlDataProvider implements DataProvider {
     }
     return refQueryPart;
 }
+
+
 }
 
 function resolveTemplate(template: string, values: Dictionary<string>) {
@@ -314,10 +330,10 @@ function resolveTemplate(template: string, values: Dictionary<string>) {
     return result;
 }
 
-export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod): Promise<SparqlResponse<Binding>> {
+export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod, queryFunction: QueryFunction): Promise<SparqlResponse<Binding>> {
     let internalQuery: Promise<Response>;
-    if (method == SparqlQueryMethod.GET) {
-        internalQuery = queryInternal({
+    if (method === SparqlQueryMethod.GET) {
+        internalQuery = queryFunction({
             url: `${endpoint}?query=` + encodeURIComponent(query),
             body: null,
             headers: {
@@ -326,7 +342,7 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string, met
             method: 'GET',
         });
     } else {
-        internalQuery = queryInternal({
+        internalQuery = queryFunction({
             url: endpoint,
             body: query,
             headers: {
@@ -341,16 +357,20 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string, met
             return response.json();
         } else {
             const error = new Error(response.statusText);
-            (<any>error).response = response;
+            (<any> error).response = response;
             throw error;
         }
     });
 };
 
-export function executeSparqlConstruct(endpoint: string, query: string, method: SparqlQueryMethod): Promise<Triple[]> {
+export function executeSparqlConstruct(
+    endpoint: string,
+    query: string,
+    method: SparqlQueryMethod,
+    queryFunction: QueryFunction): Promise<Triple[]> {
     let internalQuery: Promise<Response>;
-    if (method == SparqlQueryMethod.GET) {
-        internalQuery = queryInternal({
+    if (method === SparqlQueryMethod.GET) {
+        internalQuery = queryFunction({
             url: `${endpoint}?query=` + encodeURIComponent(query),
             body: null,
             headers: {
@@ -359,7 +379,7 @@ export function executeSparqlConstruct(endpoint: string, query: string, method: 
             method: 'GET',
         });
     } else {
-        internalQuery = queryInternal({
+        internalQuery = queryFunction({
             url: endpoint,
             body: query,
             headers: {
@@ -375,7 +395,7 @@ export function executeSparqlConstruct(endpoint: string, query: string, method: 
                 return response.text();
             } else {
                 const error = new Error(response.statusText);
-                (<any>error).response = response;
+                (<any> error).response = response;
                 throw error;
             }
         }).then(turtleText => {
@@ -394,8 +414,6 @@ export function executeSparqlConstruct(endpoint: string, query: string, method: 
         });
     });
 }
-
-
 
 function toRdfNode(entity: string): RdfNode {
     if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
@@ -437,7 +455,5 @@ function sparqlExtractLabel(subject: string, label: string): string {
 function escapeIri(iri: string) {
     return `<${iri}>`;
 }
-
-
 
 export default SparqlDataProvider;
