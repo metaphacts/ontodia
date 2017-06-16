@@ -5,6 +5,14 @@ export interface RdfIri {
     value: string;
 }
 
+export function isRdfIri(e: RdfNode): e is RdfIri {
+    return e.type === 'uri';
+}
+
+export function isRdfLiteral(e: RdfNode): e is RdfLiteral {
+    return e.type === 'literal';
+}
+
 export interface RdfLiteral {
     type: 'literal';
     value: string;
@@ -18,8 +26,22 @@ export interface Triple {
     object: RdfNode;
 }
 
+export interface BlankElement extends ElementBinding {
+    blankTrgProp?: RdfNode;
+    blankTrg?: RdfNode;
+    blankSrc?: RdfNode;
+    blankSrcProp?: RdfNode;
+}
+
+export function isBlank(e: (ElementBinding | BlankElement)): e is BlankElement {
+    return (<BlankElement> e).blankTrgProp  !== undefined ||
+           (<BlankElement> e).blankTrg  !== undefined ||
+           (<BlankElement> e).blankSrcProp  !== undefined ||
+           (<BlankElement> e).blankSrc  !== undefined;
+}
+
 export interface ElementBinding {
-    inst: RdfLiteral;
+    inst: RdfIri;
     class?: RdfLiteral;
     label?: RdfLiteral;
     propType?: RdfLiteral;

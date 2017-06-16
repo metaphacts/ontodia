@@ -27,8 +27,15 @@ function onWorkspaceMounted(workspace: Workspace) {
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
             ],
-            queryMethod: SparqlQueryMethod.GET
-        }, OWLStatsSettings),
+            queryMethod: SparqlQueryMethod.GET,
+        }, {...OWLStatsSettings, ...{ linkTypesOfQuery: `
+        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
+        WHERE {
+            { \${elementIri} ?link ?outObject}
+            UNION 
+              { ?inObject ?link \${elementIri}}
+        } GROUP BY ?link
+    `,}}),
     });
 }
 

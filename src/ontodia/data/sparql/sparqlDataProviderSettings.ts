@@ -235,7 +235,7 @@ export const OWLRDFSSettings: SparqlDataProviderSettings = {
         `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
+        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
         WHERE {
             { \${elementIri} ?link ?outObject FILTER ISIRI(?outObject)}
             UNION 
@@ -278,7 +278,7 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
               ?searchLabel bif:contains "\${text}".
               ?inst dbo:wikiPageID ?origScore .
               BIND(0-?origScore as ?score)
-            `,
+        `,
     },
 
     classTreeQuery: `
@@ -288,7 +288,7 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             ?root rdfs:subClassOf owl:Thing.
             ?class rdfs:subClassOf? | rdfs:subClassOf/rdfs:subClassOf ?root
         }
-        `,
+    `,
 
     elementInfoQuery: `
         SELECT ?inst ?class ?label ?propType ?propValue
@@ -299,11 +299,13 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
         } VALUES (?inst) {\${ids}}
-        `,
+    `,
+
     filterElementInfoPattern: `
         OPTIONAL {?inst rdf:type ?foundClass. FILTER (!contains(str(?foundClass), 'http://dbpedia.org/class/yago'))}
         BIND (coalesce(?foundClass, owl:Thing) as ?class)
         OPTIONAL {?inst \${dataLabelProperty} ?label}`,
+
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } UNION { [] ?linkType ?inst. BIND(?inst as ?fullImage) }
             BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
             STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
