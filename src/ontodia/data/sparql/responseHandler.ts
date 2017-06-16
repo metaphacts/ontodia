@@ -1,10 +1,12 @@
 import {
-    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    RdfNode, RdfLiteral, Triple, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
 } from './sparqlModels';
+import { encodeTriplesToIRI } from './encoder';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
 } from '../model';
+import { FilterParams } from '../provider';
 
 const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
@@ -195,9 +197,9 @@ export function getLinkTypesInfo(response: SparqlResponse<LinkTypeBinding>): Lin
     return sparqlLinkTypes.map((sLinkType: LinkTypeBinding) => getLinkTypeInfo(sLinkType));
 }
 
-export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
+export function getLinksInfo(response: SparqlResponse<LinkBinding>, blankMappings: Dictionary<string>): LinkModel[] {
     const sparqlLinks = response.results.bindings;
-    return sparqlLinks.map((sLink: LinkBinding) => getLinkInfo(sLink));
+    return sparqlLinks.map((sLink: LinkBinding) => getLinkInfo(sLink, blankMappings));
 }
 
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
@@ -205,20 +207,50 @@ export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): Lin
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
-export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
+export function getFilteredData(
+    request: FilterParams,
+    response: SparqlResponse<ElementBinding>,
+): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
+    const blanksMap: Dictionary<{ triples: Triple[], model: ElementModel }> = {};
 
     for (const sInst of sInstances) {
         if (sInst.inst.type === 'literal') {
             continue;
         }
-        if (!instancesMap[sInst.inst.value]) {
-            instancesMap[sInst.inst.value] = getElementInfo(sInst);
+
+        const key = sInst.inst.value;
+        if (sInst.inst.type === 'bnode') {
+            let triples: Triple[];
+            if (!blanksMap[key]) {
+                triples = [];
+                blanksMap[key] = {triples, model: getElementInfo(sInst)};
+            } else {
+                triples = blanksMap[key].triples;
+                enrichElement(blanksMap[key].model, sInst);
+            }
+
+            const {bs, bp, bo}: Record<string, RdfNode> = sInst as any;
+            if (bp) {
+                triples.push({subject: bs, predicate: bp, object: bo});
+            }
         } else {
-            enrichElement(instancesMap[sInst.inst.value], sInst);
+            if (!instancesMap[key]) {
+                instancesMap[key] = getElementInfo(sInst);
+            } else {
+                enrichElement(instancesMap[key], sInst);
+            }
         }
-    };
+    }
+
+    for (const key in blanksMap) {
+        if (!blanksMap.hasOwnProperty(key)) { continue; }
+        const {triples, model} = blanksMap[key];
+        model.id = encodeTriplesToIRI(triples);
+        instancesMap[model.id] = model;
+    }
+
     return instancesMap;
 }
 
@@ -347,13 +379,27 @@ export function getElementInfo(sInfo: ElementBinding): ElementModel {
     return elementInfo;
 }
 
-export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
-    if (!sLinkInfo) { return undefined; }
+function getLinkInfo(binding: LinkBinding, blankMappings: Dictionary<string>): LinkModel {
+    if (!binding) { return undefined; }
     return {
-        linkTypeId: sLinkInfo.type.value,
-        sourceId: sLinkInfo.source.value,
-        targetId: sLinkInfo.target.value,
+        linkTypeId: binding.type.value,
+        sourceId: extractIri(binding.source, binding.bsource, blankMappings),
+        targetId: extractIri(binding.target, binding.btarget, blankMappings),
     };
+}
+
+function extractIri(node: RdfNode, blankHint: RdfLiteral, blankMappings: Dictionary<string>): string {
+    if (blankHint) {
+        const mapping = blankMappings[blankHint.value];
+        if (mapping) { return mapping; }
+    }
+
+    if (node.type === 'bnode') {
+        const mapping = blankMappings[node.value];
+        if (mapping) { return mapping; }
+    }
+
+    return node.value;
 }
 
 export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {

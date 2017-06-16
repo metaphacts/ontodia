@@ -1,21 +1,26 @@
-export type RdfNode = RdfIri | RdfLiteral;
+export type RdfNode = RdfBlank | RdfIri | RdfLiteral;
+
+export interface RdfBlank {
+    readonly type: 'bnode';
+    readonly value: string;
+}
 
 export interface RdfIri {
-    type: 'uri';
-    value: string;
+    readonly type: 'uri';
+    readonly value: string;
 }
 
 export interface RdfLiteral {
-    type: 'literal';
-    value: string;
-    datatype?: string;
-    'xml:lang': string;
+    readonly type: 'literal';
+    readonly value: string;
+    readonly datatype?: string;
+    readonly 'xml:lang': string;
 }
 
 export interface Triple {
-    subject: RdfNode;
-    predicate: RdfNode;
-    object: RdfNode;
+    readonly subject: RdfNode;
+    readonly predicate: RdfNode;
+    readonly object: RdfNode;
 }
 
 export interface ElementBinding {
@@ -42,6 +47,8 @@ export interface LinkBinding {
     source: RdfIri;
     type: RdfIri;
     target: RdfIri;
+    bsource: RdfLiteral;
+    btarget: RdfLiteral;
 }
 
 export interface LinkCountBinding {

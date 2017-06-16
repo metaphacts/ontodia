@@ -1,5 +1,6 @@
 import 'whatwg-fetch';
 import * as N3 from 'n3';
+import { uniqueId } from 'lodash';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
@@ -15,10 +16,14 @@ import {
     getLinkTypesInfo,
 } from './responseHandler';
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding,
-    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, LinkCountBinding, LinkTypeBinding,
+    ElementImageBinding, SparqlResponse, Triple, RdfNode, RdfBlank,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
+import {
+    isEncodedBlank, encodeTriplesToIRI, decodeTriplesFromIRI,
+    encodeToSparql, findBlankNode, randomizeBlankNodes,
+} from './encoder';
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
@@ -121,12 +126,20 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
-        const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
+        const ids = params.elementIds
+            .filter(iri => !isEncodedBlank(iri))
+            .map(escapeIri).map(id => ` (${id})`).join(' ');
         const query = this.settings.defaultPrefix
             + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.dataLabelProperty});
+
         return this.executeSparqlQuery<ElementBinding>(query)
-            .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
-            .then(elementModels => {
+            .then(elementsInfo => {
+                const loadedInfo = getElementsInfo(elementsInfo, params.elementIds);
+                // TODO: decode blank IRI into element info
+                // const blankInfo = params.elementIds
+                //     .filter(isEncodedBlank)
+                return loadedInfo;
+            }).then(elementModels => {
                 if (this.options.prepareImages) {
                     return this.prepareElementsImage(elementModels);
                 } else if (this.options.imagePropertyUris && this.options.imagePropertyUris.length) {
@@ -176,16 +189,47 @@ export class SparqlDataProvider implements DataProvider {
         elementIds: string[];
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
-        const ids = params.elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+        const ids = params.elementIds
+            .filter(iri => !isEncodedBlank(iri))
+            .map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+
+        const blankMappings: Dictionary<string> = {};
+        const blankNodePatterns = params.elementIds
+            .filter(isEncodedBlank)
+            .map(iri => {
+                const triples = decodeTriplesFromIRI(iri);
+                const bnode = findBlankNode(triples);
+                if (!bnode) {
+                    throw new Error(`Blank node not found in encoded IRI: ${iri}`);
+                }
+                blankMappings[bnode.value] = iri;
+                const sources = patternsFromTriples(triples,
+                    node => node.type === 'bnode' ? '?source' : encodeToSparql(node));
+                const targets = patternsFromTriples(triples,
+                    node => node.type === 'bnode' ? '?target' : encodeToSparql(node));
+                return `{
+                    ?source ?type ?target
+                    BIND("${bnode.value}" as ?bsource)
+                    ${sources}
+                } UNION {
+                    ?source ?type ?target
+                    BIND("${bnode.value}" as ?btarget)
+                    ${targets}
+                }`;
+            })
+            .join('\n UNION \n');
+        const blankNodePart = `UNION \n${blankNodePatterns}\n`;
+
         const query = this.settings.defaultPrefix + `
-            SELECT ?source ?type ?target
+            SELECT ?source ?type ?target ?bsource ?btarget
             WHERE {
-                ?source ?type ?target.
-                VALUES (?source) {${ids}}
-                VALUES (?target) {${ids}}                
+                { ?source ?type ?target.
+                  VALUES (?source) {${ids}}
+                  VALUES (?target) {${ids}}
+                } ${blankNodePart}
             }
         `;
-        return this.executeSparqlQuery<LinkBinding>(query).then(getLinksInfo);
+        return this.executeSparqlQuery<LinkBinding>(query).then(response => getLinksInfo(response, blankMappings));
     }
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
@@ -194,7 +238,6 @@ export class SparqlDataProvider implements DataProvider {
             + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
         return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
-
 
     linkElements(params: {
         elementId: string;
@@ -245,10 +288,10 @@ export class SparqlDataProvider implements DataProvider {
             textSearchPart = '';
         }
 
-        let query = `${this.settings.defaultPrefix}
+        const query = `${this.settings.defaultPrefix}
             ${this.settings.fullTextSearch.prefix}
             
-        SELECT ?inst ?class ?label
+        SELECT ?inst ?class ?label ?bs ?bp ?bo ?bsource ?btarget
         WHERE {
             {
                 SELECT DISTINCT ?inst ?score WHERE {
@@ -260,10 +303,15 @@ export class SparqlDataProvider implements DataProvider {
                 } ORDER BY DESC(?score) LIMIT ${params.limit} OFFSET ${params.offset}
             }
             ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
+            OPTIONAL {
+                FILTER(isBlank(?inst)) .
+                { ?inst ?bp ?bo . BIND(?inst as ?bs) . FILTER(!isBlank(?bo)) } UNION
+                { ?bs ?bp ?inst . BIND(?inst as ?bo) . FILTER(!isBlank(?bs)) }
+            }
         } ORDER BY DESC(?score)
         `;
 
-        return this.executeSparqlQuery<ElementBinding>(query).then(getFilteredData);
+        return this.executeSparqlQuery<ElementBinding>(query).then(response => getFilteredData(params, response));
     };
 
     executeSparqlQuery<Binding>(query: string) {
@@ -367,8 +415,6 @@ export function executeSparqlConstruct(endpoint: string, query: string, method: 
     });
 }
 
-
-
 function toRdfNode(entity: string): RdfNode {
     if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
         return {type: 'literal', value: entity.substring(1, entity.length - 1), 'xml:lang': ''};
@@ -412,25 +458,58 @@ function escapeIri(iri: string) {
 
 function createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
     let refQueryPart = '';
-    const refElementIRI = escapeIri(params.elementId);
     const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
 
     // link to element with specified link type
     // if direction is not specified, provide both patterns and union them
     // FILTER ISIRI is used to prevent blank nodes appearing in results
     if (params.elementId && params.linkId) {
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction || params.direction === 'out'
+            ? queryPatternsFromIRI(params.elementId, refElementLinkIRI, 'out') : '';
         refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ${refElementLinkIRI} ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction || params.direction === 'in'
+            ? queryPatternsFromIRI(params.elementId, refElementLinkIRI, 'in') : '';
     }
 
     // all links to current element
     if (params.elementId && !params.linkId) {
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction || params.direction === 'out'
+            ? queryPatternsFromIRI(params.elementId, '?link', 'out') : '';
         refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{  ?inst ?link ${refElementIRI} . FILTER ISIRI(?inst)}` : '';
+        refQueryPart += !params.direction || params.direction === 'in'
+            ? queryPatternsFromIRI(params.elementId, '?link', 'in') : '';
     }
     return refQueryPart;
+}
+
+function queryPatternsFromIRI(iri: string, predicate: string, direction: 'in' | 'out') {
+    if (isEncodedBlank(iri)) {
+        const triples = randomizeBlankNodes(decodeTriplesFromIRI(iri));
+
+        const bnode = findBlankNode(triples);
+        if (!bnode) {
+            throw new Error(`Blank node not found in encoded IRI: ${iri}`);
+        }
+
+        const mainPattern = direction === 'in'
+            ? `?ins ${predicate} ${encodeToSparql(bnode)} . FILTER(isIRI(?inst) || isBlank(?inst)) .`
+            : `${encodeToSparql(bnode)} ${predicate} ?inst . FILTER(isIRI(?inst) || isBlank(?inst)) .`;
+
+        const triplePatterns = patternsFromTriples(triples);
+        return `{ ${mainPattern}\n${triplePatterns} }`;
+    } else {
+        return direction === 'in'
+            ? `{ ?ins ${predicate} ${escapeIri(iri)} . FILTER(isIRI(?inst) || isBlank(?inst)) }`
+            : `{ ${escapeIri(iri)} ${predicate} ?inst . FILTER(isIRI(?inst) || isBlank(?inst)) }`;
+    }
+}
+
+function patternsFromTriples(triples: Triple[], encode = (node: RdfNode) => encodeToSparql(node)): string {
+    return triples.map(t => {
+        const subject = encode(t.subject);
+        const object = encode(t.object);
+        return `${subject} ${encodeToSparql(t.predicate)} ${object} .`;
+    }).join('\n');
 }
 
 export default SparqlDataProvider;
