@@ -262,7 +262,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);
-            this.setState({error});
+            this.setState({quering: false, error});
         });
     }
 
@@ -310,6 +310,10 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
     };
 }
 
+const MAX_LABEL_LENGTH = 60;
 function formatLabel(view: DiagramView, uri: string, label?: { values: LocalizedString[] }) {
-    return label ? view.getLocalizedText(label.values).text : uri2name(uri);
+    const labelText = label ? view.getLocalizedText(label.values).text : uri2name(uri);
+    return labelText.length > MAX_LABEL_LENGTH
+        ? (labelText.substring(0, MAX_LABEL_LENGTH) + '…')
+        : labelText;
 }
