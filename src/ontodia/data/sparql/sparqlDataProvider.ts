@@ -15,7 +15,7 @@ import {
     getLinkTypesInfo,
 } from './responseHandler';
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankElement, isBlank,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding, isBlankBinding,
     LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
@@ -283,11 +283,11 @@ export class SparqlDataProvider implements DataProvider {
         } ORDER BY DESC(?score)
         `;
 
-        return this.executeSparqlQuery<ElementBinding | BlankElement>(query, {
+        return this.executeSparqlQuery<ElementBinding | BlankBinding>(query, {
             additionalData: additionalData,
         }).then(result => {
             for (const binding of result.results.bindings) {
-                if (isBlank(binding)) {
+                if (isBlankBinding(binding)) {
                     this.blankNodeStorage.putNode(binding);
                 }
             }

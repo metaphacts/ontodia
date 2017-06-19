@@ -4,14 +4,14 @@ import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankElement, isRdfIri,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding, isRdfIri,
     LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 
 import { executeSparqlQuery } from './sparqlDataProvider';
 
 export class BlankStorage {
-    blankElements: BlankElement[] = [];
+    blankElements: BlankBinding[] = [];
     constructor() {
         /* */
     }
@@ -25,7 +25,7 @@ export class BlankStorage {
         return false;
     }
 
-    putNode(binding: BlankElement) {
+    putNode(binding: BlankBinding) {
         let contain = false;
         for (const be of this.blankElements) {
             if (
@@ -45,7 +45,7 @@ export class BlankStorage {
         }
     }
 
-    putAllNodes(bindings: BlankElement[]) {
+    putAllNodes(bindings: BlankBinding[]) {
         for (const binding of bindings) {
             this.blankElements.push(binding);
         }
