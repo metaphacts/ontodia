@@ -10,16 +10,16 @@ export interface RdfBlank {
     value: string;
 }
 
-export function isRdfBlank(e: RdfNode): e is RdfIri {
-    return e.type === 'bnode';
+export function isRdfBlank(e: RdfNode): e is RdfBlank {
+    return e && e.type === 'bnode';
 }
 
 export function isRdfIri(e: RdfNode): e is RdfIri {
-    return e.type === 'uri';
+    return e && e.type === 'uri';
 }
 
 export function isRdfLiteral(e: RdfNode): e is RdfLiteral {
-    return e.type === 'literal';
+    return e && e.type === 'literal';
 }
 
 export interface RdfLiteral {
@@ -36,10 +36,13 @@ export interface Triple {
 }
 
 export interface BlankBinding extends ElementBinding {
-    blankTrgProp?: RdfNode;
-    blankTrg?: RdfNode;
-    blankSrc?: RdfNode;
-    blankSrcProp?: RdfNode;
+    blankType: {
+        value: 'listHead' | 'blankNode',
+    };
+    blankTrgProp: RdfNode;
+    blankTrg: RdfNode;
+    blankSrc: RdfNode;
+    blankSrcProp: RdfNode;
 }
 
 export function isBlankBinding(e: (ElementBinding | BlankBinding)): e is BlankBinding {
