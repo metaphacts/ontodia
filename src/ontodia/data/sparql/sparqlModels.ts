@@ -41,8 +41,8 @@ export interface BlankBinding extends ElementBinding {
     };
     blankTrgProp: RdfNode;
     blankTrg: RdfNode;
-    blankSrc: RdfNode;
-    blankSrcProp: RdfNode;
+    blankSrc?: RdfNode;
+    blankSrcProp?: RdfNode;
     newInst?: RdfIri | RdfBlank;
 }
 

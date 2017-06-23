@@ -312,17 +312,17 @@ export class SparqlDataProvider implements DataProvider {
                 } UNION {
                     ?inst rdf:rest*/rdf:first ?blankTrg.
                     ?blankSrc ?blankSrcProp ?inst.
-                    ?any rdf:first ?blankTrg.
+                    _:smth2 rdf:first ?blankTrg.
                     BIND(?blankSrcProp as ?blankTrgProp)
                     BIND("listHead" as ?blankType)
-                    FILTER NOT EXISTS { _:smth2 rdf:rest ?inst }.
+                    FILTER NOT EXISTS { _:smth3 rdf:rest ?inst }.
                 } UNION {
                     ?listHead rdf:rest* ?inst.
-                    FILTER NOT EXISTS { _:smth3 rdf:rest ?listHead }.
+                    FILTER NOT EXISTS { _:smth4 rdf:rest ?listHead }.
 
                     ?listHead rdf:rest*/rdf:first ?blankTrg.
                     ?blankSrc ?blankSrcProp ?listHead.
-                    ?any rdf:first ?blankTrg.
+                    _:smth5 rdf:first ?blankTrg.
                     BIND(?blankSrcProp as ?blankTrgProp)
                     BIND("listHead" as ?blankType)
                 }

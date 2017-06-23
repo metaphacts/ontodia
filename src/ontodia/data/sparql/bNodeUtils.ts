@@ -33,10 +33,10 @@ export function processBlankBindings(
         allBindings.push(binding);
     }
 
-    const blankChildren: BlankBinding[] = [];
+    const blankChildren: BlankBinding[][] = [];
     for (const b of allBindings) {
         if (isRdfBlank(b.blankTrg)) {
-            blankChildren.push(b);
+            blankChildren.push([b]);
         }
     }
 
@@ -135,7 +135,7 @@ export function encodeId (blankBindings: BlankBinding[]): string {
             return 0;
         }
     }
-    blankBindings.sort((a: BlankBinding, b: BlankBinding) => {
+    clearList.sort((a: BlankBinding, b: BlankBinding) => {
         const res1 = compareStrings(a.blankTrg.value, b.blankTrg.value);
         if (res1 !== 0) {
             return res1;
@@ -143,7 +143,7 @@ export function encodeId (blankBindings: BlankBinding[]): string {
         return compareStrings(a.blankTrgProp.value, b.blankTrgProp.value);
     });
 
-    return encodeURI(JSON.stringify(blankBindings).replace(/\s/g, ''));
+    return encodeURI(JSON.stringify(clearList).replace(/\s/g, ''));
 }
 
 export function decodeId (id: string): BlankBinding[] {
@@ -169,53 +169,125 @@ export function createLabel (bn: BlankBinding): RdfLiteral {
     } else {
         return {
             type: 'literal',
-            value: getNameFromId(bn.class ? bn.class.value : 'unonimous'),
+            value: getNameFromId(bn.class ? bn.class.value : 'anonymous'),
             'xml:lang': '',
         };
     }
 }
 
 function getNextBNodeGeneration (
-    blankNodes: BlankBinding[],
+    blankNodes: BlankBinding[][],
     executeSparqlQuery: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+    deep?: number,
 ): Promise<Dictionary<string>> {
-    function processBlankBinding (blankBinding: BlankBinding): Promise<SparqlResponse<BlankBinding>> {
-        const query = getQueryForBlankNode(blankBinding);
-        return executeSparqlQuery(query);
+    if (deep > 1) {
+        return Promise.resolve({});
     }
-    const promises: Promise<SparqlResponse<BlankBinding>>[] = [];
+    function processBlankBinding (blankBindings: BlankBinding[]): Promise<{
+        result: SparqlResponse<BlankBinding>,
+        parents: BlankBinding[],
+    }> {
+        const query = getQueryForBlankNode(blankBindings);
+        return executeSparqlQuery(query).then(response => ({
+            result: response,
+            parents: blankBindings,
+        }));
+    }
+    const promises: Promise<{
+        result: SparqlResponse<BlankBinding>,
+        parents: BlankBinding[],
+    }>[] = [];
     for (const bn of blankNodes) {
         promises.push(processBlankBinding(bn));
     }
     return Promise.all(promises)
         .then(responses => {
+            const recursPromises: Promise<boolean>[] = [];
             const ids: Dictionary<string> = {};
-            for (const resp of responses) {
+            for (const response of responses) {
+                const resp = response.result;
                 if (resp.results.bindings.length > 0) {
-                    const b = resp.results.bindings[0];
-                    const label = createLabel(b);
+                    const blankChildren: BlankBinding[][] = [];
                     for (const bind of resp.results.bindings) {
-                        bind.label = label;
+                        if (isRdfBlank(bind.blankTrg)) {
+                            blankChildren.push(response.parents.concat([bind]));
+                        }
                     }
-                    const originalId = b.inst.value;
-                    ids[originalId] = encodeId(resp.results.bindings);
+                    recursPromises.push(
+                        getNextBNodeGeneration(blankChildren, executeSparqlQuery, (deep + 1 || 1))
+                            .then(bNodeIds => {
+                                const devidedResults: Dictionary<BlankBinding[]> = {};
+                                for (const bn of resp.results.bindings) {
+                                    bn.label = createLabel(bn);
+                                    if (bNodeIds[bn.blankTrg.value]) {
+                                        bn.blankTrg.value = bNodeIds[bn.blankTrg.value];
+                                    }
+                                    if (!devidedResults[bn.inst.value]) {
+                                        devidedResults[bn.inst.value] = [];
+                                    }
+                                    devidedResults[bn.inst.value].push(bn);
+                                }
+                                Object.keys(devidedResults).forEach(key => {
+                                    const bn = devidedResults[key];
+                                    const originalId = bn[0].inst.value;
+                                    const structId = encodeId(bn);
+                                    for (const subResult of bn) {
+                                        subResult.inst.value = structId;
+                                    }
+                                    ids[originalId] = structId;
+                                });
+                                return true;
+                            }),
+                    );
                 }
             }
-            return ids;
+            return Promise.all(recursPromises).then(() => {
+                return ids;
+            });
         });
 }
 
-function getQueryForBlankNode (blankNode: BlankBinding): string {
-    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?blankType
-        WHERE {
-            <${blankNode.blankSrc.value}> <${blankNode.blankSrcProp.value}> ?blankSrc.
-            ?blankSrc <${blankNode.blankTrgProp.value}> ?inst.
-            ?inst ?blankTrgProp ?blankTrg.
-            OPTIONAL {
-                ?inst rdf:type ?class.
+function getQueryForBlankNode (blankNodes: BlankBinding[]): string {
+    function getQueryBlock (
+        blankNode: BlankBinding,
+        index: number,
+        maxIndex: number,
+    ) {
+        const trustableTrgProp = (index === 0 || blankNode.blankType.value !== 'listHead');
+        const sourceId = index > 0 ? '?inst' + (index - 1) : '<' + blankNode.blankSrc.value + '>';
+        const sourcePropId = trustableTrgProp ?
+            (index > 0 ? '?blankTrgProp' + (index - 1) : '<' + blankNode.blankSrcProp.value + '>') :
+            '?anyType' + index;
+        const instPostfix = index === maxIndex ? '' : index.toString();
+        const targetPropId = trustableTrgProp ? '<' + blankNode.blankTrgProp.value + '>' : '?anyType0' + index;
+        return ` 
+            # ======================
+            ${sourceId} ${sourcePropId} ?blankSrc${index}.
+            ?blankSrc${index} ${targetPropId} ?inst${instPostfix}.
+            BIND (<${blankNode.blankTrgProp.value}> as ?blankSrcProp${index}).
+            FILTER (ISBLANK(?inst${instPostfix})).
+            {
+                ?inst${instPostfix} ?blankTrgProp${instPostfix} ?blankTrg${instPostfix}.
+                BIND("blankNode" as ?blankType${instPostfix}).
+                FILTER NOT EXISTS { ?inst${instPostfix} rdf:first _:smth1${index} }.
+            } UNION {
+                ?inst${instPostfix} rdf:rest*/rdf:first ?blankTrg${instPostfix}.
+                ?blankSrc${index} ?blankSrcProp${index} ?inst${instPostfix}.
+                _:smth2${index} rdf:first ?blankTrg${instPostfix}.
+                BIND(?blankSrcProp${index} as ?blankTrgProp${instPostfix})
+                BIND("listHead" as ?blankType${instPostfix})
+                FILTER NOT EXISTS { _:smth3${index} rdf:rest ?inst${instPostfix} }.
             }
-            BIND (<${blankNode.blankTrgProp.value}> as ?blankSrcProp).
-            BIND ("blankNode" as ?blankType).
+            OPTIONAL {
+                ?inst${instPostfix} rdf:type${index} ?class${index}.
+            }
+        `;
+    }
+
+    const body = blankNodes.map((bn, index) => getQueryBlock(bn, index, blankNodes.length - 1)).join('\n');
+    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankType
+        WHERE {
+           ${body}
         }
     `;
     return query;
@@ -348,11 +420,18 @@ function getLinkBinding(ids: string[]): LinkBinding[] {
     return bindings;
 }
 
+// todo: improve comparing
 export function compareNodes(nodeA: BlankBinding, nodeB: BlankBinding): boolean {
     return nodeA.inst.value === nodeB.inst.value &&
-        nodeA.blankSrc.value === nodeB.blankSrc.value &&
+        (
+            nodeA.blankSrc && nodeB.blankSrc && nodeA.blankSrc.value === nodeB.blankSrc.value ||
+            !nodeA.blankSrc && !nodeB.blankSrc
+        ) &&
+        (
+            nodeA.blankSrcProp && nodeB.blankSrcProp && nodeA.blankSrcProp.value === nodeB.blankSrcProp.value ||
+            !nodeA.blankSrcProp && !nodeB.blankSrcProp
+        ) &&
         nodeA.blankTrg.value === nodeB.blankTrg.value &&
-        nodeA.blankSrcProp.value === nodeB.blankSrcProp.value &&
         nodeA.blankTrgProp.value === nodeB.blankTrgProp.value &&
         (
             nodeA.propType && nodeB.propType && nodeA.propType.value === nodeB.propType.value ||
