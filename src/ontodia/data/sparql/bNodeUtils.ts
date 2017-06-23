@@ -1,11 +1,11 @@
 import 'whatwg-fetch';
 import { getNameFromId } from './responseHandler';
-import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
+import { Dictionary } from '../model';
 import { FilterParams } from '../provider';
 
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding, isRdfIri, isRdfBlank,
-    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode, RdfLiteral,
+    ElementBinding, LinkBinding, BlankBinding, isRdfIri, isRdfBlank,
+    LinkCountBinding, SparqlResponse, RdfLiteral, RdfBlank,
 } from './sparqlModels';
 
 import { executeSparqlQuery } from './sparqlDataProvider';
@@ -15,41 +15,48 @@ export function isBlunkNodeId (id: string): boolean {
     return blankElements !== undefined;
 };
 
-export function processBlankBindings(bindings: BlankBinding[]) {
-    const contain = (list: BlankBinding[], binding: BlankBinding): boolean => {
-        for (const b of list) {
-            if (compareNodes(b, binding)) {
-                return true;
-            }
-        }
-        return false;
-    };
+export function processBlankBindings(
+    bindings: BlankBinding[],
+    executeSparqlQuery: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+): Promise<BlankBinding[]> {
 
     const dictionary: Dictionary<BlankBinding[]> = {};
+    const allBindings: BlankBinding[] = [];
     for (const binding of bindings) {
+        if (binding.newInst) {
+            binding.inst = binding.newInst;
+        }
         if (!dictionary[binding.inst.value]) {
             dictionary[binding.inst.value] = [];
         }
-        if (!contain(dictionary[binding.inst.value], binding)) {
-            dictionary[binding.inst.value].push(binding);
+        dictionary[binding.inst.value].push(binding);
+        allBindings.push(binding);
+    }
+
+    const blankChildren: BlankBinding[] = [];
+    for (const b of allBindings) {
+        if (isRdfBlank(b.blankTrg)) {
+            blankChildren.push(b);
         }
     }
 
-    const bindningLists = Object.keys(dictionary).map(key => dictionary[key]);
-    const result: BlankBinding[] = [];
-    for (const bnList of bindningLists) {
-        const label = createLabel(bnList[0]);
-        for (const bn of bnList) {
-            bn.label = label;
+    return getNextBNodeGeneration(blankChildren, executeSparqlQuery).then(bNodeIds => {
+        const bindningLists = Object.keys(dictionary).map(key => dictionary[key]);
+        for (const bnList of bindningLists) {
+            const label = createLabel(bnList[0]);
+            for (const bn of bnList) {
+                bn.label = label;
+                if (bNodeIds[bn.blankTrg.value]) {
+                    bn.blankTrg.value = bNodeIds[bn.blankTrg.value];
+                }
+            }
+            const structId = encodeId(bnList);
+            for (const bn of bnList) {
+                bn.inst.value = structId;
+            }
         }
-        const structId = encodeId(bnList);
-        for (const bn of bnList) {
-            bn.inst.value = structId;
-            result.push(bn);
-        }
-    }
-
-    return result;
+        return allBindings;
+    });
 }
 
 export function elementInfo(elementIds: string[]): SparqlResponse<ElementBinding> {
@@ -102,7 +109,23 @@ export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
     return filterResponse;
 };
 
-export function encodeId (bns: BlankBinding[]): string {
+export function encodeId (blankBindings: BlankBinding[]): string {
+    function contains (list: BlankBinding[], binding: BlankBinding): boolean {
+        for (const b of list) {
+            if (compareNodes(b, binding)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    const clearList: BlankBinding[] = [];
+    for (const bind of blankBindings) {
+        if (!contains(clearList, bind)) {
+            clearList.push(bind);
+        }
+    }
+
     function compareStrings (a: string, b: string): number {
         if (a > b) {
             return 1;
@@ -112,7 +135,7 @@ export function encodeId (bns: BlankBinding[]): string {
             return 0;
         }
     }
-    bns.sort((a: BlankBinding, b: BlankBinding) => {
+    blankBindings.sort((a: BlankBinding, b: BlankBinding) => {
         const res1 = compareStrings(a.blankTrg.value, b.blankTrg.value);
         if (res1 !== 0) {
             return res1;
@@ -120,7 +143,7 @@ export function encodeId (bns: BlankBinding[]): string {
         return compareStrings(a.blankTrgProp.value, b.blankTrgProp.value);
     });
 
-    return encodeURI(JSON.stringify(bns).replace(/\s/g, ''));
+    return encodeURI(JSON.stringify(blankBindings).replace(/\s/g, ''));
 }
 
 export function decodeId (id: string): BlankBinding[] {
@@ -137,19 +160,65 @@ export function decodeId (id: string): BlankBinding[] {
 }
 
 export function createLabel (bn: BlankBinding): RdfLiteral {
-    if (bn.blankType.value === 'blankNode') {
-        return {
-            type: 'literal',
-            value: getNameFromId(bn.class.value),
-            'xml:lang': '',
-        };
-    } else {
+    if (bn.blankType.value === 'listHead') {
         return {
             type: 'literal',
             value: 'RDFList',
             'xml:lang': '',
         };
+    } else {
+        return {
+            type: 'literal',
+            value: getNameFromId(bn.class ? bn.class.value : 'unonimous'),
+            'xml:lang': '',
+        };
     }
+}
+
+function getNextBNodeGeneration (
+    blankNodes: BlankBinding[],
+    executeSparqlQuery: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+): Promise<Dictionary<string>> {
+    function processBlankBinding (blankBinding: BlankBinding): Promise<SparqlResponse<BlankBinding>> {
+        const query = getQueryForBlankNode(blankBinding);
+        return executeSparqlQuery(query);
+    }
+    const promises: Promise<SparqlResponse<BlankBinding>>[] = [];
+    for (const bn of blankNodes) {
+        promises.push(processBlankBinding(bn));
+    }
+    return Promise.all(promises)
+        .then(responses => {
+            const ids: Dictionary<string> = {};
+            for (const resp of responses) {
+                if (resp.results.bindings.length > 0) {
+                    const b = resp.results.bindings[0];
+                    const label = createLabel(b);
+                    for (const bind of resp.results.bindings) {
+                        bind.label = label;
+                    }
+                    const originalId = b.inst.value;
+                    ids[originalId] = encodeId(resp.results.bindings);
+                }
+            }
+            return ids;
+        });
+}
+
+function getQueryForBlankNode (blankNode: BlankBinding): string {
+    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?blankType
+        WHERE {
+            <${blankNode.blankSrc.value}> <${blankNode.blankSrcProp.value}> ?blankSrc.
+            ?blankSrc <${blankNode.blankTrgProp.value}> ?inst.
+            ?inst ?blankTrgProp ?blankTrg.
+            OPTIONAL {
+                ?inst rdf:type ?class.
+            }
+            BIND (<${blankNode.blankTrgProp.value}> as ?blankSrcProp).
+            BIND ("blankNode" as ?blankType).
+        }
+    `;
+    return query;
 }
 
 function getAllRelatedByLinkTypeElements(
@@ -157,7 +226,7 @@ function getAllRelatedByLinkTypeElements(
 ): ElementBinding[] {
     const blankElements = (decodeId(refElementId) || [])
         .concat(decodeId(refElementLinkId) || []);
-    const bindings: ElementBinding[] = [];
+    let bindings: ElementBinding[] = [];
     if (blankElements.length > 0) {
         for (const be of blankElements) {
             if (linkDirection === 'in') {
@@ -166,9 +235,13 @@ function getAllRelatedByLinkTypeElements(
                     (isRdfIri(be.blankSrc) || isRdfBlank(be.blankSrc)) &&
                     refElementLinkId === be.blankSrcProp.value
                 ) {
-                    bindings.push({
-                        inst: be.blankSrc,
-                    });
+                    if (isRdfIri(be.blankSrc)) {
+                        bindings.push({
+                            inst: be.blankSrc,
+                        });
+                    } else {
+                        bindings = bindings.concat(decodeId(be.blankSrc.value) || [{inst: be.blankSrc}]);
+                    }
                 } else if (
                     be.blankTrg.value === refElementId &&
                     refElementLinkId === be.blankTrgProp.value
@@ -181,9 +254,13 @@ function getAllRelatedByLinkTypeElements(
                     (isRdfIri(be.blankTrg) || isRdfBlank(be.blankTrg)) &&
                     refElementLinkId === be.blankTrgProp.value
                 ) {
-                    bindings.push({
-                        inst: be.blankTrg,
-                    });
+                    if (isRdfIri(be.blankTrg)) {
+                        bindings.push({
+                            inst: be.blankTrg,
+                        });
+                    } else {
+                        bindings = bindings.concat(decodeId(be.blankTrg.value) || [{inst: be.blankTrg}]);
+                    }
                 } else if (
                     be.blankSrc.value === refElementId &&
                     refElementLinkId === be.blankSrcProp.value
@@ -198,20 +275,20 @@ function getAllRelatedByLinkTypeElements(
 
 function getAllRelatedElements(id: string): ElementBinding[] {
     const blankElements = decodeId(id);
-    const bindings: ElementBinding[] = [];
+    let bindings: ElementBinding[] = [];
     if (blankElements) {
         for (const be of blankElements) {
             if (be.inst.value === id || id === be.blankSrc.value || id === be.blankTrg.value) {
                 bindings.push(be);
                 if (isRdfIri(be.blankSrc)) {
-                    bindings.push({
-                        inst: be.blankSrc,
-                    });
+                    bindings.push({inst: be.blankSrc});
+                } else if (isRdfBlank(be.blankSrc)) {
+                    bindings = bindings.concat(decodeId(be.blankSrc.value) || [{inst: be.blankSrc}]);
                 }
                 if (isRdfIri(be.blankTrg)) {
-                    bindings.push({
-                        inst: be.blankTrg,
-                    });
+                    bindings.push({inst: be.blankTrg});
+                } else if (isRdfBlank(be.blankTrg)) {
+                    bindings = bindings.concat(decodeId(be.blankTrg.value) || [{inst: be.blankTrg}]);
                 }
             }
         }

@@ -290,7 +290,7 @@ export class SparqlDataProvider implements DataProvider {
         let query = `${this.settings.defaultPrefix}
             ${this.settings.fullTextSearch.prefix}
             
-        SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?blankType
+        SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?blankType ?listHead
         WHERE {
             {
                 SELECT DISTINCT ?inst ?score WHERE {
@@ -307,11 +307,21 @@ export class SparqlDataProvider implements DataProvider {
                 {
                     ?inst ?blankTrgProp ?blankTrg.
                     ?blankSrc ?blankSrcProp ?inst.
-                    FILTER NOT EXISTS {?inst rdf:first ?smth}.
+                    FILTER NOT EXISTS { ?inst rdf:first _:smth1 }.
                     BIND("blankNode" as ?blankType)
                 } UNION {
                     ?inst rdf:rest*/rdf:first ?blankTrg.
                     ?blankSrc ?blankSrcProp ?inst.
+                    ?any rdf:first ?blankTrg.
+                    BIND(?blankSrcProp as ?blankTrgProp)
+                    BIND("listHead" as ?blankType)
+                    FILTER NOT EXISTS { _:smth2 rdf:rest ?inst }.
+                } UNION {
+                    ?listHead rdf:rest* ?inst.
+                    FILTER NOT EXISTS { _:smth3 rdf:rest ?listHead }.
+
+                    ?listHead rdf:rest*/rdf:first ?blankTrg.
+                    ?blankSrc ?blankSrcProp ?listHead.
                     ?any rdf:first ?blankTrg.
                     BIND(?blankSrcProp as ?blankTrgProp)
                     BIND("listHead" as ?blankType)
@@ -333,10 +343,15 @@ export class SparqlDataProvider implements DataProvider {
                     completeBindings.push(binding);
                 }
             }
-            const processedBindings = BNodeUtils.processBlankBindings(blankBindings);
-            result.results.bindings = completeBindings.concat(processedBindings);
-
-            return result;
+            return BNodeUtils.processBlankBindings(
+                blankBindings,
+                (callBackQuery: string) => {
+                    return this.executeSparqlQuery<BlankBinding>(callBackQuery);
+                },
+            ).then(processedBindings => {
+                result.results.bindings = completeBindings.concat(processedBindings);
+                return result;
+            });
         }).then(getFilteredData);
     };
 
