@@ -10,53 +10,319 @@ import {
 
 import { executeSparqlQuery } from './sparqlDataProvider';
 
+export const MAX_RECURSION_DEEP = 3;
+
 export function isBlunkNodeId (id: string): boolean {
     const blankElements = decodeId(id);
     return blankElements !== undefined;
 };
 
+export class QueryExecutor {
+    queryDictionary: Dictionary<Promise<SparqlResponse<BlankBinding>>> = {};
+    constructor (
+        public queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+    ) { }
+
+    executeQuery(query: string): Promise<SparqlResponse<BlankBinding>> {
+        const execution = this.queryDictionary[query];
+        if (execution) {
+            return execution;
+        } else {
+            this.queryDictionary[query] = this.queryFunction(query).then(response => {
+                delete this.queryDictionary[query];
+                return response;
+            });
+            return this.queryDictionary[query];
+        }
+    }
+}
+
 export function processBlankBindings(
-    bindings: BlankBinding[],
-    executeSparqlQuery: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+    blankBindings: BlankBinding[],
+    queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
 ): Promise<BlankBinding[]> {
 
-    const dictionary: Dictionary<BlankBinding[]> = {};
-    const allBindings: BlankBinding[] = [];
-    for (const binding of bindings) {
+    const bindingGroupsById: Dictionary<BlankBinding[]> = {};
+    for (const binding of blankBindings) {
         if (binding.newInst) {
             binding.inst = binding.newInst;
         }
-        if (!dictionary[binding.inst.value]) {
-            dictionary[binding.inst.value] = [];
+        if (!bindingGroupsById[binding.inst.value]) {
+            bindingGroupsById[binding.inst.value] = [];
         }
-        dictionary[binding.inst.value].push(binding);
-        allBindings.push(binding);
+        bindingGroupsById[binding.inst.value].push(binding);
     }
 
-    const blankChildren: BlankBinding[][] = [];
-    for (const b of allBindings) {
+    const relatedBlankBindnings: BlankBinding[][] = [];
+    for (const b of blankBindings) {
         if (isRdfBlank(b.blankTrg)) {
-            blankChildren.push([b]);
+            relatedBlankBindnings.push([b]);
         }
     }
 
-    return getNextBNodeGeneration(blankChildren, executeSparqlQuery).then(bNodeIds => {
-        const bindningLists = Object.keys(dictionary).map(key => dictionary[key]);
-        for (const bnList of bindningLists) {
-            const label = createLabel(bnList[0]);
-            for (const bn of bnList) {
-                bn.label = label;
-                if (bNodeIds[bn.blankTrg.value]) {
-                    bn.blankTrg.value = bNodeIds[bn.blankTrg.value];
+    const queryExecutor = new QueryExecutor(queryFunction);
+
+    return loadRelatedBlankNodes(relatedBlankBindnings, queryExecutor).then(loadedGroupsById => {
+        const idsMap = getEncodedIdDictionary(loadedGroupsById);
+        const groups = Object.keys(bindingGroupsById).map(key => bindingGroupsById[key]);
+
+        for (const group of groups) {
+            for (const blankBinding of group) {
+                if (!blankBinding.label) {
+                    blankBinding.label = createLabel4BlankBinding(blankBinding);
+                }
+                const encodedId4LoadedElement = idsMap[blankBinding.blankTrg.value];
+                if (encodedId4LoadedElement) {
+                    blankBinding.blankTrg.value = encodedId4LoadedElement;
                 }
             }
-            const structId = encodeId(bnList);
-            for (const bn of bnList) {
-                bn.inst.value = structId;
+            const encodedId = encodeId(group);
+            updateGroupIds(group, encodedId);
+        }
+
+        return blankBindings;
+    });
+}
+
+function getEncodedIdDictionary (blankBindingGroups: Dictionary<BlankBinding[]>): Dictionary<string> {
+    const idDictionary: Dictionary<string> = {};
+    const keys = Object.keys(blankBindingGroups);
+    for (const key of keys) {
+        idDictionary[key] = encodeId(blankBindingGroups[key]);
+        updateGroupIds(blankBindingGroups[key], idDictionary[key]);
+    }
+    return idDictionary;
+}
+
+function updateGroupIds (group: BlankBinding[], newId: string) {
+    for (const loadedBlankBinding of group) {
+        loadedBlankBinding.inst.value = newId;
+    }
+}
+
+export function encodeId (blankBindings: BlankBinding[]): string {
+
+    function contains (list: BlankBinding[], binding: BlankBinding): BlankBinding {
+        for (const b of list) {
+            if (compareNodes(b, binding)) {
+                return b;
             }
         }
-        return allBindings;
+        return null;
+    }
+
+    function updateBinding (targetBinding: BlankBinding, newBinding: BlankBinding) {
+        if (!targetBinding.blankSrc && newBinding.blankSrc) {
+            targetBinding.blankSrc = newBinding.blankSrc;
+        }
+        if (!targetBinding.blankSrcProp && newBinding.blankSrcProp) {
+            targetBinding.blankSrcProp = newBinding.blankSrcProp;
+        }
+        if (
+            targetBinding.label &&
+            targetBinding.label.value === 'anonimous' &&
+            newBinding.label && newBinding.label.value !== 'anonimous'
+        ) {
+            targetBinding.label = newBinding.label;
+        }
+    }
+
+    function compareStrings (a: string, b: string): number {
+        if (a > b) {
+            return 1;
+        } else if (a < b) {
+            return -1;
+        } else {
+            return 0;
+        }
+    }
+
+    const uniqueElements: BlankBinding[] = [];
+    for (const binding of blankBindings) {
+        const similarElement = contains(uniqueElements, binding);
+        if (!similarElement) {
+            uniqueElements.push(binding);
+        } else {
+            updateBinding(similarElement, binding);
+        }
+    }
+
+    uniqueElements.sort((a: BlankBinding, b: BlankBinding) => {
+        const areTargetsSimilar = compareStrings(a.blankTrg.value, b.blankTrg.value);
+        if (areTargetsSimilar !== 0) {
+            return areTargetsSimilar;
+        }
+        const areTargetTypesSimilar = compareStrings(a.blankTrgProp.value, b.blankTrgProp.value);
+        return areTargetTypesSimilar;
     });
+
+    return encodeURI(JSON.stringify(uniqueElements).replace(/\s/g, ''));
+}
+
+export function decodeId (id: string): BlankBinding[] {
+    try {
+        const bindings: BlankBinding[] = JSON.parse(decodeURI(id));
+        for (const b of bindings) {
+            b.inst.value = id;
+        }
+        return bindings;
+    } catch (error) {
+        /* Silent */
+        return undefined;
+    }
+}
+
+export function createLabel4BlankBinding (bn: BlankBinding): RdfLiteral {
+    if (bn.blankType.value === 'listHead') {
+        return {
+            type: 'literal',
+            value: 'RDFList',
+            'xml:lang': '',
+        };
+    } else {
+        return {
+            type: 'literal',
+            value: getNameFromId(bn.class ? bn.class.value : 'anonymous'),
+            'xml:lang': '',
+        };
+    }
+}
+
+function loadRelatedBlankNodes (
+    blankChains: BlankBinding[][],
+    queryExecutor: QueryExecutor,
+    recursionDeep?: number,
+): Promise<Dictionary<BlankBinding[]>> {
+
+    recursionDeep = recursionDeep || 1;
+
+    if (recursionDeep > MAX_RECURSION_DEEP) {
+        return Promise.resolve({});
+    }
+
+    const queryPairs = blankChains.map(chain => ({
+        query: getQueryForChain(chain),
+        chain: chain,
+    }));
+
+    const promises = queryPairs.map(pair => queryExecutor.executeQuery(pair.query).then(response => ({
+        response: response,
+        chain: pair.chain,
+    })));
+
+    return Promise.all(promises)
+        .then(results => {
+            const recursionPromises: Promise<boolean>[] = [];
+
+            const loadedBlankBindings: Dictionary<BlankBinding[]> = {};
+            for (const result of results) {
+                const bindings = result.response.results.bindings;
+                if (bindings.length > 0) {
+
+                    const relatedBlankBindings: BlankBinding[][] = [];
+
+                    for (const binding of bindings) {
+                        if (isRdfBlank(binding.blankTrg)) {
+                            relatedBlankBindings.push(result.chain.concat([binding]));
+                        }
+                    }
+
+                    recursionPromises.push(
+                        loadRelatedBlankNodes(relatedBlankBindings, queryExecutor, (recursionDeep + 1))
+                            .then(loadedGroupsById => {
+                                const idsMap = getEncodedIdDictionary(loadedGroupsById);
+                                const mergedResults: Dictionary<BlankBinding[]> = {};
+
+                                for (const binding of bindings) {
+                                    binding.label = createLabel4BlankBinding(binding);
+
+                                    const encodedId = idsMap[binding.blankTrg.value];
+
+                                    if (encodedId) {
+                                        binding.blankTrg.value = encodedId;
+                                    }
+
+                                    if (!mergedResults[binding.inst.value]) {
+                                        mergedResults[binding.inst.value] = [];
+                                    }
+
+                                    mergedResults[binding.inst.value].push(binding);
+                                }
+
+                                Object.keys(mergedResults).forEach(key => {
+                                    const group = mergedResults[key];
+                                    const originalId = group[0].inst.value;
+                                    loadedBlankBindings[originalId] = group;
+                                });
+
+                                return true;
+                            }),
+                    );
+                }
+            }
+            return Promise.all(recursionPromises).then(() => {
+                return loadedBlankBindings;
+            });
+        });
+}
+
+function getQueryForChain (blankNodes: BlankBinding[]): string {
+
+    function getQueryBlock (
+        blankNode: BlankBinding,
+        index: number,
+        maxIndex: number,
+    ) {
+        // if blankNode has type 'listHead' then his target and targetProperty is artificial,
+        // and we can't include this id in chain
+        const trustableTrgProp = (index === 0 || blankNode.blankType.value !== 'listHead');
+
+        const sourceId = index > 0 ? '?inst' + (index - 1) : '<' + blankNode.blankSrc.value + '>';
+        const sourcePropId = trustableTrgProp ?
+            (index > 0 ? '?blankTrgProp' + (index - 1) : '<' + blankNode.blankSrcProp.value + '>') :
+            '?anyType' + index;
+
+        const instPostfix = index === maxIndex ? '' : index.toString();
+
+        const targetPropId = trustableTrgProp ? '<' + blankNode.blankTrgProp.value + '>' : '?anyType0' + index;
+
+        const firstRelation = index === 0 && blankNode.blankType.value === 'listHead' ?
+            `
+            ?blankSrc${index} rdf:rest*/rdf:first ?inst${instPostfix}.
+            ` :
+            `?blankSrc${index} ${targetPropId} ?inst${instPostfix}.`;
+
+        return ` 
+            # ======================
+            ${sourceId} ${sourcePropId} ?blankSrc${index}.
+            ${firstRelation}
+            BIND (<${blankNode.blankTrgProp.value}> as ?blankSrcProp${index}).
+            FILTER (ISBLANK(?inst${instPostfix})).
+            {
+                ?inst${instPostfix} ?blankTrgProp${instPostfix} ?blankTrg${instPostfix}.
+                BIND("blankNode" as ?blankType${instPostfix}).
+                FILTER NOT EXISTS { ?inst${instPostfix} rdf:first _:smth1${index} }.
+            } UNION {
+                ?inst${instPostfix} rdf:rest*/rdf:first ?blankTrg${instPostfix}.
+                ?blankSrc${index} ?blankSrcProp${index} ?inst${instPostfix}.
+                _:smth2${index} rdf:first ?blankTrg${instPostfix}.
+                BIND(?blankSrcProp${index} as ?blankTrgProp${instPostfix})
+                BIND("listHead" as ?blankType${instPostfix})
+                FILTER NOT EXISTS { _:smth3${index} rdf:rest ?inst${instPostfix} }.
+            }
+            OPTIONAL {
+                ?inst${instPostfix} rdf:type ?class${instPostfix}.
+            }
+        `;
+    }
+
+    const body = blankNodes.map((bn, index) => getQueryBlock(bn, index, blankNodes.length - 1)).join('\n');
+    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankType
+        WHERE {
+           ${body}
+        }
+    `;
+    return query;
 }
 
 export function elementInfo(elementIds: string[]): SparqlResponse<ElementBinding> {
@@ -108,205 +374,6 @@ export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
 
     return filterResponse;
 };
-
-export function encodeId (blankBindings: BlankBinding[]): string {
-    function contains (list: BlankBinding[], binding: BlankBinding): BlankBinding {
-        for (const b of list) {
-            if (compareNodes(b, binding)) {
-                return b;
-            }
-        }
-        return null;
-    }
-
-    const clearList: BlankBinding[] = [];
-    for (const bind of blankBindings) {
-        const similarElement = contains(clearList, bind);
-        if (!similarElement) {
-            clearList.push(bind);
-        } else {
-            if (!similarElement.blankSrc && bind.blankSrc) {
-                similarElement.blankSrc = bind.blankSrc;
-            }
-            if (!similarElement.blankSrcProp && bind.blankSrcProp) {
-                similarElement.blankSrcProp = bind.blankSrcProp;
-            }
-            if (
-                similarElement.label &&
-                similarElement.label.value === 'anonimous' &&
-                bind.label && bind.label.value !== 'anonimous'
-            ) {
-                similarElement.label = bind.label;
-            }
-        }
-    }
-
-    function compareStrings (a: string, b: string): number {
-        if (a > b) {
-            return 1;
-        } else if (a < b) {
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-    clearList.sort((a: BlankBinding, b: BlankBinding) => {
-        const res1 = compareStrings(a.blankTrg.value, b.blankTrg.value);
-        if (res1 !== 0) {
-            return res1;
-        }
-        return compareStrings(a.blankTrgProp.value, b.blankTrgProp.value);
-    });
-
-    return encodeURI(JSON.stringify(clearList).replace(/\s/g, ''));
-}
-
-export function decodeId (id: string): BlankBinding[] {
-    try {
-        const bindings: BlankBinding[] = JSON.parse(decodeURI(id));
-        for (const b of bindings) {
-            b.inst.value = id;
-        }
-        return bindings;
-    } catch (error) {
-        /* Silent */
-        return undefined;
-    }
-}
-
-export function createLabel (bn: BlankBinding): RdfLiteral {
-    if (bn.blankType.value === 'listHead') {
-        return {
-            type: 'literal',
-            value: 'RDFList',
-            'xml:lang': '',
-        };
-    } else {
-        return {
-            type: 'literal',
-            value: getNameFromId(bn.class ? bn.class.value : 'anonymous'),
-            'xml:lang': '',
-        };
-    }
-}
-
-function getNextBNodeGeneration (
-    blankNodes: BlankBinding[][],
-    executeSparqlQuery: (query: string) => Promise<SparqlResponse<BlankBinding>>,
-    deep?: number,
-): Promise<Dictionary<string>> {
-    if (deep > 1) {
-        return Promise.resolve({});
-    }
-    function processBlankBinding (blankBindings: BlankBinding[]): Promise<{
-        result: SparqlResponse<BlankBinding>,
-        parents: BlankBinding[],
-    }> {
-        const query = getQueryForBlankNode(blankBindings);
-        return executeSparqlQuery(query).then(response => ({
-            result: response,
-            parents: blankBindings,
-        }));
-    }
-    const promises: Promise<{
-        result: SparqlResponse<BlankBinding>,
-        parents: BlankBinding[],
-    }>[] = [];
-    for (const bn of blankNodes) {
-        promises.push(processBlankBinding(bn));
-    }
-    return Promise.all(promises)
-        .then(responses => {
-            const recursPromises: Promise<boolean>[] = [];
-            const ids: Dictionary<string> = {};
-            for (const response of responses) {
-                const resp = response.result;
-                if (resp.results.bindings.length > 0) {
-                    const blankChildren: BlankBinding[][] = [];
-                    for (const bind of resp.results.bindings) {
-                        if (isRdfBlank(bind.blankTrg)) {
-                            blankChildren.push(response.parents.concat([bind]));
-                        }
-                    }
-                    recursPromises.push(
-                        getNextBNodeGeneration(blankChildren, executeSparqlQuery, (deep + 1 || 1))
-                            .then(bNodeIds => {
-                                const devidedResults: Dictionary<BlankBinding[]> = {};
-                                for (const bn of resp.results.bindings) {
-                                    bn.label = createLabel(bn);
-                                    if (bNodeIds[bn.blankTrg.value]) {
-                                        bn.blankTrg.value = bNodeIds[bn.blankTrg.value];
-                                    }
-                                    if (!devidedResults[bn.inst.value]) {
-                                        devidedResults[bn.inst.value] = [];
-                                    }
-                                    devidedResults[bn.inst.value].push(bn);
-                                }
-                                Object.keys(devidedResults).forEach(key => {
-                                    const bn = devidedResults[key];
-                                    const originalId = bn[0].inst.value;
-                                    const structId = encodeId(bn);
-                                    for (const subResult of bn) {
-                                        subResult.inst.value = structId;
-                                    }
-                                    ids[originalId] = structId;
-                                });
-                                return true;
-                            }),
-                    );
-                }
-            }
-            return Promise.all(recursPromises).then(() => {
-                return ids;
-            });
-        });
-}
-
-function getQueryForBlankNode (blankNodes: BlankBinding[]): string {
-    function getQueryBlock (
-        blankNode: BlankBinding,
-        index: number,
-        maxIndex: number,
-    ) {
-        const trustableTrgProp = (index === 0 || blankNode.blankType.value !== 'listHead');
-        const sourceId = index > 0 ? '?inst' + (index - 1) : '<' + blankNode.blankSrc.value + '>';
-        const sourcePropId = trustableTrgProp ?
-            (index > 0 ? '?blankTrgProp' + (index - 1) : '<' + blankNode.blankSrcProp.value + '>') :
-            '?anyType' + index;
-        const instPostfix = index === maxIndex ? '' : index.toString();
-        const targetPropId = trustableTrgProp ? '<' + blankNode.blankTrgProp.value + '>' : '?anyType0' + index;
-        return ` 
-            # ======================
-            ${sourceId} ${sourcePropId} ?blankSrc${index}.
-            ?blankSrc${index} ${targetPropId} ?inst${instPostfix}.
-            BIND (<${blankNode.blankTrgProp.value}> as ?blankSrcProp${index}).
-            FILTER (ISBLANK(?inst${instPostfix})).
-            {
-                ?inst${instPostfix} ?blankTrgProp${instPostfix} ?blankTrg${instPostfix}.
-                BIND("blankNode" as ?blankType${instPostfix}).
-                FILTER NOT EXISTS { ?inst${instPostfix} rdf:first _:smth1${index} }.
-            } UNION {
-                ?inst${instPostfix} rdf:rest*/rdf:first ?blankTrg${instPostfix}.
-                ?blankSrc${index} ?blankSrcProp${index} ?inst${instPostfix}.
-                _:smth2${index} rdf:first ?blankTrg${instPostfix}.
-                BIND(?blankSrcProp${index} as ?blankTrgProp${instPostfix})
-                BIND("listHead" as ?blankType${instPostfix})
-                FILTER NOT EXISTS { _:smth3${index} rdf:rest ?inst${instPostfix} }.
-            }
-            OPTIONAL {
-                ?inst${instPostfix} rdf:type ?class${instPostfix}.
-            }
-        `;
-    }
-
-    const body = blankNodes.map((bn, index) => getQueryBlock(bn, index, blankNodes.length - 1)).join('\n');
-    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankType
-        WHERE {
-           ${body}
-        }
-    `;
-    return query;
-}
 
 function getAllRelatedByLinkTypeElements(
     refElementId: string, refElementLinkId: string, linkDirection: string,
