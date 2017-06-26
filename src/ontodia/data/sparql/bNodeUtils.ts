@@ -110,19 +110,34 @@ export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
 };
 
 export function encodeId (blankBindings: BlankBinding[]): string {
-    function contains (list: BlankBinding[], binding: BlankBinding): boolean {
+    function contains (list: BlankBinding[], binding: BlankBinding): BlankBinding {
         for (const b of list) {
             if (compareNodes(b, binding)) {
-                return true;
+                return b;
             }
         }
-        return false;
+        return null;
     }
 
     const clearList: BlankBinding[] = [];
     for (const bind of blankBindings) {
-        if (!contains(clearList, bind)) {
+        const similarElement = contains(clearList, bind);
+        if (!similarElement) {
             clearList.push(bind);
+        } else {
+            if (!similarElement.blankSrc && bind.blankSrc) {
+                similarElement.blankSrc = bind.blankSrc;
+            }
+            if (!similarElement.blankSrcProp && bind.blankSrcProp) {
+                similarElement.blankSrcProp = bind.blankSrcProp;
+            }
+            if (
+                similarElement.label &&
+                similarElement.label.value === 'anonimous' &&
+                bind.label && bind.label.value !== 'anonimous'
+            ) {
+                similarElement.label = bind.label;
+            }
         }
     }
 
@@ -279,7 +294,7 @@ function getQueryForBlankNode (blankNodes: BlankBinding[]): string {
                 FILTER NOT EXISTS { _:smth3${index} rdf:rest ?inst${instPostfix} }.
             }
             OPTIONAL {
-                ?inst${instPostfix} rdf:type${index} ?class${index}.
+                ?inst${instPostfix} rdf:type ?class${instPostfix}.
             }
         `;
     }
@@ -425,11 +440,11 @@ export function compareNodes(nodeA: BlankBinding, nodeB: BlankBinding): boolean 
     return nodeA.inst.value === nodeB.inst.value &&
         (
             nodeA.blankSrc && nodeB.blankSrc && nodeA.blankSrc.value === nodeB.blankSrc.value ||
-            !nodeA.blankSrc && !nodeB.blankSrc
+            !nodeA.blankSrc || !nodeB.blankSrc
         ) &&
         (
             nodeA.blankSrcProp && nodeB.blankSrcProp && nodeA.blankSrcProp.value === nodeB.blankSrcProp.value ||
-            !nodeA.blankSrcProp && !nodeB.blankSrcProp
+            !nodeA.blankSrcProp || !nodeB.blankSrcProp
         ) &&
         nodeA.blankTrg.value === nodeB.blankTrg.value &&
         nodeA.blankTrgProp.value === nodeB.blankTrgProp.value &&
