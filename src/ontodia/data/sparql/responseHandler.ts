@@ -6,7 +6,6 @@ import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
 } from '../model';
 
-const THING_URI = 'http://www.w3.org/2002/07/owl#Thing';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
@@ -154,7 +153,7 @@ export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: s
     for (const sInst of sInstances) {
         let sInstTypeId: string = sInst.inst.value;
 
-        if (isThereAnyData(sInst)) {
+        if (areThereAnyData(sInst)) {
             if (instancesMap[sInstTypeId]) {
                 enrichElement(instancesMap[sInst.inst.value], sInst);
             } else {
@@ -163,7 +162,7 @@ export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: s
         }
     }
 
-    function isThereAnyData(sInst: ElementBinding) {
+    function areThereAnyData(sInst: ElementBinding) {
         return sInst.class || sInst.label ||  sInst.propType ||  sInst.propValue;
     }
 
