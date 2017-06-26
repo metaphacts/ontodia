@@ -195,7 +195,6 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 
-
     linkElements(params: {
         elementId: string;
         linkId: string;
