@@ -56,6 +56,7 @@
     "@types/lodash": "4.14.63",
     "@types/react": "0.14.55",
     "@types/react-dom": "0.14.19",
+    "@types/jquery": "2.0.47",
     "css-loader": "0.23.1",
     "dts-bundle": "0.5.0",
     "exports-loader": "0.6.3",
