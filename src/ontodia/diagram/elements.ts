@@ -1,7 +1,7 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
-import { ClassModel, ElementModel, LocalizedString } from '../data/model';
+import { ClassModel, ElementModel, LinkModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
 
 export class UIElement extends joint.shapes.basic.Generic {
@@ -99,7 +99,7 @@ export class RichProperty extends Backbone.Model {
  *     source: { id: string }
  *     target: { id: string }
  *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
- * 
+ *
  * Events:
  *     state:loaded
  *     updateRouting
@@ -129,6 +129,18 @@ export class Link extends joint.dia.Link {
 
     get layoutOnly(): boolean { return this.get('layoutOnly'); }
     set layoutOnly(value: boolean) { this.set('layoutOnly', value); }
+
+    template: LinkModel;
+
+    constructor(props: {
+        id: string;
+        typeId: string;
+        source: { id: string };
+        target: { id: string };
+        vertices?: Array<{ x: number; y: number; }>;
+    }) {
+        super(props);
+    }
 
     initialize(attributes?: {id: string}) {
         this.set('labels', [{position: 0.5}]);

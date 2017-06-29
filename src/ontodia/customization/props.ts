@@ -1,10 +1,10 @@
 import { ComponentClass } from 'react';
 import { LinkView } from '../diagram/linkView';
 
-import { Dictionary, Property } from '../data/model';
+import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
 export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
-export type LinkStyleResolver = (type: string) => LinkStyle | undefined;
+export type LinkTemplateResolver = (linkType: string) => LinkTemplate | undefined;
 export type TemplateResolver = (types: string[]) => ElementTemplate | undefined;
 
 export interface CustomTypeStyle {
@@ -32,6 +32,13 @@ export type PropArray = Array<{
     property: Property;
 }>;
 
+export interface LinkTemplate {
+    markerSource?: LinkMarkerStyle;
+    markerTarget?: LinkMarkerStyle;
+    router?: LinkRouter;
+    renderLink?(link: LinkModel): LinkStyle;
+}
+
 export interface LinkStyle {
     connection?: {
         fill?: string;
@@ -39,16 +46,9 @@ export interface LinkStyle {
         'stroke-width'?: number;
         'stroke-dasharray'?: string;
     };
-    markerSource?: LinkMarkerStyle;
-    markerTarget?: LinkMarkerStyle;
-    labels?: LinkLabelStyle[];
-    connector?: {
-        name?: string;
-        args?: {
-            radius?: number;
-        };
-    };
-    router?: LinkRouter;
+    label?: LinkLabel;
+    properties?: LinkLabel[];
+    connector?: { name?: string; args?: {}; };
 }
 
 export type LinkRouter = RouterDescription | RouterFunction;
@@ -78,18 +78,19 @@ export interface LinkMarkerStyle {
     height?: number;
 }
 
-export interface LinkLabelStyle {
+export interface LinkLabel {
     position?: number;
     attrs?: {
         rect?: {
             fill?: string;
-            'stroke'?: string;
+            stroke?: string;
             'stroke-width'?: number;
         };
         text?: {
             fill?: string;
-            'stroke'?: string;
+            stroke?: string;
             'stroke-width'?: number;
+            text?: LocalizedString[];
         };
     };
 }
