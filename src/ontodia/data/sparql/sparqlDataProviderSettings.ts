@@ -1,7 +1,7 @@
 /**
  * this is dataset-schema specific settings
  */
-    export interface SparqlDataProviderSettings {
+export interface SparqlDataProviderSettings {
     /**
      * default prefix to be used in every query
      */
@@ -12,7 +12,7 @@
      */
     schemaLabelProperty: string;
 
-     /**
+    /**
      * property to use as instance label
      * todo: make it an array
      */
@@ -76,11 +76,12 @@
 
     /**
      * Link reference resolving. Developer can use it to transform how link navigation is performed.
+     * See RDFSettings for examples
      */
-    refElementLinkQueryOut: string; // '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
-    refElementLinkQueryIn: string; // '?inst \${refElementLinkIRI} \${refElementIRI}. ',
-    refElementQueryOut: string; // '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
-    refElementQueryIn: string; // '?inst ?link \${refElementIRI} .',
+    refElementLinkQueryOut: string;
+    refElementLinkQueryIn: string;
+    refElementQueryOut: string;
+    refElementQueryIn: string;
 }
 
 /**
@@ -120,7 +121,7 @@ export const RDFSettings: SparqlDataProviderSettings = {
                 VALUES (?target) {\${ids}}                
             }`,
 
-    defaultPrefix: ``,
+    defaultPrefix: '',
 
     schemaLabelProperty: 'rdfs:label',
     dataLabelProperty: 'rdfs:label',

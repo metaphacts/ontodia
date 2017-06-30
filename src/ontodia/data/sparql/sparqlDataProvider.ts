@@ -25,7 +25,7 @@ export enum SparqlQueryMethod { GET = 1, POST }
 export type QueryFunction = (params: {
     url: string,
     body: string,
-    headers: any,
+    headers: { [header: string]: string },
     method: string,
 }) => Promise<Response>;
 
@@ -285,38 +285,38 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
-    let refQueryPart = '';
-    const refElementIRI = escapeIri(params.elementId);
-    const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
+        let refQueryPart = '';
+        const refElementIRI = escapeIri(params.elementId);
+        const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
 
-    // link to element with specified link type
-    // if direction is not specified, provide both patterns and union them
-    // FILTER ISIRI is used to prevent blank nodes appearing in results
-    if (params.elementId && params.linkId) {
-        const refElementLinkQueryOut = resolveTemplate(
-            this.settings.refElementLinkQueryOut,
-            {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
-        );
-        const refElementLinkQueryIn = resolveTemplate(
-            this.settings.refElementLinkQueryIn,
-            {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
-        );
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementLinkQueryOut} }` : '';
-        refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementLinkQueryIn} }` : '';
+        // link to element with specified link type
+        // if direction is not specified, provide both patterns and union them
+        // FILTER ISIRI is used to prevent blank nodes appearing in results
+        if (params.elementId && params.linkId) {
+            const refElementLinkQueryOut = resolveTemplate(
+                this.settings.refElementLinkQueryOut,
+                {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
+            );
+            const refElementLinkQueryIn = resolveTemplate(
+                this.settings.refElementLinkQueryIn,
+                {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
+            );
+            refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementLinkQueryOut} }` : '';
+            refQueryPart += !params.direction ? ' UNION ' : '';
+            refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementLinkQueryIn} }` : '';
+        }
+
+        // all links to current element
+        if (params.elementId && !params.linkId) {
+            const refElementQueryOut = resolveTemplate(this.settings.refElementQueryOut, {refElementIRI: refElementIRI});
+            const refElementQueryIn = resolveTemplate(this.settings.refElementQueryIn, {refElementIRI: refElementIRI});
+
+            refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementQueryOut} }` : '';
+            refQueryPart += !params.direction ? ' UNION ' : '';
+            refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementQueryIn} }` : '';
+        }
+        return refQueryPart;
     }
-
-    // all links to current element
-    if (params.elementId && !params.linkId) {
-        const refElementQueryOut = resolveTemplate(this.settings.refElementQueryOut, {refElementIRI: refElementIRI});
-        const refElementQueryIn = resolveTemplate(this.settings.refElementQueryIn, {refElementIRI: refElementIRI});
-
-        refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementQueryOut} }` : '';
-        refQueryPart += !params.direction ? ' UNION ' : '';
-        refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementQueryIn} }` : '';
-    }
-    return refQueryPart;
-}
 
 
 }
@@ -330,7 +330,8 @@ function resolveTemplate(template: string, values: Dictionary<string>) {
     return result;
 }
 
-export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod, queryFunction: QueryFunction): Promise<SparqlResponse<Binding>> {
+export function executeSparqlQuery<Binding>(endpoint: string, query: string, method: SparqlQueryMethod, queryFunction: QueryFunction):
+    Promise<SparqlResponse<Binding>> {
     let internalQuery: Promise<Response>;
     if (method === SparqlQueryMethod.GET) {
         internalQuery = queryFunction({
@@ -357,11 +358,11 @@ export function executeSparqlQuery<Binding>(endpoint: string, query: string, met
             return response.json();
         } else {
             const error = new Error(response.statusText);
-            (<any> error).response = response;
+            (<any>error).response = response;
             throw error;
         }
     });
-};
+}
 
 export function executeSparqlConstruct(
     endpoint: string,
@@ -450,7 +451,7 @@ function sparqlExtractLabel(subject: string, label: string): string {
             if (?label4 != "", ?label4, 
             if (?label5 != "", ?label5, ?label6))) as ${label})
     `;
-};
+}
 
 function escapeIri(iri: string) {
     return `<${iri}>`;
