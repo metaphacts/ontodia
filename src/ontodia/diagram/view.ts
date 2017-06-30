@@ -32,7 +32,6 @@ import { Element, FatClassModel, linkMarkerKey } from './elements';
 
 import { LinkView } from './linkView';
 import { SeparatedElementView } from './separatedElementView';
-import { ElementLayer } from './elementLayer';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -146,23 +145,12 @@ export class DiagramView extends Backbone.Model {
     }
 
     initializePaperComponents() {
-        this.configureElementLayer();
         if (!this.model.isViewOnly()) {
             this.configureSelection();
             this.configureDefaultHalo();
             document.addEventListener('keyup', this.onKeyUp);
             this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
         }
-    }
-
-    private configureElementLayer() {
-        const container = document.createElement('div');
-        this.paper.el.appendChild(container);
-        reactDOMRender(createElement(ElementLayer, {paper: this.paper, view: this}), container);
-        this.onDispose(() => {
-            unmountComponentAtNode(container);
-            this.paper.el.removeChild(container);
-        });
     }
 
     private onKeyUp = (e: KeyboardEvent) => {

@@ -1,7 +1,11 @@
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import * as React from 'react';
-import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
+import {
+    render as reactDOMRender,
+    unmountComponentAtNode,
+    unstable_renderSubtreeIntoContainer,
+} from 'react-dom';
 import { debounce } from 'lodash';
 
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
@@ -45,6 +49,8 @@ export class PaperArea extends React.Component<Props, {}> {
     private panningOrigin: { pageX: number; pageY: number; };
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
 
+    private childContainers: HTMLElement[] = [];
+
     render() {
         return <div className='paper-area'
             ref={area => this.area = area}
@@ -55,6 +61,7 @@ export class PaperArea extends React.Component<Props, {}> {
 
     componentDidMount() {
         this.paper = this.props.paper;
+        this.renderChildren();
 
         this.pageSize = {
             x: this.paper.options.width,
@@ -108,6 +115,20 @@ export class PaperArea extends React.Component<Props, {}> {
         });
     }
 
+    private renderChildren() {
+        React.Children.forEach(this.props.children, child => {
+            const container = document.createElement('div');
+            this.paper.el.appendChild(container);
+            this.childContainers.push(container);
+            const wrapped = typeof child === 'object' ? child : <span>{child}</span>;
+            if (unstable_renderSubtreeIntoContainer) {
+                unstable_renderSubtreeIntoContainer(this, wrapped, container);
+            } else {
+                reactDOMRender(wrapped, container);
+            }
+        });
+    }
+
     shouldComponentUpdate() {
         return false;
     }
@@ -118,6 +139,9 @@ export class PaperArea extends React.Component<Props, {}> {
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
         unmountComponentAtNode(this.spinnerElement);
+        for (const container of this.childContainers) {
+            unmountComponentAtNode(container);
+        }
     }
 
     clientToPaperCoords(areaClientX: number, areaClientY: number) {
