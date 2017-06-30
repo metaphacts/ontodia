@@ -78,7 +78,7 @@ export class DiagramView extends Backbone.Model {
 
     constructor(
         public readonly model: DiagramModel,
-        public readonly options: DiagramViewOptions = {}
+        public readonly options: DiagramViewOptions = {},
     ) {
         super();
         this.setLanguage('en');
