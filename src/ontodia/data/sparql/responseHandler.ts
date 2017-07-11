@@ -1,10 +1,11 @@
 import {
-    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding, isRdfIri, isRdfBlank,
+    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding, isRdfIri, isRdfBlank, RdfIri,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
 } from '../model';
+import * as _ from 'lodash';
 
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 
@@ -50,7 +51,7 @@ function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassMod
             node = getClassModel(sNode);
             treeNodes[sNodeId] = node;
         }
-        //ensuring parent will always be there
+        // ensuring parent will always be there
         if (node.parent && !treeNodes[node.parent]) {
             treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
         }
@@ -61,7 +62,7 @@ function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassMod
 function calcCounts(children: ClassModel[]) {
     for (let node of children) {
         // no more to count
-        if (!node.children) return;
+        if (!node.children) {return; }
         // ensure all children have their counts completed;
         calcCounts(node.children);
         // we have to preserve no data here. If nor element nor childs have no count information,
@@ -192,7 +193,22 @@ export function getLinkTypesInfo(response: SparqlResponse<LinkTypeBinding>): Lin
 
 export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
     const sparqlLinks = response.results.bindings;
-    return sparqlLinks.map((sLink: LinkBinding) => getLinkInfo(sLink));
+    const linksMap: Dictionary<LinkModel> = {};
+
+    for (const sLink of sparqlLinks) {
+        const linkKey = `${sLink.source.value} ${sLink.type.value} ${sLink.target.value}`;
+
+        if (linksMap[linkKey]) {
+            // this can only happen due to error in sparql or when merging properties
+            if (sLink.propType) {
+                mergeProperties(linksMap[linkKey].properties, sLink.propType, sLink.propValue);
+            }
+        } else {
+            linksMap[linkKey] = getLinkInfo(sLink);
+        }
+    }
+
+    return _.values(linksMap);
 }
 
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
@@ -217,6 +233,26 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
     return instancesMap;
 }
 
+/**
+ * Modifies properties with merging with new values, couls be new peroperty or new value for existing properties.
+ * @param properties
+ * @param propType
+ * @param propValue
+ */
+function mergeProperties(properties: { [id: string]: Property }, propType: RdfIri, propValue: RdfLiteral) {
+    let property: Property = properties[propType.value];
+    if (!property) {
+        property = properties[propType.value] = {
+            type: 'string', // sInst.propType.value,
+            values: [],
+        };
+    }
+    const propertyValue = getPropertyValue(propValue);
+    if (property.values.every(value => !isLocalizedEqual(value, propertyValue))) {
+        property.values.push(propertyValue);
+    }
+}
+
 export function enrichElement(element: ElementModel, sInst: ElementBinding) {
     if (!element) { return; }
     if (sInst.label) {
@@ -236,17 +272,7 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
         element.types.push(sInst.class.value);
     }
     if (sInst.propType && sInst.propType.value !== LABEL_URI) {
-        let property: Property = element.properties[sInst.propType.value];
-        if (!property) {
-            property = element.properties[sInst.propType.value] = {
-                type: 'string', // sInst.propType.value,
-                values: [],
-            };
-        }
-        const propertyValue = getPropertyValue(sInst.propValue);
-        if (property.values.every(value => !isLocalizedEqual(value, propertyValue))) {
-            property.values.push(propertyValue);
-        }
+        mergeProperties(element.properties, sInst.propType, sInst.propValue);
     }
 }
 
@@ -288,7 +314,7 @@ export function getInstCount(instcount: RdfLiteral): number {
  * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
  */
 export interface HierarchicalClassModel extends ClassModel {
-    parent: string
+    parent: string;
 }
 
 export function getClassModel(node: ClassBinding): HierarchicalClassModel {
@@ -344,11 +370,19 @@ export function getElementInfo(sInfo: ElementBinding): ElementModel {
 
 export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     if (!sLinkInfo) { return undefined; }
-    return {
+    const linkModel: LinkModel = {
         linkTypeId: sLinkInfo.type.value,
         sourceId: sLinkInfo.source.value,
         targetId: sLinkInfo.target.value,
+        properties: {},
     };
+    if (sLinkInfo.propType && sLinkInfo.propValue) {
+        linkModel.properties[sLinkInfo.propType.value] = {
+            type: 'string',
+            values: [getPropertyValue(sLinkInfo.propValue)],
+        };
+    }
+    return linkModel;
 }
 
 export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
