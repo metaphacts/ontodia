@@ -43,7 +43,11 @@ export const DefaultElementTemplate = `
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
                                     title="{{text}}">
-                                        {{text}}
+                                        {{#if (isIRI text)}}
+                                            <a href="{{text}}">{{text}}</a>
+                                        {{else}}
+                                            {{text}}
+                                        {{/if}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -103,7 +107,11 @@ export const LeftBarTemplate = `
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
                                         title="{{text}}">
-                                        {{text}}
+                                        {{#if (isIRI text)}}
+                                            <a href="{{text}}">{{text}}</a>
+                                        {{else}}
+                                            {{text}}
+                                        {{/if}}
                                     </div>
                                     {{/each}}
                                 </div>
@@ -168,7 +176,11 @@ export const BigIconTemplate = `
                                     <div 
                                 class="ontodia-big-icon-template_property_content_property-table_row_key_values__value"
                                     title="{{text}}">
-                                        {{text}}
+                                        {{#if (isIRI text)}}
+                                            <a href="{{text}}">{{text}}</a>
+                                        {{else}}
+                                            {{text}}
+                                        {{/if}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -253,7 +265,11 @@ export const PersonTemplate = `
                                     <div 
                                 class="ontodia-person-template_property_content_property-table_row_key_values__value"
                                     title="{{text}}">
-                                        {{text}}
+                                        {{#if (isIRI text)}}
+                                            <a href="{{text}}">{{text}}</a>
+                                        {{else}}
+                                            {{text}}
+                                        {{/if}}
                                     </div>
                                 {{/each}}
                             </div>
@@ -320,7 +336,11 @@ export const OrganizationTemplate = `
                                     <div 
                                     class="ontodia-default-template_body_expander_property-table_row_key_values__value"
                                     title="{{text}}">
-                                        {{text}}
+                                        {{#if (isIRI text)}}
+                                            <a href="{{text}}">{{text}}</a>
+                                        {{else}}
+                                            {{text}}
+                                        {{/if}}
                                     </div>
                                 {{/each}}
                             </div>

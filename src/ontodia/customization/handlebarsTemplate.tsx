@@ -4,6 +4,8 @@ import { compile as compileTemplate, HandlebarsTemplateDelegate } from 'handleba
 
 import { Dictionary, Property } from '../data/model';
 
+import { isIRI } from '../diagram/model';
+
 import { TemplateProps } from './props';
 
 export interface HandlebarsTemplateProps {
@@ -20,6 +22,7 @@ const HANDLEBARS_HELPERS = {
             return undefined;
         }
     },
+    isIRI: isIRI,
 };
 
 export class HandlebarsTemplate extends React.Component<HandlebarsTemplateProps, void> {

@@ -1,5 +1,5 @@
 import * as React from 'react';
-
+import { isIRI } from '../diagram/model';
 import { TemplateProps } from './props';
 
 const CLASS_NAME = 'ontodia-default-template';
@@ -22,9 +22,8 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                     const values = prop.property.values.map(({text}, index) =>
                         <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                             key={index} title={text}>
-                            {text}
-                        </div>
-                    );
+                            { isIRI(text) ? <a href={text}>{text}</a> : text }
+                        </div>);
                     return (
                         <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
                             <div title={prop.name + ' (' + prop.id + ')'}
