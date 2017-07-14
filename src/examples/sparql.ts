@@ -28,6 +28,7 @@ function onWorkspaceMounted(workspace: Workspace) {
                 'http://xmlns.com/foaf/0.1/img',
             ],
             queryMethod: SparqlQueryMethod.GET,
+            acceptBlankNodes: true,
         }, OWLStatsSettings),
     });
 }

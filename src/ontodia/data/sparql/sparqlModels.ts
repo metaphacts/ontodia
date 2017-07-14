@@ -80,7 +80,7 @@ export interface LinkBinding {
 }
 
 export interface LinkCountBinding {
-    link: RdfIri;
+    link: RdfIri | RdfBlank;
     inCount: RdfLiteral;
     outCount: RdfLiteral;
 }

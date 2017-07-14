@@ -5,7 +5,7 @@ import { FilterParams } from '../provider';
 
 import {
     ElementBinding, LinkBinding, BlankBinding, isRdfIri, isRdfBlank,
-    LinkCountBinding, SparqlResponse, RdfLiteral, RdfBlank,
+    LinkCountBinding, SparqlResponse, RdfLiteral, RdfBlank, isBlankBinding,
 } from './sparqlModels';
 
 import { executeSparqlQuery } from './sparqlDataProvider';
@@ -35,6 +35,31 @@ export class QueryExecutor {
             return this.queryDictionary[query];
         }
     }
+}
+
+export function updateFilterResults (
+    result: SparqlResponse<ElementBinding | BlankBinding>,
+    queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+): Promise<SparqlResponse<ElementBinding | BlankBinding>> {
+    const completeBindings: ElementBinding[] = [];
+    const blankBindings: BlankBinding[] = [];
+
+    for (const binding of result.results.bindings) {
+        if (isBlankBinding(binding)) {
+            blankBindings.push(binding);
+        } else {
+            completeBindings.push(binding);
+        }
+    }
+    return processBlankBindings(
+        blankBindings,
+        (callBackQuery: string) => {
+            return queryFunction(callBackQuery);
+        },
+    ).then(processedBindings => {
+        result.results.bindings = completeBindings.concat(processedBindings);
+        return result;
+    });
 }
 
 export function processBlankBindings(
