@@ -492,3 +492,7 @@ export function chooseLocalizedText(texts: ReadonlyArray<LocalizedString>, langu
     }
     return typeof defaultLanguageValue === 'undefined' ? texts[0] : defaultLanguageValue;
 }
+
+export function isIRI(str: string): boolean {
+    return str.startsWith('http');
+}

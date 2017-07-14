@@ -176,12 +176,6 @@ export function triplesToElementBinding(
                 map[trippleId] = createAndPushBinding(tripple);
             }
             map[trippleId].label = tripple.object;
-        } else if (isRdfLiteral(tripple.object) && isRdfIri(tripple.predicate)) { // Property
-            if (map[trippleId].propType) {
-                map[trippleId] = createAndPushBinding(tripple);
-            }
-            map[trippleId].propType = tripple.predicate;
-            map[trippleId].propValue = tripple.object;
         } else if ( // Class
             tripple.predicate.value === RDF_TYPE_URI &&
             isRdfIri(tripple.object) && isRdfIri(tripple.predicate)
@@ -190,6 +184,12 @@ export function triplesToElementBinding(
                 map[trippleId] = createAndPushBinding(tripple);
             }
             map[trippleId].class = tripple.object;
+        } else if (isRdfIri(tripple.predicate)) { // Property
+            if (map[trippleId].propType) {
+                map[trippleId] = createAndPushBinding(tripple);
+            }
+            map[trippleId].propType = tripple.predicate;
+            map[trippleId].propValue = tripple.object;
         }
     }
 
@@ -285,7 +285,7 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
  * @param propType
  * @param propValue
  */
-function mergeProperties(properties: { [id: string]: Property }, propType: RdfIri, propValue: RdfLiteral) {
+function mergeProperties(properties: { [id: string]: Property }, propType: RdfIri, propValue: RdfNode) {
     let property: Property = properties[propType.value];
     if (!property) {
         property = properties[propType.value] = {
@@ -388,10 +388,10 @@ export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     };
 }
 
-export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
+export function getPropertyValue(propValue?: RdfNode): LocalizedString {
     if (!propValue) { return undefined; }
     return {
-        lang: propValue['xml:lang'],
+        lang: (propValue as RdfLiteral)['xml:lang'] ,
         text: propValue.value,
     };
 }

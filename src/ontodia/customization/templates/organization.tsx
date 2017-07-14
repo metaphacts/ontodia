@@ -3,6 +3,7 @@ import { Component } from 'react';
 
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
+import { isIRI } from '../../diagram/model';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
@@ -59,7 +60,7 @@ export class OrganizationTemplate extends Component<TemplateProps, {}> {
                                             {property.values.map(({text}, index) => (
                                                 <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                                                     key={index} title={text}>
-                                                    {text}
+                                                    { isIRI(text) ? <a href={text}>{text}</a> : text }
                                                 </div>
                                             ))}
                                         </div>
