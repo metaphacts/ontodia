@@ -91,8 +91,8 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?prop ?label
             WHERE {
-                OPTIONAL {?prop ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?prop) {${ids}}.
+                OPTIONAL { ?prop ${this.settings.schemaLabelProperty} ?label. }
             }
         `;
         return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
@@ -103,8 +103,8 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?class ?label ?instcount
             WHERE {
-                OPTIONAL {?class ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?class) {${ids}}.
+                OPTIONAL { ?class ${this.settings.schemaLabelProperty} ?label. }
                 BIND("" as ?instcount)
             }
         `;
@@ -116,8 +116,8 @@ export class SparqlDataProvider implements DataProvider {
         const query = this.settings.defaultPrefix + `
             SELECT ?link ?label ?instcount
             WHERE {
-                OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
                 VALUES (?link) {${ids}}.
+                OPTIONAL { ?link ${this.settings.schemaLabelProperty} ?label. }
                 BIND("" as ?instcount)
             }
         `;
@@ -129,7 +129,7 @@ export class SparqlDataProvider implements DataProvider {
             SELECT ?link ?instcount ?label
             WHERE {
                   ${this.settings.linkTypesPattern}
-                  OPTIONAL {?link ${this.settings.schemaLabelProperty} ?label.}
+                  OPTIONAL { ?link ${this.settings.schemaLabelProperty} ?label. }
             }
         `;
         return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
