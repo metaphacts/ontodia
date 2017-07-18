@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+## [0.4.1] - 2017-07-18
 ### Added
 - Support for IE11 (without exporting to SVG/PNG).
 - Workspace API for external toolbar.
@@ -188,7 +190,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
 [0.3.8]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...v0.3.6
