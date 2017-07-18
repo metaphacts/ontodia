@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { WorkspaceLanguage } from '../workspace/workspace';
+
 export interface Props {
     onSaveDiagram?: () => void;
     onSaveToSelf?: () => void;
@@ -15,6 +17,8 @@ export interface Props {
     onExportPNG: (link: HTMLAnchorElement) => void;
     onPrint: () => void;
     onShare?: () => void;
+    languages: ReadonlyArray<WorkspaceLanguage>;
+    selectedLanguage: string;
     onChangeLanguage: (language: string) => void;
     onShowTutorial: () => void;
     isEmbeddedMode?: boolean;
@@ -38,15 +42,15 @@ export class EditorToolbar extends React.Component<Props, State> {
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value;
         this.props.onChangeLanguage(value);
-    };
+    }
 
     private onExportSVG = () => {
         this.props.onExportSVG(this.downloadImageLink);
-    };
+    }
 
     private onExportPNG = () => {
         this.props.onExportPNG(this.downloadImageLink);
-    };
+    }
 
     render() {
         const intro = '<h4>Toolbox</h4>' +
@@ -54,27 +58,27 @@ export class EditorToolbar extends React.Component<Props, State> {
             'layouts or fit diagram to screen, etc.</p>' +
             '<p>Don’t forget to save diagrams, it always comes handy after all.</p>';
 
-        let btnSaveDiagram = (
+        const btnSaveDiagram = (
             <button type='button' className='saveDiagramButton btn btn-primary'
                     onClick={this.props.onSaveDiagram}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
             </button>
         );
 
-        let btnEditAtMainSite = (
+        const btnEditAtMainSite = (
             <button type='button' className='btn btn-primary' onClick={this.props.onEditAtMainSite}>
                 Edit in <img src='images/ontodia_headlogo.png' height='15.59'/>
             </button>
         );
 
-        let btnShare = (
+        const btnShare = (
             <button type='button' className='btn btn-default'
                     title='Publish or share diagram' onClick={this.props.onShare}>
                 <span className='fa fa-users' aria-hidden='true' /> Share
             </button>
         );
 
-        let btnHelp = (
+        const btnHelp = (
             <button type='button' className='btn btn-default'
                     onClick={this.props.onShowTutorial}>
                 <span className='fa fa-info-circle' aria-hidden='true' /> Help
@@ -82,6 +86,7 @@ export class EditorToolbar extends React.Component<Props, State> {
         );
 
         const nonEmbedded = !this.props.isEmbeddedMode;
+        const {selectedLanguage, languages} = this.props;
         return (
             <div className={CLASS_NAME}>
                 <div className='btn-group btn-group-sm'
@@ -140,13 +145,15 @@ export class EditorToolbar extends React.Component<Props, State> {
                         <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
-                    <span className={`btn-group ${CLASS_NAME}__language-selector`}>
-                        {nonEmbedded ? <label><span>Ontology Language:</span></label> : undefined}
-                        <select defaultValue='en' onChange={this.onChangeLanguage}>
-                            <option value='en'>English</option>
-                            <option value='ru'>Russian</option>
-                        </select>
-                    </span>
+                    {(languages.length > 1) ? (
+                        <span className={`btn-group ${CLASS_NAME}__language-selector`}>
+                            {nonEmbedded ? <label><span>Data Language:</span></label> : undefined}
+                            <select value={selectedLanguage} onChange={this.onChangeLanguage}>
+                                {languages.map(({code, label}) =>
+                                    <option key={code} value={code}>{label}</option>)}
+                            </select>
+                        </span>
+                    ) : null}
                     {nonEmbedded ? btnHelp : undefined}
                 </div>
                 <a href='#' ref={link => { this.downloadImageLink = link; }}
