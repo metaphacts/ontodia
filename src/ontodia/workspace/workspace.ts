@@ -17,7 +17,7 @@ import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
-export interface Props {
+export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
     onEditAtMainSite?: (workspace: Workspace) => void;
@@ -54,8 +54,8 @@ export interface State {
     readonly criteria?: SearchCriteria;
 }
 
-export class Workspace extends Component<Props, State> {
-    static readonly defaultProps: { [K in keyof Props]?: any } = {
+export class Workspace extends Component<WorkspaceProps, State> {
+    static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
         leftPanelInitiallyOpen: true,
         rightPanelInitiallyOpen: false,
@@ -71,7 +71,7 @@ export class Workspace extends Component<Props, State> {
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    constructor(props: Props) {
+    constructor(props: WorkspaceProps) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
         this.diagram = new DiagramView(this.model, this.props.viewOptions);
@@ -79,7 +79,7 @@ export class Workspace extends Component<Props, State> {
         this.state = {};
     }
 
-    componentWillReceiveProps(prevProps: Props, newProps: Props) {
+    componentWillReceiveProps(prevProps: WorkspaceProps, newProps: WorkspaceProps) {
         if (newProps.language !== this.diagram.getLanguage()) {
             this.diagram.setLanguage(newProps.language);
         }
