@@ -219,6 +219,10 @@ export class Workspace extends Component<Props, State> {
     changeLanguage = (language: string) => {
         this.diagram.setLanguage(language);
     }
+
+    centerTo = (paperPosition?: { x: number; y: number; }) => {
+        this.markup.paperArea.centerTo(paperPosition);
+    }
 }
 
 export default Workspace;
