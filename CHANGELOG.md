@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Workspace API for external toolbar.
 - Support for DBPedia Sparql endpoints.
 - Link direction in Connections menu and Instances panel.
+- Support for properties on links.
+- `centerTo()` and language props to Workspace.
 
 ### Changed
 - Replaced `foreignObject`-based element rendering with overlayed
@@ -19,6 +21,9 @@ HTML elements.
 Connections menu.
 - Tutorial don't automatically show up on a first visit by default.
 - Pan canvas without requiring to hold any modifier keys.
+- Prevent overlapping of multiple links between a pair of nodes and when
+source and target is the same node.
+- Make right panel with link types closed by default.
 
 ### Fixed
 - Inconsistent elements and links rendering between editor and exported SVG.
@@ -29,6 +34,8 @@ Connections menu.
 (introduced in [0.3.8]).
 - Missing localized labels with different languages for classes.
 - Drag and drop classes from tree in Opera.
+- Forward outer React context to element templates.
+- Support SPARQL endpoint URLs with query params.
 
 ### Breaking changes
 - `DiagramModel.requestElementData()` don't requests for links.
