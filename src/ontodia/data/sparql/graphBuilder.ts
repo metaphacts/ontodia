@@ -15,30 +15,23 @@ export class GraphBuilder {
     }> {
         return this.dataProvider.elementInfo({elementIds: graph.elementIds}).then(elementsInfo => ({
             preloadedElements: elementsInfo,
-            layoutData: this.getLayout(elementsInfo, graph.links),
+            layoutData: this.getLayout(graph.elementIds, graph.links),
         }));
     }
 
-    private getLayout(elementsInfo: Dictionary<ElementModel>, linksInfo: LinkModel[]): LayoutData {
-        const keys = Object.keys(elementsInfo);
-
-        const rows = Math.ceil(Math.sqrt(keys.length));
+    private getLayout(elementsIds: string[], linksInfo: LinkModel[]): LayoutData {
+        const rows = Math.ceil(Math.sqrt(elementsIds.length));
         const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
 
-        const layoutElements: LayoutCell[] = keys.map<LayoutElement>((key, index) => {
-            const element = elementsInfo[key];
+        const layoutElements: LayoutCell[] = elementsIds.map<LayoutElement>((id, index) => {
             const {x, y} = grid(index);
-            return {
-                id: element.id,
-                type: 'element',
-                position: {x, y},
-            };
+            return {type: 'element', id, position: {x, y}};
         });
         const layoutLinks = linksInfo.map<LayoutLink>((link, index) => {
             return {
+                type: 'link',
                 id: 'link_' + index,
                 typeId: link.linkTypeId,
-                type: 'link',
                 source: {id: link.sourceId},
                 target: {id: link.targetId},
             };

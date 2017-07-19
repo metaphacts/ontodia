@@ -17,7 +17,7 @@ import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
-export interface Props {
+export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
     onEditAtMainSite?: (workspace: Workspace) => void;
@@ -27,17 +27,43 @@ export interface Props {
     viewOptions?: DiagramViewOptions;
     leftPanelInitiallyOpen?: boolean;
     rightPanelInitiallyOpen?: boolean;
+
+    /**
+     * Set of languages to display diagram data.
+     */
+    languages?: ReadonlyArray<WorkspaceLanguage>;
+    /**
+     * Currently selected language.
+     */
+    language?: string;
+    /**
+     * Called when user selected another language from the UI.
+     *
+     * If this function is set, language selection will work in controlled mode;
+     * otherwise language selection will function in uncontrolled mode.
+     */
+    onLanguageChange?: (language: string) => void;
+}
+
+export interface WorkspaceLanguage {
+    code: string;
+    label: string;
 }
 
 export interface State {
     readonly criteria?: SearchCriteria;
 }
 
-export class Workspace extends Component<Props, State> {
-    static readonly defaultProps: { [K in keyof Props]?: any } = {
+export class Workspace extends Component<WorkspaceProps, State> {
+    static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
         leftPanelInitiallyOpen: true,
         rightPanelInitiallyOpen: false,
+        languages: [
+            {code: 'en', label: 'English'},
+            {code: 'ru', label: 'Russian'},
+        ],
+        language: 'en',
     };
 
     private markup: WorkspaceMarkup;
@@ -45,11 +71,18 @@ export class Workspace extends Component<Props, State> {
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    constructor(props: Props) {
+    constructor(props: WorkspaceProps) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
         this.diagram = new DiagramView(this.model, this.props.viewOptions);
+        this.diagram.setLanguage(this.props.language);
         this.state = {};
+    }
+
+    componentWillReceiveProps(prevProps: WorkspaceProps, newProps: WorkspaceProps) {
+        if (newProps.language !== this.diagram.getLanguage()) {
+            this.diagram.setLanguage(newProps.language);
+        }
     }
 
     render(): ReactElement<any> {
@@ -76,6 +109,8 @@ export class Workspace extends Component<Props, State> {
                     this.forceLayout();
                     this.zoomToFit();
                 },
+                languages: this.props.languages,
+                selectedLanguage: this.diagram.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
                 onShowTutorial: showTutorial,
                 onEditAtMainSite: () => this.props.onEditAtMainSite(this),
@@ -95,8 +130,8 @@ export class Workspace extends Component<Props, State> {
                 criteria: {
                     refElementId: element.id,
                     refElementLinkId: linkType && linkType.id,
-                    linkDirection: direction
-                }
+                    linkDirection: direction,
+                },
             });
         });
 
@@ -217,7 +252,18 @@ export class Workspace extends Component<Props, State> {
     }
 
     changeLanguage = (language: string) => {
-        this.diagram.setLanguage(language);
+        // if onLanguageChange is set we'll just forward the change
+        if (this.props.onLanguageChange) {
+            this.props.onLanguageChange(language);
+        } else {
+            this.diagram.setLanguage(language);
+            // since we have toolbar dependent on language, we're forcing update here
+            this.forceUpdate();
+        }
+    }
+
+    centerTo = (paperPosition?: { x: number; y: number; }) => {
+        this.markup.paperArea.centerTo(paperPosition);
     }
 }
 

@@ -5,11 +5,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Breaking changes
+- Removed `labelProperty` option and `refElement*` settings from
+`SparqlDataProvider`. Use `dataLabelProperty` setting and override
+`createRefQueryPart()` instead.
+
+## [0.4.1] - 2017-07-18
 ### Added
 - Support for IE11 (without exporting to SVG/PNG).
 - Workspace API for external toolbar.
 - Support for DBPedia Sparql endpoints.
 - Link direction in Connections menu and Instances panel.
+- Support for properties on links.
+- `centerTo()` and language props to Workspace.
 
 ### Changed
 - Replaced `foreignObject`-based element rendering with overlayed
@@ -19,6 +27,9 @@ HTML elements.
 Connections menu.
 - Tutorial don't automatically show up on a first visit by default.
 - Pan canvas without requiring to hold any modifier keys.
+- Prevent overlapping of multiple links between a pair of nodes and when
+source and target is the same node.
+- Make right panel with link types closed by default.
 
 ### Fixed
 - Inconsistent elements and links rendering between editor and exported SVG.
@@ -29,6 +40,8 @@ Connections menu.
 (introduced in [0.3.8]).
 - Missing localized labels with different languages for classes.
 - Drag and drop classes from tree in Opera.
+- Forward outer React context to element templates.
+- Support SPARQL endpoint URLs with query params.
 
 ### Breaking changes
 - `DiagramModel.requestElementData()` don't requests for links.
@@ -181,7 +194,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
 [0.3.8]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...v0.3.6
