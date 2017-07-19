@@ -73,15 +73,6 @@ export interface SparqlDataProviderSettings {
      * imposes additional filtering on elements within filter
      */
     filterAdditionalRestriction: string;
-
-    /**
-     * Link reference resolving. Developer can use it to transform how link navigation is performed.
-     * See RDFSettings for examples
-     */
-    refElementLinkQueryOut: string;
-    refElementLinkQueryIn: string;
-    refElementQueryOut: string;
-    refElementQueryIn: string;
 }
 
 /**
@@ -109,11 +100,6 @@ export interface FullTextSearchSettings {
 }
 
 export const RDFSettings: SparqlDataProviderSettings = {
-    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
-    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
-    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
-    refElementQueryIn: '?inst ?link \${refElementIRI} .',
-
     linksInfoQuery: `SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.
@@ -292,9 +278,9 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
         WHERE {
-            { \${elementIri} ?link ?outObject FILTER ISIRI(?outObject)}
+            { \${elementIri} ?link ?outObject}
             UNION 
-              { ?inObject ?link \${elementIri} FILTER ISIRI(?inObject)}
+            { ?inObject ?link \${elementIri}}
         } GROUP BY ?link
     `,
     filterRefElementLinkPattern: '',
@@ -303,10 +289,6 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst \${dataLabelProperty} ?label}`,
     filterAdditionalRestriction: '',
-    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
-    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
-    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
-    refElementQueryIn: '?inst ?link \${refElementIRI} .',
 };
 
 export const OWLRDFSSettings: SparqlDataProviderSettings = {...RDFSettings, ...OWLRDFSSettingsOverride};
@@ -339,7 +321,7 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
               ?searchLabel bif:contains "\${text}".
               ?inst dbo:wikiPageID ?origScore .
               BIND(0-?origScore as ?score)
-            `,
+        `,
     },
 
     classTreeQuery: `
@@ -349,7 +331,7 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             ?root rdfs:subClassOf owl:Thing.
             ?class rdfs:subClassOf? | rdfs:subClassOf/rdfs:subClassOf ?root
         }
-        `,
+    `,
 
     elementInfoQuery: `
         SELECT ?inst ?class ?label ?propType ?propValue
@@ -360,11 +342,13 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
         } VALUES (?inst) {\${ids}}
-        `,
+    `,
+
     filterElementInfoPattern: `
         OPTIONAL {?inst rdf:type ?foundClass. FILTER (!contains(str(?foundClass), 'http://dbpedia.org/class/yago'))}
         BIND (coalesce(?foundClass, owl:Thing) as ?class)
         OPTIONAL {?inst \${dataLabelProperty} ?label}`,
+
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } UNION { [] ?linkType ?inst. BIND(?inst as ?fullImage) }
             BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
             STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)
