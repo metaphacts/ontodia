@@ -86,6 +86,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
+        const {onShareDiagram, onSaveDiagram} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
@@ -103,8 +104,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onPrint: this.print,
                 onExportSVG: this.exportSvg,
                 onExportPNG: this.exportPng,
-                onShare: this.props.onShareDiagram ? () => this.props.onShareDiagram(this) : undefined,
-                onSaveDiagram: () => this.props.onSaveDiagram(this),
+                onShare: onShareDiagram ? () => onShareDiagram(this) : undefined,
+                onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
                 onForceLayout: () => {
                     this.forceLayout();
                     this.zoomToFit();

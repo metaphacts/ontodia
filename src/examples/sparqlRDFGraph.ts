@@ -93,10 +93,6 @@ function onWorkspaceMounted(workspace: Workspace) {
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
-    onSaveDiagram: workspace => {
-        const layout = workspace.getModel().exportLayout();
-        console.log(layout);
-    },
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));
