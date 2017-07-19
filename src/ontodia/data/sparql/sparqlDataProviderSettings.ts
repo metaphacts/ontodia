@@ -73,15 +73,6 @@ export interface SparqlDataProviderSettings {
      * imposes additional filtering on elements within filter
      */
     filterAdditionalRestriction: string;
-
-    /**
-     * Link reference resolving. Developer can use it to transform how link navigation is performed.
-     * See RDFSettings for examples
-     */
-    refElementLinkQueryOut: string;
-    refElementLinkQueryIn: string;
-    refElementQueryOut: string;
-    refElementQueryIn: string;
 }
 
 /**
@@ -109,11 +100,6 @@ export interface FullTextSearchSettings {
 }
 
 export const RDFSettings: SparqlDataProviderSettings = {
-    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
-    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
-    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
-    refElementQueryIn: '?inst ?link \${refElementIRI} .',
-
     linksInfoQuery: `SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.
@@ -303,10 +289,6 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst \${dataLabelProperty} ?label}`,
     filterAdditionalRestriction: '',
-    refElementLinkQueryOut: '\${refElementIRI} \${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)',
-    refElementLinkQueryIn: '?inst \${refElementLinkIRI} \${refElementIRI}. ',
-    refElementQueryOut: '\${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)',
-    refElementQueryIn: '?inst ?link \${refElementIRI} .',
 };
 
 export const OWLRDFSSettings: SparqlDataProviderSettings = {...RDFSettings, ...OWLRDFSSettingsOverride};

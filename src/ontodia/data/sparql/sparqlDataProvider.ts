@@ -59,26 +59,22 @@ export interface SparqlDataProviderOptions {
     queryMethod?: SparqlQueryMethod;
 
     /*
-     * what property to use as instance labels. This will override dataLabelProperty from settings
-     */
-    labelProperty?: string;
-
-    /*
      * function to send sparql requests
      */
     queryFunction?: QueryFunction;
 }
 
 export class SparqlDataProvider implements DataProvider {
-    dataLabelProperty: string;
+    readonly options: SparqlDataProviderOptions;
+    readonly settings: SparqlDataProviderSettings;
+
     constructor(
-        private options: SparqlDataProviderOptions,
-        private settings: SparqlDataProviderSettings = OWLStatsSettings
+        options: SparqlDataProviderOptions,
+        settings: SparqlDataProviderSettings = OWLStatsSettings,
     ) {
-        this.dataLabelProperty = options.labelProperty ? options.labelProperty : settings.dataLabelProperty;
-        if (this.options.queryFunction == null) {
-            this.options.queryFunction = queryInternal;
-        }
+        const {queryFunction = queryInternal} = options;
+        this.options = {...options, queryFunction};
+        this.settings = settings;
     }
 
     classTree(): Promise<ClassModel[]> {
@@ -137,8 +133,9 @@ export class SparqlDataProvider implements DataProvider {
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         const ids = params.elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const query = this.settings.defaultPrefix
-            + resolveTemplate(this.settings.elementInfoQuery, {ids: ids, dataLabelProperty: this.dataLabelProperty});
+        const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
+        const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
+
         return this.executeSparqlQuery<ElementBinding>(query)
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
@@ -154,7 +151,7 @@ export class SparqlDataProvider implements DataProvider {
 
     private enrichedElementsInfo(
         elementsInfo: Dictionary<ElementModel>,
-        types: string[]
+        types: string[],
     ): Promise<Dictionary<ElementModel>> {
         const ids = Object.keys(elementsInfo).map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
@@ -176,7 +173,7 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     private prepareElementsImage(
-        elementsInfo: Dictionary<ElementModel>
+        elementsInfo: Dictionary<ElementModel>,
     ): Promise<Dictionary<ElementModel>> {
         return this.options.prepareImages(elementsInfo).then(images => {
             for (const key in images) {
@@ -245,17 +242,15 @@ export class SparqlDataProvider implements DataProvider {
 
         let textSearchPart: string;
         if (params.text) {
-            const text = params.text;
-            textSearchPart = resolveTemplate(
-                this.settings.fullTextSearch.queryPattern,
-                {text: text, dataLabelProperty: this.dataLabelProperty}
-            );
+            const {fullTextSearch, dataLabelProperty} = this.settings;
+            textSearchPart = resolveTemplate(fullTextSearch.queryPattern, {text: params.text, dataLabelProperty});
         } else {
             textSearchPart = '';
         }
 
-        let query = `${this.settings.defaultPrefix}
-            ${this.settings.fullTextSearch.prefix}
+        const {defaultPrefix, fullTextSearch, dataLabelProperty} = this.settings;
+        const query = `${defaultPrefix}
+            ${fullTextSearch.prefix}
             
         SELECT ?inst ?class ?label
         WHERE {
@@ -268,7 +263,7 @@ export class SparqlDataProvider implements DataProvider {
                     ${this.settings.fullTextSearch.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                 } ORDER BY DESC(?score) LIMIT ${params.limit} OFFSET ${params.offset}
             }
-            ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty: this.dataLabelProperty})}
+            ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty})}
         } ORDER BY DESC(?score)
         `;
 
@@ -280,49 +275,34 @@ export class SparqlDataProvider implements DataProvider {
         return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method, this.options.queryFunction);
     }
 
-    executeSparqlConstruct(query: string) : Promise<Triple[]> {
+    executeSparqlConstruct(query: string): Promise<Triple[]> {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
         return executeSparqlConstruct(this.options.endpointUrl, query, method, this.options.queryFunction);
     }
 
-    createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
-        let refQueryPart = '';
+    protected createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
+        const {elementId, linkId, direction} = params;
         const refElementIRI = escapeIri(params.elementId);
-        const refElementLinkIRI = params.linkId ? escapeIri(params.linkId) : undefined;
-
+        const linkPattern = linkId ? escapeIri(params.linkId) : '?link';
         // link to element with specified link type
         // if direction is not specified, provide both patterns and union them
         // FILTER ISIRI is used to prevent blank nodes appearing in results
-        if (params.elementId && params.linkId) {
-            const refElementLinkQueryOut = resolveTemplate(
-                this.settings.refElementLinkQueryOut,
-                {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
-            );
-            const refElementLinkQueryIn = resolveTemplate(
-                this.settings.refElementLinkQueryIn,
-                {refElementIRI: refElementIRI, refElementLinkIRI: refElementLinkIRI},
-            );
-            refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementLinkQueryOut} }` : '';
-            refQueryPart += !params.direction ? ' UNION ' : '';
-            refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementLinkQueryIn} }` : '';
+        let part = '';
+        if (params.direction !== 'in') {
+            part += `{ ${refElementIRI} ${linkPattern} ?inst . FILTER ISIRI(?inst) }`;
         }
-
-        // all links to current element
-        if (params.elementId && !params.linkId) {
-            const refElementQueryOut = resolveTemplate(this.settings.refElementQueryOut, {refElementIRI: refElementIRI});
-            const refElementQueryIn = resolveTemplate(this.settings.refElementQueryIn, {refElementIRI: refElementIRI});
-
-            refQueryPart += !params.direction || params.direction === 'out' ? `{ ${refElementQueryOut} }` : '';
-            refQueryPart += !params.direction ? ' UNION ' : '';
-            refQueryPart += !params.direction || params.direction === 'in' ? `{ ${refElementQueryIn} }` : '';
+        if (!params.direction) { part += ' UNION '; }
+        if (params.direction !== 'out') {
+            part += `{ ?inst ${linkPattern} ${refElementIRI} . FILTER ISIRI(?inst) }`;
         }
-        return refQueryPart;
+        return part;
     }
 }
 
 function resolveTemplate(template: string, values: Dictionary<string>) {
     let result = template;
     for (const replaceKey in values) {
+        if (!values.hasOwnProperty(replaceKey)) { continue; }
         const replaceValue = values[replaceKey];
         result = result.replace(new RegExp('\\${' + replaceKey + '}', 'g'), replaceValue);
     }
