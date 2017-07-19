@@ -377,16 +377,19 @@ export class SparqlDataProvider implements DataProvider {
         const {elementId, linkId, direction} = params;
         const refElementIRI = escapeIri(params.elementId);
         const linkPattern = linkId ? escapeIri(params.linkId) : '?link';
+        const blankFilter = this.options.acceptBlankNodes
+            ? 'FILTER(isIri(?inst) || isBlank(?inst))'
+            : 'FILTER(isIri(?inst))';
         // link to element with specified link type
         // if direction is not specified, provide both patterns and union them
         // FILTER ISIRI is used to prevent blank nodes appearing in results
         let part = '';
         if (params.direction !== 'in') {
-            part += `{ ${refElementIRI} ${linkPattern} ?inst . FILTER ISIRI(?inst) }`;
+            part += `{ ${refElementIRI} ${linkPattern} ?inst . ${blankFilter} }`;
         }
         if (!params.direction) { part += ' UNION '; }
         if (params.direction !== 'out') {
-            part += `{ ?inst ${linkPattern} ${refElementIRI} . FILTER ISIRI(?inst) }`;
+            part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
         }
         return part;
     }
