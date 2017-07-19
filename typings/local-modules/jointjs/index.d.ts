@@ -87,6 +87,7 @@ namespace joint {
                     'x-alignment'?: string;
                 };
                 text?: {
+                    text?: string;
                     fill?: string;
                     'stroke'?: string;
                     'stroke-width'?: number;

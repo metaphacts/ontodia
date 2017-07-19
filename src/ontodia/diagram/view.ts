@@ -1,21 +1,21 @@
 import { hcl } from 'd3-color';
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
-import { merge, cloneDeep } from 'lodash';
+import { defaultsDeep, cloneDeep } from 'lodash';
 import { createElement } from 'react';
 import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
 import getDefaultLinkRouter from './defaultLinkRouter';
 
 import {
     TypeStyleResolver,
-    LinkStyleResolver,
+    LinkTemplateResolver,
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
-    LinkStyle, LinkMarkerStyle,
+    LinkTemplate, LinkMarkerStyle,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
-import { DefaultLinkStyleBundle } from '../customization/defaultLinkStyles';
+import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { DefaultTemplate } from '../customization/defaultTemplate';
 import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
 
@@ -32,11 +32,10 @@ import { Element, FatClassModel, linkMarkerKey } from './elements';
 
 import { LinkView } from './linkView';
 import { SeparatedElementView } from './separatedElementView';
-import { ElementLayer } from './elementLayer';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
-    linkStyleResolvers?: LinkStyleResolver[];
+    linkTemplateResolvers?: LinkTemplateResolver[];
     templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
 }
@@ -60,7 +59,7 @@ const DefaultToSVGOptions: ToSVGOptions = {
  */
 export class DiagramView extends Backbone.Model {
     private typeStyleResolvers: TypeStyleResolver[];
-    private linkStyleResolvers: LinkStyleResolver[];
+    private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
     paper: joint.dia.Paper;
@@ -71,14 +70,15 @@ export class DiagramView extends Backbone.Model {
 
     private colorSeed = 0x0BADBEEF;
 
-    private linkMarkers: Dictionary<{
+    private linkTemplates: Dictionary<{
+        template: LinkTemplate;
         start: SVGMarkerElement;
         end: SVGMarkerElement;
     }> = {};
 
     constructor(
         public readonly model: DiagramModel,
-        public readonly options: DiagramViewOptions = {}
+        public readonly options: DiagramViewOptions = {},
     ) {
         super();
         this.setLanguage('en');
@@ -102,8 +102,8 @@ export class DiagramView extends Backbone.Model {
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
 
-        this.linkStyleResolvers = options.linkStyleResolvers
-            ? this.options.linkStyleResolvers : DefaultLinkStyleBundle;
+        this.linkTemplateResolvers = options.linkTemplateResolvers
+            ? this.options.linkTemplateResolvers : DefaultLinkTemplateBundle;
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
@@ -145,23 +145,12 @@ export class DiagramView extends Backbone.Model {
     }
 
     initializePaperComponents() {
-        this.configureElementLayer();
         if (!this.model.isViewOnly()) {
             this.configureSelection();
             this.configureDefaultHalo();
             document.addEventListener('keyup', this.onKeyUp);
             this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
         }
-    }
-
-    private configureElementLayer() {
-        const container = document.createElement('div');
-        this.paper.el.appendChild(container);
-        reactDOMRender(createElement(ElementLayer, {paper: this.paper, view: this}), container);
-        this.onDispose(() => {
-            unmountComponentAtNode(container);
-            this.paper.el.removeChild(container);
-        });
     }
 
     private onKeyUp = (e: KeyboardEvent) => {
@@ -171,7 +160,7 @@ export class DiagramView extends Backbone.Model {
         ) {
             this.removeSelectedElements();
         }
-    };
+    }
 
     private removeSelectedElements() {
         const elementsToRemove = this.selection.toArray();
@@ -183,7 +172,7 @@ export class DiagramView extends Backbone.Model {
             element.remove();
         }
         this.model.graph.trigger('batch:stop');
-    };
+    }
 
     private configureSelection() {
         if (this.model.isViewOnly()) { return; }
@@ -418,25 +407,28 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    getLinkStyle(linkTypeId: string): LinkStyle {
-        let style = getDefaultLinkStyle();
-        for (const resolver of this.linkStyleResolvers) {
+    getLinkTemplate(linkTypeId: string): LinkTemplate {
+        const existingTemplate = this.linkTemplates[linkTypeId];
+        if (existingTemplate) {
+            return existingTemplate.template;
+        }
+
+        let template: LinkTemplate = {};
+        for (const resolver of this.linkTemplateResolvers) {
             const result = resolver(linkTypeId);
             if (result) {
-                merge(style, cloneDeep(result));
+                template = cloneDeep(result);
                 break;
             }
         }
-        if (!this.linkMarkers[linkTypeId]) {
-            this.linkMarkers[linkTypeId] = {
-                start: this.createLinkMarker(linkTypeId, true, style.markerSource),
-                end: this.createLinkMarker(linkTypeId, false, style.markerTarget),
-            };
-        }
-        if (!style.router) {
-            style.router = getDefaultLinkRouter(this.model);
-        }
-        return style;
+
+        fillLinkTemplateDefaults(template, this.model);
+        this.linkTemplates[linkTypeId] = {
+            template,
+            start: this.createLinkMarker(linkTypeId, true, template.markerSource),
+            end: this.createLinkMarker(linkTypeId, false, template.markerTarget),
+        };
+        return template;
     }
 
     private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {
@@ -467,15 +459,15 @@ export class DiagramView extends Backbone.Model {
         return marker;
     }
 
-    public registerLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
-        this.linkStyleResolvers.unshift(resolver);
+    public registerLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+        this.linkTemplateResolvers.unshift(resolver);
         return resolver;
     }
 
-    public unregisterLinkStyleResolver(resolver: LinkStyleResolver): LinkStyleResolver {
-        const index = this.linkStyleResolvers.indexOf(resolver);
+    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+        const index = this.linkTemplateResolvers.indexOf(resolver);
         if (index !== -1) {
-            return this.linkStyleResolvers.splice(index, 1)[0];
+            return this.linkTemplateResolvers.splice(index, 1)[0];
         } else {
             return undefined;
         }
@@ -507,10 +499,17 @@ function getHueFromClasses(classes: string[], seed?: number): number {
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
 }
 
-function getDefaultLinkStyle(): LinkStyle {
-    return {
+function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
+    const defaults: Partial<LinkTemplate> = {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
     };
+    defaultsDeep(template, defaults);
+    if (!template.renderLink) {
+        template.renderLink = () => ({});
+    }
+    if (!template.router) {
+        template.router = getDefaultLinkRouter(model);
+    }
 }
 
 /**
@@ -519,10 +518,8 @@ function getDefaultLinkStyle(): LinkStyle {
  * Ref.: http://isthe.com/chongo/tech/comp/fnv/
  *
  * @param {string} str the input value
- * @param {boolean} [asString=false] set to true to return the hash value as
- *     8-digit hex string instead of an integer
  * @param {integer} [seed] optionally pass the hash of the previous chunk
- * @returns {integer | string}
+ * @returns {integer}
  */
 function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:disable:no-bitwise */

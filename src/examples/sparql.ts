@@ -40,6 +40,12 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
+    languages: [
+        {code: 'en', label: 'English'},
+        {code: 'de', label: 'German'},
+        {code: 'ru', label: 'Russian'},
+    ],
+    language: 'ru',
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));
