@@ -1,5 +1,4 @@
 import { TemplateResolver } from '../props';
-
 import { LeftBarTemplate, BigIconTemplate, PersonTemplate, OrganizationTemplate } from './stringTemplates';
 
 export const DefaultTemplateBundle: TemplateResolver[] = [

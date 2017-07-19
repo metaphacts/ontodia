@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Breaking changes
+- Removed `labelProperty` option and `refElement*` settings from
+`SparqlDataProvider`. Use `dataLabelProperty` setting and override
+`createRefQueryPart()` instead.
 
 ## [0.4.1] - 2017-07-18
 ### Added

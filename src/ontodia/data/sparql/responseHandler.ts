@@ -1,5 +1,5 @@
 import {
-    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding, isRdfIri, isRdfBlank,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
 } from './sparqlModels';
 import {
@@ -13,13 +13,15 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
     const treeNodes = createClassMap(response.results.bindings);
     // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
     for (const nodeId in treeNodes) {
-        const treeNode = treeNodes[nodeId];
-        if (treeNode.parent) {
-            const parent = treeNodes[treeNode.parent];
-            parent.children.push(treeNode);
-            parent.count += treeNode.count;
-        } else {
-            tree.push(treeNode);
+        if (treeNodes.hasOwnProperty(nodeId)) {
+            const treeNode = treeNodes[nodeId];
+            if (treeNode.parent) {
+                const parent = treeNodes[treeNode.parent];
+                parent.children.push(treeNode);
+                parent.count += treeNode.count;
+            } else {
+                tree.push(treeNode);
+            }
         }
     }
 
@@ -28,29 +30,31 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
     return tree;
 }
 
-function createClassMap(sNodes: ClassBinding[]) : Dictionary<HierarchicalClassModel> {
-    let treeNodes: Dictionary<HierarchicalClassModel> = {};
+function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassModel> {
+    const treeNodes: Dictionary<HierarchicalClassModel> = {};
     for (const sNode of sNodes) {
-        const sNodeId: string = sNode.class.value;
-        var node = treeNodes[sNodeId];
-        if (node) {
-            if (sNode.label) {
-                const label = node.label;
-                if (label.values.length === 1 && !label.values[0].lang) {
-                    label.values = [];
+        if (isRdfIri(sNode.class)) {
+            const sNodeId: string = sNode.class.value;
+            let node = treeNodes[sNodeId];
+            if (node) {
+                if (sNode.label) {
+                    const label = node.label;
+                    if (label.values.length === 1 && !label.values[0].lang) {
+                        label.values = [];
+                    }
+                    label.values.push(getLocalizedString(sNode.label));
                 }
-                label.values.push(getLocalizedString(sNode.label));
+                if (!node.parent && sNode.parent) {
+                    node.parent = sNode.parent.value;
+                }
+            } else {
+                node = getClassModel(sNode);
+                treeNodes[sNodeId] = node;
             }
-            if (!node.parent && sNode.parent) {
-                node.parent = sNode.parent.value
+            //ensuring parent will always be there
+            if (node.parent && !treeNodes[node.parent]) {
+                treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
             }
-        } else {
-            node = getClassModel(sNode);
-            treeNodes[sNodeId] = node;
-        }
-        //ensuring parent will always be there
-        if (node.parent && !treeNodes[node.parent]) {
-            treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
         }
     }
     return treeNodes;
@@ -203,7 +207,7 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {
-        if (sInst.inst.type === 'literal') {
+        if (!isRdfIri(sInst.inst) && !isRdfBlank(sInst.inst)) {
             continue;
         }
         if (!instancesMap[sInst.inst.value]) {
@@ -295,7 +299,7 @@ export function getClassModel(node: ClassBinding): HierarchicalClassModel {
         children: [],
         label: { values: [getLocalizedString(node.label, node.class.value)] },
         count: getInstCount(node.instcount),
-        parent: node.parent ? node.parent.value : undefined
+        parent: node.parent ? node.parent.value : undefined,
     };
 }
 
