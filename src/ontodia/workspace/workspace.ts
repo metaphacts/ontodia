@@ -17,6 +17,8 @@ import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
+import { ZoomOptions } from '../diagram/paperArea';
+
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
@@ -43,6 +45,8 @@ export interface WorkspaceProps {
      * otherwise language selection will function in uncontrolled mode.
      */
     onLanguageChange?: (language: string) => void;
+    zoomOptions?: ZoomOptions;
+    onZoom?: (scaleX: number, scaleY: number) => void;
 }
 
 export interface WorkspaceLanguage {
@@ -95,6 +99,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
+            zoomOptions: this.props.zoomOptions,
+            onZoom: this.props.onZoom,
             toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
                 onUndo: this.undo,
                 onRedo: this.redo,
@@ -240,12 +246,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.model.redo();
     }
 
+    zoomBy = (value: number) => {
+        this.markup.paperArea.zoomBy(value);
+    }
+
     zoomIn = () => {
-        this.markup.paperArea.zoomBy(0.2);
+        this.markup.paperArea.zoomIn();
     }
 
     zoomOut = () => {
-        this.markup.paperArea.zoomBy(-0.2);
+        this.markup.paperArea.zoomOut();
     }
 
     print = () => {

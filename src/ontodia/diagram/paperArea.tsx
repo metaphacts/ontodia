@@ -16,18 +16,22 @@ export interface Props {
     model: DiagramModel;
     paper: joint.dia.Paper;
     preventTextSelection: () => void;
-    zoomOptions?: {
-        min?: number;
-        max?: number;
-        /** Used when zooming to fit to limit zoom of small diagrams */
-        maxFit?: number;
-        fitPadding?: number;
-    };
+    zoomOptions?: ZoomOptions;
     panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
+    onZoom?: (scaleX: number, scaleY: number) => void;
 }
 
 export interface ZoomOptions {
+    min?: number;
+    max?: number;
+    step?: number;
+    /** Used when zooming to fit to limit zoom of small diagrams */
+    maxFit?: number;
+    fitPadding?: number;
+}
+
+export interface ScaleOptions {
     pivot?: { x: number; y: number; };
 }
 
@@ -50,6 +54,13 @@ export class PaperArea extends React.Component<Props, {}> {
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
 
     private childContainers: HTMLElement[] = [];
+
+    private get zoomOptions(): ZoomOptions {
+        const {
+            min = 0.2, max = 2, step = 0.1, maxFit = 1, fitPadding = 20,
+        } = this.props.zoomOptions || {};
+        return {min, max, step, maxFit, fitPadding};
+    }
 
     render() {
         return <div className='paper-area'
@@ -240,6 +251,9 @@ export class PaperArea extends React.Component<Props, {}> {
         if (originX !== undefined || originY !== undefined) {
             this.centerTo({x: originX, y: originY});
         }
+        if (this.props.onZoom) {
+            this.props.onZoom(scaleX, scaleY);
+        }
     };
 
     private onPaperResize = () => {
@@ -358,13 +372,12 @@ export class PaperArea extends React.Component<Props, {}> {
         return ctm.a;
     }
 
-    setScale(value: number, options: ZoomOptions = {}) {
+    setScale(value: number, options: ScaleOptions = {}) {
         let scale = value;
 
-        const {zoomOptions = {}} = this.props;
-        const {min, max} = zoomOptions;
-        if (min !== undefined) { scale = Math.max(scale, min); }
-        if (max !== undefined) { scale = Math.min(scale, max); }
+        const {min, max} = this.zoomOptions;
+        scale = Math.max(scale, min);
+        scale = Math.min(scale, max);
 
         const center = this.clientToPaperCoords(
             this.area.clientWidth / 2, this.area.clientHeight / 2);
@@ -385,8 +398,16 @@ export class PaperArea extends React.Component<Props, {}> {
         this.centerTo(pivot);
     }
 
-    zoomBy(value: number, options: ZoomOptions = {}) {
+    zoomBy(value: number, options: ScaleOptions = {}) {
         this.setScale(this.getScale() + value, options);
+    }
+
+    zoomIn = () => {
+        this.zoomBy(this.zoomOptions.step);
+    }
+
+    zoomOut = () => {
+        this.zoomBy(-this.zoomOptions.step);
     }
 
     zoomToFit() {
@@ -402,12 +423,11 @@ export class PaperArea extends React.Component<Props, {}> {
             width: this.area.clientWidth,
             height: this.area.clientHeight,
         };
-        const {zoomOptions = {}} = this.props;
         this.paper.scaleContentToFit({
             fittingBBox,
-            padding: (this.props.zoomOptions || {}).fitPadding,
-            minScale: zoomOptions.min,
-            maxScale: zoomOptions.maxFit || zoomOptions.max,
+            padding: this.zoomOptions.fitPadding,
+            minScale: this.zoomOptions.min,
+            maxScale: this.zoomOptions.maxFit,
         });
         this.paper.setOrigin(originX, originY);
 

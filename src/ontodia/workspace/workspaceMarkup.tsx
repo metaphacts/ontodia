@@ -3,7 +3,7 @@ import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
-import { PaperArea } from '../diagram/paperArea';
+import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 import { ElementLayer } from '../diagram/elementLayer';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
@@ -21,6 +21,8 @@ export interface Props {
     rightPanelInitiallyOpen?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
+    zoomOptions?: ZoomOptions;
+    onZoom?: (scaleX: number, scaleY: number) => void;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -130,9 +132,10 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                         <PaperArea ref={el => this.paperArea = el}
                             model={this.props.view.model}
                             paper={this.props.view.paper}
-                            zoomOptions={{min: 0.2, max: 2, maxFit: 1, fitPadding: 20}}
+                            zoomOptions={this.props.zoomOptions}
                             preventTextSelection={() => this.preventTextSelection()}
-                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}>
+                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
+                            onZoom={this.props.onZoom}>
                             <ElementLayer view={this.props.view} paper={this.props.view.paper} />
                         </PaperArea>
                     </div>
