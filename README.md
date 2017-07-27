@@ -46,6 +46,8 @@ In order to simplify for you the access to our development team and to our growi
 ## Giving Ontodia people credit
 
 If you use Ontodia library in your projects, please provide the link to this repository in your publication and a citation reference to the following paper: 
+
 Mouromtsev, D., Pavlov, D., Emelyanov, Y., Morozov, A., Razdyakonov, D. and Galkin, M., 2015. The Simple Web-based Tool for Visualization and Sharing of Semantic Data and Ontologies. In International Semantic Web Conference (Posters & Demos).
+
 It really helps our team to gain publicity and acknoledgement for our effort.
-Thanks you for being considerate!
+Thank you for being considerate!
