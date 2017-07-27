@@ -37,8 +37,15 @@ Ontodia library is distributed under LGPL-2.1. Commercial license with additiona
 
 Developer documentation is available at [wiki page](https://github.com/ontodia-org/ontodia/wiki).
 
-## Whom do I talk to? ###
+## Whom do I talk to? ##
 
 Feel free to write to [ontodia-people@vismart.biz](mailto:ontodia-people@vismart.biz).
 
 In order to simplify for you the access to our development team and to our growing community, we'd like to invite you to join our Slack channel. Here's the [form](https://goo.gl/forms/mfKFRRNU9ToHxGGM2) to fill out, so we can add you to the list of members. On our slack channel you can get answers to your questions regarding the library and ontodia.org service directly from developers and other users.
+
+## Giving Ontodia people credit
+
+If you use Ontodia library in your projects, please provide the link to this repository in your publication and a citation reference to the following paper: 
+Mouromtsev, D., Pavlov, D., Emelyanov, Y., Morozov, A., Razdyakonov, D. and Galkin, M., 2015. The Simple Web-based Tool for Visualization and Sharing of Semantic Data and Ontologies. In International Semantic Web Conference (Posters & Demos).
+It really helps our team to gain publicity and acknoledgement for our effort.
+Thanks you for being considerate!
