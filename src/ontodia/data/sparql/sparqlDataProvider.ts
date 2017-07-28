@@ -15,8 +15,8 @@ import {
     getLinkTypesInfo,
 } from './responseHandler';
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding, isBlankBinding,
-    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode, isRdfBlank,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
+    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
@@ -35,6 +35,10 @@ export type QueryFunction = (params: {
  */
 export interface SparqlDataProviderOptions {
 
+    /**
+     * If it's true then blank nodes will be present on the paper
+     * By default blank nodes wont be shown
+     */
     acceptBlankNodes?: boolean;
 
     /**
@@ -138,21 +142,19 @@ export class SparqlDataProvider implements DataProvider {
         const blankIds: string[] = [];
 
         const elementIds = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
-        const additionalData: SparqlResponse<ElementBinding> = (
-            this.options.acceptBlankNodes ?
-            BlankNodes.elementInfo(params.elementIds) :
-            null
-        );
+        const blankNodeResponse = this.options.acceptBlankNodes
+            ? BlankNodes.elementInfo(params.elementIds) : undefined;
 
         if (elementIds.length === 0 && this.options.acceptBlankNodes) {
-            return Promise.resolve(getElementsInfo(additionalData, params.elementIds));
+            return Promise.resolve(getElementsInfo(blankNodeResponse, params.elementIds));
         }
 
         const ids = elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
         const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
         const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
 
-        return this.executeSparqlQuery<ElementBinding>(query, {additionalData})
+        return this.executeSparqlQuery<ElementBinding>(query)
+            .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
                 if (this.options.prepareImages) {
@@ -208,20 +210,19 @@ export class SparqlDataProvider implements DataProvider {
     }): Promise<LinkModel[]> {
         const elementIds = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
 
-        const additionalData = (
-            this.options.acceptBlankNodes ?
-            BlankNodes.linksInfo(params.elementIds) :
-            null
-        );
+        const blankNodeResponse = this.options.acceptBlankNodes
+            ? BlankNodes.linksInfo(params.elementIds) : undefined;
 
         if (elementIds.length === 0 && this.options.acceptBlankNodes) {
-            return Promise.resolve(getLinksInfo(additionalData));
+            return Promise.resolve(getLinksInfo(blankNodeResponse));
         }
 
         const ids = elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const linksInfoQuery = resolveTemplate(this.settings.linksInfoQuery, {ids: ids});
         const query = this.settings.defaultPrefix + linksInfoQuery;
-        return this.executeSparqlQuery<LinkBinding>(query, {additionalData}).then(getLinksInfo);
+        return this.executeSparqlQuery<LinkBinding>(query)
+            .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
+            .then(getLinksInfo);
     }
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
@@ -231,11 +232,7 @@ export class SparqlDataProvider implements DataProvider {
         const elementIri = escapeIri(params.elementId);
         const query = this.settings.defaultPrefix
             + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
-        return this.executeSparqlQuery<LinkCountBinding>(query).
-            then(result => {
-                result.results.bindings = result.results.bindings.filter(b => !isRdfBlank(b.link));
-                return result;
-            }).then(getLinksTypesOf);
+        return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 
     linkElements(params: {
@@ -257,14 +254,11 @@ export class SparqlDataProvider implements DataProvider {
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (params.limit === 0) { params.limit = 100; }
-        const filterData = (
-            this.options.acceptBlankNodes ?
-            BlankNodes.filter(params) :
-            null
-        );
+        const blankFiltration = this.options.acceptBlankNodes
+            ? BlankNodes.filter(params) : undefined;
 
-        if (this.options.acceptBlankNodes && Object.keys(filterData.results.bindings).length > 0) {
-            return Promise.resolve(getFilteredData(filterData));
+        if (this.options.acceptBlankNodes && blankFiltration.results.bindings.length > 0) {
+            return Promise.resolve(getFilteredData(blankFiltration));
         }
 
         if (!params.refElementId && params.refElementLinkId) {
@@ -293,10 +287,11 @@ export class SparqlDataProvider implements DataProvider {
         }
 
         const {defaultPrefix, fullTextSearch, dataLabelProperty} = this.settings;
+        const blankNodes = this.options.acceptBlankNodes;
         const query = `${defaultPrefix}
             ${fullTextSearch.prefix}
             
-        SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?blankType ?listHead
+        SELECT ?inst ?class ?label ?blankType ${blankNodes ? BlankNodes.BLANK_NODE_QUERY_PARAMETERS : ''}
         WHERE {
             {
                 SELECT DISTINCT ?inst ${textSearchPart ? '?score' : ''} WHERE {
@@ -310,61 +305,38 @@ export class SparqlDataProvider implements DataProvider {
                 LIMIT ${params.limit} OFFSET ${params.offset}
             }
             ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty})}
-            OPTIONAL {
-                FILTER (ISBLANK(?inst)).
-                {
-                    ?inst ?blankTrgProp ?blankTrg.
-                    ?blankSrc ?blankSrcProp ?inst.
-                    FILTER NOT EXISTS { ?inst rdf:first _:smth1 }.
-                    BIND("blankNode" as ?blankType)
-                } UNION {
-                    ?inst rdf:rest*/rdf:first ?blankTrg.
-                    ?blankSrc ?blankSrcProp ?inst.
-                    _:smth2 rdf:first ?blankTrg.
-                    BIND(?blankSrcProp as ?blankTrgProp)
-                    BIND("listHead" as ?blankType)
-                    FILTER NOT EXISTS { _:smth3 rdf:rest ?inst }.
-                } UNION {
-                    ?listHead rdf:rest* ?inst.
-                    FILTER NOT EXISTS { _:smth4 rdf:rest ?listHead }.
-
-                    ?listHead rdf:rest*/rdf:first ?blankTrg.
-                    ?blankSrc ?blankSrcProp ?listHead.
-                    _:smth5 rdf:first ?blankTrg.
-                    BIND(?blankSrcProp as ?blankTrgProp)
-                    BIND("listHead" as ?blankType)
-                }
-            }
+            ${blankNodes ? BlankNodes.BLANK_NODE_QUERY : ''}
         } ${textSearchPart ? 'ORDER BY DESC(?score)' : ''}
         `;
 
-        return this.executeSparqlQuery<ElementBinding | BlankBinding>(query, {
-            additionalData: filterData,
-        }).then(result => {
-            if (this.options.acceptBlankNodes) {
-                return BlankNodes.updateFilterResults(
-                    result,
-                    (callBackQuery: string) => {
-                        return this.executeSparqlQuery<BlankBinding>(callBackQuery);
-                    },
-                );
-            } else {
-                result.results.bindings = result.results.bindings.filter(b => !isBlankBinding(b));
+        return this.executeSparqlQuery<ElementBinding | BlankBinding>(query)
+            .then(result => {
+                if (this.options.acceptBlankNodes) {
+                    return BlankNodes.updateFilterResults(result, blankQuery =>
+                        this.executeSparqlQuery<BlankBinding>(blankQuery));
+                }
                 return result;
-            }
-        }).then(getFilteredData);
+            }).then(getFilteredData);
     };
 
-    executeSparqlQuery<Binding>(query: string, params?: { additionalData: SparqlResponse<Binding> }) {
+    executeSparqlQuery<Binding>(query: string) {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
-        let promise = executeSparqlQuery<Binding>(this.options.endpointUrl, query, method, this.options.queryFunction);
-        if (params && params.additionalData) {
-            promise = promise.then(result => {
-                result.results.bindings = result.results.bindings.concat(params.additionalData.results.bindings);
-                return result;
-            });
+        return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method, this.options.queryFunction);
+    }
+
+    concatWithBlankNodeResponse<Binding>(
+        response: SparqlResponse<Binding>,
+        blankNodeResponse: SparqlResponse<Binding>,
+    ): SparqlResponse<Binding> {
+        if (!this.options.acceptBlankNodes) {
+            return response;
         }
-        return promise;
+        return {
+            head: { vars: response.head.vars },
+            results: {
+                bindings: blankNodeResponse.results.bindings.concat(response.results.bindings)
+            },
+        };
     }
 
     executeSparqlConstruct(query: string): Promise<Triple[]> {

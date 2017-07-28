@@ -12,9 +12,40 @@ import { executeSparqlQuery } from './sparqlDataProvider';
 
 export const MAX_RECURSION_DEEP = 3;
 
+export const ENCODED_PREFIX = 'sparql-blank:';
+
+export const BLANK_NODE_QUERY_PARAMETERS = '?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?listHead';
+
+export const BLANK_NODE_QUERY = `
+    OPTIONAL {
+        FILTER (ISBLANK(?inst)).
+        {
+            ?inst ?blankTrgProp ?blankTrg.
+            ?blankSrc ?blankSrcProp ?inst.
+            FILTER NOT EXISTS { ?inst rdf:first _:smth1 }.
+            BIND("blankNode" as ?blankType)
+        } UNION {
+            ?inst rdf:rest*/rdf:first ?blankTrg.
+            ?blankSrc ?blankSrcProp ?inst.
+            _:smth2 rdf:first ?blankTrg.
+            BIND(?blankSrcProp as ?blankTrgProp)
+            BIND("listHead" as ?blankType)
+            FILTER NOT EXISTS { _:smth3 rdf:rest ?inst }.
+        } UNION {
+            ?listHead rdf:rest* ?inst.
+            FILTER NOT EXISTS { _:smth4 rdf:rest ?listHead }.
+
+            ?listHead rdf:rest*/rdf:first ?blankTrg.
+            ?blankSrc ?blankSrcProp ?listHead.
+            _:smth5 rdf:first ?blankTrg.
+            BIND(?blankSrcProp as ?blankTrgProp)
+            BIND("listHead" as ?blankType)
+        }
+    }
+`;
+
 export function isEncodedBlank(id: string): boolean {
-    const blankElements = decodeId(id);
-    return blankElements !== undefined;
+    return id.startsWith(ENCODED_PREFIX);
 }
 
 export class QueryExecutor {
@@ -94,7 +125,7 @@ export function processBlankBindings(
         for (const group of groups) {
             for (const blankBinding of group) {
                 if (!blankBinding.label) {
-                    blankBinding.label = createLabel4BlankBinding(blankBinding);
+                    blankBinding.label = createLabelForBlankBinding(blankBinding);
                 }
                 const encodedId4LoadedElement = idsMap[blankBinding.blankTrg.value];
                 if (encodedId4LoadedElement) {
@@ -126,78 +157,38 @@ function updateGroupIds(group: BlankBinding[], newId: string) {
 }
 
 export function encodeId(blankBindings: BlankBinding[]): string {
-
-    function contains(list: BlankBinding[], binding: BlankBinding): BlankBinding {
-        for (const b of list) {
-            if (compareNodes(b, binding)) {
-                return b;
-            }
-        }
-        return null;
-    }
-
-    function updateBinding(targetBinding: BlankBinding, newBinding: BlankBinding) {
-        if (!targetBinding.blankSrc && newBinding.blankSrc) {
-            targetBinding.blankSrc = newBinding.blankSrc;
-        }
-        if (!targetBinding.blankSrcProp && newBinding.blankSrcProp) {
-            targetBinding.blankSrcProp = newBinding.blankSrcProp;
-        }
-        if (
-            targetBinding.label &&
-            targetBinding.label.value === 'anonimous' &&
-            newBinding.label && newBinding.label.value !== 'anonimous'
-        ) {
-            targetBinding.label = newBinding.label;
-        }
-    }
-
-    function compareStrings(a: string, b: string): number {
-        if (a > b) {
-            return 1;
-        } else if (a < b) {
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    const uniqueElements: BlankBinding[] = [];
+    const bindingSet: Dictionary<BlankBinding> = {};
     for (const binding of blankBindings) {
-        const similarElement = contains(uniqueElements, binding);
-        if (!similarElement) {
-            uniqueElements.push(binding);
-        } else {
-            updateBinding(similarElement, binding);
-        }
+        // leave out instance unique ID
+        const {inst, ...exceptInst} = binding;
+        const encodedBinding = JSON.stringify(exceptInst);
+        bindingSet[encodedBinding] = exceptInst as BlankBinding;
     }
 
-    uniqueElements.sort((a: BlankBinding, b: BlankBinding) => {
-        const areTargetsSimilar = compareStrings(a.blankTrg.value, b.blankTrg.value);
-        if (areTargetsSimilar !== 0) {
-            return areTargetsSimilar;
-        }
-        const areTargetTypesSimilar = compareStrings(a.blankTrgProp.value, b.blankTrgProp.value);
-        return areTargetTypesSimilar;
-    });
-
-    return encodeURI(JSON.stringify(uniqueElements).replace(/\s/g, ''));
+    const normalizedBindings = Object.keys(bindingSet).sort().map(key => bindingSet[key]);
+    return ENCODED_PREFIX + encodeURI(JSON.stringify(normalizedBindings));
 }
 
 export function decodeId(id: string): BlankBinding[] {
+    if (!isEncodedBlank(id)) {
+        return undefined;
+    }
     try {
-        const bindings: BlankBinding[] = JSON.parse(decodeURI(id));
-        for (const b of bindings) {
-            b.inst.value = id;
-        }
+        const clearId = id.substring(ENCODED_PREFIX.length, id.length);
+        const parsedBindings: BlankBinding[] = JSON.parse(decodeURI(clearId));
+        const bindings = parsedBindings.map(binding => {
+            // restore instance unique ID
+            binding.inst = {type: 'uri', value: id};
+            return binding;
+        });
         return bindings;
     } catch (error) {
-        /* Silent */
+        /* silent */
         return undefined;
     }
 }
 
-export function createLabel4BlankBinding(bn: BlankBinding): RdfLiteral {
+export function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
     if (bn.blankType.value === 'listHead') {
         return {
             type: 'literal',
@@ -259,7 +250,7 @@ function loadRelatedBlankNodes(
                                 const mergedResults: Dictionary<BlankBinding[]> = {};
 
                                 for (const binding of bindings) {
-                                    binding.label = createLabel4BlankBinding(binding);
+                                    binding.label = createLabelForBlankBinding(binding);
 
                                     const encodedId = idsMap[binding.blankTrg.value];
 
@@ -525,29 +516,6 @@ function getLinkBinding(ids: string[]): LinkBinding[] {
         }
     }
     return bindings;
-}
-
-// todo: improve comparing
-export function compareNodes(nodeA: BlankBinding, nodeB: BlankBinding): boolean {
-    return nodeA.inst.value === nodeB.inst.value &&
-        (
-            nodeA.blankSrc && nodeB.blankSrc && nodeA.blankSrc.value === nodeB.blankSrc.value ||
-            !nodeA.blankSrc || !nodeB.blankSrc
-        ) &&
-        (
-            nodeA.blankSrcProp && nodeB.blankSrcProp && nodeA.blankSrcProp.value === nodeB.blankSrcProp.value ||
-            !nodeA.blankSrcProp || !nodeB.blankSrcProp
-        ) &&
-        nodeA.blankTrg.value === nodeB.blankTrg.value &&
-        nodeA.blankTrgProp.value === nodeB.blankTrgProp.value &&
-        (
-            nodeA.propType && nodeB.propType && nodeA.propType.value === nodeB.propType.value ||
-            !nodeA.propType && !nodeB.propType
-        ) &&
-        (
-            nodeA.class && nodeB.class && nodeA.class.value === nodeB.class.value ||
-            !nodeA.class && !nodeB.class
-        );
 }
 
 function getLinkCountBinding(id: string): LinkCountBinding[] {
