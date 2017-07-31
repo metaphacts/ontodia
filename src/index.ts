@@ -17,4 +17,5 @@ export { Element, Link } from './ontodia/diagram/elements';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
+export * from './ontodia/viewUtils/crossOriginImage';
 export { Workspace, WorkspaceProps, WorkspaceLanguage } from './ontodia/workspace/workspace';
