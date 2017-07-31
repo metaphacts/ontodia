@@ -1,5 +1,5 @@
 import {
-    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding,
+    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding, isRdfIri, isRdfBlank,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
 } from './sparqlModels';
 import {
@@ -13,6 +13,7 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
     const treeNodes = createClassMap(response.results.bindings);
     // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
     for (const nodeId in treeNodes) {
+        if (!treeNodes.hasOwnProperty(nodeId)) { continue; }
         const treeNode = treeNodes[nodeId];
         if (treeNode.parent) {
             const parent = treeNodes[treeNode.parent];
@@ -28,11 +29,12 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
     return tree;
 }
 
-function createClassMap(sNodes: ClassBinding[]) : Dictionary<HierarchicalClassModel> {
-    let treeNodes: Dictionary<HierarchicalClassModel> = {};
+function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassModel> {
+    const treeNodes: Dictionary<HierarchicalClassModel> = {};
     for (const sNode of sNodes) {
+        if (!isRdfIri(sNode.class)) { continue; }
         const sNodeId: string = sNode.class.value;
-        var node = treeNodes[sNodeId];
+        let node = treeNodes[sNodeId];
         if (node) {
             if (sNode.label) {
                 const label = node.label;
@@ -42,7 +44,7 @@ function createClassMap(sNodes: ClassBinding[]) : Dictionary<HierarchicalClassMo
                 label.values.push(getLocalizedString(sNode.label));
             }
             if (!node.parent && sNode.parent) {
-                node.parent = sNode.parent.value
+                node.parent = sNode.parent.value;
             }
         } else {
             node = getClassModel(sNode);
@@ -194,7 +196,7 @@ export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[]
 }
 
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
-    const sparqlLinkTypes = response.results.bindings;
+    const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
@@ -203,7 +205,7 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {
-        if (sInst.inst.type === 'literal') {
+        if (!isRdfIri(sInst.inst) && !isRdfBlank(sInst.inst)) {
             continue;
         }
         if (!instancesMap[sInst.inst.value]) {
@@ -295,7 +297,7 @@ export function getClassModel(node: ClassBinding): HierarchicalClassModel {
         children: [],
         label: { values: [getLocalizedString(node.label, node.class.value)] },
         count: getInstCount(node.instcount),
-        parent: node.parent ? node.parent.value : undefined
+        parent: node.parent ? node.parent.value : undefined,
     };
 }
 

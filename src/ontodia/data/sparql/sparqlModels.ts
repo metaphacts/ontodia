@@ -1,7 +1,12 @@
-export type RdfNode = RdfIri | RdfLiteral;
+export type RdfNode = RdfIri | RdfLiteral | RdfBlank;
 
 export interface RdfIri {
     type: 'uri';
+    value: string;
+}
+
+export interface RdfBlank {
+    type: 'bnode';
     value: string;
 }
 
@@ -18,8 +23,39 @@ export interface Triple {
     object: RdfNode;
 }
 
+export function isRdfBlank(e: RdfNode): e is RdfBlank {
+    return e && e.type === 'bnode';
+}
+
+export function isRdfIri(e: RdfNode): e is RdfIri {
+    return e && e.type === 'uri';
+}
+
+export function isRdfLiteral(e: RdfNode): e is RdfLiteral {
+    return e && e.type === 'literal';
+}
+
+export interface BlankBinding extends ElementBinding {
+    blankType: {
+        value: 'listHead' | 'blankNode',
+    };
+    blankTrgProp: RdfNode;
+    blankTrg: RdfNode;
+    blankSrc?: RdfNode;
+    blankSrcProp?: RdfNode;
+    newInst?: RdfIri | RdfBlank;
+}
+
+export function isBlankBinding(binding: ElementBinding | BlankBinding): binding is BlankBinding {
+    const blank = binding as BlankBinding;
+    return blank.blankTrgProp !== undefined
+        || blank.blankTrg !== undefined
+        || blank.blankSrcProp !== undefined
+        || blank.blankSrc !== undefined;
+}
+
 export interface ElementBinding {
-    inst: RdfLiteral;
+    inst: RdfIri | RdfBlank;
     class?: RdfLiteral;
     label?: RdfLiteral;
     propType?: RdfLiteral;
@@ -39,13 +75,13 @@ export interface PropertyBinding {
 }
 
 export interface LinkBinding {
-    source: RdfIri;
+    source: RdfIri | RdfBlank;
     type: RdfIri;
-    target: RdfIri;
+    target: RdfIri | RdfBlank;
 }
 
 export interface LinkCountBinding {
-    link: RdfIri;
+    link: RdfIri | RdfBlank;
     inCount: RdfLiteral;
     outCount: RdfLiteral;
 }
