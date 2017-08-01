@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import { CrossOriginImage } from '../viewUtils/crossOriginImage';
+import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 
-import { TemplateProps } from './props';
+import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-default-template';
 
@@ -20,12 +20,12 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         if (props.propsAsList && props.propsAsList.length > 0) {
             propertyTable = <div className='ontodia-default-template_body_expander_property-table'>
                 {props.propsAsList.map(prop => {
-                    const values = prop.property.values.map(({text}, index) =>
+                    const values = prop.property.values.map(({text}, index) => (
                         <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                             key={index} title={text}>
                             {text}
-                        </div>,
-                    );
+                        </div>
+                    ));
                     return (
                         <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
                             <div title={prop.name + ' (' + prop.id + ')'}
