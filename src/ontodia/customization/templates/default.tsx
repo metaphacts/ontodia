@@ -85,3 +85,4 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         );
     }
 }
+export default DefaultTemplate;

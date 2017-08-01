@@ -2,26 +2,38 @@ import * as React from 'react';
 import { Component } from 'react';
 
 import { TemplateProps } from '../props';
+import { getProperty } from './utils';
 
-export class LeftBarTemplate extends Component<TemplateProps, {}> {
+const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
+
+export class OrganizationTemplate extends Component<TemplateProps, {}> {
     render() {
-        const {color, imgUrl, icon, types, label, isExpanded, iri, propsAsList} = this.props;
+        const {color, imgUrl, icon, types, label, props, isExpanded, iri, propsAsList} = this.props;
         return (
-            <div className='ontodia-left-bar-template'
-                style={{backgroundColor: color, borderColor: color}}>
-                <div className='ontodia-left-bar-template_body' style={{borderLeftColor: color}}>
-                    {imgUrl ? <img src={imgUrl} className='ontodia-left-bar-template_body__image'/> : null}
-                    <div className='ontodia-left-bar-template_body_type-line'>
-                        <div className={`${icon} ontodia-left-bar-template_body_type-line__icon`}
-                            aria-hidden='true' style={{color: color}}>
-                        </div>
-                        <div title={types} className='ontodia-left-bar-template_body_type-line__type'>
-                            {types}
-                        </div>
+            <div className='ontodia-organization-template' style={{borderColor: color}}>
+                <div className='ontodia-organization-template_body'>
+                    <div
+                        className={icon + ' ontodia-organization-template_body__logo'}
+                        aria-hidden='true'
+                        style={{color: color}}>
                     </div>
-                    <span title={label} className='ontodia-left-bar-template_body__label'>
-                        {label}
-                    </span>
+                    <div className='ontodia-organization-template_body_data'>
+                        <div title={types} className='ontodia-organization-template_body_data__types'>
+                            Organization
+                        </div>
+                        {getProperty(props, FOAF_NAME) ? (
+                            <label title={getProperty(props, FOAF_NAME)}
+                                className='ontodia-organization-template_body_data__label'>
+
+                                {getProperty(props, FOAF_NAME)}
+                            </label>
+                        ) : (
+                            <label title={label} className='ontodia-organization-template_body_data__label'>
+                                {label}
+                            </label>
+                        )}  
+                    </div>
+                    <div className='ontodia-default-template__properties'>
                     {isExpanded ? (
                         <div className='ontodia-default-template_body_expander'>
                             <div className='ontodia-default-template_body_expander__iri_label'>
@@ -34,7 +46,8 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                             </div>
                         </div>
                     ) : null}
-                    {isExpanded ? <hr className='ontodia-default-template_body_expander__hr' /> : null}
+
+                    {isExpanded ? (<hr className='ontodia-default-template_body_expander__hr'/>) : null}
                     {isExpanded ? (
                         propsAsList.length ? (
                             <div className='ontodia-default-template_body_expander_property-table'>
@@ -57,9 +70,10 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                             </div>
                         ) : 'no properties'
                     ) : null}
+                    </div>  
                 </div>
             </div>
         );
     }
 }
-export default LeftBarTemplate;
+export default OrganizationTemplate;

@@ -164,8 +164,7 @@ This change fixes many issues with scrolling and resizing diagram area.
 - Ability to filter link types in Connections panel by name.
 
 ### Changed
-- Custom SVG layout of elements replaced with HTML-based one with React and
-Handlebars as template engines with ability to register custom templates.
+- Custom SVG layout of elements replaced with HTML-based one with React as template engines with ability to register custom templates.
 - Faster exporting diagram as SVG/PNG.
 - Replaced bundled typings for backbone and react with @types/*
 - Make Connections panel intially hidden.

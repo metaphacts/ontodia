@@ -12,7 +12,7 @@ export interface CustomTypeStyle {
     icon?: string;
 }
 
-export type ElementTemplate = ComponentClass<TemplateProps> | string;
+export type ElementTemplate = ComponentClass<TemplateProps>;
 
 export interface TemplateProps {
     types: string;

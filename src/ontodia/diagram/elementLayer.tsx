@@ -7,7 +7,6 @@ import { hcl } from 'd3-color';
 import { Property } from '../data/model';
 
 import { TemplateProps } from '../customization/props';
-import { HandlebarsTemplate } from '../customization/handlebarsTemplate';
 
 import { Element } from './elements';
 import { uri2name } from './model';
@@ -146,11 +145,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
                 node.setAttribute('model-id', model.id);
                 onRender(model, node);
             }}>
-            {typeof template === 'string'
-                ? <HandlebarsTemplate template={template}
-                    templateProps={this.state.templateProps}
-                    onLoad={() => onResize(model, findDOMNode(this) as HTMLDivElement)} />
-                : React.createElement(template, this.state.templateProps)}
+            {React.createElement(template, this.state.templateProps)}
         </div>;
     }
 

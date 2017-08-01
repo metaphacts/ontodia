@@ -89,3 +89,4 @@ export class PersonTemplate extends Component<TemplateProps, {}> {
         );
     }
 }
+export default PersonTemplate;

@@ -35,7 +35,6 @@
   },
   "dependencies": {
     "d3-color": "~1.0.2",
-    "handlebars": "~4.0.5",
     "intro.js": "1.1.1",
     "jointjs": "0.9.10",
     "jquery": "~2.2.1",
