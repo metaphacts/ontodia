@@ -18,6 +18,13 @@
             right: 15px;
             padding: 2px 10px;
         }
+        .modal-body {
+            display: flex;
+            justify-content: center;
+            align-content: center;
+            background: black;
+            padding: 0;
+        }
     </style>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
     <body>
@@ -34,6 +41,24 @@
             <option value="/composite.html">Composite</option>
             <option value="/wikidataGraph.html">WikidataGraph</option>
         </select>
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" onclick="removeClip" class="close closeButton" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">LOD Tutorial</h4>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+                        <div id="tutorialIFrame"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button data-dismiss="modal" class='btn btn-primary closeButton' type="button">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <script>
             document.querySelector('.demoSelector').value = window.location.pathname;
         </script>
@@ -48,6 +73,36 @@
         <!-- Latest compiled and minified JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
             integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous">
+        </script>
+        <script type="text/javascript">
+            // 2. This code loads the IFrame Player API code asynchronously.
+            var tag = document.createElement('script');
+
+            tag.src = "https://www.youtube.com/iframe_api";
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+            // 3. This function creates an <iframe> (and YouTube player)
+            //    after the API code downloads.
+            var player;
+            function onYouTubeIframeAPIReady() {
+                player = new YT.Player('tutorialIFrame', {
+                    height: '315',
+                    width: '560',
+                    videoId: 'TKYOm89Ejn4',
+                });
+            }
+
+
+            if ($('.demoSelector')[0].value === '/composite.html') {
+                setTimeout(function () {
+                    $('#myModal').modal('show');
+                }, 3000);
+            }
+
+            $('.closeButton').click(function removeClip () {
+                player.stopVideo();
+            });
         </script>
     </body>
 </html>
