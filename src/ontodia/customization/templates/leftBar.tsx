@@ -1,16 +1,25 @@
 import * as React from 'react';
 import { Component } from 'react';
 
+import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
+
 import { TemplateProps } from '../props';
+
+const CLASS_NAME = 'ontodia-left-bar-template';
 
 export class LeftBarTemplate extends Component<TemplateProps, {}> {
     render() {
         const {color, imgUrl, icon, types, label, isExpanded, iri, propsAsList} = this.props;
         return (
-            <div className='ontodia-left-bar-template'
+            <div className={CLASS_NAME}
                 style={{backgroundColor: color, borderColor: color}}>
                 <div className='ontodia-left-bar-template_body' style={{borderLeftColor: color}}>
-                    {imgUrl ? <img src={imgUrl} className='ontodia-left-bar-template_body__image'/> : null}
+                    {imgUrl ? (
+                        <CrossOriginImage className={`${CLASS_NAME}__picture`}
+                            style={{borderColor: color}}
+                            imageProps={{src: imgUrl, className: `${CLASS_NAME}__picture-image`}}
+                        />
+                    ) : null}
                     <div className='ontodia-left-bar-template_body_type-line'>
                         <div className={`${icon} ontodia-left-bar-template_body_type-line__icon`}
                             aria-hidden='true' style={{color: color}}>
@@ -19,9 +28,7 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                             {types}
                         </div>
                     </div>
-                    <span title={label} className='ontodia-left-bar-template_body__label'>
-                        {label}
-                    </span>
+                    <span title={label} className={`${CLASS_NAME}__name`}>{label}</span>
                     {isExpanded ? (
                         <div className='ontodia-default-template_body_expander'>
                             <div className='ontodia-default-template_body_expander__iri_label'>
@@ -62,4 +69,3 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
         );
     }
 }
-export default LeftBarTemplate;

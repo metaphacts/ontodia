@@ -1,37 +1,58 @@
-.ontodia-person-container {
+.ontodia-person-template {
   max-width: 400px;
   float: left;
-}
 
-.ontodia-person-template {
-  border-radius: 10px;
-  border-style: solid;
-  border-width: 1px;
-}
+  &__main-part {
+    border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
+  }
 
-.ontodia-person-template_body {
-  margin-left: 13px;
-  border-radius: 3px;
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
-  border-left-style: solid;
-  border-left-width: 1px;
-  padding: 3px 12px 3px 0px;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-}
+  &__body {
+    margin-left: 13px;
+    border-radius: 3px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-left-style: solid;
+    border-left-width: 1px;
+    padding: 3px 12px 3px 0px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+  }
 
-.ontodia-person-template_body_main-part__label {
-  font-size: 19px;
-  white-space: nowrap;
-  font-weight: 100;
-  margin-bottom: -7px;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  &__thumbnail {
+    position: inherit !important;
+    font-size: x-large;
+    margin: 5px 8px 5px 8px;
+    border: 1px solid;
+    flex-grow: 0;
+    height: 40px;
+  }
+  &__thumbnail-image {
+    height: 100%;
+  }
+
+  &__name {
+    font-size: 19px;
+    white-space: nowrap;
+    font-weight: 100;
+    margin-bottom: -7px;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__photo {
+    border-bottom: 1px solid;
+  }
+  &__photo-image {
+    width: 100%;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+  }
 }
 
 .ontodia-person-template_body_main-part_type-container {
@@ -59,19 +80,6 @@
   border: 1px solid;
   /*padding: 5px 6px;*/
   flex-grow: 0;
-}
-
-.ontodia-person-template_body_photo {
-  position: inherit !important;
-  font-size: x-large;
-  margin: 5px 8px 5px 8px;
-  border: 1px solid;
-  flex-grow: 0;
-  height: 40px;
-}
-
-.ontodia-person-template_body_photo__image {
-  height: 100%;
 }
 
 .ontodia-person-template_body_main-part {

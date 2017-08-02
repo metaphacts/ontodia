@@ -1,14 +1,18 @@
 import * as React from 'react';
 import { Component } from 'react';
 
+import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
+
 import { TemplateProps } from '../props';
+
+const CLASS_NAME = 'ontodia-big-icon-template';
 
 export class BigIconTemplate extends Component<TemplateProps, {}> {
     render() {
         const {color, imgUrl, icon, types, label, isExpanded, iri, propsAsList} = this.props;
         return (
-            <div className='ontodia-big-icon-container'>
-                <div className='ontodia-big-icon-template'
+            <div className={CLASS_NAME}>
+                <div className={`${CLASS_NAME}__main-part`}
                     style={{backgroundColor: color, borderColor: color}}>
                     <div className='ontodia-big-icon-template_body' style={{borderLeftColor: color}}>
                         <div style={{flexGrow: 1, textOverflow: 'ellipsis', overflow: 'hidden'}}>
@@ -27,9 +31,9 @@ export class BigIconTemplate extends Component<TemplateProps, {}> {
                 {isExpanded ? (
                     <div className='ontodia-big-icon-template_property' style={{borderColor: color}}>
                         {imgUrl ? (
-                            <img src={imgUrl}
-                                className='ontodia-big-icon-template_property__image'
+                            <CrossOriginImage className={`${CLASS_NAME}__picture`}
                                 style={{borderColor: color}}
+                                imageProps={{src: imgUrl, className: `${CLASS_NAME}__picture-image`}}
                             />
                         ) : null}
                         <div className='ontodia-big-icon-template_property_content'>
@@ -69,5 +73,3 @@ export class BigIconTemplate extends Component<TemplateProps, {}> {
         </div>);
     }
 }
-export default BigIconTemplate;
-

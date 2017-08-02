@@ -7,20 +7,22 @@ import { getProperty } from './utils';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
+const CLASS_NAME = 'ontodia-person-template';
+
 export class PersonTemplate extends Component<TemplateProps, {}> {
     render() {
         const {color, imgUrl, icon, types, label, props, isExpanded, iri, propsAsList} = this.props;
         return (
-            <div className='ontodia-person-container'>
-                <div className='ontodia-person-template'
+            <div className={CLASS_NAME}>
+                <div className={`${CLASS_NAME}__main-part`}
                     style={{backgroundColor: color, borderColor: color}}>
-                    <div className='ontodia-person-template_body' style={{borderLeftColor: color}}>
+                    <div className={`${CLASS_NAME}__body`} style={{borderLeftColor: color}}>
                         {imgUrl ? (
-                            <CrossOriginImage className='ontodia-person-template_body_photo'
+                            <CrossOriginImage className={`${CLASS_NAME}__thumbnail`}
                                 aria-hidden='true' style={{color: color}}
                                 imageProps={{
                                     src: imgUrl,
-                                    className: 'ontodia-person-template_body_photo__image',
+                                    className: `${CLASS_NAME}__thumbnail-image`,
                                     style: {borderColor: color},
                                 }}
                             />
@@ -34,14 +36,11 @@ export class PersonTemplate extends Component<TemplateProps, {}> {
                                 <div className='ontodia-person-template_body_main-part_type-container__type'>Person</div>
                             </div>
                             {getProperty(props, FOAF_NAME) ? (
-                                <label title={getProperty(props, FOAF_NAME)}
-                                    className='ontodia-person-template_body_main-part__label'>
+                                <span className={`${CLASS_NAME}__name`} title={getProperty(props, FOAF_NAME)}>
                                     {getProperty(props, FOAF_NAME)}
-                                </label>
+                                </span>
                             ) : (
-                                <label title={label} className='ontodia-person-template_body_main-part__label'>
-                                    {label}
-                                </label>
+                                <span className={`${CLASS_NAME}__name`} title={label}>{label}</span>
                             )}
                         </div>
                     </div>
@@ -49,8 +48,9 @@ export class PersonTemplate extends Component<TemplateProps, {}> {
                 {isExpanded ? (
                     <div className='ontodia-person-template_property' style={{borderColor: color}}>
                         {imgUrl ? (
-                            <img className='ontodia-person-template_property__image'
-                                src={imgUrl} style={{borderColor: color}} />
+                            <CrossOriginImage className={`${CLASS_NAME}__photo`}
+                                style={{borderColor: color}}
+                                imageProps={{src: imgUrl, className: `${CLASS_NAME}__photo-image`}} />
                         ) : null}
                         <div className='ontodia-person-template_property_content'>
                             <div className='ontodia-person-template_property_content_iri-line'>
@@ -89,4 +89,3 @@ export class PersonTemplate extends Component<TemplateProps, {}> {
         );
     }
 }
-export default PersonTemplate;

@@ -10,10 +10,9 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
     render() {
         const props = this.props;
 
-        const imageStyle: React.CSSProperties = {borderBottomColor: props.color};
         const image = props.imgUrl ? (
             <CrossOriginImage className={`${CLASS_NAME}__thumbnail`}
-                imageProps={{src: props.imgUrl, style: imageStyle}} />
+                imageProps={{src: props.imgUrl}} />
         ) : undefined;
 
         let propertyTable: React.ReactElement<any>;
@@ -85,4 +84,3 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
         );
     }
 }
-export default DefaultTemplate;

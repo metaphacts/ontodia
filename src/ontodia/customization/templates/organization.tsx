@@ -6,11 +6,13 @@ import { getProperty } from './utils';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
+const CLASS_NAME = 'ontodia-organization-template';
+
 export class OrganizationTemplate extends Component<TemplateProps, {}> {
     render() {
-        const {color, imgUrl, icon, types, label, props, isExpanded, iri, propsAsList} = this.props;
+        const {color, icon, types, label, props, isExpanded, iri, propsAsList} = this.props;
         return (
-            <div className='ontodia-organization-template' style={{borderColor: color}}>
+            <div className={CLASS_NAME} style={{borderColor: color}}>
                 <div className='ontodia-organization-template_body'>
                     <div
                         className={icon + ' ontodia-organization-template_body__logo'}
@@ -22,16 +24,12 @@ export class OrganizationTemplate extends Component<TemplateProps, {}> {
                             Organization
                         </div>
                         {getProperty(props, FOAF_NAME) ? (
-                            <label title={getProperty(props, FOAF_NAME)}
-                                className='ontodia-organization-template_body_data__label'>
-
+                            <span title={getProperty(props, FOAF_NAME)} className={`${CLASS_NAME}__name`}>
                                 {getProperty(props, FOAF_NAME)}
-                            </label>
+                            </span>
                         ) : (
-                            <label title={label} className='ontodia-organization-template_body_data__label'>
-                                {label}
-                            </label>
-                        )}  
+                            <span title={label} className={`${CLASS_NAME}__name`}>{label}</span>
+                        )}
                     </div>
                     <div className='ontodia-default-template__properties'>
                     {isExpanded ? (
@@ -76,4 +74,3 @@ export class OrganizationTemplate extends Component<TemplateProps, {}> {
         );
     }
 }
-export default OrganizationTemplate;

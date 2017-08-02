@@ -1,15 +1,15 @@
 import { TemplateResolver } from '../props';
 
-import LeftBarTemplate from './leftBar';
-import PersonTemplate from './person';
-import BigIconTemplate from './bigIcon';
-import OrganizationTemplate from './organization';
+import { BigIconTemplate } from './bigIcon';
+import { LeftBarTemplate } from './leftBar';
+import { OrganizationTemplate } from './organization';
+import { PersonTemplate } from './person';
 
 export * from './default';
-export * from './leftBar';
-export * from './person';
 export * from './bigIcon';
+export * from './leftBar';
 export * from './organization';
+export * from './person';
 
 export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {

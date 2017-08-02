@@ -1,7 +1,16 @@
 .ontodia-organization-template {
   border: 2px solid;
 	max-width: 400px;
-	border-radius: 2px;
+  border-radius: 2px;
+  
+  &__name {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0px;
+    font-weight: bold;
+  }
 
   &__properties {
     width: 100%;
@@ -42,11 +51,4 @@
   text-overflow: ellipsis;
   font-size: 12px;
   font-weight: 100;
-}
-
-.ontodia-organization-template_body_data__label {
-  white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-  margin-bottom: 0px;
 }
