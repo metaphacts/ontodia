@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { CrossOriginImage } from '../viewUtils/crossOriginImage';
+
 import { TemplateProps } from './props';
 
 const CLASS_NAME = 'ontodia-default-template';
@@ -10,9 +12,8 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
 
         const imageStyle: React.CSSProperties = {borderBottomColor: props.color};
         const image = props.imgUrl ? (
-            <div className={`${CLASS_NAME}__thumbnail`}>
-                <img src={props.imgUrl} style={imageStyle} />
-            </div>
+            <CrossOriginImage className={`${CLASS_NAME}__thumbnail`}
+                imageProps={{src: props.imgUrl, style: imageStyle}} />
         ) : undefined;
 
         let propertyTable: React.ReactElement<any>;
@@ -23,7 +24,7 @@ export class DefaultTemplate extends React.Component<TemplateProps, {}> {
                         <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                             key={index} title={text}>
                             {text}
-                        </div>
+                        </div>,
                     );
                     return (
                         <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
