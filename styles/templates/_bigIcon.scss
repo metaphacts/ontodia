@@ -1,12 +1,20 @@
-.ontodia-big-icon-container {
-  max-width: 400px;
-  float: left;
-}
-
 .ontodia-big-icon-template {
-  border-radius: 10px;
-  border-style: solid;
-  border-width: 1px;
+  max-width: 400px;
+
+  &__main-part {
+    border-radius: 10px;
+    border-style: solid;
+    border-width: 1px;
+  }
+
+  &__picture {
+    border-bottom: 1px solid;
+  }
+  &__picture-image {
+    width: 100%;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+  }
 }
 
 .ontodia-big-icon-template_body {
@@ -65,13 +73,6 @@
   background-color: white;
   margin-top: 5px;
   border: 1px solid;
-}
-
-.ontodia-big-icon-template_property__image {
-  width: 100%;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-  border-bottom: 1px solid;
 }
 
 .ontodia-big-icon-template_property_content {

@@ -24,9 +24,6 @@ module.exports = {
             // Backbone provided by joint.js, to prevent module duplication which
             // causes errors when Ontodia uses Backbone models from joint.js
             'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
-            // awful and temporary workaround to reference browser bundle instead of node's, see:
-            // https://github.com/wycats/handlebars.js/issues/1102
-            'handlebars': path.join(npmDir, 'handlebars', 'dist', 'handlebars.min.js'),
         },
     },
     module: {

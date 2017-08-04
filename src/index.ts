@@ -3,8 +3,7 @@ require('intro.js/introjs.css');
 require('../styles/main.scss');
 
 export * from './ontodia/customization/props';
-export * from './ontodia/customization/defaultTemplate';
-export * from './ontodia/customization/templates/stringTemplates';
+export * from './ontodia/customization/templates';
 export * from './ontodia/data/model';
 export * from './ontodia/data/provider';
 export * from './ontodia/data/demo/provider';

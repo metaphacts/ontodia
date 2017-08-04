@@ -16,8 +16,7 @@ import {
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
-import { DefaultTemplate } from '../customization/defaultTemplate';
-import { DefaultTemplateBundle } from '../customization/templates/defaultTemplates';
+import { DefaultTemplate, DefaultTemplateBundle } from '../customization/templates';
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu } from '../viewUtils/connectionsMenu';
