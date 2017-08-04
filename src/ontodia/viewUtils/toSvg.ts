@@ -44,33 +44,28 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 
     const nodes = svgClone.querySelectorAll('img');
-    const convertImagesStartingAt = (index: number, done: () => void) => {
-        if (index >= nodes.length) {
-            done();
-            return;
-        }
-        const img = nodes[index];
+    const images: HTMLImageElement[] = [];
+    foreachNode(nodes, node => images.push(node));
+
+    const convertingImages = Promise.all(images.map(img => {
         const {width, height} = imageBounds[nodeRelativePath(svgClone, img)];
         img.setAttribute('width', width.toString());
         img.setAttribute('height', height.toString());
-        if (opt.convertImagesToDataUris) {
-            joint.util.imageToDataUri(img.src, (err, dataUri) => {
-                // check for empty svg data URI which happens when mockJointXHR catches an exception
-                if (dataUri && dataUri !== 'data:image/svg+xml,') { img.src = dataUri; }
-                convertImagesStartingAt(index + 1, done);
-            });
-        } else {
-            convertImagesStartingAt(index + 1, done);
+        if (!opt.convertImagesToDataUris) {
+            return Promise.resolve();
         }
-    };
-
-    return new Promise<void>(resolve => {
-        const mock = mockJointXHR();
-        convertImagesStartingAt(0, () => {
-            mock.dispose();
-            resolve();
+        return exportAsDataUri(img).then(dataUri => {
+            // check for empty svg data URI which happens when mockJointXHR catches an exception
+            if (dataUri && dataUri !== 'data:image/svg+xml,') {
+                img.src = dataUri;
+            }
+        }).catch(err => {
+            console.warn('Failed to export image: ' + img.src);
+            console.warn(err);
         });
-    }).then(() => {
+    }));
+
+    return convertingImages.then(() => {
         // workaround to include only ontodia-related stylesheets
         const cssTexts = extractCSSFromDocument(text => text.indexOf('.ontodia') >= 0);
 
@@ -162,38 +157,48 @@ function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
     return {svgClone, imageBounds};
 }
 
-/**
- * Mock XMLHttpRequest for joint.util.imageToDataUri as workaround to uncatchable
- * DOMException in synchronous xhr.send() call when Joint trying to load SVG image.
- * 
- * @param onSyncSendError callback called on error
- */
-function mockJointXHR(onSyncSendError?: (e: any) => void): { dispose: () => void } {
-    try {
-        const oldXHR = XMLHttpRequest;
-        XMLHttpRequest = class {
-            xhr = new oldXHR();
-            responseText = '';
-            open(...args: any[]) { this.xhr.open.apply(this.xhr, args); }
-            send(...args: any[]) {
-                try {
-                    this.xhr.send.apply(this.xhr, args);
-                } catch (e) {
-                    if (onSyncSendError) { onSyncSendError(e); }
-                }
-            }
-        } as any;
-        let disposed = false;
-        const dispose = () => {
-            if (disposed) { return; }
-            disposed = true;
-            XMLHttpRequest = oldXHR;
-        };
-        return {dispose};
-    } catch (e) {
-        // do nothing if failed to mock XHR
-        return {dispose: () => { /* nothing */ }};
+function exportAsDataUri(original: HTMLImageElement): Promise<string> {
+    const url = original.src;
+    if (!url || url.startsWith('data:')) {
+        return Promise.resolve(url);
     }
+
+    return loadCrossOriginImage(original.src).then(image => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0);
+
+        // match extensions like htttp://example.com/images/foo.JPG&w=200
+        const extensionMatch = url.match(/\.([a-zA-Z0-9]+)[^\.a-zA-Z0-9]?[^\.]*$/);
+        const extension = extensionMatch ? extensionMatch[1].toLowerCase() : 'png';
+
+        try {
+            const mimeType = 'image/' + (extension === 'jpg' ? 'jpeg' : extension);
+            const dataUri = canvas.toDataURL(mimeType);
+            return Promise.resolve(dataUri);
+        } catch (e) {
+            if (extension !== 'svg') {
+                return Promise.reject('Failed to convert image to data URI');
+            }
+            return fetch(url)
+                .then(response => response.text())
+                .then(svg => svg.length > 0 ? ('data:image/svg+xml,' + encodeURIComponent(svg)) : '');
+        }
+    });
+}
+
+function loadCrossOriginImage(src: string): Promise<HTMLImageElement> {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    const promise = new Promise<HTMLImageElement>((resolve, reject) => {
+        image.onload = () => resolve(image);
+        image.onerror = ev => reject(ev.error);
+    });
+    image.src = src;
+    return promise;
 }
 
 function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T) => void) {
