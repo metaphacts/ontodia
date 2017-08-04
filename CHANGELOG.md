@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+### [0.5.1] - 2017-08-04
+### Fixed
+- No element thumbnails issue when trying to export to PNG even with
+CORS-enabled images.
+
 ## [0.5.0] - 2017-08-04
 ### Added
 - Blank nodes and RDF lists support to `SparqlDataProvider`.
@@ -208,7 +213,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
 [0.3.8]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...v0.3.8
