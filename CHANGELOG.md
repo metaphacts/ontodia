@@ -5,10 +5,28 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
-### Breaking changes
-- Removed `labelProperty` option and `refElement*` settings from
+
+## [0.5.0] - 2017-08-04
+### Added
+- Blank nodes and RDF lists support to `SparqlDataProvider`.
+- Zoom customization props and event.
+
+### Changed
+- Try to load images using crossorigin='anonymous' if possible to be able to
+export diagram with pictures to PNG.
+
+### Fixed
+- Hide save button if `onSaveDiagram` callback isn't provided in props.
+- Fix paper initialization error in Firefox.
+- Wrong exported file extension when click on "Export PNG" after "Export SVG"
+or vice versa.
+
+### Removed
+- **[Breaking]** `labelProperty` option and `refElement*` settings from
 `SparqlDataProvider`. Use `dataLabelProperty` setting and override
 `createRefQueryPart()` instead.
+- **[Breaking]** `handlebars` dependency with ability to display Handlebars-based
+element templates; now every element template is React-based.
 
 ## [0.4.1] - 2017-07-18
 ### Added
@@ -20,6 +38,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `centerTo()` and language props to Workspace.
 
 ### Changed
+- **[Breaking]** `DiagramModel.requestElementData()` don't requests for links.
+- **[Breaking]** Connected links data cleared from model on element remove.
+- **[Breaking]** Replaced `WikidataDataProvider` with extensive options for `SparqlDataProvider`
+- **[Breaking]** Introduced `linkElements()` and link direction in `DataProvider`.
+- **[Breaking]** Simplified `GraphBuilder` interface.
 - Replaced `foreignObject`-based element rendering with overlayed
 HTML elements.
 - Filter non-left mouse button clicks on paper.
@@ -43,18 +66,14 @@ source and target is the same node.
 - Forward outer React context to element templates.
 - Support SPARQL endpoint URLs with query params.
 
-### Breaking changes
-- `DiagramModel.requestElementData()` don't requests for links.
-- Connected links data cleared from model on element remove.
-- Replaced `WikidataDataProvider` with extensive options for `SparqlDataProvider`
-- Introduced `linkElements()` and link direction in `DataProvider`.
-- Simplified `GraphBuilder` interface.
-
 ## [0.3.8] - 2017-01-24
 ### Added
 - Saving to/loading from LocalStorage examples.
 
 ### Changed
+- **[Breaking]** Replaced DiagramModel.importLayout()'s `preloadedLinks`
+parameter with `validateLinks`: when specified, marks all links from layout as
+`layoutOnly` and requests diagram links at the end of importing process.
 - Diagram content now centered at paper after performing force layout.
 - Updated to recent react typings and fixed relevant errors
 
@@ -63,14 +82,11 @@ source and target is the same node.
 - Placement of newly added from Connections popup elements.
 - Lost links geometry when importing a layout.
 
-### Breaking changes
-- Replaced DiagramModel.importLayout()'s `preloadedLinks` parameter with
-`validateLinks`: when specified, marks all links from layout as `layoutOnly`
-and requests diagram links at the end of importing process.
-- Removed non-expiring "cache" `DiagramModel.elements`, replaced by
+### Removed
+- **[Breaking]** Non-expiring "cache" `DiagramModel.elements`, replaced by
 `cells`/`elements`/`links`/`getElement` accessors.
-- Removed `presentOnDiagram` property from Element: now element is present
-if it's in a graph, otherwise it's considered to be absent.
+- **[Breaking]** `presentOnDiagram` property from Element: now element is
+present if it's in a graph, otherwise it's considered to be absent.
 
 ## [0.3.7] - 2017-01-12
 ### Added
@@ -128,6 +144,12 @@ onto the diagram area.
 - Fetching for link between elements on a diagram at the end of import.
 
 ### Changed
+- **[Breaking]** Link arrowheads implementation replaced by native
+SVG markers, changed link style customization interface.
+- **[Breaking]** Rewritten scrollable diagram component `PaperArea`
+in React way, moved `zoomToFit()` and other related members.
+This change fixes many issues with scrolling and resizing diagram area.
+- **[Breaking]** Fixed typo in `GraphBuilder.getGraphFromConstruct()` method name.
 - Significant performance improvments when importing diagram.
 - Increased preferred link length in force layout.
 
@@ -135,14 +157,6 @@ onto the diagram area.
 - Unable to export as PNG/SVG diagram that contains element with SVG thumbnail.
 - Unable to export as PNG/SVG in Firefox >= 50.
 - Connections popup height overflow in Firefox.
-
-### Breaking changes
-- Link arrowheads implementation replaced by native
-SVG markers, changed link style customization interface.
-- Rewritten scrollable diagram component `PaperArea`
-in React way, moved `zoomToFit()` and other related members.
-This change fixes many issues with scrolling and resizing diagram area.
-- Fixed typo in `GraphBuilder.getGraphFromConstruct()` method name.
 
 ## [0.3.1] - 2016-11-22
 ### Added
@@ -194,7 +208,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
 [0.3.8]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...v0.3.7
