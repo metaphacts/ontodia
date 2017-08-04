@@ -6,7 +6,7 @@ import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-default-template';
 
-export class DefaultTemplate extends React.Component<TemplateProps, {}> {
+export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
     render() {
         const props = this.props;
 

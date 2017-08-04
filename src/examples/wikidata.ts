@@ -2,7 +2,7 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultTemplate, PersonTemplate,
+    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
     WikidataSettings, SparqlQueryMethod,
 } from '../index';
 
@@ -18,7 +18,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     diagram.registerTemplateResolver(types => {
         // using default template for country as a temporary solution
         if (types.indexOf('http://www.wikidata.org/entity/Q6256') !== -1) {
-            return DefaultTemplate;
+            return DefaultElementTemplate;
         } else if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
             return OrganizationTemplate;
         } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
