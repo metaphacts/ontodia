@@ -9,11 +9,16 @@ export interface Props {
 }
 
 export interface State {
+    readonly height?: number;
     /**
      * Items' sizes in pixels.
      * Undefined until first resize or toggle initiated by user.
      **/
     readonly sizes?: number[];
+    /**
+     * Items' sizes in percent.
+     **/
+    readonly percents?: string[];
     /**
      * Per-item collapsed state: true if corresponding item is collapsed;
      * otherwise false.
@@ -34,33 +39,45 @@ export class Accordion extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
+        const childCount = React.Children.count(this.props.children);
         this.state = {
+            height: 0,
             collapsed: React.Children.map(this.props.children, () => false),
             resizing: false,
+            percents: React.Children.map(this.props.children, () => `${100 / childCount}%`),
         };
     }
 
+    componentDidMount() {
+        window.addEventListener('resize', this.setHeight);
+        this.setHeight();
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.setHeight);
+    }
+
+    private setHeight = () => {
+        this.setState({height: this.element.parentElement.clientHeight});
+    };
+
     render() {
-        const {resizing} = this.state;
+        const {resizing, height} = this.state;
         return (
             <div className={`${CLASS_NAME} ${resizing ? `${CLASS_NAME}--resizing` : ''}`}
-                ref={element => this.element = element}>
+                ref={element => this.element = element} style={{height}}>
                 {this.renderItems()}
             </div>
         );
     }
 
     private renderItems() {
-        const {sizes, collapsed} = this.state;
+        const {sizes, percents, collapsed} = this.state;
         const {children} = this.props;
-        const childCount = React.Children.count(children);
-        const totalHeight = this.element ? this.element.clientHeight : undefined;
 
         return React.Children.map(children, (child: React.ReactElement<ItemProps>, index: number) => {
             const lastChild = index === children.length - 1;
-            const height = sizes
-                ? (collapsed[index] ? sizes[index] : `${100 * sizes[index] / totalHeight}%`)
-                : `${100 / childCount}%`;
+            const height = collapsed[index] ? sizes[index] : percents[index];
 
             const additionalProps: Partial<ItemProps> & React.Props<AccordionItem> = {
                 ref: element => this.items[index] = element,
@@ -113,7 +130,9 @@ export class Accordion extends React.Component<Props, State> {
             sizes, collapsed, this.originTotalHeight, this.sizeWhenCollapsed,
         ).distribute(itemIndex + 1, dy);
 
-        this.setState({sizes, collapsed});
+        const percents = sizes.map(size => `${100 * size / this.state.height}%`);
+
+        this.setState({sizes, percents, collapsed});
     }
 
     private onItemChangeCollapsed(itemIndex: number, itemCollapsed: boolean) {
@@ -148,7 +167,9 @@ export class Accordion extends React.Component<Props, State> {
 
         collapsed[itemIndex] = itemCollapsed;
 
-        this.setState({sizes, collapsed});
+        const percents = sizes.map(size => `${100 * size / this.state.height}%`);
+
+        this.setState({sizes, percents, collapsed});
     }
 }
 
