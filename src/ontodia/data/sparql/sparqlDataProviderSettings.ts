@@ -253,8 +253,9 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
                 } UNION {
                     ?class a owl:Class
                 }
-                OPTIONAL { ?class rdfs:label ?label.}
-                OPTIONAL {?class rdfs:subClassOf ?parent}
+                FILTER ISIRI(?class)
+                OPTIONAL {?class rdfs:label ?label}
+                OPTIONAL {?class rdfs:subClassOf ?parent. FILTER ISIRI(?parent)}
             }
         `,
 
@@ -300,14 +301,15 @@ const OWLStatsOverride: Partial<SparqlDataProviderSettings> = {
             {SELECT ?class (count(?inst) as ?instcount)
                 WHERE {
                     ?inst rdf:type ?class.
+                    FILTER ISIRI(?class)
                 } GROUP BY ?class } UNION
             {
                 ?class rdf:type rdfs:Class
             } UNION {
                 ?class rdf:type owl:Class
             }
-            OPTIONAL { ?class rdfs:label ?label.}
-            OPTIONAL {?class rdfs:subClassOf ?parent}
+            OPTIONAL {?class rdfs:label ?label}
+            OPTIONAL {?class rdfs:subClassOf ?parent. FILTER ISIRI(?parent)}
         }
     `,
 };
