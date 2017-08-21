@@ -83,9 +83,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.state = {};
     }
 
-    componentWillReceiveProps(prevProps: WorkspaceProps, newProps: WorkspaceProps) {
-        if (newProps.language !== this.diagram.getLanguage()) {
-            this.diagram.setLanguage(newProps.language);
+    componentWillReceiveProps(nextProps: WorkspaceProps) {
+        if (nextProps.language !== this.diagram.getLanguage()) {
+            this.diagram.setLanguage(nextProps.language);
         }
     }
 

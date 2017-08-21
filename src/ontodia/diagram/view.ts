@@ -116,7 +116,12 @@ export class DiagramView extends Backbone.Model {
     }
 
     getLanguage(): string { return this.get('language'); }
-    setLanguage(value: string) { this.set('language', value); }
+    setLanguage(value: string) {
+        if (!value) {
+            throw Error('cannot set empty language');
+        }
+        this.set('language', value);
+    }
 
     cancelSelection() { this.selection.reset([]); }
 
