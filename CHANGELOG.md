@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+### [0.5.3] - 2017-08-23
+### Fixed
+- Unpredictable behaviour with language selection fixed
+
+### Changed
+- Blank nodes are no longer displayed in class tree in default configuration
+
+### [0.5.2] - 2017-08-17
+### Fixed
+- Safari bug preventing displaying class tree workaround
+
 ### [0.5.1] - 2017-08-04
 ### Fixed
 - No element thumbnails issue when trying to export to PNG even with
