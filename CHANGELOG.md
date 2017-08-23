@@ -8,10 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### [0.5.3] - 2017-08-23
 ### Fixed
-- Unpredictable behaviour with language selection fixed
+- Unpredictable behaviour with language selection.
 
 ### Changed
-- Blank nodes are no longer displayed in class tree in default configuration
+- Blank nodes are no longer displayed in class tree in default configuration.
 
 ### [0.5.2] - 2017-08-17
 ### Fixed
@@ -224,7 +224,9 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.1...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/ontodia-org/ontodia/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/ontodia-org/ontodia/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
