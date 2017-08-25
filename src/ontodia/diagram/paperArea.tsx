@@ -11,6 +11,7 @@ import { debounce } from 'lodash';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { DiagramModel } from './model';
+import { Paper } from './paper';
 
 export interface Props {
     model: DiagramModel;
@@ -35,11 +36,19 @@ export interface ScaleOptions {
     pivot?: { x: number; y: number; };
 }
 
-export class PaperArea extends React.Component<Props, {}> {
+interface State {
+    readonly paperWidth?: number;
+    readonly paperHeight?: number;
+    readonly originX?: number;
+    readonly originY?: number;
+    readonly scale?: number;
+}
+
+export class PaperArea extends React.Component<Props, State> {
     private readonly listener = new Backbone.Model();
 
     private area: HTMLDivElement;
-    private paper: joint.dia.Paper;
+    private paper: Paper;
 
     private spinnerElement: SVGGElement;
 
@@ -62,29 +71,50 @@ export class PaperArea extends React.Component<Props, {}> {
         return {min, max, step, maxFit, fitPadding};
     }
 
+    constructor(props: Props, context: any) {
+        super(props, context);
+        this.state = {
+            paperWidth: 1500,
+            paperHeight: 800,
+        };
+    }
+
     render() {
-        return <div className='paper-area'
-            ref={area => this.area = area}
-            onMouseDown={this.onAreaPointerDown}
-            onWheel={this.onWheel}>
-        </div>;
+        const {model} = this.props;
+        const {paperWidth, paperHeight, originX, originY, scale} = this.state;
+        return (
+            <div className='paper-area'
+                ref={area => this.area = area}
+                onMouseDown={this.onAreaPointerDown}
+                onWheel={this.onWheel}>
+                <Paper ref={paper => this.paper = paper}
+                    graph={model.graph}
+                    width={paperWidth}
+                    height={paperHeight}
+                    originX={originX}
+                    originY={originY}
+                    scale={scale}
+                />
+                {this.props.children}
+            </div>
+        );
     }
 
     componentDidMount() {
-        this.paper = this.props.paper;
-        this.renderChildren();
+        // this.paper = this.props.paper;
+        // this.renderChildren();
 
-        this.pageSize = {
-            x: this.paper.options.width,
-            y: this.paper.options.height,
-        };
-        (this.paper.svg as any as HTMLElement).style.overflow = 'visible';
-        this.area.appendChild(this.paper.el);
+        // this.pageSize = {
+        //     x: this.paper.options.width,
+        //     y: this.paper.options.height,
+        // };
+        // (this.paper.svg as any as HTMLElement).style.overflow = 'visible';
+        // this.area.appendChild(this.paper.el);
         this.updatePaperMargins();
         this.centerTo();
 
-        this.spinnerElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        this.paper.svg.appendChild(this.spinnerElement);
+        // this.spinnerElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        // this.paper.svg.appendChild(this.spinnerElement);
 
         this.listener.listenTo(this.paper, 'scale', this.onPaperScale);
         this.listener.listenTo(this.paper, 'resize', this.onPaperResize);
@@ -104,9 +134,9 @@ export class PaperArea extends React.Component<Props, {}> {
         });
         // automatic paper adjust on element dragged
         this.listener.listenTo(this.paper, 'cell:pointerup', this.adjustPaper);
-        this.listener.listenTo(this.paper.options.model,
+        this.listener.listenTo(this.props.model.graph,
             'add remove change:position', debounce(this.adjustPaper, 50));
-        this.listener.listenTo(this.paper.options.model, 'change:size', this.adjustPaper);
+        this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
         this.listener.listenTo(this.paper, 'ontodia:adjustSize', this.adjustPaper);
 
         this.area.addEventListener('dragover', this.onDragOver);
@@ -126,19 +156,19 @@ export class PaperArea extends React.Component<Props, {}> {
         });
     }
 
-    private renderChildren() {
-        React.Children.forEach(this.props.children, child => {
-            const container = document.createElement('div');
-            this.paper.el.appendChild(container);
-            this.childContainers.push(container);
-            const wrapped = typeof child === 'object' ? child : <span>{child}</span>;
-            if (unstable_renderSubtreeIntoContainer) {
-                unstable_renderSubtreeIntoContainer(this, wrapped, container);
-            } else {
-                reactDOMRender(wrapped, container);
-            }
-        });
-    }
+    // private renderChildren() {
+    //     React.Children.forEach(this.props.children, child => {
+    //         const container = document.createElement('div');
+    //         this.paper.el.appendChild(container);
+    //         this.childContainers.push(container);
+    //         const wrapped = typeof child === 'object' ? child : <span>{child}</span>;
+    //         if (unstable_renderSubtreeIntoContainer) {
+    //             unstable_renderSubtreeIntoContainer(this, wrapped, container);
+    //         } else {
+    //             reactDOMRender(wrapped, container);
+    //         }
+    //     });
+    // }
 
     shouldComponentUpdate() {
         return false;
