@@ -4,9 +4,9 @@ Ontodia is a JavaScript library that allows to visualize, navigate and explore t
 
 ## What is Ontodia for?
 
-Ontodia allows you to create and persist diagrams made from connected data - relational, object, semantic.
+Ontodia allows you to create and persist diagrams made from existing data - relational, object, semantic.
 
-It was designed to visualize RDF data sets in particular, but could be tailored to almost any data sourece by implementing data provider interface.  
+It was designed to visualize RDF data sets in particular, but could be tailored to almost any data source by implementing data provider interface.  
 
 ## Core features
 
@@ -22,6 +22,14 @@ You can:
 - Open ontodia.org [demo diagram](http://app.ontodia.org/diagram?sharedDiagram=49689f29-82bc-405d-b5f6-33507f1c1444) and navigate through demo data set
 - Create an account at [ontodia.org](http://app.ontodia.org/register), browser through sample diagrams, download your rdf file or point to your sparql endpoint to build diagrams over your data
 - Follow developer tutorials at [developer documentation page](https://github.com/ontodia-org/ontodia/wiki)
+
+Please note that on Ontodia.org we deployed the commercial version of Ontodia library, which carries some additional features:
+- Support of undo/redo for user actions
+- Multiple selection of nodes
+- Rectangular box multiple selection of nodes
+- Multiple removal of nodes from diagrams
+- Snap guides for node alignment
+- Additional layouts for beter distribution of nodes on canvas, etc.
 
 ## How to use it
 
