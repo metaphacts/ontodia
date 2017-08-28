@@ -20,7 +20,7 @@ It was designed to visualize RDF data sets in particular, but could be tailored 
 
 You can: 
 - Open ontodia.org [demo diagram](http://app.ontodia.org/diagram?sharedDiagram=49689f29-82bc-405d-b5f6-33507f1c1444) and navigate through demo data set
-- Create an account at [ontodia.org](http://app.ontodia.org/register), browser through sample diagrams, download your rdf file or point to your sparql endpoint to build diagrams over your data
+- Create an account at [ontodia.org](http://app.ontodia.org/register), browse through sample diagrams, download your rdf file or point to your sparql endpoint to build diagrams over your data
 - Follow developer tutorials at [developer documentation page](https://github.com/ontodia-org/ontodia/wiki)
 
 Please note that on Ontodia.org we deployed the commercial version of Ontodia library, which carries some additional features:
