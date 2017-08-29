@@ -15,6 +15,8 @@ import { DiagramView } from './view';
 export interface Props {
     paper: joint.dia.Paper;
     view: DiagramView;
+    origin: { x: number; y: number; };
+    scale: number;
 }
 
 export class ElementLayer extends React.Component<Props, void> {
@@ -23,33 +25,33 @@ export class ElementLayer extends React.Component<Props, void> {
     private layer: HTMLDivElement;
 
     render() {
-        const models = this.props.view.model.elements;
-
-        // SVGElement.getCTM() returns null in Firefox if paper isn't mounted in the DOM yet
-        const ctm = this.props.paper.viewport.getCTM();
-        const scale = ctm ? {x: ctm.a, y: ctm.d} : {x: 1, y: 1};
-        const translate = ctm ? {x: ctm.e, y: ctm.f} : {x: 0, y: 0};
+        const {view, origin, scale} = this.props;
+        const models = view.model.elements;
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
             style={{
                 position: 'absolute', left: 0, top: 0,
-                transform: `translate(${translate.x}px,${translate.y}px) scale(${scale.x},${scale.y})`,
+                transform: `translate(${origin.x}px,${origin.y}px) scale(${scale},${scale})`,
             }}>
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
-                view={this.props.view}
+                view={view}
                 onResize={this.updateElementSize}
                 onRender={this.updateElementSize} />)}
         </div>;
     }
 
     componentDidMount() {
-        const {paper} = this.props;
-        const graph = paper.model;
+        const {paper, view} = this.props;
+        const graph = view.model.graph;
         this.listener.listenTo(graph, 'add remove reset', this.updateAll);
         this.listener.listenTo(paper, 'scale', this.updateAll);
         this.listener.listenTo(paper, 'translate resize', this.updateAll);
+    }
+
+    componentDidUpdate() {
+        this.props.view.model.trigger('state:renderDone');
     }
 
     private updateAll = () => this.forceUpdate();
@@ -124,6 +126,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         if (angle) { transform += `rotate(${angle}deg)`; }
 
         return <div className='ontodia-overlayed-element'
+            // set `model-id` to translate mouse events to paper
+            data-element-id={model.id}
             style={{position: 'absolute', transform}}
             tabIndex={0}
             // resize element when child image loaded
@@ -141,8 +145,6 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             }}
             ref={node => {
                 if (!node) { return; }
-                // set `model-id` to translate mouse events to paper
-                node.setAttribute('model-id', model.id);
                 onRender(model, node);
             }}>
             {React.createElement(template, this.state.templateProps)}
@@ -262,6 +264,7 @@ class KeyedObserver {
 
     private createMap<V>(): { [key: string]: V; } {
         const map = Object.create(null);
+        // tslint:disable-next-line:no-string-literal
         delete map['hint'];
         return map;
     }

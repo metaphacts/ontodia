@@ -83,7 +83,7 @@ export class DiagramView extends Backbone.Model {
         super();
         this.setLanguage('en');
         this.paper = new joint.dia.Paper({
-            model: this.model.graph,
+            model: new joint.dia.Graph(),
             gridSize: 1,
             elementView: SeparatedElementView,
             linkView: LinkView,

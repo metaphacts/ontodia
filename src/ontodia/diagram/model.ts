@@ -74,6 +74,11 @@ export class DiagramModel extends Backbone.Model {
         return cell instanceof Element ? cell : undefined;
     }
 
+    getLinkById(linkId: string): Link | undefined {
+        const cell = this.cells.get(linkId);
+        return cell instanceof Link ? cell : undefined;
+    }
+
     getLinkType(linkTypeId: string): FatLinkType | undefined {
         return this.linkTypes[linkTypeId];
     }
