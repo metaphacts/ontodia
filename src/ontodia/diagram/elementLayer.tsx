@@ -32,7 +32,7 @@ export class ElementLayer extends React.Component<Props, void> {
             ref={layer => this.layer = layer}
             style={{
                 position: 'absolute', left: 0, top: 0,
-                transform: `translate(${origin.x}px,${origin.y}px) scale(${scale},${scale})`,
+                transform: `scale(${scale},${scale})translate(${origin.x}px,${origin.y}px)`,
             }}>
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}

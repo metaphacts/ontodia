@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Component, SVGAttributes } from 'react';
+import { Component, SVGAttributes, CSSProperties } from 'react';
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
@@ -17,10 +17,10 @@ export interface PaperProps {
     originX: number;
     originY: number;
     scale: number;
+    paddingX: number;
+    paddingY: number;
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: GraphElement | Link | undefined) => void;
 }
-
-
 
 interface State {}
 
@@ -43,20 +43,29 @@ export class Paper extends Component<PaperProps, State> {
     private updateAll = () => this.forceUpdate();
 
     render() {
-        const {width, height, originX, originY, scale} = this.props;
+        const {width, height, originX, originY, scale, paddingX, paddingY} = this.props;
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scale;
+        const style: CSSProperties = {
+            width: scaledWidth,
+            height: scaledHeight,
+            marginLeft: paddingX,
+            marginRight: paddingX,
+            marginTop: paddingY,
+            marginBottom: paddingY,
+        };
         return (
-            <div className={CLASS_NAME}
-                onMouseDown={this.onMouseDown} onMouseMove={this.onMouseMove} onMouseUp={this.onMouseUp}>
-                <svg width={width} height={height} style={{overflow: 'visible'}}>
+            <div className={CLASS_NAME} style={style} onMouseDown={this.onMouseDown}>
+                <svg width={scaledWidth} height={scaledHeight} style={{overflow: 'visible'}}>
                     <defs>
                         <filter id='solid-fill' x='0' y='0' width='1' height='1' dangerouslySetInnerHTML={{__html: `
                             <feFlood flood-color='white' />
                             <feComposite in='SourceGraphic' operator='atop' />
                         `}} />
                     </defs>
-                    <g transform={`translate(${originX},${originY})scale(${scale},${scale})`}>
+                    <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
                         {this.renderLinks()}
-                        {this.renderElements()}
+                        {/*this.renderElements()*/}
                     </g>
                 </svg>
                 {this.props.children}
@@ -84,10 +93,6 @@ export class Paper extends Component<PaperProps, State> {
             onPointerDown(e, cell);
         }
     }
-
-    private onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {}
-
-    private onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {}
 }
 
 function findCell(bottom: Element, top: Element, model: DiagramModel): GraphElement | Link | undefined {

@@ -9,6 +9,7 @@ import {
 import { debounce } from 'lodash';
 
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
+import { fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
 import { Element, Link } from './elements';
 import { ElementLayer } from './elementLayer';
@@ -44,6 +45,8 @@ interface State {
     readonly originX?: number;
     readonly originY?: number;
     readonly scale?: number;
+    readonly paddingX?: number;
+    readonly paddingY?: number;
 }
 
 export class PaperArea extends React.Component<Props, State> {
@@ -54,17 +57,31 @@ export class PaperArea extends React.Component<Props, State> {
 
     private spinnerElement: SVGGElement;
 
-    private pageSize: { x: number; y: number; };
+    private readonly pageSize = {x: 1500, y: 800};
 
-    private padding = {x: 0, y: 0};
+    // private padding = {x: 0, y: 0};
     private center: { x: number; y: number; };
     private previousOrigin: { x: number; y: number; };
+
+    private listeningToPointerMove = false;
 
     private isPanning = false;
     private panningOrigin: { pageX: number; pageY: number; };
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
 
     private childContainers: HTMLElement[] = [];
+
+    private movingPaperOrigin: {
+        pointerX: number;
+        pointerY: number;
+        elementX: number;
+        elementY: number;
+    };
+    private movingElement: Element | undefined;
+    private scrollBeforeUpdate: undefined | {
+        left: number;
+        top: number;
+    };
 
     private get zoomOptions(): ZoomOptions {
         const {
@@ -76,17 +93,19 @@ export class PaperArea extends React.Component<Props, State> {
     constructor(props: Props, context: any) {
         super(props, context);
         this.state = {
-            paperWidth: 1500,
-            paperHeight: 800,
+            paperWidth: this.pageSize.x,
+            paperHeight: this.pageSize.y,
             originX: 0,
             originY: 0,
             scale: 1,
+            paddingX: 0,
+            paddingY: 0,
         };
     }
 
     render() {
         const {view, preventTextSelection} = this.props;
-        const {paperWidth, paperHeight, originX, originY, scale} = this.state;
+        const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY} = this.state;
         return (
             <div className='paper-area'
                 ref={area => this.area = area}
@@ -99,6 +118,8 @@ export class PaperArea extends React.Component<Props, State> {
                     originX={originX}
                     originY={originY}
                     scale={scale}
+                    paddingX={paddingX}
+                    paddingY={paddingY}
                     onPointerDown={this.onPaperPointerDown}>
                     <ElementLayer view={view} paper={view.paper}
                         origin={{x: originX, y: originY}}
@@ -144,8 +165,8 @@ export class PaperArea extends React.Component<Props, State> {
         // });
         // // automatic paper adjust on element dragged
         // this.listener.listenTo(this.paper, 'cell:pointerup', this.adjustPaper);
-        // this.listener.listenTo(this.props.model.graph,
-        //     'add remove change:position', debounce(this.adjustPaper, 50));
+        this.listener.listenTo(this.props.view.model.graph,
+            'add remove change:position', this.adjustPaper);
         // this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
         // this.listener.listenTo(this.paper, 'ontodia:adjustSize', this.adjustPaper);
 
@@ -184,8 +205,26 @@ export class PaperArea extends React.Component<Props, State> {
     //     return false;
     // }
 
+    componentDidUpdate(prevProps: Props, prevState: State) {
+        if (this.scrollBeforeUpdate) {
+            const {scale, originX, originY, paddingX, paddingY} = this.state;
+            const scrollX = (originX - prevState.originX) * scale + (paddingX - prevState.paddingX);
+            const scrollY = (originY - prevState.originY) * scale + (paddingY - prevState.paddingY);
+
+            const scrollLeft = this.scrollBeforeUpdate.left + scrollX;
+            const scrollTop = this.scrollBeforeUpdate.top + scrollY;
+
+            //console.log('update before scroll', Math.floor(this.area.scrollLeft));
+            if (this.area.scrollLeft !== scrollLeft) { this.area.scrollLeft = scrollLeft; }
+            if (this.area.scrollTop !== scrollTop) { this.area.scrollTop = scrollTop; }
+
+            this.scrollBeforeUpdate = undefined;
+            //console.log('didUpdate: scroll(', Math.floor(scrollX), ') => ', Math.floor(this.area.scrollLeft), ' and resume events');
+        }
+    }
+
     componentWillUnmount() {
-        this.stopPanning();
+        this.stopListeningToPointerMove();
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
@@ -195,23 +234,54 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
+    private pageToPaperCoords(pageX: number, pageY: number) {
+        const {offsetLeft, offsetTop} = this.area;
+        return this.clientToPaperCoords(pageX - offsetLeft, pageY - offsetTop);
+    }
+
     clientToPaperCoords(areaClientX: number, areaClientY: number) {
         // const ctm = this.paper.viewport.getCTM();
         // let x = areaClientX + this.area.scrollLeft - this.padding.x - ctm.e;
         // x /= ctm.a;
         // let y = areaClientY + this.area.scrollTop - this.padding.y - ctm.f;
         // y /= ctm.d;
-        let x = areaClientX + this.area.scrollLeft - this.padding.x - this.state.originX;
-        let y = areaClientY + this.area.scrollTop - this.padding.y - this.state.originY;
-        x /= this.state.scale;
-        y /= this.state.scale;
+        const {scale, paddingX, paddingY, originX, originY} = this.state;
+        const x = (areaClientX + this.area.scrollLeft - paddingX) / scale - originX;
+        const y = (areaClientY + this.area.scrollTop - paddingY) / scale - originY;
         return {x, y};
     }
 
     /** Returns bounding box of paper content in paper coordinates. */
     getContentFittingBox() {
-        // return joint.V(this.paper.viewport).bbox(true, this.paper.svg);
-        return {x: 0, y: 0, width: this.state.paperWidth, height: this.state.paperHeight};
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        const model = this.props.view.model;
+        for (const element of model.elements) {
+            const {x, y} = element.get('position');
+            const size = element.get('size') || {width: 0, height: 0};
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + size.width);
+            maxY = Math.max(maxY, y + size.height);
+        }
+
+        for (const link of model.links) {
+            const vertices: ReadonlyArray<{ x: number; y: number }> = link.get('vertices') || [];
+            for (const {x, y} of vertices) {
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+
+        return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+        };
     }
 
     /** Returns paper size in paper coordinates. */
@@ -226,44 +296,67 @@ export class PaperArea extends React.Component<Props, State> {
         // this.center = this.clientToPaperCoords(
         //     this.area.clientWidth / 2, this.area.clientHeight / 2);
 
-        // const scale = this.getScale();
-        // // bbox in paper coordinates
-        // const bboxPaper = this.getContentFittingBox();
-        // // bbox in area client coordinates
-        // const bboxArea = {
-        //     left: bboxPaper.x * scale,
-        //     right: (bboxPaper.x + bboxPaper.width) * scale,
-        //     top: bboxPaper.y * scale,
-        //     bottom: (bboxPaper.y + bboxPaper.height) * scale,
-        // };
+        // bbox in paper coordinates
+        const bbox = this.getContentFittingBox();
+        const bboxLeft = bbox.x;
+        const bboxTop = bbox.y;
+        const bboxRight = bbox.x + bbox.width;
+        const bboxBottom = bbox.y + bbox.height;
 
-        // const gridWidth = this.pageSize.x * scale;
-        // const gridHeight = this.pageSize.y * scale;
+        const {x: gridWidth, y: gridHeight} = this.pageSize;
 
-        // // bbox in integer grid coordinates (open-closed intervals)
-        // const bboxGrid = {
-        //     left: Math.floor(bboxArea.left / gridWidth),
-        //     right: Math.ceil(bboxArea.right / gridWidth),
-        //     top: Math.floor(bboxArea.top / gridHeight),
-        //     bottom: Math.ceil(bboxArea.bottom / gridHeight),
-        // };
+        // bbox in integer grid coordinates (open-closed intervals)
+        const bboxGrid = {
+            left: Math.floor(bboxLeft / gridWidth),
+            top: Math.floor(bboxTop / gridHeight),
+            right: Math.ceil(bboxRight / gridWidth),
+            bottom: Math.ceil(bboxBottom / gridHeight),
+        };
 
         // const oldOrigin = this.paper.options.origin;
-        // const newOrigin = {
-        //     x: (-bboxGrid.left) * gridWidth,
-        //     y: (-bboxGrid.top) * gridHeight,
-        // };
+        const newOrigin = {
+            x: -bboxGrid.left * gridWidth,
+            y: -bboxGrid.top * gridHeight,
+        };
         // if (newOrigin.x !== oldOrigin.x || newOrigin.y !== oldOrigin.y) {
         //     this.paper.setOrigin(newOrigin.x, newOrigin.y);
         // }
 
         // const oldWidth = this.paper.options.width;
         // const oldHeight = this.paper.options.height;
-        // const newWidth = Math.max(bboxGrid.right - bboxGrid.left, 1) * gridWidth;
-        // const newHeight = Math.max(bboxGrid.bottom - bboxGrid.top, 1) * gridHeight;
+        const newWidth = Math.max(bboxGrid.right - bboxGrid.left, 1) * gridWidth;
+        const newHeight = Math.max(bboxGrid.bottom - bboxGrid.top, 1) * gridHeight;
         // if (newWidth !== oldWidth || newHeight !== oldHeight) {
         //     this.paper.setDimensions(newWidth, newHeight);
         // }
+
+        const previousState: State = {...this.state};
+        const paddingX = Math.ceil(this.area.clientWidth * 0.75);
+        const paddingY = Math.ceil(this.area.clientHeight * 0.75);
+
+        const samePaperProps = (
+            newWidth === this.state.paperWidth &&
+            newHeight === this.state.paperHeight &&
+            newOrigin.x === this.state.originX &&
+            newOrigin.y === this.state.originY &&
+            paddingX === this.state.paddingX &&
+            paddingY === this.state.paddingY
+        );
+        if (!samePaperProps) {
+            //console.log(`width ${Math.floor(newWidth)}; origin ${Math.floor(newOrigin.x)}; padding: ${Math.floor(paddingX)}`);
+            this.scrollBeforeUpdate = {
+                left: this.area.scrollLeft,
+                top: this.area.scrollTop,
+            };
+            this.setState({
+                paperWidth: newWidth,
+                paperHeight: newHeight,
+                originX: newOrigin.x,
+                originY: newOrigin.y,
+                paddingX,
+                paddingY,
+            });
+        }
 
         // this.updatePaperMargins();
     }
@@ -327,12 +420,28 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Element | Link | undefined) => {
+        if (e.button !== 0) {
+            return;
+        }
+
+        this.props.preventTextSelection();
         if (cell) {
-            this.props.preventTextSelection();
+            if (cell instanceof Element) {
+                e.preventDefault();
+                this.startMoving(e, cell);
+            }
         } else if (this.shouldStartPanning(e)) {
             e.preventDefault();
             this.startPanning(e);
         }
+    }
+
+    private startMoving(e: React.MouseEvent<HTMLElement>, element: Element) {
+        const {x: pointerX, y: pointerY} = this.pageToPaperCoords(e.pageX, e.pageY);
+        const {x: elementX, y: elementY} = element.get('position');
+        this.movingPaperOrigin = {pointerX, pointerY, elementX, elementY};
+        this.movingElement = element;
+        this.listenToPointerMove();
     }
 
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -342,9 +451,9 @@ export class PaperArea extends React.Component<Props, State> {
                 this.startPanning(e);
             }
         }
-    };
+    }
 
-    private startPanning(event: { pageX: number; pageY: number; }) {
+    private startPanning(event: React.MouseEvent<any>) {
         this.props.preventTextSelection();
 
         const {pageX, pageY} = event;
@@ -353,38 +462,56 @@ export class PaperArea extends React.Component<Props, State> {
         this.panningScrollOrigin = {scrollLeft, scrollTop};
 
         this.isPanning = true;
+        this.listenToPointerMove();
+    }
+
+    private listenToPointerMove() {
+        if (this.listeningToPointerMove) { return; }
         document.addEventListener('mousemove', this.onPointerMove);
-        document.addEventListener('mouseup', this.stopPanning);
+        document.addEventListener('mouseup', this.stopListeningToPointerMove);
     }
 
     private onPointerMove = (e: MouseEvent) => {
+        if (this.scrollBeforeUpdate) { return; }
+
         if (this.isPanning) {
             const offsetX = e.pageX - this.panningOrigin.pageX;
             const offsetY = e.pageY - this.panningOrigin.pageY;
             this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - offsetX;
             this.area.scrollTop = this.panningScrollOrigin.scrollTop - offsetY;
+        } else if (this.movingElement) {
+            const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
+            // console.log('moving at', Math.floor(x), Math.floor(y), '; area scroll ', this.area.scrollLeft);
+            const {pointerX, pointerY, elementX, elementY} = this.movingPaperOrigin;
+            this.movingElement.set('position', {
+                x: elementX + x - pointerX,
+                y: elementY + y - pointerY,
+            });
         }
-    };
+    }
 
-    private stopPanning = () => {
+    private stopListeningToPointerMove = () => {
         if (this.isPanning) {
             this.isPanning = false;
-            document.removeEventListener('mousemove', this.onPointerMove);
-            document.removeEventListener('mouseup', this.stopPanning);
+        } else if (this.movingElement) {
+            this.movingElement = undefined;
         }
-    };
+
+        if (this.listeningToPointerMove) {
+            this.listeningToPointerMove = false;
+            document.removeEventListener('mousemove', this.onPointerMove);
+            document.removeEventListener('mouseup', this.stopListeningToPointerMove);
+        }
+    }
 
     private onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
         if (e.ctrlKey) {
             e.preventDefault();
             const delta = Math.max(-1, Math.min(1, e.deltaY));
-            const {offsetLeft, offsetTop} = this.area;
-            const pivot = this.clientToPaperCoords(
-                e.pageX - offsetLeft,
-                e.pageY - offsetTop);
+            const pivot = this.pageToPaperCoords(e.pageX, e.pageY);
             this.zoomBy(-delta * 0.1, {pivot});
         }
-    };
+    }
 
     centerTo(paperPosition?: { x: number; y: number; }) {
         // const ctm = this.paper.viewport.getCTM();
@@ -408,9 +535,23 @@ export class PaperArea extends React.Component<Props, State> {
         // this.updatePaperMargins();
         // this.area.scrollLeft = clientX - clientWidth / 2 + ctm.e + this.padding.x;
         // this.area.scrollTop = clientY - clientHeight / 2 + ctm.f + this.padding.y;
+
+        const {paperWidth, paperHeight, scale, originX, originY, paddingX, paddingY} = this.state;
+        const paperCenter = paperPosition || {x: paperWidth / 2, y: paperHeight / 2};
+        const clientCenterX = (paperCenter.x + originX) * scale;
+        const clientCenterY = (paperCenter.y + originY) * scale;
+        const {clientWidth, clientHeight} = this.area;
+        this.area.scrollLeft = clientCenterX - clientWidth / 2 + paddingX;
+        this.area.scrollTop = clientCenterY - clientHeight / 2 + paddingY;
     }
 
     centerContent() {
+        const bbox = this.getContentFittingBox();
+        this.centerTo({
+            x: bbox.x + bbox.width / 2,
+            y: bbox.y + bbox.height / 2,
+        });
+
         // const {x, y, width, height} = this.paper.viewport.getBBox();
         // const viewportCenter = {
         //     x: x + width / 2,
@@ -435,24 +576,22 @@ export class PaperArea extends React.Component<Props, State> {
         scale = Math.max(scale, min);
         scale = Math.min(scale, max);
 
-        // const center = this.clientToPaperCoords(
-        //     this.area.clientWidth / 2, this.area.clientHeight / 2);
-        // let pivot: { x: number; y: number; };
-        // if (options.pivot) {
-        //     const {x, y} = options.pivot;
-        //     const previousScale = this.getScale();
-        //     const scaledBy = scale / previousScale;
-        //     pivot = {
-        //         x: x - (x - center.x) / scaledBy,
-        //         y: y - (y - center.y) / scaledBy,
-        //     };
-        // } else {
-        //     pivot = center;
-        // }
+        const center = this.clientToPaperCoords(
+            this.area.clientWidth / 2, this.area.clientHeight / 2);
+        let pivot: { x: number; y: number; };
+        if (options.pivot) {
+            const {x, y} = options.pivot;
+            const previousScale = this.state.scale;
+            const scaledBy = scale / previousScale;
+            pivot = {
+                x: x - (x - center.x) / scaledBy,
+                y: y - (y - center.y) / scaledBy,
+            };
+        } else {
+            pivot = center;
+        }
 
-        // this.paper.scale(scale, scale);
-        // this.centerTo(pivot);
-        this.setState({scale});
+        this.setState({scale}, () => this.centerTo(pivot));
     }
 
     zoomBy(value: number, options: ScaleOptions = {}) {
@@ -468,6 +607,26 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     zoomToFit() {
+        if (this.props.view.model.cells.length === 0) {
+            this.centerTo();
+            return;
+        }
+
+        const bbox = this.getContentFittingBox();
+
+        const {clientWidth, clientHeight} = this.area;
+        const {width, height} = fitRectKeepingAspectRatio(
+            bbox.width, bbox.height,
+            clientWidth, clientHeight,
+        );
+
+        let scale = width / bbox.width;
+        const {min, max} = this.zoomOptions;
+        scale = Math.max(scale, min);
+        scale = Math.min(scale, max);
+
+        this.setState({scale}, () => this.centerContent());
+
         // if (this.paper.options.model.get('cells').length === 0) {
         //     this.centerTo();
         //     return;
