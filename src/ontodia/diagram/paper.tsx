@@ -4,6 +4,7 @@ import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 
 import { LocalizedString } from '../data/model';
+import { Debouncer } from '../diagram/dataFetchingThread';
 import { LinkStyle, LinkLabel } from '../customization/props';
 
 import { Element as GraphElement, Link, linkMarkerKey } from './elements';
@@ -25,6 +26,44 @@ export interface PaperProps {
 interface State {}
 
 const CLASS_NAME = 'ontodia-paper';
+
+export class PaperLinks extends Component<{ view: DiagramView }, {}> {
+    private readonly listener = new Backbone.Model();
+    private readonly delayedUpdate = new Debouncer();
+
+    componentDidMount() {
+        const {view} = this.props;
+        const graph = view.model.graph;
+        this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
+        this.listener.listenTo(graph, 'change:position change:size', this.scheduleUpdateAll);
+    }
+
+    componentWillUnmount() {
+        this.listener.stopListening();
+        this.delayedUpdate.dispose();
+    }
+
+    shouldComponentUpdate() {
+        return false;
+    }
+
+    private scheduleUpdateAll = () => {
+        this.delayedUpdate.call(this.updateAll);
+    }
+
+    private updateAll = () => {
+        this.forceUpdate();
+    }
+
+    render() {
+        const {view} = this.props;
+        return <g>
+            {view.model.links.map(model => (
+                <LinkView key={model.id} view={view} model={model as Link} />
+            ))}
+        </g>;
+    }
+}
 
 export class Paper extends Component<PaperProps, State> {
     private readonly listener = new Backbone.Model();
@@ -64,7 +103,7 @@ export class Paper extends Component<PaperProps, State> {
                         `}} />
                     </defs>
                     <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                        {this.renderLinks()}
+                        <PaperLinks view={this.props.view} />
                         {/*this.renderElements()*/}
                     </g>
                 </svg>
@@ -76,13 +115,6 @@ export class Paper extends Component<PaperProps, State> {
     private renderElements() {
         const {view} = this.props;
         return view.model.elements.map(model => <ElementView key={model.id} model={model} />);
-    }
-
-    private renderLinks() {
-        const {view} = this.props;
-        return view.model.links.map(model => (
-            <LinkView key={model.id} view={view} model={model as Link} />
-        ));
     }
 
     private onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {

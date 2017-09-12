@@ -8,6 +8,7 @@ import { Property } from '../data/model';
 
 import { TemplateProps } from '../customization/props';
 
+import { BatchingScheduler } from './dataFetchingThread';
 import { Element } from './elements';
 import { uri2name } from './model';
 import { DiagramView } from './view';
@@ -21,6 +22,33 @@ export interface Props {
 
 export class ElementLayer extends React.Component<Props, void> {
     private readonly listener = new Backbone.Model();
+
+    private readonly updateSize = new class extends BatchingScheduler {
+        private batch: { [id: string]: { element: Element; node: HTMLDivElement; } } = {};
+
+        constructor(private view: DiagramView) {
+            super();
+        }
+
+        notify(element: Element, node: HTMLDivElement) {
+            this.batch[element.id] = {element, node};
+            this.schedule();
+        }
+
+        run() {
+            const {batch} = this;
+            this.batch = {};
+
+            for (const id in batch) {
+                if (!(batch.hasOwnProperty(id))) { continue; }
+                const {element, node} = batch[id];
+                const {clientWidth, clientHeight} = node;
+                element.set('size', {width: clientWidth, height: clientHeight});
+            }
+
+            this.view.model.trigger('state:renderDone');
+        }
+    }(this.props.view);
 
     private layer: HTMLDivElement;
 
@@ -51,18 +79,18 @@ export class ElementLayer extends React.Component<Props, void> {
     }
 
     componentDidUpdate() {
-        this.props.view.model.trigger('state:renderDone');
+       
     }
 
     private updateAll = () => this.forceUpdate();
 
     componentWillUnmount() {
         this.listener.stopListening();
+        this.updateSize.dispose();
     }
 
     private updateElementSize = (element: Element, node: HTMLDivElement) => {
-        const {clientWidth, clientHeight} = node;
-        element.set('size', {width: clientWidth, height: clientHeight});
+        this.updateSize.notify(element, node);
     }
 }
 
