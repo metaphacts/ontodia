@@ -1,4 +1,4 @@
-import { createElement, ClassAttributes } from 'react';
+import {createElement, ClassAttributes} from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
@@ -21,7 +21,7 @@ import {
  const RdfXmlParser: any = require('rdf-parser-rdfxml');
  const JsonLdParser: any = require('rdf-parser-jsonld');
 
-import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
+import {onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage} from './common';
 import {LinkBinding} from '../ontodia/data/sparql/sparqlModels';
 import {getLinksInfo} from '../ontodia/data/sparql/responseHandler';
 
@@ -137,8 +137,13 @@ function onWorkspaceMounted(workspace: Workspace) {
     });
 
     const rdfDataProvider = new RDFDataProvider({
-        data: [],
-        dataFetching: true,
+        data: [
+            {
+                content: data,
+                type: 'text/turtle',
+            },
+        ],
+        dataFetching: false,
         parsers: {
             'text/turtle': new N3Parser(),
             'application/rdf+xml': new RdfXmlParser(),

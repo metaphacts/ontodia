@@ -1,6 +1,7 @@
 require('intro.js/introjs.css');
-
 require('../styles/main.scss');
+
+import 'whatwg-fetch';
 
 export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';
@@ -10,7 +11,7 @@ export * from './ontodia/data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparqlModels';
 export * from './ontodia/data/rdf/rdfDataProvider';
 export * from './ontodia/data/sparql/sparqlDataProvider';
-export * from './ontodia/data/compositeDataProvider/compositeDataProvider';
+export * from './ontodia/data/composite/composite';
 export * from './ontodia/data/sparql/sparqlDataProviderSettings';
 export * from './ontodia/data/sparql/graphBuilder';
 export * from './ontodia/data/sparql/sparqlGraphBuilder';

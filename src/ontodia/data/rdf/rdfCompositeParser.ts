@@ -1,4 +1,4 @@
-import { Dictionary } from '../model';
+import {Dictionary} from '../model';
 
 export class RDFCompositeParser {
     constructor(public parserMap: Dictionary<any>) { }
@@ -32,11 +32,10 @@ export class RDFCompositeParser {
                     return recursion();
                 }
             } else {
-                throw 'Unknow mime type';
+                throw new Error('Unknow mime type');
             }
         };
 
         return recursion();
     }
 }
-// export default RDFCompositeParser;

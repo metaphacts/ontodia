@@ -1,7 +1,7 @@
-import { Triple, Node, RDFGraph } from 'rdf-ext';
-import { RDFCacheableStore, MatchStatement, PrefixFactory, isLiteral, isNamedNode } from './rdfCacheableStore';
-import { DataProvider, FilterParams } from '../provider';
-import { RDFLoader } from './rdfLoader';
+import {Triple, Node, RDFGraph} from 'rdf-ext';
+import {RDFCacheableStore, MatchStatement, PrefixFactory, isLiteral, isNamedNode} from './rdfCacheableStore';
+import {DataProvider, FilterParams} from '../provider';
+import {RDFLoader} from './rdfLoader';
 import {
     LocalizedString, Dictionary, ClassModel, LinkType, ElementModel,
     LinkModel, LinkCount, PropertyModel, Property,
@@ -29,12 +29,16 @@ export class RDFDataProvider implements DataProvider {
             uri?: string,
         } [],
         dataFetching?: boolean,
+        proxy?: string,
         parsers: { [id: string]: any },
     }) {
         const parser = new RDFCompositeParser(params.parsers);
 
         this.rdfStorage = new RDFCacheableStore(parser);
-        this.rdfLoader = new RDFLoader(parser);
+        this.rdfLoader = new RDFLoader({
+            parser: parser,
+            proxy: params.proxy,
+        });
         this.dataFetching = params.dataFetching;
 
         let parsePromises;
@@ -44,7 +48,7 @@ export class RDFDataProvider implements DataProvider {
                 .then(rdfGraph => {
                     this.rdfStorage.add(rdfGraph);
                     return true;
-                }).catch (error => console.error(error));
+                }).catch(error => console.error(error));
         });
 
         this.initStatement = Promise.all(parsePromises).then(parseResults => {
@@ -323,9 +327,9 @@ export class RDFDataProvider implements DataProvider {
                         .then(exists => this.fetchIfNecessary(source, exists)),
                     this.rdfStorage.checkElement(target)
                         .then(exists => this.fetchIfNecessary(target, exists)),
-                ]).then(
-                    () => ({ subject: source, predicat: undefined, object: target})
-                ).catch(error => {
+                ]).then(() => (
+                    {subject: source, predicat: undefined, object: target}
+                )).catch(error => {
                     console.warn(error);
                     return null;
                 }));
@@ -613,5 +617,3 @@ export class RDFDataProvider implements DataProvider {
         });
     }
 }
-
-export default RDFDataProvider;

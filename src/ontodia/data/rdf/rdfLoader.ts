@@ -1,14 +1,20 @@
-import { RDFGraph } from 'rdf-ext';
+import {RDFGraph} from 'rdf-ext';
+import {Dictionary} from '../model';
+import {RDFCompositeParser} from './rdfCompositeParser';
 
-import 'whatwg-fetch';
-import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
+export const DEFAULT_PROXY = '/lod-proxy/';
 
 export class RDFLoader {
     private fetchingFileCatche: Dictionary<Promise<RDFGraph>> = {};
+    public parser: RDFCompositeParser;
+    public proxy: string;
 
-    constructor(public parser: RDFCompositeParser) {
-        /* */
+    constructor(parameters: {
+        parser: RDFCompositeParser,
+        proxy?: string;
+    }) {
+        this.parser = parameters.parser;
+        this.proxy = parameters.proxy || DEFAULT_PROXY;
     }
 
     private parseData(data: string, contentType?: string, prefix?: string): Promise<RDFGraph> {
@@ -29,6 +35,7 @@ export class RDFLoader {
             if (acceptType && (elementId.startsWith('http') || elementId.startsWith('file'))) {
                 return fetchFile({
                     url: elementId,
+                    proxy: this.proxy,
                     headers: {
                         'Accept': acceptType,
                     },
@@ -55,14 +62,13 @@ export class RDFLoader {
     }
 }
 
-export default RDFLoader;
-
 function fetchFile(params: {
     url: string,
+    proxy: string,
     headers?: any,
 }) {
     return fetch(
-        '/lod-proxy/' + params.url,
+        params.proxy + params.url,
         {
             method: 'GET',
             credentials: 'same-origin',

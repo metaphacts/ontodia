@@ -1,12 +1,11 @@
-import { RDFStore, RDFGraph, createStore, createGraph, Node, Literal, NamedNode, Triple } from 'rdf-ext';
-import 'whatwg-fetch';
-import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
+import {RDFStore, RDFGraph, createStore, createGraph, Node, Literal, NamedNode, Triple} from 'rdf-ext';
+import {Dictionary} from '../model';
+import {RDFCompositeParser} from './rdfCompositeParser';
 
-import { uniqueId } from 'lodash';
+import {uniqueId} from 'lodash';
 
 const DEFAULT_STOREG_TYPE = 'text/turtle';
-const DEFAULT_STOREG_URI = 'https://ontodia.org/localData.rdf';
+const DEFAULT_STOREG_URI = 'ontodiaLocalData';
 
 export function PrefixFactory(prefix: string): ((id: string) => string) {
     const lastSymbol = prefix[prefix.length - 1];
@@ -73,7 +72,7 @@ export class RDFCacheableStore {
     constructor(
         private parser: RDFCompositeParser,
     ) {
-        this.rdfStorage = createStore ();
+        this.rdfStorage = createStore();
         this.prefs = {
             RDF: PrefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
             RDFS: PrefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
@@ -115,7 +114,7 @@ export class RDFCacheableStore {
     matchAll(statements: MatchStatement[]): Promise<RDFGraph> {
         const slowQueries: MatchStatement[] = [];
         const queries: RDFGraph[] = [];
-        
+
         statements.forEach(statement => {
             if (statement.subject && (LABEL_URIS.indexOf(statement.predicate) !== -1) && !statement.object) {
                 queries.push(this._getLabels(statement.subject));
@@ -125,7 +124,7 @@ export class RDFCacheableStore {
                 slowQueries.push(statement);
             }
         });
-        
+
         queries.push(this.multipleMatch(slowQueries));
 
         return Promise.resolve(this.combineGraphs(queries));
@@ -235,8 +234,8 @@ export class RDFCacheableStore {
         for (const graph of graphs) {
             for (const triple of graph.toArray()) {
                 triples.push(triple);
-            };
-        };
+            }
+        }
         return createGraph(triples);
     }
 
@@ -245,7 +244,7 @@ export class RDFCacheableStore {
         const graphs = Object.keys(this.rdfStorage.graphs).map(id => this.rdfStorage.graphs[id]);
         for (const graph of graphs) {
             for (const triple of graph._graph) {
-                for(const statement of statements) {
+                for (const statement of statements) {
                     if (
                         ((!statement.object) || statement.object === triple.object.nominalValue) &&
                         ((!statement.predicate) || statement.predicate === triple.predicate.nominalValue) &&
@@ -254,41 +253,9 @@ export class RDFCacheableStore {
                         triples.push(triple);
                         continue;
                     }
-                };
-            };
-        };
+                }
+            }
+        }
         return createGraph(triples);
     }
-}
-
-export default RDFCacheableStore;
-
-function fetchFile(params: {
-    url: string,
-    headers?: any,
-}) {
-    return fetch(
-        '/lod-proxy/' + params.url,
-        {
-            method: 'GET',
-            credentials: 'same-origin',
-            mode: 'cors',
-            cache: 'default',
-            headers: params.headers || {
-                'Accept': 'application/rdf+xml',
-            },
-        },
-    ).then(response => {
-        if (response.ok) {
-            return response.text();
-        } else {
-            const error = new Error(response.statusText);
-            (<any> error).response = response;
-            console.error(error);
-            return undefined;
-        }
-    }).catch(error => {
-        console.error(error);
-        return undefined;
-    });
 }
