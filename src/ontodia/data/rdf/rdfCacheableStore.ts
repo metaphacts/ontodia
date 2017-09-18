@@ -5,7 +5,7 @@ import { RDFCompositeParser } from './rdfCompositeParser';
 import { uniqueId } from 'lodash';
 
 const DEFAULT_STORAGE_TYPE = 'text/turtle';
-const DEFAULT_STORAGE_URI = 'ontodiaLocalData';
+const DEFAULT_STORAGE_URI = 'http://ontodia.org/defaultGraph';
 
 export function prefixFactory(prefix: string): ((id: string) => string) {
     const lastSymbol = prefix[prefix.length - 1];
@@ -19,7 +19,7 @@ export interface RDFStore {
     add: (id: string, graph: RDFGraph) => void;
     match: (
         subject?: string,
-        predicat?: string,
+        predicate?: string,
         object?: string,
         iri?: string,
         callback?: (result: any) => void,

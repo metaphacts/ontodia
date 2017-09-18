@@ -1,4 +1,4 @@
-import {createElement, ClassAttributes} from 'react';
+import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {

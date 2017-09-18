@@ -6,6 +6,10 @@ export class RDFCompositeParser {
     parse(body: string, mimeType?: string): Promise<any> {
         if (mimeType) {
             if (mimeType === 'application/rdf+xml') {
+                // For some strange reason we've encountered xml parser errors
+                // when parsing rdf/xml file with Collection tag.
+                // As I remember, file came from x3c Ontology
+                // and this workaround helps to get file through xml parsing.
                 body = body.replace(/Collection/ig, 'Collection1');
             }
             if (!this.parserMap[mimeType]) {

@@ -219,7 +219,7 @@ export function mergeLinksInfo(response: CompositeResponse<LinkModel[]>[]): Link
 
     for (const linkInfo of lists) {
         for (const linkModel of linkInfo) {
-            if (resultInfo.some(l => compareLinksInfo(l, linkModel))) {
+            if (!resultInfo.some(l => compareLinksInfo(l, linkModel))) {
                 resultInfo.push(linkModel);
             }
         }
