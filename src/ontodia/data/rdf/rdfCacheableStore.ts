@@ -1,13 +1,13 @@
-import {RDFStore, RDFGraph, createStore, createGraph, Node, Literal, NamedNode, Triple} from 'rdf-ext';
-import {Dictionary} from '../model';
-import {RDFCompositeParser} from './rdfCompositeParser';
+import { RDFStore, RDFGraph, createStore, createGraph, Node, Literal, NamedNode, Triple } from 'rdf-ext';
+import { Dictionary } from '../model';
+import { RDFCompositeParser } from './rdfCompositeParser';
 
-import {uniqueId} from 'lodash';
+import { uniqueId } from 'lodash';
 
-const DEFAULT_STOREG_TYPE = 'text/turtle';
-const DEFAULT_STOREG_URI = 'ontodiaLocalData';
+const DEFAULT_STORAGE_TYPE = 'text/turtle';
+const DEFAULT_STORAGE_URI = 'ontodiaLocalData';
 
-export function PrefixFactory(prefix: string): ((id: string) => string) {
+export function prefixFactory(prefix: string): ((id: string) => string) {
     const lastSymbol = prefix[prefix.length - 1];
     const _prefix = lastSymbol === '/' || lastSymbol === '#' ? prefix : prefix + '/';
     return (id: string) => {
@@ -74,16 +74,16 @@ export class RDFCacheableStore {
     ) {
         this.rdfStorage = createStore();
         this.prefs = {
-            RDF: PrefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
-            RDFS: PrefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
-            FOAF: PrefixFactory('http://xmlns.com/foaf/0.1/'),
-            XSD: PrefixFactory('http://www.w3.org/2001/XMLSchema#'),
-            OWL: PrefixFactory('http://www.w3.org/2002/07/owl#'),
+            RDF: prefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
+            RDFS: prefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
+            FOAF: prefixFactory('http://xmlns.com/foaf/0.1/'),
+            XSD: prefixFactory('http://www.w3.org/2001/XMLSchema#'),
+            OWL: prefixFactory('http://www.w3.org/2002/07/owl#'),
         };
     }
 
     add(rdfGraph: RDFGraph, prefix?: string) {
-        this.rdfStorage.add(uniqueId(prefix) || (uniqueId(DEFAULT_STOREG_URI)), rdfGraph);
+        this.rdfStorage.add(uniqueId(prefix) || (uniqueId(DEFAULT_STORAGE_URI)), rdfGraph);
         this.enrichMaps(rdfGraph);
     }
 
@@ -142,16 +142,10 @@ export class RDFCacheableStore {
             if (!this.checkingElementMap[id]) {
                 this.checkingElementMap[id] = this.rdfStorage.match(id, null, null).then(result => {
                     const resultArray = result.toArray();
-                    if (resultArray.length === 0) {
-                        return false;
-                    } else {
-                        return true;
-                    }
+                    return resultArray.length !== 0;
                 });
-                return this.checkingElementMap[id];
-            } else {
-                return this.checkingElementMap[id];
             }
+            return this.checkingElementMap[id];
         }
     }
 

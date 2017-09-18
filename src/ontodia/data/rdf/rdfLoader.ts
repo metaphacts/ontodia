@@ -1,6 +1,6 @@
-import {RDFGraph} from 'rdf-ext';
-import {Dictionary} from '../model';
-import {RDFCompositeParser} from './rdfCompositeParser';
+import { RDFGraph } from 'rdf-ext';
+import { Dictionary } from '../model';
+import { RDFCompositeParser } from './rdfCompositeParser';
 
 export const DEFAULT_PROXY = '/lod-proxy/';
 

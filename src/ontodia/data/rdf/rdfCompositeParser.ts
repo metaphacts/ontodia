@@ -1,4 +1,4 @@
-import {Dictionary} from '../model';
+import { Dictionary } from '../model';
 
 export class RDFCompositeParser {
     constructor(public parserMap: Dictionary<any>) { }

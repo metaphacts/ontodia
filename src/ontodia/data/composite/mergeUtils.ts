@@ -17,7 +17,7 @@ export interface CompositeResponse<Type> {
 }
 
 export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): ClassModel[] {
-    const lists = response.filter(r => r.response).map(r => classTree2Array(r.response));
+    const lists = response.filter(r => r.response).map(r => classTreeToArray(r.response));
     const dictionary: Dictionary<ClassModel> = {};
     const topLevelModels: Dictionary<ClassModel> = {};
     const childrenMap: Dictionary<string[]> = {};
@@ -219,7 +219,7 @@ export function mergeLinksInfo(response: CompositeResponse<LinkModel[]>[]): Link
 
     for (const linkInfo of lists) {
         for (const linkModel of linkInfo) {
-            if (!contain<LinkModel>(linkModel, resultInfo, compareLinksInfo)) {
+            if (resultInfo.some(l => compareLinksInfo(l, linkModel))) {
                 resultInfo.push(linkModel);
             }
         }
@@ -259,7 +259,7 @@ export function mergeFilter(response: CompositeResponse<Dictionary<ElementModel>
     return mergeElementInfo(response);
 }
 
-export function classTree2Array(models: ClassModel[]): ClassModel[] {
+export function classTreeToArray(models: ClassModel[]): ClassModel[] {
     let resultArray: ClassModel[] = models;
 
     function getDescendants(model: ClassModel): ClassModel[] {
@@ -291,7 +291,7 @@ export function mergeLabels(
     const mergedValuesList = a.values;
 
     for (const locStr of b.values) {
-        if (!contain<LocalizedString>(locStr, mergedValuesList, compareLabels)) {
+        if (!mergedValuesList.some(l => compareLabels(l, locStr))) {
             mergedValuesList.push(locStr);
         }
     }
@@ -315,13 +315,4 @@ export function mergeClassModel(a: ClassModel, b: ClassModel): ClassModel {
         count: a.count + b.count,
         children: Object.keys(childrenDictionary).map(key => childrenDictionary[key]),
     };
-}
-
-export function contain<Type>(locStr: Type, strList: Type[], comparator: (a: Type, b: Type) => boolean) {
-    for (const ls of strList) {
-        if (comparator(ls, locStr)) {
-            return true;
-        }
-    }
-    return false;
 }

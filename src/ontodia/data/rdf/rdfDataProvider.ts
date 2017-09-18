@@ -1,7 +1,7 @@
-import {Triple, Node, RDFGraph} from 'rdf-ext';
-import {RDFCacheableStore, MatchStatement, PrefixFactory, isLiteral, isNamedNode} from './rdfCacheableStore';
-import {DataProvider, FilterParams} from '../provider';
-import {RDFLoader} from './rdfLoader';
+import { Triple, Node, RDFGraph } from 'rdf-ext';
+import { RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNode } from './rdfCacheableStore';
+import { DataProvider, FilterParams } from '../provider';
+import { RDFLoader } from './rdfLoader';
 import {
     LocalizedString, Dictionary, ClassModel, LinkType, ElementModel,
     LinkModel, LinkCount, PropertyModel, Property,
@@ -9,11 +9,11 @@ import {
 import { RDFCompositeParser } from './rdfCompositeParser';
 
 const PREFIX_FACTORIES = {
-    RDF: PrefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
-    RDFS: PrefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
-    FOAF: PrefixFactory('http://xmlns.com/foaf/0.1/'),
-    XSD: PrefixFactory('http://www.w3.org/2001/XMLSchema#'),
-    OWL: PrefixFactory('http://www.w3.org/2002/07/owl#'),
+    RDF: prefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
+    RDFS: prefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
+    FOAF: prefixFactory('http://xmlns.com/foaf/0.1/'),
+    XSD: prefixFactory('http://www.w3.org/2001/XMLSchema#'),
+    OWL: prefixFactory('http://www.w3.org/2002/07/owl#'),
 };
 
 export class RDFDataProvider implements DataProvider {
@@ -328,7 +328,7 @@ export class RDFDataProvider implements DataProvider {
                     this.rdfStorage.checkElement(target)
                         .then(exists => this.fetchIfNecessary(target, exists)),
                 ]).then(() => (
-                    {subject: source, predicat: undefined, object: target}
+                    {subject: source, object: target}
                 )).catch(error => {
                     console.warn(error);
                     return null;
@@ -512,6 +512,9 @@ export class RDFDataProvider implements DataProvider {
                     let acceptableKey = false;
                     for (const label of el.label.values) {
                         acceptableKey = acceptableKey || label.text.toLowerCase().indexOf(key) !== -1;
+                        if (acceptableKey) {
+                            break;
+                        }
                     }
                     if (acceptableKey) {
                         result[el.id] = el;

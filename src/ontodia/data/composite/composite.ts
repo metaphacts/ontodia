@@ -63,12 +63,12 @@ export class CompositeDataProvider implements DataProvider {
     }
 
     classTree(): Promise<ClassModel[]> {
-        return this.fetchInCource('classTree', mergeClassTree);
+        return this.fetchSequentially('classTree', mergeClassTree);
     }
 
     propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('propertyInfo', mergePropertyInfo, params);
+            return this.fetchSequentially('propertyInfo', mergePropertyInfo, params);
         } else {
             let propertyIds = params.propertyIds;
             return this.queueProcessResults((previousResult: Dictionary<PropertyModel>, dp: DPDefinition) => {
@@ -80,7 +80,7 @@ export class CompositeDataProvider implements DataProvider {
 
     classInfo(params: { classIds: string[] }): Promise<ClassModel[]> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('classInfo', mergeClassInfo, params);
+            return this.fetchSequentially('classInfo', mergeClassInfo, params);
         } else {
             let classIds = params.classIds;
             return this.queueProcessResults((previousResult: ClassModel[], dp: DPDefinition) => {
@@ -92,7 +92,7 @@ export class CompositeDataProvider implements DataProvider {
 
     linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('linkTypesInfo', mergeLinkTypesInfo, params);
+            return this.fetchSequentially('linkTypesInfo', mergeLinkTypesInfo, params);
         } else {
             let linkTypeIds = params.linkTypeIds;
             return this.queueProcessResults((previousResult: LinkType[], dp: DPDefinition) => {
@@ -104,12 +104,12 @@ export class CompositeDataProvider implements DataProvider {
     }
 
     linkTypes(): Promise<LinkType[]> {
-        return this.fetchInCource('linkTypes', mergeLinkTypes);
+        return this.fetchSequentially('linkTypes', mergeLinkTypes);
     }
 
     elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('elementInfo', mergeElementInfo, params);
+            return this.fetchSequentially('elementInfo', mergeElementInfo, params);
         } else {
             let elementIds = params.elementIds;
             return this.queueProcessResults((previousResult: Dictionary<ElementModel>, dp: DPDefinition) => {
@@ -124,7 +124,7 @@ export class CompositeDataProvider implements DataProvider {
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('linksInfo', mergeLinksInfo, params);
+            return this.fetchSequentially('linksInfo', mergeLinksInfo, params);
         } else {
             let elementIds = params.elementIds;
             return this.queueProcessResults((previousResult: LinkModel[], dp: DPDefinition) => {
@@ -144,7 +144,7 @@ export class CompositeDataProvider implements DataProvider {
 
     linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('linkTypesOf', mergeLinkTypesOf, params);
+            return this.fetchSequentially('linkTypesOf', mergeLinkTypesOf, params);
         } else {
             return this.queueProcessResults((previousResult: LinkCount[], dp: DPDefinition) => {
                 if (!previousResult || previousResult && previousResult.length === 0) {
@@ -164,7 +164,7 @@ export class CompositeDataProvider implements DataProvider {
         direction?: 'in' | 'out';
     }): Promise<Dictionary<ElementModel>> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('linkElements', mergeLinkElements, params);
+            return this.fetchSequentially('linkElements', mergeLinkElements, params);
         } else {
             return this.queueProcessResults((previousResult: Dictionary<ElementModel>, dp: DPDefinition) => {
                 if (!previousResult || previousResult && Object.keys(previousResult).length === 0) {
@@ -178,7 +178,7 @@ export class CompositeDataProvider implements DataProvider {
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
         if (this.mergeMode === 'fetchAll') {
-            return this.fetchInCource('filter', mergeFilter, params);
+            return this.fetchSequentially('filter', mergeFilter, params);
         } else {
             return this.queueProcessResults((previousResult: Dictionary<ElementModel>, dp: DPDefinition) => {
                 if (!previousResult || previousResult && Object.keys(previousResult).length === 0) {
@@ -231,7 +231,7 @@ export class CompositeDataProvider implements DataProvider {
         return recursiveCall();
     };
 
-    private fetchInCource<ResponseType>(
+    private fetchSequentially<ResponseType>(
         functionName: string, mergeFunction: (...args: any[]) => ResponseType, params?: any,
     ) {
         const resultPromises = this.dataProviders.map(
