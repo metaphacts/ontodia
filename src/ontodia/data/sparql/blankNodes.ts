@@ -1,4 +1,3 @@
-import 'whatwg-fetch';
 import { getNameFromId } from './responseHandler';
 import { Dictionary } from '../model';
 import { FilterParams } from '../provider';

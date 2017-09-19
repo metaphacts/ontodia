@@ -1,4 +1,3 @@
-import 'whatwg-fetch';
 import * as N3 from 'n3';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
