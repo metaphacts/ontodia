@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+### [0.6.0] - 2017-09-19
+### Added
+- RDF data provider with multiple parsers.
+- LOD data fetching for RDF data provider.
+- Composite data provider to combine results from multiple data providers.
+- Ability to specify rdf pattern to use as a link on a diagram in Spaql Data Provider.
+
 ### [0.5.3] - 2017-08-23
 ### Fixed
 - Unpredictable behaviour with language selection.
