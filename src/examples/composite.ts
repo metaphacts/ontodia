@@ -143,7 +143,7 @@ function onWorkspaceMounted(workspace: Workspace) {
                 type: 'text/turtle',
             },
         ],
-        dataFetching: false,
+        dataFetching: true,
         parsers: {
             'text/turtle': new N3Parser(),
             'application/rdf+xml': new RdfXmlParser(),
