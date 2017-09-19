@@ -58,7 +58,7 @@ export interface ElementBinding {
     inst: RdfIri | RdfBlank;
     class?: RdfLiteral;
     label?: RdfLiteral;
-    propType?: RdfLiteral;
+    propType?: RdfIri;
     propValue?: RdfLiteral;
 }
 
@@ -78,6 +78,8 @@ export interface LinkBinding {
     source: RdfIri | RdfBlank;
     type: RdfIri;
     target: RdfIri | RdfBlank;
+    propType?: RdfIri;
+    propValue?: RdfLiteral;
 }
 
 export interface LinkCountBinding {

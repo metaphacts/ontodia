@@ -73,6 +73,13 @@ export interface SparqlDataProviderSettings {
      * imposes additional filtering on elements within filter
      */
     filterAdditionalRestriction: string;
+
+    /**
+     * Abstract links configuration - one could abstract a property path as a link on the diagram
+     * If you choose to set linkConfiguration, please ensure you'll have corresponding handling of linkConfiguration in
+     * linkTypeOf query, refElement* queries, linkInfos query.
+     */
+    linkConfigurations: LinkConfiguration[];
 }
 
 /**
@@ -99,7 +106,16 @@ export interface FullTextSearchSettings {
     extractLabel?: boolean;
 }
 
+export interface LinkConfiguration {
+    id: string;
+    inverseId: string;
+    path: string;
+    properties?: string;
+}
+
 export const RDFSettings: SparqlDataProviderSettings = {
+    linkConfigurations: [],
+
     linksInfoQuery: `SELECT ?source ?type ?target
             WHERE {
                 ?source ?type ?target.

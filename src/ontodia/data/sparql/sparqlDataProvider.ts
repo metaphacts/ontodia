@@ -217,7 +217,10 @@ export class SparqlDataProvider implements DataProvider {
         }
 
         const ids = elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const linksInfoQuery = resolveTemplate(this.settings.linksInfoQuery, {ids: ids});
+        const linksInfoQuery = resolveTemplate(
+            this.settings.linksInfoQuery,
+            {ids: ids, linkConfigurations: this.formatLinkLinks()},
+        );
         const query = this.settings.defaultPrefix + linksInfoQuery;
         return this.executeSparqlQuery<LinkBinding>(query)
             .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
@@ -230,7 +233,9 @@ export class SparqlDataProvider implements DataProvider {
         }
         const elementIri = escapeIri(params.elementId);
         const query = this.settings.defaultPrefix
-            + resolveTemplate(this.settings.linkTypesOfQuery, {elementIri: elementIri});
+            + resolveTemplate(this.settings.linkTypesOfQuery,
+                {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
+                );
         return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 
@@ -346,22 +351,112 @@ export class SparqlDataProvider implements DataProvider {
     protected createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}) {
         const {elementId, linkId, direction} = params;
         const refElementIRI = escapeIri(params.elementId);
-        const linkPattern = linkId ? escapeIri(params.linkId) : '?link';
-        const blankFilter = this.options.acceptBlankNodes
-            ? 'FILTER(isIri(?inst) || isBlank(?inst))'
-            : 'FILTER(isIri(?inst))';
-        // link to element with specified link type
-        // if direction is not specified, provide both patterns and union them
-        // FILTER ISIRI is used to prevent blank nodes appearing in results
-        let part = '';
-        if (params.direction !== 'in') {
-            part += `{ ${refElementIRI} ${linkPattern} ?inst . ${blankFilter} }`;
+
+        // If no link configuration is passed, use rdf predicates as links
+        if (this.settings.linkConfigurations.length === 0) {
+            const linkPattern = linkId ? escapeIri(params.linkId) : '?link';
+            const blankFilter = this.options.acceptBlankNodes
+                ? 'FILTER(isIri(?inst) || isBlank(?inst))'
+                : 'FILTER(isIri(?inst))';
+            // link to element with specified link type
+            // if direction is not specified, provide both patterns and union them
+            // FILTER ISIRI is used to prevent blank nodes appearing in results
+            let part = '';
+            if (params.direction !== 'in') {
+                part += `{ ${refElementIRI} ${linkPattern} ?inst . ${blankFilter} }`;
+            }
+            if (!params.direction) { part += ' UNION '; }
+            if (params.direction !== 'out') {
+                part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
+            }
+            return part;
+        } else {
+            // use link configuration in filter. If you need more or somehow mix it with rdf predicates, override
+            // this function and provide nessesary sparql for this.
+            const linkConfigurations = this.formatLinkElements(params.elementId, params.linkId, params.direction);
+            return linkConfigurations;
         }
-        if (!params.direction) { part += ' UNION '; }
-        if (params.direction !== 'out') {
-            part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
+
+    }
+
+    formatLinkTypesOf(elementIri: string): string {
+        const elementIriConst = `<${elementIri}>`;
+        return this.settings.linkConfigurations.map(linkConfig => {
+            let links: string[] = [];
+            links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?outObject')} 
+                BIND(<${linkConfig.id}> as ?link )
+            }`);
+            links.push(`{ ${this.formatLinkPath(linkConfig.path, '?inObject', elementIriConst)} 
+                BIND(<${linkConfig.id}> as ?link )
+            }`);
+            if (linkConfig.inverseId) {
+                links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?inObject')} 
+                BIND(<${linkConfig.inverseId}> as ?link )
+            }`);
+                links.push(`{ ${this.formatLinkPath(linkConfig.path, '?outObject', elementIriConst)} 
+                BIND(<${linkConfig.inverseId}> as ?link )
+            }`);
+            }
+            return links;
+        }).map(links => links.join(`
+            UNION 
+            `)).join(`
+            UNION 
+            `);
+    }
+
+    formatLinkElements(refElementIri: string, linkIri?: string, direction?: 'in' | 'out'): string {
+        const elementIriConst = `<${refElementIri}>`;
+        let parts: string[] = [];
+        if (!linkIri) {
+            if (!direction || direction === 'out') {
+                parts = parts.concat( this.settings.linkConfigurations.map((linkConfig) =>
+                    `{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?inst')} }`));
+            }
+            if (!direction || direction === 'in') {
+                parts = parts.concat( this.settings.linkConfigurations.map((linkConfig) =>
+                    `{ ${this.formatLinkPath(linkConfig.path, '?inst', elementIriConst)} }`));
+            }
+            return parts.join(`
+            UNION 
+            `);
+        } else {
+            const linkOut = this.settings.linkConfigurations.find((linkConfig) => linkConfig.id === linkIri);
+            const linkIn = this.settings.linkConfigurations.find((linkConfig) => linkConfig.inverseId === linkIri);
+            if (!direction || direction === 'out') {
+                if (linkOut) {
+                    parts.push(`{ ${this.formatLinkPath(linkOut.path, elementIriConst, '?inst')} }`);
+                }
+                if (linkIn) {
+                    parts.push(`{ ${this.formatLinkPath(linkIn.path, '?inst', elementIriConst)} }`);
+                }
+            }
+            if (!direction || direction === 'in') {
+                if (linkIn) {
+                    parts.push(`{ ${this.formatLinkPath(linkIn.path, elementIriConst, '?inst')} }`);
+                }
+                if (linkOut) {
+                    parts.push(`{ ${this.formatLinkPath(linkOut.path, '?inst', elementIriConst)} }`);
+                }
+            }
+            return parts.join(`
+            UNION 
+            `);
         }
-        return part;
+    }
+
+    formatLinkLinks(): string {
+        return this.settings.linkConfigurations.map(linkConfig =>
+            `{ ${this.formatLinkPath(linkConfig.path, '?source', '?target')} 
+                BIND(<${linkConfig.id}> as ?type )
+               ${linkConfig.properties ? this.formatLinkPath(linkConfig.properties, '?source', '?target') : ''}
+            }`).join(`
+            UNION 
+            `);
+    }
+
+    formatLinkPath(path: string, source: string, target: string): string {
+        return path.replace(/\$source/g, source).replace(/\$target/g, target);
     }
 }
 
