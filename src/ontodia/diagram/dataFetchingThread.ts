@@ -1,22 +1,28 @@
 export abstract class BatchingScheduler {
     private scheduled: number | undefined;
 
-    constructor(readonly waitingTime = 0) {}
+    constructor(readonly waitingTime = 0) {
+        this.runSynchronously = this.runSynchronously.bind(this);
+    }
 
     protected schedule() {
         if (typeof this.scheduled === 'undefined') {
-            this.scheduled = setTimeout(this.onTimeout, this.waitingTime);
+            this.scheduled = setTimeout(this.runSynchronously, this.waitingTime);
         }
     }
 
     protected abstract run(): void;
 
-    private onTimeout = () => {
-        this.scheduled = undefined;
+    runSynchronously() {
+        this.cancelScheduledTimeout();
         this.run();
     }
 
     dispose() {
+        this.cancelScheduledTimeout();
+    }
+
+    private cancelScheduledTimeout() {
         if (typeof this.scheduled !== 'undefined') {
             clearTimeout(this.scheduled);
             this.scheduled = undefined;

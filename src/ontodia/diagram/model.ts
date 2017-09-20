@@ -16,6 +16,20 @@ export type PreventLinksLoading = { preventLoading?: boolean; };
 
 type ChangeVisibilityOptions = { isFromHandler?: boolean };
 
+export enum RenderingLayer {
+    Element = 1,
+    ElementSize,
+    PaperArea,
+    Link,
+
+    First = Element,
+    Last = Link,
+}
+
+export interface UpdateViewEventData {
+    layer: RenderingLayer;
+}
+
 /**
  * Model of diagram.
  *
@@ -35,6 +49,8 @@ type ChangeVisibilityOptions = { isFromHandler?: boolean };
  *     history:reset
  *     history:initBatchCommand
  *     history:storeBatchCommand
+ *
+ *     synchronouslyUpdateView (data: UpdateViewEventData)
  */
 export class DiagramModel extends Backbone.Model {
     graph = new joint.dia.Graph();
@@ -96,6 +112,12 @@ export class DiagramModel extends Backbone.Model {
     resetHistory() { this.trigger('history:reset'); }
     initBatchCommand() { this.trigger('history:initBatchCommand'); }
     storeBatchCommand() { this.trigger('history:storeBatchCommand'); }
+
+    synchronouslyUpdateView() {
+        for (let layer = RenderingLayer.First; layer <= RenderingLayer.Last; layer++) {
+            this.trigger('synchronouslyUpdateView', {layer});
+        }
+    }
 
     private initializeExternalAddRemoveSupport() {
         // override graph.addCell to support CommandManager's undo/redo

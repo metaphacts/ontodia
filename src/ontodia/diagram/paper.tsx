@@ -8,34 +8,25 @@ import { Debouncer } from '../diagram/dataFetchingThread';
 import { LinkStyle, LinkLabel } from '../customization/props';
 
 import { Element as GraphElement, Link, linkMarkerKey } from './elements';
-import { DiagramModel } from './model';
+import { DiagramModel, RenderingLayer, UpdateViewEventData } from './model';
 import { DiagramView } from './view';
-
-export interface PaperProps {
-    view: DiagramView;
-    width: number;
-    height: number;
-    originX: number;
-    originY: number;
-    scale: number;
-    paddingX: number;
-    paddingY: number;
-    onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: GraphElement | Link | undefined) => void;
-}
-
-interface State {}
-
-const CLASS_NAME = 'ontodia-paper';
 
 export class PaperLinks extends Component<{ view: DiagramView }, {}> {
     private readonly listener = new Backbone.Model();
     private readonly delayedUpdate = new Debouncer();
+
+    // /** List of link IDs to update at the next flush event */
+    // private pendingUpdates: string[] = [];
 
     componentDidMount() {
         const {view} = this.props;
         const graph = view.model.graph;
         this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
         this.listener.listenTo(graph, 'change:position change:size', this.scheduleUpdateAll);
+        this.listener.listenTo(view.model, 'synchronouslyUpdateView', (data: UpdateViewEventData) => {
+            if (data.layer !== RenderingLayer.Link) { return; }
+            this.delayedUpdate.runSynchronously();
+        });
     }
 
     componentWillUnmount() {
@@ -65,14 +56,30 @@ export class PaperLinks extends Component<{ view: DiagramView }, {}> {
     }
 }
 
+export interface PaperProps {
+    view: DiagramView;
+    width: number;
+    height: number;
+    originX: number;
+    originY: number;
+    scale: number;
+    paddingX: number;
+    paddingY: number;
+    onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: GraphElement | Link | undefined) => void;
+}
+
+interface State {}
+
+const CLASS_NAME = 'ontodia-paper';
+
 export class Paper extends Component<PaperProps, State> {
     private readonly listener = new Backbone.Model();
 
     componentDidMount() {
         const {view} = this.props;
         const graph = view.model.graph;
-        this.listener.listenTo(graph, 'add remove reset', this.updateAll);
-        this.listener.listenTo(graph, 'change:position change:size', this.updateAll);
+        //this.listener.listenTo(graph, 'add remove reset', this.updateAll);
+        //this.listener.listenTo(graph, 'change:position change:size', this.updateAll);
     }
 
     componentWillUnmount() {

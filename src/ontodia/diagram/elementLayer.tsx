@@ -10,7 +10,7 @@ import { TemplateProps } from '../customization/props';
 
 import { BatchingScheduler } from './dataFetchingThread';
 import { Element } from './elements';
-import { uri2name } from './model';
+import { RenderingLayer, UpdateViewEventData, uri2name } from './model';
 import { DiagramView } from './view';
 
 export interface Props {
@@ -76,6 +76,10 @@ export class ElementLayer extends React.Component<Props, void> {
         this.listener.listenTo(graph, 'add remove reset', this.updateAll);
         this.listener.listenTo(paper, 'scale', this.updateAll);
         this.listener.listenTo(paper, 'translate resize', this.updateAll);
+        this.listener.listenTo(view.model, 'synchronouslyUpdateView', (data: UpdateViewEventData) => {
+            if (data.layer !== RenderingLayer.ElementSize) { return; }
+            this.updateSize.runSynchronously();
+        });
     }
 
     componentDidUpdate() {

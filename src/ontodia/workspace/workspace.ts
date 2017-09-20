@@ -193,13 +193,15 @@ export class Workspace extends Component<WorkspaceProps, State> {
         forceLayout({nodes, links, preferredLinkLength: 200});
         padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
+
         for (const node of nodes) {
             this.model.getElement(node.id).position(node.x, node.y);
         }
-        this.markup.paperArea.adjustPaper();
+
+        const adjustedBox = this.markup.paperArea.computeAdjustedBox();
         translateToCenter({
             nodes,
-            paperSize: this.markup.paperArea.getPaperSize(),
+            paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
             contentBBox: this.markup.paperArea.getContentFittingBox(),
         });
 
@@ -210,6 +212,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
         for (const {link} of links) {
             link.set('vertices', []);
         }
+
+        this.model.synchronouslyUpdateView();
     }
 
     exportSvg = (link: HTMLAnchorElement) => {
