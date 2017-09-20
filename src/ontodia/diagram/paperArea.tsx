@@ -229,16 +229,24 @@ export class PaperArea extends React.Component<Props, {}> {
             y: Math.ceil(this.area.clientHeight * 0.75),
         };
 
-        const paddingUnchanged =
+        const paddingChanged = !(
             this.padding.x === previousPadding.x &&
-            this.padding.y === previousPadding.y;
-        if (paddingUnchanged) { return; }
+            this.padding.y === previousPadding.y
+        );
 
         const paperElement: HTMLElement = this.paper.el;
-        paperElement.style.marginLeft = `${this.padding.x}px`;
-        paperElement.style.marginRight = `${this.padding.x}px`;
-        paperElement.style.marginTop = `${this.padding.y}px`;
-        paperElement.style.marginBottom = `${this.padding.y}px`;
+        paperElement.style.width = `${this.paper.options.width + this.padding.x}px`;
+        paperElement.style.height = `${this.paper.options.height + this.padding.y}px`;
+
+        if (paddingChanged) {
+            paperElement.style.marginLeft = `${this.padding.x}px`;
+            paperElement.style.marginTop = `${this.padding.y}px`;
+            // using padding instead of margin in combination with setting width and height
+            // on .paper element to avoid "over-constrained" margins, see an explanation here:
+            // https://stackoverflow.com/questions/11695354
+            paperElement.style.paddingRight = `${this.padding.x}px`;
+            paperElement.style.paddingBottom = `${this.padding.y}px`;
+        }
 
         if (previousPadding) {
             this.area.scrollLeft += this.padding.x - previousPadding.x;
