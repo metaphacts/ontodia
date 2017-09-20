@@ -677,9 +677,8 @@ export class PaperArea extends React.Component<Props, State> {
 
     private onDragDrop = (e: DragEvent) => {
         if (this.props.onDragDrop) {
-            const {offsetLeft, offsetTop} = this.area;
-            const paperPosition = this.clientToPaperCoords(
-                e.pageX - offsetLeft, e.pageY - offsetTop);
+            const {x, y} = clientCoordsFor(this.area, e);
+            const paperPosition = this.clientToPaperCoords(x, y);
             this.props.onDragDrop(e, paperPosition);
         }
     }
@@ -716,5 +715,16 @@ export class PaperArea extends React.Component<Props, State> {
         } else {
             this.renderSpinner();
         }
+    };
+}
+
+function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
+    const target = (e.target instanceof SVGElement && e.target.ownerSVGElement !== null)
+        ? e.target.ownerSVGElement : e.target as HTMLElement;
+    const targetBox = target.getBoundingClientRect();
+    const containerBox = container.getBoundingClientRect();
+    return {
+        x: e.offsetX + (targetBox.left - containerBox.left),
+        y: e.offsetY + (targetBox.top - containerBox.top),
     };
 }
