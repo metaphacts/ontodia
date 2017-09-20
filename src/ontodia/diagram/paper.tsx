@@ -85,17 +85,22 @@ export class Paper extends Component<PaperProps, State> {
         const {width, height, originX, originY, scale, paddingX, paddingY} = this.props;
         const scaledWidth = width * scale;
         const scaledHeight = height * scale;
+        // using padding instead of margin in combination with setting width and height
+        // on .paper element to avoid "over-constrained" margins, see an explanation here:
+        // https://stackoverflow.com/questions/11695354
         const style: CSSProperties = {
-            width: scaledWidth,
-            height: scaledHeight,
+            width: scaledWidth + paddingX,
+            height: scaledHeight + paddingY,
             marginLeft: paddingX,
-            marginRight: paddingX,
             marginTop: paddingY,
-            marginBottom: paddingY,
+            paddingRight: paddingX,
+            paddingBottom: paddingY,
         };
         return (
             <div className={CLASS_NAME} style={style} onMouseDown={this.onMouseDown}>
-                <svg width={scaledWidth} height={scaledHeight} style={{overflow: 'visible'}}>
+                <svg className={`${CLASS_NAME}__canvas`}
+                    width={scaledWidth} height={scaledHeight}
+                    style={{overflow: 'visible'}}>
                     <defs>
                         <filter id='solid-fill' x='0' y='0' width='1' height='1' dangerouslySetInnerHTML={{__html: `
                             <feFlood flood-color='white' />
