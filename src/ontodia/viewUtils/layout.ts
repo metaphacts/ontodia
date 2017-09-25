@@ -122,27 +122,3 @@ export function padded(
         }
     }
 }
-
-export function flowLayout<Link extends LayoutLink>(params: {
-    nodes: LayoutNode[];
-    links: Link[];
-    preferredLinkLength: number;
-    route: (link: Link, path: any[]) => void
-}) {
-    const layout = new cola.Layout()
-        .nodes(params.nodes)
-        .links(params.links)
-        .avoidOverlaps(true)
-        .flowLayout('x', params.preferredLinkLength)
-        .jaccardLinkLengths(params.preferredLinkLength);
-    layout.start(30, 0, 10, undefined, false);
-
-    for (const node of params.nodes) {
-        node.innerBounds = node.bounds.inflate(-50);
-    }
-
-    layout.prepareEdgeRouting(50 / 3);
-    for (const link of params.links) {
-        params.route(link, layout.routeEdge(link, undefined));
-    }
-}
