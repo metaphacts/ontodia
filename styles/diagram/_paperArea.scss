@@ -12,9 +12,12 @@
   .paper {
     margin: 0;
     position: relative;
-    display: inline-block;
-    border: 1px solid black;
-    background-color: white;
+    display: block;
+
+    > svg {
+      border: 1px solid black;
+      background-color: white;
+    }
   }
 }
 
