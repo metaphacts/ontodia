@@ -3,21 +3,44 @@
     padding: 5px;
     margin-top: 4px;
 
-    > label > span { vertical-align: middle; }
+    > label {
+      margin-right: 5px;
+      > span { vertical-align: middle; }
+    }
+  }
+}
+
+.ontodia-toolbar {
+  &__layout-group {
+    margin: 5px;
+    height: 30px;
+    float: left;
+  
+    > label {
+      margin-right: 5px;
+    }
+  
+    .btn-group,button {
+      height: 100%;
+    }
   }
 }
 
 .ontodia-toolbar {
   background: rgba(0, 0, 0, 0.15);
 }
+
 .ontodia-toolbar > .btn-group {
   margin-left: 10px;
 }
+
 .ontodia-toolbar > .btn-group > button {
   margin-top: 5px;
   margin-bottom: 5px;
 }
+
 .ontodia-toolbar .ontodia-toolbar__undo,
 .ontodia-toolbar .ontodia-toolbar__redo {
   display: none;
 }
+

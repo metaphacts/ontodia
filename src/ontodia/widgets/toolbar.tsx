@@ -8,6 +8,7 @@ export interface Props {
     onEditAtMainSite?: () => void;
     onResetDiagram?: () => void;
     onForceLayout: () => void;
+    onFlowLayout?: () => void;
     onZoomIn: () => void;
     onZoomOut: () => void;
     onZoomToFit: () => void;
@@ -105,10 +106,6 @@ export class EditorToolbar extends React.Component<Props, State> {
                         </button>
                     ) : undefined}
                     <button type='button' className='btn btn-default'
-                            onClick={this.props.onForceLayout}>
-                        <span className='fa fa-sitemap' aria-hidden='true' /> Layout
-                    </button>
-                    <button type='button' className='btn btn-default'
                             title='Zoom In' onClick={this.props.onZoomIn}>
                         <span className='fa fa-search-plus' aria-hidden='true' />
                     </button>
@@ -144,10 +141,25 @@ export class EditorToolbar extends React.Component<Props, State> {
                             title='Print diagram' onClick={this.props.onPrint}>
                         <span className='fa fa-print' aria-hidden='true' />
                     </button>
+                    <span className={`${CLASS_NAME}__layout-group`}>
+                        <label><span>Layout - </span></label>
+                        <span className='btn-group btn-group-sm'>
+                            <button type='button' className='btn btn-default'
+                                    onClick={this.props.onForceLayout}>
+                                <span title='Force layout' className='fa fa-snowflake-o' aria-hidden='true' />
+                            </button>
+                            {this.props.onFlowLayout ? (
+                                <button type='button' className='btn btn-default'
+                                        onClick={this.props.onFlowLayout}>
+                                    <span title='Flow layout' className='fa fa-sitemap' aria-hidden='true' />
+                                </button>
+                            ) : undefined}
+                        </span>
+                    </span>
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
                     {(languages.length > 1) ? (
                         <span className={`btn-group ${CLASS_NAME}__language-selector`}>
-                            {nonEmbedded ? <label><span>Data Language:</span></label> : undefined}
+                            {nonEmbedded ? <label><span>Data Language - </span></label> : undefined}
                             <select value={selectedLanguage} onChange={this.onChangeLanguage}>
                                 {languages.map(({code, label}) =>
                                     <option key={code} value={code}>{label}</option>)}

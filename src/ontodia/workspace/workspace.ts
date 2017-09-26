@@ -91,6 +91,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     render(): ReactElement<any> {
         const {onShareDiagram, onSaveDiagram} = this.props;
+        const flowLayoutHandler = this.getFlowLayoutHandler();
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
@@ -116,6 +117,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     this.forceLayout();
                     this.zoomToFit();
                 },
+                onFlowLayout: flowLayoutHandler ? () => {
+                    flowLayoutHandler();
+                    this.zoomToFit();
+                } : undefined,
                 languages: this.props.languages,
                 selectedLanguage: this.diagram.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
@@ -125,6 +130,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 isDiagramSaved: this.props.isDiagramSaved,
             }),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
+    }
+
+    protected getFlowLayoutHandler(): (() => void | undefined) {
+        return undefined;
     }
 
     componentDidMount() {
