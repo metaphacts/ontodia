@@ -20,16 +20,16 @@ import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
+import { EventSource } from '../viewUtils/events';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
-import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { Element, FatClassModel, linkMarkerKey } from './elements';
-
 import { LinkView } from './linkView';
+import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { SeparatedElementView } from './separatedElementView';
 
 export interface DiagramViewOptions {
@@ -43,6 +43,16 @@ export interface DiagramViewOptions {
 export interface TypeStyle {
     color: { h: number; c: number; l: number; };
     icon?: string;
+}
+
+export enum RenderingLayer {
+    Element = 1,
+    ElementSize,
+    PaperArea,
+    Link,
+
+    FirstToUpdate = Element,
+    LastToUpdate = Link,
 }
 
 const DefaultToSVGOptions: ToSVGOptions = {
@@ -70,11 +80,13 @@ export class DiagramView extends Backbone.Model {
 
     private colorSeed = 0x0BADBEEF;
 
-    private linkTemplates: Dictionary<{
-        template: LinkTemplate;
-        start: SVGMarkerElement;
-        end: SVGMarkerElement;
-    }> = {};
+    private linkTemplates: { [linkTypeId: string]: LinkTemplate } = {};
+
+    private linkTemplatesChangedSource = new EventSource();
+    readonly linkTemplatesChanged = this.linkTemplatesChangedSource.event;
+
+    private syncUpdateSource = new EventSource<{ layer: RenderingLayer }>();
+    readonly syncUpdate = this.syncUpdateSource.event;
 
     constructor(
         public readonly model: DiagramModel,
@@ -124,6 +136,10 @@ export class DiagramView extends Backbone.Model {
         this.set('language', value);
     }
 
+    getLinkTemplates(): { readonly [linkTypeId: string]: LinkTemplate } {
+        return this.linkTemplates;
+    }
+
     cancelSelection() { this.selection.reset([]); }
 
     print() {
@@ -147,6 +163,12 @@ export class DiagramView extends Backbone.Model {
 
     adjustPaper() {
         this.paper.trigger('ontodia:adjustSize');
+    }
+
+    performSyncUpdate() {
+        for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
+            this.syncUpdateSource.trigger({layer});
+        }
     }
 
     initializePaperComponents() {
@@ -413,10 +435,10 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    getLinkTemplate(linkTypeId: string): LinkTemplate {
+    createLinkTemplate(linkTypeId: string): LinkTemplate {
         const existingTemplate = this.linkTemplates[linkTypeId];
         if (existingTemplate) {
-            return existingTemplate.template;
+            return existingTemplate;
         }
 
         let template: LinkTemplate = {};
@@ -429,40 +451,9 @@ export class DiagramView extends Backbone.Model {
         }
 
         fillLinkTemplateDefaults(template, this.model);
-        this.linkTemplates[linkTypeId] = {
-            template,
-            start: this.createLinkMarker(linkTypeId, true, template.markerSource),
-            end: this.createLinkMarker(linkTypeId, false, template.markerTarget),
-        };
+        this.linkTemplates[linkTypeId] = template;
+        this.linkTemplatesChangedSource.trigger(undefined);
         return template;
-    }
-
-    private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {
-        if (!style) { return undefined; }
-
-        const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
-        const defs = this.paper.svg.getElementsByTagNameNS(SVG_NAMESPACE, 'defs')[0];
-        const marker = document.createElementNS(SVG_NAMESPACE, 'marker');
-        const linkTypeIndex = this.model.getLinkType(linkTypeId).index;
-        marker.setAttribute('id', linkMarkerKey(linkTypeIndex, startMarker));
-        marker.setAttribute('markerWidth', style.width.toString());
-        marker.setAttribute('markerHeight', style.height.toString());
-        marker.setAttribute('orient', 'auto');
-
-        let xOffset = startMarker ? 0 : (style.width - 1);
-        marker.setAttribute('refX', xOffset.toString());
-        marker.setAttribute('refY', (style.height / 2).toString());
-        marker.setAttribute('markerUnits', 'userSpaceOnUse');
-
-        const path = document.createElementNS(SVG_NAMESPACE, 'path');
-        path.setAttribute('d', style.d);
-        if (style.fill !== undefined) { path.setAttribute('fill', style.fill); }
-        if (style.stroke !== undefined) { path.setAttribute('stroke', style.stroke); }
-        if (style.strokeWidth !== undefined) { path.setAttribute('stroke-width', style.strokeWidth); }
-
-        marker.appendChild(path);
-        defs.appendChild(marker);
-        return marker;
     }
 
     public registerLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {

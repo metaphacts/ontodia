@@ -213,7 +213,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             link.set('vertices', []);
         }
 
-        this.model.synchronouslyUpdateView();
+        this.diagram.performSyncUpdate();
     }
 
     exportSvg = (link: HTMLAnchorElement) => {

@@ -1,5 +1,3 @@
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import * as React from 'react';
 import {
     render as reactDOMRender,
@@ -7,14 +5,15 @@ import {
     unstable_renderSubtreeIntoContainer,
 } from 'react-dom';
 
+import { EventObserver } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
 import { Debouncer } from './dataFetchingThread';
 import { Element, Link } from './elements';
 import { ElementLayer } from './elementLayer';
-import { DiagramModel, RenderingLayer, UpdateViewEventData } from './model';
-import { DiagramView } from './view';
+import { DiagramModel } from './model';
+import { DiagramView, RenderingLayer } from './view';
 import { Paper } from './paper';
 
 export interface Props {
@@ -50,7 +49,7 @@ interface State {
 }
 
 export class PaperArea extends React.Component<Props, State> {
-    private readonly listener = new Backbone.Model();
+    private readonly listener = new EventObserver();
 
     private area: HTMLDivElement;
     private paper: Paper;
@@ -170,8 +169,8 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.listenTo(this.props.view.model.graph, 'add remove change:position', () => {
             this.delayedPaperAdjust.call(this.adjustPaper);
         });
-        this.listener.listenTo(this.props.view.model, 'synchronouslyUpdateView', (data: UpdateViewEventData) => {
-            if (data.layer !== RenderingLayer.PaperArea) { return; }
+        this.listener.listen(this.props.view.syncUpdate, ({layer}) => {
+            if (layer !== RenderingLayer.PaperArea) { return; }
             this.delayedPaperAdjust.runSynchronously();
         });
         // this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
@@ -493,7 +492,7 @@ export class PaperArea extends React.Component<Props, State> {
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
-            this.props.view.model.synchronouslyUpdateView();
+            this.props.view.performSyncUpdate();
         }
     }
 

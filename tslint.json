@@ -22,6 +22,16 @@
             "method": "never",
             "constructor": "never"
         }],
+        "trailing-comma": [true, {
+            "singleline": "never",
+            "multiline": {
+                "objects": "always",
+                "arrays": "always",
+                "functions": "ignore",
+                "typeLiterals": "ignore"
+            }
+        }],
+        "type-literal-delimiter": true,
         "quotemark": [true, "single"],
         "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
     }

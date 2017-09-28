@@ -1,32 +1,46 @@
 export abstract class BatchingScheduler {
+    private useAnimationFrame: boolean;
     private scheduled: number | undefined;
 
     constructor(readonly waitingTime = 0) {
+        this.useAnimationFrame = waitingTime === 0;
         this.runSynchronously = this.runSynchronously.bind(this);
     }
 
     protected schedule() {
         if (typeof this.scheduled === 'undefined') {
-            this.scheduled = setTimeout(this.runSynchronously, this.waitingTime);
+            if (this.useAnimationFrame) {
+                this.scheduled = requestAnimationFrame(this.runSynchronously);
+            } else {
+                this.scheduled = setTimeout(this.runSynchronously, this.waitingTime);
+            }
         }
     }
 
     protected abstract run(): void;
 
     runSynchronously() {
-        this.cancelScheduledTimeout();
-        this.run();
+        const wasScheduled = this.cancelScheduledTimeout();
+        if (wasScheduled) {
+            this.run();
+        }
     }
 
     dispose() {
         this.cancelScheduledTimeout();
     }
 
-    private cancelScheduledTimeout() {
+    private cancelScheduledTimeout(): boolean {
         if (typeof this.scheduled !== 'undefined') {
-            clearTimeout(this.scheduled);
+            if (this.useAnimationFrame) {
+                cancelAnimationFrame(this.scheduled);
+            } else {
+                clearTimeout(this.scheduled);
+            }
             this.scheduled = undefined;
+            return true;
         }
+        return false;
     }
 }
 
@@ -84,6 +98,7 @@ export class Debouncer extends BatchingScheduler {
     }
 
     run() {
-        this.callback();
+        const callback = this.callback;
+        callback();
     }
 }

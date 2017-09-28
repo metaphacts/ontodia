@@ -5,13 +5,13 @@ import * as Backbone from 'backbone';
 import { hcl } from 'd3-color';
 
 import { Property } from '../data/model';
-
 import { TemplateProps } from '../customization/props';
+import { EventObserver } from '../viewUtils/events';
 
-import { BatchingScheduler } from './dataFetchingThread';
+import { Debouncer } from './dataFetchingThread';
 import { Element } from './elements';
-import { RenderingLayer, UpdateViewEventData, uri2name } from './model';
-import { DiagramView } from './view';
+import { uri2name } from './model';
+import { DiagramView, RenderingLayer } from './view';
 
 export interface Props {
     paper: joint.dia.Paper;
@@ -21,34 +21,10 @@ export interface Props {
 }
 
 export class ElementLayer extends React.Component<Props, void> {
-    private readonly listener = new Backbone.Model();
+    private readonly listener = new EventObserver();
 
-    private readonly updateSize = new class extends BatchingScheduler {
-        private batch: { [id: string]: { element: Element; node: HTMLDivElement; } } = {};
-
-        constructor(private view: DiagramView) {
-            super();
-        }
-
-        notify(element: Element, node: HTMLDivElement) {
-            this.batch[element.id] = {element, node};
-            this.schedule();
-        }
-
-        run() {
-            const {batch} = this;
-            this.batch = {};
-
-            for (const id in batch) {
-                if (!(batch.hasOwnProperty(id))) { continue; }
-                const {element, node} = batch[id];
-                const {clientWidth, clientHeight} = node;
-                element.set('size', {width: clientWidth, height: clientHeight});
-            }
-
-            this.view.model.trigger('state:renderDone');
-        }
-    }(this.props.view);
+    private batch: { [id: string]: { element: Element; node: HTMLDivElement; } } = {};
+    private updateSizes = new Debouncer();
 
     private layer: HTMLDivElement;
 
@@ -76,25 +52,40 @@ export class ElementLayer extends React.Component<Props, void> {
         this.listener.listenTo(graph, 'add remove reset', this.updateAll);
         this.listener.listenTo(paper, 'scale', this.updateAll);
         this.listener.listenTo(paper, 'translate resize', this.updateAll);
-        this.listener.listenTo(view.model, 'synchronouslyUpdateView', (data: UpdateViewEventData) => {
-            if (data.layer !== RenderingLayer.ElementSize) { return; }
-            this.updateSize.runSynchronously();
+        this.listener.listen(view.syncUpdate, ({layer}) => {
+            if (layer !== RenderingLayer.ElementSize) { return; }
+            this.updateSizes.runSynchronously();
         });
     }
 
     componentDidUpdate() {
-       
+        this.updateSizes.call(this.recomputeQueuedSizes);
     }
 
     private updateAll = () => this.forceUpdate();
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.updateSize.dispose();
+        this.updateSizes.dispose();
     }
 
     private updateElementSize = (element: Element, node: HTMLDivElement) => {
-        this.updateSize.notify(element, node);
+        this.batch[element.id] = {element, node};
+        this.updateSizes.call(this.recomputeQueuedSizes);
+    }
+
+    private recomputeQueuedSizes = () => {
+        const batch = this.batch;
+        this.batch = {};
+
+        for (const id in batch) {
+            if (!(batch.hasOwnProperty(id))) { continue; }
+            const {element, node} = batch[id];
+            const {clientWidth, clientHeight} = node;
+            element.set('size', {width: clientWidth, height: clientHeight});
+        }
+
+        this.props.view.model.trigger('state:renderDone');
     }
 }
 
