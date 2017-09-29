@@ -15,6 +15,7 @@ module.exports = {
         sparqlNoStats: path.join(__dirname, 'src', 'examples', 'sparqlNoStats.ts'),
         sparqlConstruct: path.join(__dirname, 'src', 'examples', 'sparqlConstruct.ts'),
         sparqlRDFGraph: path.join(__dirname, 'src', 'examples', 'sparqlRDFGraph.ts'),
+        sparqlTurtleGraph: path.join(__dirname, 'src', 'examples', 'sparqlTurtleGraph.ts'),
         styleCustomization: path.join(__dirname, 'src', 'examples', 'styleCustomization.ts'),
         wikidata: path.join(__dirname, 'src', 'examples', 'wikidata.ts'),
         composite: path.join(__dirname, 'src', 'examples', 'composite.ts'),
@@ -78,6 +79,12 @@ module.exports = {
             filename: 'sparqlRDFGraph.html',
             title: 'Ontodia SparQL RDF Graph Demo',
             chunks: ['commons', 'sparqlRDFGraph'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'sparqlTurtleGraph.html',
+            title: 'Ontodia SparQL Turtle Graph Demo',
+            chunks: ['commons', 'sparqlTurtleGraph'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
