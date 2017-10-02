@@ -6,11 +6,15 @@ declare module "n3" {
         ): void;
     }
 
-    function Parser(): N3Parser; 
+    function Parser(): N3Parser;
 
     interface Triple {
         subject: string;
         predicate: string;
         object: string;
+    }
+
+    namespace Util {
+        function isLiteral(value: string): boolean;
     }
 }

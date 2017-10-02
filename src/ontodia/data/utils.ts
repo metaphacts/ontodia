@@ -2,7 +2,7 @@ import * as N3 from "n3";
 import { RdfNode, Triple } from './sparql/sparqlModels';
 
 export function N3toRdfNode(entity: string): RdfNode {
-    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
+    if (N3.Util.isLiteral(entity)) {
         return {type: 'literal', value: entity.substring(1, entity.length - 1), 'xml:lang': ''};
     } else {
         return {type: 'uri', value: entity};
