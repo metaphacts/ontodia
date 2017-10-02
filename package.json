@@ -58,6 +58,7 @@
     "@types/d3-color": "1.0.4",
     "@types/jquery": "2.0.47",
     "@types/lodash": "4.14.63",
+    "@types/n3": "0.0.3",
     "@types/react": "0.14.55",
     "@types/react-dom": "0.14.19",
     "css-loader": "0.23.1",
