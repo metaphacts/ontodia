@@ -43,13 +43,15 @@ export class GraphBuilder {
         const links: LinkModel[] = [];
 
         for (const {subject, predicate, object} of response) {
+            if (subject.type === 'uri' && !elements[subject.value]) {
+                elements[subject.value] = true;
+            }
+
+            if (object.type === 'uri' && !elements[object.value]) {
+                elements[object.value] = true;
+            }
+
             if (subject.type === 'uri' && object.type === 'uri') {
-                if (!elements[subject.value]) {
-                    elements[subject.value] = true;
-                }
-                if (!elements[object.value]) {
-                    elements[object.value] = true;
-                }
                 links.push({
                     linkTypeId: predicate.value,
                     sourceId: subject.value,
