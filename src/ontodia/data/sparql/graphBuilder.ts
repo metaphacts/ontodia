@@ -3,8 +3,8 @@ import { uniformGrid } from '../../viewUtils/layout';
 import { Dictionary, ElementModel, LinkModel } from '../model';
 
 import { DataProvider } from '../provider';
-import { Triple } from "./sparqlModels";
-import { parseTurtleText } from "../utils";
+import { Triple } from './sparqlModels';
+import { parseTurtleText } from '../utils';
 
 const GREED_STEP = 150;
 

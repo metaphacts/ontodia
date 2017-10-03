@@ -5,7 +5,7 @@ import { Workspace, WorkspaceProps } from '../index';
 
 import { onPageLoad } from './common';
 import { RDFDataProvider } from '../ontodia/data/rdf/rdfDataProvider';
-import GraphBuilder from "../ontodia/data/sparql/graphBuilder";
+import { GraphBuilder } from '../ontodia/data/sparql/graphBuilder';
 
 require('jointjs/css/layout.css');
 require('jointjs/css/themes/default.css');
