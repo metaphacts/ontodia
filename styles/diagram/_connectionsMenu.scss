@@ -30,6 +30,18 @@
 
 .ontodia-connections-menu_search-line {
   padding: 10px;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ontodia-connections-menu_search-line-inp {
+  flex: 1 1 100%;
+}
+
+.ontodia-connections-menu_search-line-sort-switches {
+  flex: 0 0 20px;
+  margin-left: 10px;
 }
 
 .ontodia-connections-menu_links-list {
@@ -268,4 +280,25 @@
   overflow-x: hidden;
   overflow-y: scroll;
   margin-bottom: 5px;
+}
+
+.ontodia-connections-menu__sort-switch-inp {
+  display: none;
+}
+
+.ontodia-connections-menu__sort-switch-inp:checked + .ontodia-connections-menu__sort-switch-lbl {
+  color: #337ab7;
+  opacity: 1;
+}
+
+.ontodia-connections-menu__sort-switch-lbl {
+  cursor: pointer;
+  display: block;
+  margin: 0;
+  opacity: 0.4;
+  text-align: center;
+
+  &:hover {
+    opacity: 1;
+  }
 }

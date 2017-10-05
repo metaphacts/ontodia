@@ -4,7 +4,7 @@ import 'whatwg-fetch';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
-    WikidataSettings, SparqlQueryMethod,
+    WikidataSettings, SparqlQueryMethod, ForeignFilterParams,
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -14,10 +14,19 @@ require('jointjs/css/themes/default.css');
 
 const WIKIDATA_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
-function foreignFilter(key: string, alternatives: string[]) {
+let wspace: Workspace;
+
+function getElementLabel(id: string): string {
+    const model = wspace.getModel();
+    const diagram = wspace.getDiagram();
+    const element = model.getElement(id);
+    return element ? diagram.getLocalizedText(element.template.label.values).text : '';
+}
+
+function foreignFilter(params: ForeignFilterParams) {
     const idMap: { [id: string]: string } = {};
 
-    alternatives = alternatives.map(id => {
+    const properties = params.properties.map(id => {
         let resultID;
         if (id.startsWith(WIKIDATA_PREFIX)) {
             resultID = id.substr(WIKIDATA_PREFIX.length, id.length);
@@ -27,10 +36,11 @@ function foreignFilter(key: string, alternatives: string[]) {
         idMap[resultID] = id;
         return resultID;
     });
+    const term = params.key.toLowerCase() || getElementLabel(params.id);
     const requestBody = {
         threshold: 0.1,
-        term: key.toLowerCase(),
-        instance_properties: alternatives,
+        term,
+        instance_properties: properties,
     };
     return fetch('/wikidata-prop-suggest', {
         method: 'POST',
@@ -52,12 +62,22 @@ function foreignFilter(key: string, alternatives: string[]) {
             dictionary[idMap[term.id]] =
                 (!dictionary[idMap[term.id]] || dictionary[idMap[term.id]] < term ? term : dictionary[idMap[term.id]]);
         }
+
+        Object.keys(idMap).forEach(key => {
+            const id = idMap[key];
+            if (!dictionary[id]) {
+                dictionary[id] = {id: key, value: 0};
+            }
+        });
+
         return dictionary;
     });
 }
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
+
+    wspace = workspace;
 
     const diagram = workspace.getDiagram();
     diagram.registerTemplateResolver(types => {
