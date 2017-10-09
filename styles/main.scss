@@ -1,11 +1,21 @@
 @import "misc";
 
+@import "viewUtils/spinner";
+@import "viewUtils/clearfix";
+@import "viewUtils/label";
+@import "viewUtils/link";
+@import "viewUtils/btn";
+@import "viewUtils/btn-group";
+@import "viewUtils/form-control";
+@import "viewUtils/input-group";
+@import "viewUtils/list-group";
+@import "viewUtils/badge";
+@import "viewUtils/progress";
+
 @import "diagram/connectionsMenu";
 @import "diagram/elementLayer";
 @import "diagram/halo";
 @import "diagram/paperArea";
-
-@import "viewUtils/spinner";
 
 @import "widgets/classTree";
 @import "widgets/instancesSearch";

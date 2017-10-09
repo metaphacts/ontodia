@@ -9,6 +9,7 @@
 }
 
 .ontodia-connections-menu_bread-crumbs {
+  box-sizing: border-box;
   padding: 10px;
   padding-bottom: 0px;
   overflow: hidden;
@@ -171,6 +172,7 @@
 
 .link-in-popup-menu_direction {
     background: rgba(219, 219, 219, 0.35);
+    box-sizing: border-box;
     min-height: 30px;
     padding: 5px 0px 5px 10px;
     display: flex;
@@ -253,7 +255,7 @@
   max-width: 60%;
 }
 
-.btn.ontodia-connections-menu_objects-panel_bottom-panel__add-button {
+.ontodia-btn.ontodia-connections-menu_objects-panel_bottom-panel__add-button {
   height: 25px;
   padding-top: 1px;
   padding-bottom: 2px;

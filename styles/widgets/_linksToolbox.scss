@@ -66,7 +66,7 @@
   padding-left: .3em;
 }
 
-.list-group .linkInToolBox {
+.ontodia-list-group .linkInToolBox {
   padding: 0 0 0 5px;
   word-break: break-word;
 }
@@ -79,13 +79,13 @@
   word-wrap: normal;
 }
 
-.linkInToolBox .badge {
+.linkInToolBox .ontodia-badge {
   display: none;
   margin-left: .5em;
   white-space: normal;
   word-wrap: normal;
 }
-.connected-links .linkInToolBox .badge {
+.connected-links .linkInToolBox .ontodia-badge {
   /* show connection count badge only in "Connected to Element" list */
   display: inline;
 }
@@ -94,13 +94,13 @@
   color: black;
   display: inline;
 }
-.linkInToolBox .btn-group {
+.linkInToolBox .ontodia-btn-group {
   float: left;
   margin-top: 2px;
   margin-right: 6px;
   margin-bottom: 2px;
 }
-.linkInToolBox .btn.btn-default {
+.linkInToolBox .ontodia-btn.ontodia-btn-default {
   border-color: rgb(195, 195, 195);
 }
 .linkInToolBox .filter-button {
@@ -123,6 +123,7 @@
   content: url("../images/add-to-filter.png");
   width: 20px;
   height: 20px;
+  vertical-align: middle;
 }
 .link-in-popup-menu .filter-button img {
   opacity: 0.4;
@@ -130,6 +131,7 @@
   content: url("../images/add-to-filter.png");
   width: 20px;
   height: 20px;
+  vertical-align: middle;
 }
 .link-in-popup-menu .filter-button img:hover {
   opacity: 1;

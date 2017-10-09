@@ -65,16 +65,16 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             ? this.props.criteria.text : this.state.inputText;
 
         return <div className={className} data-state={progressState}>
-            <div className='progress'>
-                <div className='progress-bar progress-bar-striped active' role='progressbar'
+            <div className='ontodia-progress'>
+                <div className='ontodia-progress-bar ontodia-progress-bar-striped active' role='progressbar'
                     aria-valuemin='0' aria-valuemax='100' aria-valuenow='100'
                     style={{width: '100%'}}>
                 </div>
             </div>
             <div className={`${CLASS_NAME}__criteria`}>
                 {this.renderCriteria()}
-                <div className={`${CLASS_NAME}__text-criteria input-group`}>
-                    <input type='text' className='form-control' placeholder='Search for...'
+                <div className={`${CLASS_NAME}__text-criteria ontodia-input-group`}>
+                    <input type='text' className='ontodia-form-control' placeholder='Search for...'
                         value={searchTerm || ''}
                         onChange={e => this.setState({inputText: e.currentTarget.value})}
                         onKeyUp={e => {
@@ -82,10 +82,10 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                                this.submitCriteriaUpdate();
                             }
                         }} />
-                    <span className='input-group-btn'>
-                        <button className='btn btn-default' type='button' title='Search'
+                    <span className='ontodia-input-group-btn'>
+                        <button className='ontodia-btn ontodia-btn-default' type='button' title='Search'
                             onClick={() => this.submitCriteriaUpdate()}>
-                            <span className='fa fa-search' aria-hidden='true'></span>
+                            <span className='fa fa-search' aria-hidden='true'/>
                         </button>
                     </span>
                 </div>

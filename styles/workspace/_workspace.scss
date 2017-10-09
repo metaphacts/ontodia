@@ -5,6 +5,10 @@
   // defaults for inheritable properties
   box-sizing: border-box;
   white-space: initial;
+  color: #333;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  font-size: 14px;
+  line-height: 1.42857;
 
   &__header {
     display: flex;
@@ -35,4 +39,27 @@
 
   &--horizontal-resizing * { cursor: ew-resize !important; }
   &--vertical-resizing * { cursor: ns-resize !important; }
+
+  h4 {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  select {
+    color: inherit;
+    margin: 0;
+    font: inherit;
+    line-height: inherit;
+    text-transform: none;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid #eee;
+    box-sizing: content-box;
+    height: 0;
+  }
 }

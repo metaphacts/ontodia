@@ -315,7 +315,7 @@ class ConnectionsMenuMarkup extends React.Component<
     private getBreadCrumbs = () => {
         return (this.props.objectsData && this.state.panel === 'objects' ?
             <span className='ontodia-connections-menu_bread-crumbs'>
-                <a onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
+                <a className="ontodia-link" onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
                 {
                     chooseLocalizedText(
                         this.props.objectsData.selectedLink.get('label').values,
@@ -329,7 +329,7 @@ class ConnectionsMenuMarkup extends React.Component<
 
     private getBody = () => {
         if (this.props.state === 'error') {
-            return <label className='ontodia-connections-menu__error'>Error</label>;
+            return <label className='ontodia-label ontodia-connections-menu__error'>Error</label>;
         } else if (this.props.objectsData && this.state.panel === 'objects') {
             return <ObjectsPanel
                 data={this.props.objectsData}
@@ -340,7 +340,7 @@ class ConnectionsMenuMarkup extends React.Component<
             />;
         } else if (this.props.connectionsData && this.state.panel === 'connections') {
             if (this.props.state === 'loading') {
-                return <label className='ontodia-connections-menu__loading'>Loading...</label>;
+                return <label className='ontodia-label ontodia-connections-menu__loading'>Loading...</label>;
             }
             return <ConnectionsList
                 data={this.props.connectionsData}
@@ -364,12 +364,12 @@ class ConnectionsMenuMarkup extends React.Component<
 
         return (
             <div className='ontodia-connections-menu' style={style}>
-                <label className='ontodia-connections-menu__title-label'>{this.getTitle()}</label>
+                <label className='ontodia-label ontodia-connections-menu__title-label'>{this.getTitle()}</label>
                 {this.getBreadCrumbs()}
                 <div className='ontodia-connections-menu_search-line'>
                     <input
                         type='text'
-                        className='search-input form-control'
+                        className='search-input ontodia-form-control'
                         value={this.state.filterKey}
                         onChange={this.onChangeFilter}
                         placeholder='Search for...'
@@ -377,7 +377,7 @@ class ConnectionsMenuMarkup extends React.Component<
                 </div>
                 <div className={`ontodia-connections-menu__progress-bar ` +
                     `ontodia-connections-menu__progress-bar--${this.props.state}`}>
-                    <div className='progress-bar progress-bar-striped active'
+                    <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
                         role='progressbar'
                         aria-valuemin='0'
                         aria-valuemax='100'
@@ -472,7 +472,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
 
         let viewList: React.ReactElement<any> | React.ReactElement<any>[];
         if (views.length === 0) {
-            viewList = <label className='ontodia-connections-menu_links-list__empty'>List empty</label>;
+            viewList = <label className='ontodia-label ontodia-connections-menu_links-list__empty'>List empty</label>;
         } else {
             viewList = views;
             if (links.length > 1) {
@@ -542,7 +542,7 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
                 </div>
                 : null}
                 <div className='link-in-popup-menu__link-title'>{textLine}</div>
-                <span className='badge link-in-popup-menu__count'>{this.props.count}</span>
+                <span className='ontodia-badge link-in-popup-menu__count'>{this.props.count}</span>
                 <a className='filter-button' onClick={this.onMoveToFilter}
                     title='Set as filter in the Instances panel'><img/></a>
                 <div className='link-in-popup-menu__navigate-button' title={navigationTitle} />
@@ -675,17 +675,17 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
             </div>
             {(
                 this.props.loading ?
-                <label className='ontodia-connections-menu__loading-objects'>Loading...</label>
+                <label className='ontodia-label ontodia-connections-menu__loading-objects'>Loading...</label>
                 : <div className='ontodia-connections-menu_objects-panel_objects-list'>
                     {objectViews}
                 </div>
             )}
             <div className='ontodia-connections-menu_objects-panel_bottom-panel'>
-                <label className='ontodia-connections-menu_objects-panel_bottom-panel__count-label'>
+                <label className='ontodia-label ontodia-connections-menu_objects-panel_bottom-panel__count-label'>
                     <span>{countString}</span>
                 </label>
                 <button className={
-                        'btn btn-primary pull-right ' +
+                        'ontodia-btn ontodia-btn-primary pull-right ' +
                         'ontodia-connections-menu_objects-panel_bottom-panel__add-button'
                     }
                     disabled={this.props.loading || activeObjCount === 0}

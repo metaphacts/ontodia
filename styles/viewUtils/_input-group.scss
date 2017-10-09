@@ -1,0 +1,35 @@
+.ontodia-input-group {
+  position: relative;
+  display: table;
+  border-collapse: separate;
+
+  .ontodia-form-control {
+    display: table-cell;
+    position: relative;
+    z-index: 2;
+    float: left;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .ontodia-form-control:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+.ontodia-input-group-btn {
+  display: table-cell;
+  width: 1%;
+  vertical-align: middle;
+  position: relative;
+  font-size: 0;
+  white-space: nowrap;
+
+  &:last-child > .ontodia-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    z-index: 2;
+    margin-left: -1px;
+  }
+}
