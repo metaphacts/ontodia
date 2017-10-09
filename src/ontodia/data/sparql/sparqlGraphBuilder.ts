@@ -1,7 +1,6 @@
 import { SparqlDataProvider } from './sparqlDataProvider';
-import { Triple } from './sparqlModels';
 import { LayoutData } from '../../diagram/layoutData';
-import { Dictionary, ElementModel, LinkModel } from '../model';
+import { Dictionary, ElementModel } from '../model';
 
 import { GraphBuilder } from './graphBuilder';
 
@@ -24,38 +23,6 @@ export class SparqlGraphBuilder {
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
         return this.dataProvider.executeSparqlConstruct(query)
-            .then(graph => this.getGraphFromRDFGraph(graph));
+            .then(graph => this.graphBuilder.getGraphFromRDFGraph(graph));
     };
-
-    getGraphFromRDFGraph(graph: Triple[]): Promise<{
-        preloadedElements: Dictionary<ElementModel>,
-        layoutData: LayoutData,
-    }> {
-        let {elementIds, links} = this.getConstructElements(graph);
-        return this.graphBuilder.createGraph({elementIds, links});
-    };
-
-    private getConstructElements(response: Triple[]): {
-        elementIds: string[], links: LinkModel[]
-    } {
-        const elements: Dictionary<boolean> = {};
-        const links: LinkModel[] = [];
-
-        for (const {subject, predicate, object} of response) {
-            if (subject.type === 'uri' && object.type === 'uri') {
-                if (!elements[subject.value]) {
-                    elements[subject.value] = true;
-                }
-                if (!elements[object.value]) {
-                    elements[object.value] = true;
-                }
-                links.push({
-                    linkTypeId: predicate.value,
-                    sourceId: subject.value,
-                    targetId: object.value,
-                });
-            }
-        }
-        return {elementIds: Object.keys(elements), links: links};
-    }
 }

@@ -19,6 +19,7 @@ import {
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
+import { parseTurtleText } from '../utils';
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
@@ -542,29 +543,8 @@ export function executeSparqlConstruct(
                 (<any> error).response = response;
                 throw error;
             }
-        }).then(turtleText => {
-            let triples: Triple[] = [];
-            N3.Parser().parse(turtleText, (error, triple, hash) => {
-                if (triple) {
-                    triples.push({
-                        subject: toRdfNode(triple.subject),
-                        predicate: toRdfNode(triple.predicate),
-                        object: toRdfNode(triple.object),
-                    });
-                } else {
-                    resolve(triples);
-                }
-            });
-        });
+        }).then(parseTurtleText);
     });
-}
-
-function toRdfNode(entity: string): RdfNode {
-    if (entity.length >= 2 && entity[0] === '"' && entity[entity.length - 1] === '"') {
-        return {type: 'literal', value: entity.substring(1, entity.length - 1), 'xml:lang': ''};
-    } else {
-        return {type: 'uri', value: entity};
-    }
 }
 
 function appendQueryParams(endpoint: string, queryParams: { [key: string]: string } = {}) {
