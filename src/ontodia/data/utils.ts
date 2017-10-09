@@ -15,15 +15,12 @@ export function n3toRdfNode(entity: string): RdfNode {
 }
 
 export function parseTurtleText(turtleText: string): Promise<Triple[]> {
-    const triples: Triple[] = [];
     return new Promise<Triple[]>((resolve, reject) => {
+        const triples: Triple[] = [];
         N3.Parser().parse(turtleText, (error, triple, hash) => {
             if (error) {
                 reject(error);
-                return;
-            }
-
-            if (triple) {
+            } else if (triple) {
                 triples.push({
                     subject: n3toRdfNode(triple.subject),
                     predicate: n3toRdfNode(triple.predicate),

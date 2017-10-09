@@ -534,17 +534,15 @@ export function executeSparqlConstruct(
             method: 'POST',
         });
     }
-    return new Promise<Triple[]>((resolve, reject) => {
-        internalQuery.then(response => {
-            if (response.ok) {
-                return response.text();
-            } else {
-                const error = new Error(response.statusText);
-                (<any> error).response = response;
-                throw error;
-            }
-        }).then(parseTurtleText);
-    });
+    return internalQuery.then(response => {
+        if (response.ok) {
+            return response.text();
+        } else {
+            const error = new Error(response.statusText);
+            (error as any).response = response;
+            throw error;
+        }
+    }).then(parseTurtleText);
 }
 
 function appendQueryParams(endpoint: string, queryParams: { [key: string]: string } = {}) {
