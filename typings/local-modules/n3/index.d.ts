@@ -17,5 +17,7 @@ declare module "n3" {
     namespace Util {
         function isLiteral(value: string): boolean;
         function getLiteralValue(value: string): string;
+        function getLiteralType(value: string): string;
+        function getLiteralLanguage(value: string): string;
     }
 }
