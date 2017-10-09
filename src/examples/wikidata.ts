@@ -4,7 +4,7 @@ import 'whatwg-fetch';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
-    WikidataSettings, SparqlQueryMethod, ForeignFilterParams,
+    WikidataSettings, SparqlQueryMethod, PropertySuggestionParams, PropertyScore,
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -23,7 +23,7 @@ function getElementLabel(id: string): string {
     return element ? diagram.getLocalizedText(element.template.label.values).text : '';
 }
 
-function foreignFilter(params: ForeignFilterParams) {
+function wikidataPropertySuggestion(params: PropertySuggestionParams) {
     const idMap: { [id: string]: string } = {};
 
     const properties = params.properties.map(id => {
@@ -57,17 +57,22 @@ function foreignFilter(params: ForeignFilterParams) {
             throw error;
         }
     }).then(json => {
-        const dictionary: { [id: string]: { id: string; value: number; } } = {};
+        const dictionary: { [id: string]: PropertyScore } = {};
         for (const term of json.data) {
-            dictionary[idMap[term.id]] =
-                (!dictionary[idMap[term.id]] || dictionary[idMap[term.id]] < term ? term : dictionary[idMap[term.id]]);
+            const propertyIri = idMap[term.id];
+            const item = dictionary[propertyIri];
+
+            if (item && item.score > term.value) { continue; }
+
+            dictionary[propertyIri] = {propertyIri, score: term.value};
         }
 
         Object.keys(idMap).forEach(key => {
-            const id = idMap[key];
-            if (!dictionary[id]) {
-                dictionary[id] = {id: key, value: 0};
-            }
+            const propertyIri = idMap[key];
+
+            if (dictionary[propertyIri]) { return; }
+
+            dictionary[propertyIri] = {propertyIri, score: 0};
         });
 
         return dictionary;
@@ -131,7 +136,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        connectionsMenuFilterCallBack: foreignFilter,
+        propertySuggestionCall: wikidataPropertySuggestion,
     },
 };
 

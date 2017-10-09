@@ -25,19 +25,19 @@ const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     diagram: null,
 });
 
-export interface ForeignFilterParams {
+export interface PropertySuggestionParams {
     id: string;
     key: string;
     properties: string[];
     lang: string;
 }
-export type ForeignFilter = (params: ForeignFilterParams) => Promise<Dictionary<FiltrationTerm>>;
+export type PropertySuggestionCall = (params: PropertySuggestionParams) => Promise<Dictionary<PropertyScore>>;
 
 type SortMode = 'alphabet' | 'smart';
 
-export interface FiltrationTerm {
-    id: string;
-    value: number;
+export interface PropertyScore {
+    propertyIri: string;
+    score: number;
 }
 
 export interface ConnectionsMenuOptions {
@@ -45,7 +45,7 @@ export interface ConnectionsMenuOptions {
     view: DiagramView;
     cellView: joint.dia.CellView;
     onClose: () => void;
-    foreignFilter?: ForeignFilter;
+    propertySuggestionCall?: PropertySuggestionCall;
 }
 
 export class ConnectionsMenu {
@@ -266,7 +266,7 @@ export class ConnectionsMenu {
             onExpandLink: this.onExpandLink,
             onPressAddSelected: this.addSelectedElements,
             onMoveToFilter: this.onMoveToFilter,
-            foreignFilter: this.options.foreignFilter,
+            propertySuggestionCall: this.options.propertySuggestionCall,
         }), this.container);
     };
 
@@ -297,7 +297,7 @@ interface ConnectionsMenuMarkupProps {
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 
-    foreignFilter?: ForeignFilter;
+    propertySuggestionCall?: PropertySuggestionCall;
 }
 
 interface ConnectionsMenuMarkupState {
@@ -377,7 +377,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                 filterKey={this.state.filterKey}
                 onExpandLink={this.onExpandLink}
                 onMoveToFilter={this.props.onMoveToFilter}
-                foreignFilter={this.props.foreignFilter}
+                propertySuggestionCall={this.props.propertySuggestionCall}
                 sortMode={this.state.sortMode}/>;
         } else {
             return <div/>;
@@ -412,7 +412,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     }
 
     private renderSortSwitches = () => {
-        if (this.state.panel !== 'connections' || !this.props.foreignFilter) { return null; }
+        if (this.state.panel !== 'connections' || !this.props.propertySuggestionCall) { return null; }
 
         return (
             <div className="ontodia-connections-menu_search-line-sort-switches">
@@ -473,28 +473,28 @@ interface ConnectionsListProps {
     onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 
-    foreignFilter?: ForeignFilter;
+    propertySuggestionCall?: PropertySuggestionCall;
     sortMode: SortMode;
 }
 
-class ConnectionsList extends React.Component<ConnectionsListProps, { weights: Dictionary<FiltrationTerm> }> {
+class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Dictionary<PropertyScore> }> {
     constructor (props: ConnectionsListProps) {
         super(props);
-        this.state = { weights: {} };
-        this.updateWeights(props);
+        this.state = { scores: {} };
+        this.updateScores(props);
     }
 
     componentWillReceiveProps(newProps: ConnectionsListProps) {
-        this.updateWeights(newProps);
+        this.updateScores(newProps);
     }
 
-    private updateWeights = (props: ConnectionsListProps) => {
-        if (props.foreignFilter && (props.filterKey || props.sortMode === 'smart')) {
+    private updateScores = (props: ConnectionsListProps) => {
+        if (props.propertySuggestionCall && (props.filterKey || props.sortMode === 'smart')) {
             const {id, data, lang, filterKey} = props;
             const key = filterKey.trim();
             const properties = data.links.map(l => l.id);
-            props.foreignFilter({id, key, properties, lang}).then(weights =>
-                this.setState({weights: weights})
+            props.propertySuggestionCall({id, key, properties, lang}).then(scores =>
+                this.setState({scores})
             );
         }
     }
@@ -526,8 +526,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { weights: D
         const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
         const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
 
-        const aWeight = this.state.weights[a.id] ? this.state.weights[a.id].value : 0;
-        const bWeight = this.state.weights[b.id] ? this.state.weights[b.id].value : 0;
+        const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
+        const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
 
         if (aWeight > bWeight) {
             return -1;
@@ -563,7 +563,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { weights: D
         return (this.props.data.links || []).filter(link => {
             const label: Label = link.get('label');
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
-            return this.state.weights[link.id] && (this.state.weights[link.id].value > 0 || this.isSmartMode);
+            return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || this.isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
 
@@ -594,7 +594,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { weights: D
                            filterKey={!notSure ? this.props.filterKey : ''}
                            onMoveToFilter={this.props.onMoveToFilter}
                            probability={
-                               (this.state.weights[link.id] && notSure  ? this.state.weights[link.id].value : 0)
+                               (this.state.scores[link.id] && notSure ? this.state.scores[link.id].score : 0)
                            }
                        />,
                    );
