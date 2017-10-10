@@ -70,7 +70,7 @@ export class LinkView extends joint.dia.LinkView {
         const linkAttributes: joint.dia.LinkAttributes = {
             labels: this.createLabelsAttributes(style),
             connector: style.connector,
-            router: template.router,
+            // router: template.router,
             z: 0,
         };
         if (style.connection) {

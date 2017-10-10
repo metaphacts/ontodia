@@ -23,7 +23,6 @@ const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
         width: 20,
         height: 12,
     },
-    router: {name: 'orthogonal'},
     renderLink: () => ({
         connection: {
             stroke: '#3c4260',

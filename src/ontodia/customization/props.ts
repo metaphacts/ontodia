@@ -1,5 +1,5 @@
 import { ComponentClass } from 'react';
-import { LinkView } from '../diagram/linkView';
+import { DiagramModel } from '../diagram/model';
 
 import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
@@ -35,7 +35,6 @@ export type PropArray = Array<{
 export interface LinkTemplate {
     markerSource?: LinkMarkerStyle;
     markerTarget?: LinkMarkerStyle;
-    router?: LinkRouter;
     renderLink?(link: LinkModel): LinkStyle;
 }
 
@@ -51,17 +50,18 @@ export interface LinkStyle {
     connector?: { name?: string; args?: {}; };
 }
 
-export type LinkRouter = RouterDescription | RouterFunction;
+export interface LinkRouter {
+    route(model: DiagramModel): RoutedLinks;
+}
 
-export type RouterFunction = (
-    vertices: Vertex[],
-    args: {},
-    linkView: LinkView,
-) => Vertex[];
+export interface RoutedLinks {
+    [linkId: string]: RoutedLink;
+}
 
-export interface RouterDescription {
-    name?: string;
-    args?: {};
+export interface RoutedLink {
+    linkId: string;
+    vertices: Vertex[];
+    labelTextAnchor?: string;
 }
 
 export interface Vertex {

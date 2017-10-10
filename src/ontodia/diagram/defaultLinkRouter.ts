@@ -6,7 +6,7 @@ import { LinkView } from './linkView';
 
 const GAP = 20;
 
-export function getDefaultLinkRouter(diagramModel: DiagramModel): LinkRouter {
+export function getDefaultLinkRouter(diagramModel: DiagramModel): any {
     return (vertices: Vertex[], args: {}, linkView: LinkView): Vertex[] => {
         const currentLink = linkView.model;
         if (!vertices) {

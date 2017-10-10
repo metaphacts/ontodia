@@ -3,26 +3,44 @@ import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString } from '../data/model';
 import { Debouncer } from '../diagram/dataFetchingThread';
-import { LinkTemplate, LinkStyle, LinkLabel, LinkMarkerStyle } from '../customization/props';
+import {
+    LinkTemplate, LinkStyle, LinkLabel, LinkMarkerStyle,
+    LinkRouter, RoutedLinks, RoutedLink,
+} from '../customization/props';
 import { EventObserver } from '../viewUtils/events';
 
 import { Element as DiagramElement, Link as DiagramLink, linkMarkerKey } from './elements';
 import {
     Vector, boundsOf, centerOfRectangle, intersectRayFromRectangleCenter, computePolylineLength, getPointAlongPolyline,
 } from './geometry';
+import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
-export class LinkLayer extends Component<{ view: DiagramView }, {}> {
+export interface LinkLayerProps {
+    view: DiagramView;
+}
+
+export class LinkLayer extends Component<LinkLayerProps, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();
 
     // /** List of link IDs to update at the next flush event */
     // private pendingUpdates: string[] = [];
 
+    private router: LinkRouter;
+    private routings: RoutedLinks;
+
+    constructor(props: LinkLayerProps, context: any) {
+        super(props, context);
+        this.router = this.props.view.options.linkRouter || new DefaultLinkRouter();
+        this.updateRoutings();
+    }
+
     componentDidMount() {
         const {view} = this.props;
         const graph = view.model.graph;
+
         this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
         this.listener.listenTo(graph, 'change:position change:size', this.scheduleUpdateAll);
         this.listener.listen(view.syncUpdate, ({layer}) => {
@@ -31,13 +49,13 @@ export class LinkLayer extends Component<{ view: DiagramView }, {}> {
         });
     }
 
+    shouldComponentUpdate() {
+        return false;
+    }
+
     componentWillUnmount() {
         this.listener.stopListening();
         this.delayedUpdate.dispose();
-    }
-
-    shouldComponentUpdate() {
-        return false;
     }
 
     private scheduleUpdateAll = () => {
@@ -45,22 +63,56 @@ export class LinkLayer extends Component<{ view: DiagramView }, {}> {
     }
 
     private updateAll = () => {
+        this.updateRoutings();
         this.forceUpdate();
+    }
+
+    private updateRoutings() {
+        this.routings = this.router.route(this.props.view.model);
     }
 
     render() {
         const {view} = this.props;
         return <g>
             {view.model.links.map(model => (
-                <LinkView key={model.id} view={view} model={model as DiagramLink} />
+                <LinkView key={model.id}
+                    view={view}
+                    model={model as DiagramLink}
+                    route={this.routings[model.id]}
+                />
             ))}
         </g>;
     }
 }
 
-class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, void> {
+interface LinkViewProps {
+    view: DiagramView;
+    model: DiagramLink;
+    route?: RoutedLink;
+}
+
+class LinkView extends Component<LinkViewProps, void> {
+    private templateTypeId: string;
+    private template: LinkTemplate;
+
+    constructor(props: LinkViewProps, context: any) {
+        super(props, context);
+        this.grabLinkTemplate();
+    }
+
+    componentWillReceiveProps(nextProps: LinkViewProps) {
+        if (this.templateTypeId !== nextProps.model.typeId) {
+            this.grabLinkTemplate();
+        }
+    }
+
+    private grabLinkTemplate() {
+        this.templateTypeId = this.props.model.typeId;
+        this.template = this.props.view.createLinkTemplate(this.templateTypeId);
+    }
+
     render() {
-        const {view, model} = this.props;
+        const {view, model, route} = this.props;
         const typeIndex = model.typeIndex;
         const source = view.model.getElement(model.sourceId);
         const target = view.model.getElement(model.targetId);
@@ -68,7 +120,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
             return null;
         }
 
-        const vertices: Array<{ x: number; y: number; }> = model.get('vertices') || [];
+        const vertices: Array<{ x: number; y: number; }> = route ? route.vertices : (model.get('vertices') || []);
 
         const sourceRect = boundsOf(source);
         const targetRect = boundsOf(target);
@@ -81,8 +133,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
 
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
-        const template = view.createLinkTemplate(model.typeId);
-        const style = template.renderLink(model.template);
+        const style = this.template.renderLink(model.template);
         const pathAttributes = this.getPathAttributes(style);
 
         return (
@@ -90,7 +141,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
                 <path className='connection' d={path} {...pathAttributes}
                     markerStart={`url(#${linkMarkerKey(typeIndex, true)})`}
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />
-                <path className='connection-wrap' d={path} />
+                <path className='connection-wrap' d={path} stroke='none' fill='none' />
                 {this.renderLabels(polyline, style)}
                 <g className='marker-vertices' />
                 <g className='link-tools' />
@@ -103,6 +154,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
         let attributes: SVGAttributes<SVGPathElement> = {
             stroke: 'black',
             strokeDasharray: model.layoutOnly ? '5,5' : null,
+            fill: 'none',
         };
         if (style.connection) {
             const {fill, stroke, 'stroke-width': strokeWidth, 'stroke-dasharray': strokeDasharray} = style.connection;
@@ -118,7 +170,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
     }
 
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
-        const {view, model} = this.props;
+        const {view, model, route} = this.props;
         const polylineLength = computePolylineLength(polyline);
 
         interface LabelAttributes {
@@ -152,6 +204,11 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
             }
         }
 
+        let textAnchor = 'middle';
+        if (route && route.labelTextAnchor) {
+            textAnchor = route.labelTextAnchor;
+        }
+
         return (
             <g className='labels'>
                 {labels.map((label, index) => {
@@ -159,7 +216,7 @@ class LinkView extends Component<{ view: DiagramView; model: DiagramLink; }, voi
                     // missing from typings
                     const otherAttributes: object = {alignmentBaseline: 'middle'};
                     return (
-                        <text key={index} x={x} y={y} textAnchor='middle'
+                        <text key={index} x={x} y={y} textAnchor={textAnchor}
                             filter='url(#solid-fill)' style={{fontWeight: 'bold'}} {...otherAttributes}
                             stroke={label.stroke} strokeWidth={label.strokeWidth} fill={label.fill}>
                             {label.text.text}

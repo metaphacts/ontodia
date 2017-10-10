@@ -12,7 +12,9 @@ import {
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
-    LinkTemplate, LinkMarkerStyle,
+    LinkTemplate,
+    LinkMarkerStyle,
+    LinkRouter,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
@@ -37,6 +39,7 @@ export interface DiagramViewOptions {
     linkTemplateResolvers?: LinkTemplateResolver[];
     templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
+    linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
 }
 
@@ -503,9 +506,6 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
     defaultsDeep(template, defaults);
     if (!template.renderLink) {
         template.renderLink = () => ({});
-    }
-    if (!template.router) {
-        template.router = getDefaultLinkRouter(model);
     }
 }
 

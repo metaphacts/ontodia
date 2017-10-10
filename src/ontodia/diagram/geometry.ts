@@ -26,7 +26,7 @@ function length({x, y}: Vector) {
     return Math.sqrt(x * x + y * y);
 }
 
-function normalize({x, y}: Vector) {
+export function normalize({x, y}: Vector) {
     if (x === 0 && y === 0) { return {x, y}; }
     const inverseLength = 1 / Math.sqrt(x * x + y * y);
     return {x: x * inverseLength, y: y * inverseLength};
