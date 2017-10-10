@@ -47,6 +47,7 @@ export interface WorkspaceProps {
     onLanguageChange?: (language: string) => void;
     zoomOptions?: ZoomOptions;
     onZoom?: (scaleX: number, scaleY: number) => void;
+    toolbar?: ReactElement<any>;
 }
 
 export interface WorkspaceLanguage {
@@ -89,9 +90,30 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
     }
 
+    protected getDefaultToolbar = () => {
+        const {languages, isViewOnly, onSaveDiagram} = this.props;
+        return createElement<EditorToolbarProps>(EditorToolbar, {
+            onZoomIn: this.zoomIn,
+            onZoomOut: this.zoomOut,
+            onZoomToFit: this.zoomToFit,
+            onPrint: this.print,
+            onExportSVG: this.exportSvg,
+            onExportPNG: this.exportPng,
+            onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
+            onForceLayout: () => {
+                this.forceLayout();
+                this.zoomToFit();
+            },
+            languages,
+            selectedLanguage: this.diagram.getLanguage(),
+            onChangeLanguage: this.changeLanguage,
+            onShowTutorial: this.showTutorial,
+            isViewOnly,
+        });
+    };
+
     render(): ReactElement<any> {
-        const {onShareDiagram, onSaveDiagram} = this.props;
-        const flowLayoutHandler = this.getFlowLayoutHandler();
+        const {toolbar} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
@@ -102,38 +124,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
-            toolbar: createElement<EditorToolbarProps>(EditorToolbar, {
-                onUndo: this.undo,
-                onRedo: this.redo,
-                onZoomIn: this.zoomIn,
-                onZoomOut: this.zoomOut,
-                onZoomToFit: this.zoomToFit,
-                onPrint: this.print,
-                onExportSVG: this.exportSvg,
-                onExportPNG: this.exportPng,
-                onShare: onShareDiagram ? () => onShareDiagram(this) : undefined,
-                onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
-                onForceLayout: () => {
-                    this.forceLayout();
-                    this.zoomToFit();
-                },
-                onFlowLayout: flowLayoutHandler ? () => {
-                    flowLayoutHandler();
-                    this.zoomToFit();
-                } : undefined,
-                languages: this.props.languages,
-                selectedLanguage: this.diagram.getLanguage(),
-                onChangeLanguage: this.changeLanguage,
-                onShowTutorial: showTutorial,
-                onEditAtMainSite: () => this.props.onEditAtMainSite(this),
-                isEmbeddedMode: this.props.isViewOnly,
-                isDiagramSaved: this.props.isDiagramSaved,
-            }),
+            toolbar: toolbar !== undefined ? toolbar : this.getDefaultToolbar(),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
-    }
-
-    protected getFlowLayoutHandler(): (() => void | undefined) {
-        return undefined;
     }
 
     componentDidMount() {
@@ -284,6 +276,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     centerTo = (paperPosition?: { x: number; y: number; }) => {
         this.markup.paperArea.centerTo(paperPosition);
+    }
+
+    showTutorial = () => {
+        showTutorial();
     }
 }
 
