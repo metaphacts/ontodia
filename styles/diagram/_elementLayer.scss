@@ -16,6 +16,12 @@
   img { vertical-align: middle; }
 }
 
+.ontodia-exported-element {
+  *, *:before, *:after {
+    box-sizing: inherit;
+  }
+}
+
 // remove link fill on exported SVG
 .link .connection { fill: none; }
 .link .connection-wrap {

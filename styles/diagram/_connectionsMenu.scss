@@ -9,7 +9,6 @@
 }
 
 .ontodia-connections-menu_bread-crumbs {
-  box-sizing: border-box;
   padding: 10px;
   padding-bottom: 0px;
   overflow: hidden;
@@ -39,7 +38,7 @@
   overflow-y: auto;
   border-top: 1px solid #dbdbdb;
   flex-grow: 1;
-  margin-bottom: 0px;
+  margin: 0;
 }
 
 .ocm_links-list-empty {
@@ -172,7 +171,6 @@
 
 .link-in-popup-menu_direction {
     background: rgba(219, 219, 219, 0.35);
-    box-sizing: border-box;
     min-height: 30px;
     padding: 5px 0px 5px 10px;
     display: flex;

@@ -10,6 +10,10 @@
   font-size: 14px;
   line-height: 1.42857;
 
+  *, *:before, *:after {
+    box-sizing: inherit;
+  }
+
   &__header {
     display: flex;
     flex-direction: column;
@@ -59,7 +63,6 @@
   hr {
     border: 0;
     border-top: 1px solid #eee;
-    box-sizing: content-box;
     height: 0;
   }
 }
