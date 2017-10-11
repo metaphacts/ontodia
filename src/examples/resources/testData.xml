@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<rdf:RDF
+xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+xml:base="http://www.animals.fake/animals#">
+
+<rdfs:Class rdf:ID="animal" />
+
+<rdfs:Class rdf:ID="horse">
+  <rdfs:subClassOf rdf:resource="#animal"/>
+</rdfs:Class>
+
+</rdf:RDF>
