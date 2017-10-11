@@ -38,7 +38,7 @@
   overflow-y: auto;
   border-top: 1px solid #dbdbdb;
   flex-grow: 1;
-  margin-bottom: 0px;
+  margin: 0;
 }
 
 .ocm_links-list-empty {
@@ -253,7 +253,7 @@
   max-width: 60%;
 }
 
-.btn.ontodia-connections-menu_objects-panel_bottom-panel__add-button {
+.ontodia-btn.ontodia-connections-menu_objects-panel_bottom-panel__add-button {
   height: 25px;
   padding-top: 1px;
   padding-bottom: 2px;

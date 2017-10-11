@@ -1,4 +1,4 @@
-.stateBasedProgress .progress {
+.stateBasedProgress .ontodia-progress {
   flex-shrink: 0;
   -webkit-flex-shrink: 0; /* safari 8 */
   width: 100%;
@@ -6,21 +6,21 @@
   margin-bottom: 0;
 }
 
-.stateBasedProgress:not([data-state]) .progress {
+.stateBasedProgress:not([data-state]) .ontodia-progress {
   height: 0;
 }
 
-.stateBasedProgress[data-state='querying'] .progress,
-.stateBasedProgress[data-state='error'] .progress {
+.stateBasedProgress[data-state='querying'] .ontodia-progress,
+.stateBasedProgress[data-state='error'] .ontodia-progress {
   /* property name | duration | delay */
   transition: height 300ms 300ms;
 }
 
-.stateBasedProgress[data-state='error'] .progress-bar {
+.stateBasedProgress[data-state='error'] .ontodia-progress-bar {
   background-color: #E72F2F;
 }
 
-.stateBasedProgress[data-state='finished'] .progress {
+.stateBasedProgress[data-state='finished'] .ontodia-progress {
   height: 0;
   /* property name | duration | delay */
   transition: height 200ms 0ms;

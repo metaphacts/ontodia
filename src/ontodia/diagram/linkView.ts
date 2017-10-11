@@ -86,29 +86,37 @@ export class LinkView extends joint.dia.LinkView {
 
         if (showLabels) {
             if (style.label) {
-                const label = {};
+                const label = this.getDefaultLabelAttributes();
                 const value = style.label.attrs && style.label.attrs.text ? style.label.attrs.text.text : undefined;
                 const text = value ? this.view.getLocalizedText(value).text : this.view.getLinkLabel(linkTypeId).text;
-                merge(label, style.label, {position: style.label.position || 0.5, attrs: {text: {text}}});
+                merge(label, style.label, {attrs: {text: {text}}});
                 labelAttributes.push(label);
             } else {
                 const text = this.view.getLinkLabel(linkTypeId).text;
-                const label = {position: 0.5, attrs: {text: {text}}};
+                const label = this.getDefaultLabelAttributes();
+                merge(label, {attrs: {text: {text}}});
                 labelAttributes.push(label);
             }
 
             if (style.properties) {
                 style.properties.forEach(prop => {
-                    const property = {};
+                    const property = this.getDefaultLabelAttributes();
                     const value = prop.attrs && prop.attrs.text ? prop.attrs.text.text : undefined;
                     const text = value ? this.view.getLocalizedText(value).text : '';
-                    merge(property, prop, {position: prop.position || 0.5, attrs: {text: {text}}});
+                    merge(property, prop, {attrs: {text: {text}}});
                     labelAttributes.push(property);
                 });
             }
         }
 
         return labelAttributes;
+    }
+
+    private getDefaultLabelAttributes() {
+        return {
+            position: 0.5,
+            attrs: {text: {'font-weight': 700}},
+        };
     }
 }
 

@@ -89,23 +89,23 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
     render() {
         const newIcon = (this.props.link.get('isNew') ? <span className='label label-warning'>new</span> : '');
-        const countIcon = (this.props.count > 0 ? <span className='badge'>{this.props.count}</span> : '');
+        const countIcon = (this.props.count > 0 ? <span className='ontodia-badge'>{this.props.count}</span> : '');
         const badgeContainer = (newIcon || countIcon ? <div>{newIcon}{countIcon}</div> : '');
 
         return (
-            <li data-linkTypeId={this.props.link.id} className='list-group-item linkInToolBox clearfix'>
-                <span className='btn-group btn-group-xs' data-toggle='buttons'>
-                    <label className={'btn btn-default' + (this.isChecked('invisible') ? ' active' : '')}
+            <li data-linkTypeId={this.props.link.id} className='ontodia-list-group-item linkInToolBox clearfix'>
+                <span className='ontodia-btn-group ontodia-btn-group-xs' data-toggle='buttons'>
+                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('invisible') ? ' active' : '')}
                         id='invisible' title='Hide links and labels'
                         onClick={() => this.changeState('invisible')}>
                         <span className='fa fa-times' aria-hidden='true' />
                     </label>
-                    <label className={'btn btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
+                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
                         id='withoutLabels' title='Show links without labels'
                         onClick={() => this.changeState('withoutLabels')}>
                         <span className='fa fa-arrows-h' aria-hidden='true' />
                     </label>
-                    <label className={'btn btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
+                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
                         id='allVisible' title='Show links with labels'
                         onClick={() => this.changeState('allVisible')}>
                         <span className='fa fa-text-width' aria-hidden='true' />
@@ -233,7 +233,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
             <div className={`${className} stateBasedProgress`} data-state={dataState}>
                 <div className={`${className}__heading`}>
                     <div className={`${className}__searching-box`}>
-                        <input className='search-input form-control'
+                        <input className='search-input ontodia-form-control'
                             type='text'
                             value={this.state.filterKey}
                             onChange={this.onChangeInput}
@@ -241,18 +241,18 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                         {dropButton}
                     </div>
                     <div className={`${className}__switch-all`}>
-                        <div className='btn-group btn-group-xs'>
-                            <label className='btn btn-default'
+                        <div className='ontodia-btn-group ontodia-btn-group-xs'>
+                            <label className='ontodia-btn ontodia-btn-default'
                                 title='Hide links and labels'
                                 onClick={() => this.changeState('invisible', links)}>
                                 <span className='fa fa-times' aria-hidden='true' />
                             </label>
-                            <label className='btn btn-default'
+                            <label className='ontodia-btn ontodia-btn-default'
                                 title='Show links without labels'
                                 onClick={() => this.changeState('withoutLabels', links)}>
                                 <span className='fa fa-arrows-h' aria-hidden='true' />
                             </label>
-                            <label className='btn btn-default'
+                            <label className='ontodia-btn ontodia-btn-default'
                                 title='Show links with labels'
                                 onClick={() => this.changeState('allVisible', links)}>
                                 <span className='fa fa-text-width' aria-hidden='true' />
@@ -261,8 +261,8 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                         <span>&nbsp;Switch all</span>
                     </div>
                 </div>
-                <div className='progress'>
-                    <div className='progress-bar progress-bar-striped active'
+                <div className='ontodia-progress'>
+                    <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
                         role='progressbar'
                         aria-valuemin='0'
                         aria-valuemax='100'
@@ -273,7 +273,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                 <div className={`${className}__rest`}>
                     {connectedTo}
                     <div className='link-lists'>
-                        <ul className='list-group connected-links'>{views}</ul>
+                        <ul className='ontodia-list-group connected-links'>{views}</ul>
                     </div>
                 </div>
             </div>

@@ -60,27 +60,27 @@ export class EditorToolbar extends React.Component<Props, State> {
             '<p>Don’t forget to save diagrams, it always comes handy after all.</p>';
 
         const btnSaveDiagram = (
-            <button type='button' className='saveDiagramButton btn btn-primary'
+            <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-primary'
                     onClick={this.props.onSaveDiagram}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
             </button>
         );
 
         const btnEditAtMainSite = (
-            <button type='button' className='btn btn-primary' onClick={this.props.onEditAtMainSite}>
+            <button type='button' className='ontodia-btn ontodia-btn-primary' onClick={this.props.onEditAtMainSite}>
                 Edit in <img src='images/ontodia_headlogo.png' height='15.59'/>
             </button>
         );
 
         const btnShare = (
-            <button type='button' className='btn btn-default'
+            <button type='button' className='ontodia-btn ontodia-btn-default'
                     title='Publish or share diagram' onClick={this.props.onShare}>
                 <span className='fa fa-users' aria-hidden='true' /> Share
             </button>
         );
 
         const btnHelp = (
-            <button type='button' className='btn btn-default'
+            <button type='button' className='ontodia-btn ontodia-btn-default'
                     onClick={this.props.onShowTutorial}>
                 <span className='fa fa-info-circle' aria-hidden='true' /> Help
             </button>
@@ -90,66 +90,66 @@ export class EditorToolbar extends React.Component<Props, State> {
         const {selectedLanguage, languages} = this.props;
         return (
             <div className={CLASS_NAME}>
-                <div className='btn-group btn-group-sm'
+                <div className='ontodia-btn-group ontodia-btn-group-sm'
                      data-position='bottom' data-step='6' data-intro={intro}>
                     {nonEmbedded
                         ? (this.props.onSaveDiagram ? btnSaveDiagram : undefined)
                         : (this.props.onEditAtMainSite ? btnEditAtMainSite : undefined)}
                     {this.props.onSaveToSelf ? (
-                        <button type='button' className='btn btn-default'>
-                            <span className='fa fa-floppy-o' aria-hidden='true'></span> Save under your account
+                        <button type='button' className='ontodia-btn ontodia-btn-default'>
+                            <span className='fa fa-floppy-o' aria-hidden='true'/> Save under your account
                         </button>
                     ) : undefined}
                     {(this.props.isDiagramSaved && this.props.onResetDiagram) ? (
-                        <button type='button' className='btn btn-default'>
-                            <span className='fa fa-trash-o' aria-hidden='true'></span> Reset
+                        <button type='button' className='ontodia-btn ontodia-btn-default'>
+                            <span className='fa fa-trash-o' aria-hidden='true'/> Reset
                         </button>
                     ) : undefined}
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Zoom In' onClick={this.props.onZoomIn}>
                         <span className='fa fa-search-plus' aria-hidden='true' />
                     </button>
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Zoom Out' onClick={this.props.onZoomOut}>
                         <span className='fa fa-search-minus' aria-hidden='true' />
                     </button>
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Fit to Screen' onClick={this.props.onZoomToFit}>
                         <span className='fa fa-arrows-alt' aria-hidden='true' />
                     </button>
                     {(nonEmbedded && this.props.onUndo) ? (
-                        <button type='button' className={`btn btn-default ${CLASS_NAME}__undo`}
+                        <button type='button' className={`ontodia-btn ontodia-ontodia-btn-default ${CLASS_NAME}__undo`}
                             title='Undo' onClick={this.props.onUndo}>
                             <span className='fa fa-undo' aria-hidden='true' />
                         </button>
                     ) : undefined}
                     {(nonEmbedded && this.props.onRedo) ? (
-                        <button type='button' className={`btn btn-default ${CLASS_NAME}__redo`}
+                        <button type='button' className={`ontodia-btn ontodia-ontodia-btn-default ${CLASS_NAME}__redo`}
                             title='Redo' onClick={this.props.onRedo}>
                             <span className='fa fa-repeat' aria-hidden='true' />
                         </button>
                     ) : undefined}
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Export diagram as PNG' onClick={this.onExportPNG}>
                         <span className='fa fa-picture-o' aria-hidden='true' /> PNG
                     </button>
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Export diagram as SVG' onClick={this.onExportSVG}>
                         <span className='fa fa-picture-o' aria-hidden='true' /> SVG
                     </button>
-                    <button type='button' className='btn btn-default'
+                    <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Print diagram' onClick={this.props.onPrint}>
                         <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     <span className={`${CLASS_NAME}__layout-group`}>
-                        <label><span>Layout - </span></label>
-                        <span className='btn-group btn-group-sm'>
-                            <button type='button' className='btn btn-default'
+                        <label className='ontodia-label'><span>Layout - </span></label>
+                        <span className='ontodia-btn-group ontodia-btn-group-sm'>
+                            <button type='button' className='ontodia-btn ontodia-btn-default'
                                     onClick={this.props.onForceLayout}>
                                 <span title='Force layout' className='fa fa-snowflake-o' aria-hidden='true' />
                             </button>
                             {this.props.onFlowLayout ? (
-                                <button type='button' className='btn btn-default'
+                                <button type='button' className='ontodia-btn ontodia-btn-default'
                                         onClick={this.props.onFlowLayout}>
                                     <span title='Flow layout' className='fa fa-sitemap' aria-hidden='true' />
                                 </button>
@@ -158,8 +158,8 @@ export class EditorToolbar extends React.Component<Props, State> {
                     </span>
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
                     {(languages.length > 1) ? (
-                        <span className={`btn-group ${CLASS_NAME}__language-selector`}>
-                            {nonEmbedded ? <label><span>Data Language - </span></label> : undefined}
+                        <span className={`ontodia-btn-group ${CLASS_NAME}__language-selector`}>
+                            {nonEmbedded ? <label className='ontodia-label'><span>Data Language - </span></label> : undefined}
                             <select value={selectedLanguage} onChange={this.onChangeLanguage}>
                                 {languages.map(({code, label}) =>
                                     <option key={code} value={code}>{label}</option>)}

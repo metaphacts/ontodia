@@ -49,7 +49,7 @@ export class ClassTree extends Backbone.View<Backbone.Model> {
 
         let innerDiv = $(`<div class="${CLASS_NAME}__filter-group"></div>`).appendTo(this.filter);
         let searchInput =
-            $('<input type="text" class="search-input form-control" placeholder="Search for..."/>')
+            $('<input type="text" class="search-input ontodia-form-control" placeholder="Search for..."/>')
             .appendTo(innerDiv);
 
         this.getJSTree().jstree({
