@@ -1,51 +1,27 @@
 declare module "rdf-ext" {
-    export function createStore(options?: any): RDFStore;
+    import { Node, Quad, Graph, Stream, NamedNode, BlankNode, Literal } from 'rdf-data-model';
+    import SimpleDataset = require('rdf-dataset-simple');
+    
+    export function waitFor(stream: any): Promise<any>;
 
-    export function createGraph(triples: Triple[]):RDFGraph;
-
-    export class RDFStore {
-        graphs: {
-            [id: string]: { _graph: Triple[] };
-        };
-        add: (id: string, graph: RDFGraph) => void;
-        match: (
-            subject?: string,
-            predicat?: string,
-            object?: string,
-            iri?: string,
-            callback?: (result: any) => void,
-            limit?: number
-        ) => Promise<RDFGraph>;
+    export class Parser {
+        import(data: Stream<number[]>): Stream<Quad>;
     }
 
-    export class RDFGraph {
-        toArray: () => Triple[];
-        match: (
-            subject?: string,
-            predicat?: string,
-            object?: string,
-            iri?: string,
-            callback?: (result: any) => void,
-            limit?: number
-        ) => RDFGraph;
+    export class Parsers {
+        constructor(parserMap: { [mimeType: string]: Parser });
+        import(mimeType: string, data: any): Stream<Quad>;
+        find(mimeType: string): Parser;
+        list(): string[];
     }
 
-    export class Triple {
-        object: Node;
-        predicate: Node;
-        subject: Node;
-    }
-
-    export type Node = NamedNode | Literal;
-
-    export class NamedNode {
-        interfaceName: 'NamedNode';
-        nominalValue: string;
-    }
-
-    export class Literal {
-        interfaceName: 'Literal';
-        language: string;
-        nominalValue: string;
+    export const factory: {
+        namedNode(iri: string): NamedNode,
+        blankNode(iri: string): BlankNode,
+        literal(iri: string): Literal,
+        triple(subject: Node, predicate: Node, object: Node): Quad,
+        quad(subject: Node, predicate: Node, object: Node, graph?: Graph): Quad,
+        defaultGraph(iri: string): Graph,
+        dataset(quads: Quad[]): SimpleDataset;
     }
 }

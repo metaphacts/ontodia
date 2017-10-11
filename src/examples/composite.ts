@@ -15,6 +15,7 @@ import {
     PersonTemplate,
     WikidataSettings,
     LinkModel,
+    RDFParsAdapter,
  } from '../index';
 
  const N3Parser: any = require('rdf-parser-n3');
@@ -146,8 +147,8 @@ function onWorkspaceMounted(workspace: Workspace) {
         dataFetching: true,
         parsers: {
             'text/turtle': new N3Parser(),
-            'application/rdf+xml': new RdfXmlParser(),
             'application/ld+json': new JsonLdParser(),
+            'application/rdf+xml': new RDFParsAdapter(new RdfXmlParser()),
         },
     });
 
