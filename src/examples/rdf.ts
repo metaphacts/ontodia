@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, RDFDataProvider } from '../index';
+import { Workspace, WorkspaceProps, RDFDataProvider, RDFParsAdapter } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -36,8 +36,8 @@ function onWorkspaceMounted(workspace: Workspace) {
             dataFetching: false,
             parsers: {
                 'text/turtle': new N3Parser(),
-                'application/rdf+xml': new RdfXmlParser(),
                 'application/ld+json': new JsonLdParser(),
+                'application/rdf+xml': new RDFParsAdapter(new RdfXmlParser()),
             },
         }),
     });

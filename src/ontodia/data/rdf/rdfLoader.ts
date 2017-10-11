@@ -1,11 +1,14 @@
-import { RDFGraph } from 'rdf-ext';
+import SimpleDataset = require('rdf-dataset-simple');
 import { Dictionary } from '../model';
 import { RDFCompositeParser } from './rdfCompositeParser';
+import { waitFor } from 'rdf-ext';
+
+const stringToStream = require<(input: string) => any>('string-to-stream');
 
 export const DEFAULT_PROXY = '/lod-proxy/';
 
 export class RDFLoader {
-    private fetchingFileCatche: Dictionary<Promise<RDFGraph>> = {};
+    private fetchingFileCatche: Dictionary<Promise<SimpleDataset>> = {};
     public parser: RDFCompositeParser;
     public proxy: string;
 
@@ -17,19 +20,20 @@ export class RDFLoader {
         this.proxy = parameters.proxy || DEFAULT_PROXY;
     }
 
-    private parseData(data: string, contentType?: string, prefix?: string): Promise<RDFGraph> {
-        let result: Promise<RDFGraph>;
-        result = this.parser.parse(data, contentType);
-        return result;
+    private parseData(data: string, contentType?: string, prefix?: string): Promise<SimpleDataset> {
+        let dataset = new SimpleDataset();
+        return dataset.import(
+            this.parser.import(stringToStream(data), contentType),
+        ).then(() => dataset);
     }
 
-    downloadElement(elementId: string): Promise<RDFGraph> {
+    downloadElement(elementId: string): Promise<SimpleDataset> {
         const sharpIndex = elementId.indexOf('#');
         const fileUrl = sharpIndex !== -1 ? elementId.substr(0, sharpIndex) : elementId;
         let typePointer = 0;
-        const mimeTypes = Object.keys(this.parser.parserMap);
+        const mimeTypes: any[] = this.parser.list();
 
-        const recursivePart = (): Promise<RDFGraph> => {
+        const recursivePart = (): Promise<SimpleDataset> => {
             const acceptType = mimeTypes[typePointer++];
 
             if (acceptType && (elementId.startsWith('http') || elementId.startsWith('file'))) {
