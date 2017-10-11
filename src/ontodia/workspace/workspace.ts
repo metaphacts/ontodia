@@ -55,11 +55,11 @@ export interface WorkspaceLanguage {
     label: string;
 }
 
-export interface State {
+export interface WorkspaceState {
     readonly criteria?: SearchCriteria;
 }
 
-export class Workspace extends Component<WorkspaceProps, State> {
+export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends WorkspaceState = WorkspaceState> extends Component<P, S> {
     static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
         leftPanelInitiallyOpen: true,
@@ -76,12 +76,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    constructor(props: WorkspaceProps) {
+    constructor(props: P) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
         this.diagram = new DiagramView(this.model, this.props.viewOptions);
         this.diagram.setLanguage(this.props.language);
-        this.state = {};
+        this.state = {} as WorkspaceState as S;
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
@@ -121,7 +121,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
-            onSearchCriteriaChanged: criteria => this.setState({criteria}),
+            onSearchCriteriaChanged: criteria => this.setState({criteria} as WorkspaceState as S),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
             toolbar: toolbar !== undefined ? toolbar : this.getDefaultToolbar(),
@@ -140,7 +140,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     refElementLinkId: linkType && linkType.id,
                     linkDirection: direction,
                 },
-            });
+            } as WorkspaceState as S);
         });
 
         if (!this.props.hideTutorial) {
