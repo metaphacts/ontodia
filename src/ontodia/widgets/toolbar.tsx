@@ -142,7 +142,7 @@ export class EditorToolbar extends React.Component<Props, State> {
                         <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     <span className={`${CLASS_NAME}__layout-group`}>
-                        <label className="ontodia-label"><span>Layout - </span></label>
+                        <label className='ontodia-label'><span>Layout - </span></label>
                         <span className='ontodia-btn-group ontodia-btn-group-sm'>
                             <button type='button' className='ontodia-btn ontodia-btn-default'
                                     onClick={this.props.onForceLayout}>
@@ -159,7 +159,7 @@ export class EditorToolbar extends React.Component<Props, State> {
                     {(nonEmbedded && this.props.onShare) ? btnShare : undefined}
                     {(languages.length > 1) ? (
                         <span className={`ontodia-btn-group ${CLASS_NAME}__language-selector`}>
-                            {nonEmbedded ? <label className="ontodia-label"><span>Data Language - </span></label> : undefined}
+                            {nonEmbedded ? <label className='ontodia-label'><span>Data Language - </span></label> : undefined}
                             <select value={selectedLanguage} onChange={this.onChangeLanguage}>
                                 {languages.map(({code, label}) =>
                                     <option key={code} value={code}>{label}</option>)}

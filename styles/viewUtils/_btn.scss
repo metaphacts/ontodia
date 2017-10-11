@@ -16,6 +16,12 @@
   border: 1px solid transparent;
   border-radius: 4px;
   text-transform: none;
+
+  &[disabled] {
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: .65;
+  }
 }
 
 
@@ -44,6 +50,12 @@
     background-color: #d4d4d4;
     border-color: #8c8c8c;
   }
+
+  &[disabled], &[disabled]:hover, &[disabled].active, &[disabled].active:hover {
+    background-color: #e0e0e0;
+    background-image: none;
+    box-shadow: none;
+  }
 }
 
 .ontodia-btn-primary {
@@ -68,5 +80,11 @@
     background-image: none;
     border-color: #245580;
     box-shadow: inset 0 3px 5px rgba(0,0,0,.125);
+  }
+
+  &[disabled], &[disabled]:hover, &[disabled]:focus, &[disabled]:active, &[disabled].active {
+    background-color: #265a88;
+    background-image: none;
+    box-shadow: none;
   }
 }

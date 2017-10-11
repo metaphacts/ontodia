@@ -1,8 +1,4 @@
-import { LinkTemplate, LinkTemplateResolver, LinkLabel } from './props';
-
-const LINK_LABEL: LinkLabel = {
-    attrs: {text: {'font-weight': 700}},
-};
+import { LinkTemplate, LinkTemplateResolver } from './props';
 
 const LINK_SUB_CLASS_OF: LinkTemplate = {
     markerTarget: {
@@ -14,7 +10,6 @@ const LINK_SUB_CLASS_OF: LinkTemplate = {
             stroke: '#f8a485',
             'stroke-width': 2,
         },
-        label: LINK_LABEL,
     }),
 };
 
@@ -28,7 +23,6 @@ const LINK_DOMAIN: LinkTemplate = {
             stroke: '#34c7f3',
             'stroke-width': 2,
         },
-        label: LINK_LABEL,
     }),
 };
 
@@ -42,7 +36,6 @@ const LINK_RANGE: LinkTemplate = {
             stroke: '#34c7f3',
             'stroke-width': 2,
         },
-        label: LINK_LABEL,
     }),
 };
 
@@ -56,7 +49,6 @@ const LINK_TYPE_OF: LinkTemplate = {
             stroke: '#8cd965',
             'stroke-width': 2,
         },
-        label: LINK_LABEL,
     }),
 };
 
