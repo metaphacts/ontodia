@@ -136,6 +136,9 @@ export class RDFDataProvider implements DataProvider {
                         };
                         dictionary[p] = parentClassElement;
                         firstLevel[p] = parentClassElement;
+                    } else if (!dictionary[cl].label) {
+                        classElement = dictionary[cl];
+                        classElement.label = { values: this.getLabels(cl) };
                     } else if (!classAlreadyExists) {
                         dictionary[p].children.push(classElement);
                         dictionary[p].count += (1 + classElement.count);
