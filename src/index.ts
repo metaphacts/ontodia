@@ -20,4 +20,4 @@ export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/dia
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 export * from './ontodia/viewUtils/crossOriginImage';
-export { Workspace, WorkspaceProps, WorkspaceLanguage, WorkspaceState } from './ontodia/workspace/workspace';
+export { Workspace, WorkspaceProps, WorkspaceLanguage } from './ontodia/workspace/workspace';

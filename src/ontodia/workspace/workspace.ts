@@ -55,11 +55,11 @@ export interface WorkspaceLanguage {
     label: string;
 }
 
-export interface WorkspaceState {
+export interface State {
     readonly criteria?: SearchCriteria;
 }
 
-export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends WorkspaceState = WorkspaceState> extends Component<P, S> {
+export class Workspace extends Component<WorkspaceProps, State> {
     static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
         leftPanelInitiallyOpen: true,
@@ -76,12 +76,12 @@ export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends Work
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
     private tree: ClassTree;
-    constructor(props: P) {
+    constructor(props: WorkspaceProps) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
         this.diagram = new DiagramView(this.model, this.props.viewOptions);
         this.diagram.setLanguage(this.props.language);
-        this.state = {} as WorkspaceState as S;
+        this.state = {};
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
@@ -90,30 +90,8 @@ export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends Work
         }
     }
 
-    protected getDefaultToolbar = () => {
-        const {languages, isViewOnly, onSaveDiagram} = this.props;
-        return createElement<EditorToolbarProps>(EditorToolbar, {
-            onZoomIn: this.zoomIn,
-            onZoomOut: this.zoomOut,
-            onZoomToFit: this.zoomToFit,
-            onPrint: this.print,
-            onExportSVG: this.exportSvg,
-            onExportPNG: this.exportPng,
-            onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
-            onForceLayout: () => {
-                this.forceLayout();
-                this.zoomToFit();
-            },
-            languages,
-            selectedLanguage: this.diagram.getLanguage(),
-            onChangeLanguage: this.changeLanguage,
-            onShowTutorial: this.showTutorial,
-            isViewOnly,
-        });
-    };
-
     render(): ReactElement<any> {
-        const {toolbar} = this.props;
+        const {languages, toolbar, isViewOnly, onSaveDiagram} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             isViewOnly: this.props.isViewOnly,
@@ -121,10 +99,27 @@ export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends Work
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
-            onSearchCriteriaChanged: criteria => this.setState({criteria} as WorkspaceState as S),
+            onSearchCriteriaChanged: criteria => this.setState({criteria}),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
-            toolbar: toolbar !== undefined ? toolbar : this.getDefaultToolbar(),
+            toolbar: toolbar !== undefined ? toolbar : createElement<EditorToolbarProps>(EditorToolbar, {
+                onZoomIn: this.zoomIn,
+                onZoomOut: this.zoomOut,
+                onZoomToFit: this.zoomToFit,
+                onPrint: this.print,
+                onExportSVG: this.exportSvg,
+                onExportPNG: this.exportPng,
+                onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
+                onForceLayout: () => {
+                    this.forceLayout();
+                    this.zoomToFit();
+                },
+                languages,
+                selectedLanguage: this.diagram.getLanguage(),
+                onChangeLanguage: this.changeLanguage,
+                onShowTutorial: this.showTutorial,
+                isViewOnly,
+            }),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
@@ -140,7 +135,7 @@ export class Workspace<P extends WorkspaceProps = WorkspaceProps, S extends Work
                     refElementLinkId: linkType && linkType.id,
                     linkDirection: direction,
                 },
-            } as WorkspaceState as S);
+            });
         });
 
         if (!this.props.hideTutorial) {
