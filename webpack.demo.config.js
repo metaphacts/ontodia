@@ -133,7 +133,7 @@ module.exports = {
                 changeOrigin: true,
                 secure: false,
             },
-            "/wikidata-prop-suggest**": {
+            '/wikidata-prop-suggest**': {
                 target: 'http://wikidata-prop-suggest.apps.vismart.biz/',
                 pathRewrite: {'/wikidata-prop-suggest' : ''},
                 changeOrigin: true,

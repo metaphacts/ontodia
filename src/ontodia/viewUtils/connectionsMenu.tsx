@@ -26,12 +26,12 @@ const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
 });
 
 export interface PropertySuggestionParams {
-    id: string;
-    key: string;
+    elementId: string;
+    token: string;
     properties: string[];
     lang: string;
 }
-export type PropertySuggestionCall = (params: PropertySuggestionParams) => Promise<Dictionary<PropertyScore>>;
+export type PropertySuggestionHandler = (params: PropertySuggestionParams) => Promise<Dictionary<PropertyScore>>;
 
 type SortMode = 'alphabet' | 'smart';
 
@@ -45,7 +45,7 @@ export interface ConnectionsMenuOptions {
     view: DiagramView;
     cellView: joint.dia.CellView;
     onClose: () => void;
-    propertySuggestionCall?: PropertySuggestionCall;
+    suggestProperties?: PropertySuggestionHandler;
 }
 
 export class ConnectionsMenu {
@@ -266,7 +266,7 @@ export class ConnectionsMenu {
             onExpandLink: this.onExpandLink,
             onPressAddSelected: this.addSelectedElements,
             onMoveToFilter: this.onMoveToFilter,
-            propertySuggestionCall: this.options.propertySuggestionCall,
+            propertySuggestionCall: this.options.suggestProperties,
         }), this.container);
     };
 
@@ -297,7 +297,7 @@ interface ConnectionsMenuMarkupProps {
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 
-    propertySuggestionCall?: PropertySuggestionCall;
+    propertySuggestionCall?: PropertySuggestionHandler;
 }
 
 interface ConnectionsMenuMarkupState {
@@ -394,17 +394,17 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
 
     private renderSortSwitch = (id: string, icon: string, title: string) => {
         return (
-            <div className="ontodia-connections-menu__sort-switch">
+            <div>
                 <input
                     type="radio"
                     name="sort"
                     id={id}
                     value={id}
-                    className="ontodia-connections-menu__sort-switch-inp"
+                    className="ontodia-connections-menu__sort-switch"
                     onChange={this.onSortChange}
                     checked={this.state.sortMode === id}
                 />
-                <label htmlFor={id} className="ontodia-connections-menu__sort-switch-lbl" title={title}>
+                <label htmlFor={id} className="ontodia-connections-menu__sort-switch-label" title={title}>
                     <i className={`fa ${icon}`}/>
                 </label>
             </div>
@@ -473,7 +473,7 @@ interface ConnectionsListProps {
     onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
 
-    propertySuggestionCall?: PropertySuggestionCall;
+    propertySuggestionCall?: PropertySuggestionHandler;
     sortMode: SortMode;
 }
 
@@ -491,15 +491,15 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private updateScores = (props: ConnectionsListProps) => {
         if (props.propertySuggestionCall && (props.filterKey || props.sortMode === 'smart')) {
             const {id, data, lang, filterKey} = props;
-            const key = filterKey.trim();
+            const token = filterKey.trim();
             const properties = data.links.map(l => l.id);
-            props.propertySuggestionCall({id, key, properties, lang}).then(scores =>
+            props.propertySuggestionCall({elementId: id, token, properties, lang}).then(scores =>
                 this.setState({scores})
             );
         }
     }
 
-    private get isSmartMode(): boolean {
+    private isSmartMode(): boolean {
         return this.props.sortMode === 'smart' && !this.props.filterKey;
     }
 
@@ -537,33 +537,24 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
             return 1;
         }
 
-        if (aText < bText) {
-            return -1;
-        }
-
-        if (aText > bText) {
-            return 1;
-        }
-
-        return 0;
+        return aText.localeCompare(bText);
     }
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
             const label: Label = link.get('label');
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
-            return (
-                !this.props.filterKey) ||
-                (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
+            return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
     }
 
     private getProbableLinks = () => {
+        const isSmartMode = this.isSmartMode();
         return (this.props.data.links || []).filter(link => {
             const label: Label = link.get('label');
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
-            return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || this.isSmartMode);
+            return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
 
@@ -582,7 +573,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
                }
 
                if (count !== 0) {
-                   const postfix = !notSure ? '' : '-probable';
+                   const postfix = notSure ? '-probable' : '';
                    views.push(
                        <LinkInPopupMenu
                            key={`${direction}-${link.id}-${postfix}`}
@@ -591,7 +582,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
                            lang={this.props.lang}
                            count={count}
                            direction={direction}
-                           filterKey={!notSure ? this.props.filterKey : ''}
+                           filterKey={notSure ? '' : this.props.filterKey}
                            onMoveToFilter={this.props.onMoveToFilter}
                            probability={
                                (this.state.scores[link.id] && notSure ? this.state.scores[link.id].score : 0)
@@ -605,9 +596,9 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     };
 
     render() {
-        const isSmartMode = this.isSmartMode;
+        const isSmartMode = this.isSmartMode();
 
-        const links = !isSmartMode ? this.getLinks() : [];
+        const links = isSmartMode ? [] : this.getLinks();
         const probableLinks = this.getProbableLinks().filter(link => links.indexOf(link) === -1);
         const views = this.getViews(links);
         const probableViews = this.getViews(probableLinks, true);
@@ -636,7 +627,9 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
         let probablePart = null;
         if (probableViews.length !== 0) {
             probablePart = [
-                !isSmartMode ? <li key='probabl-links'><label>Probably, you're looking for..</label></li> : null,
+                isSmartMode ? null : (
+                    <li key='probable-links'><span className='ontodia-label'>Probably, you're looking for..</span></li>
+                ),
                 probableViews,
             ];
         }

@@ -1,6 +1,5 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
-import 'whatwg-fetch';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
@@ -23,7 +22,7 @@ function getElementLabel(id: string): string {
     return element ? diagram.getLocalizedText(element.template.label.values).text : '';
 }
 
-function wikidataPropertySuggestion(params: PropertySuggestionParams) {
+function wikidataSuggestProperties(params: PropertySuggestionParams) {
     const idMap: { [id: string]: string } = {};
 
     const properties = params.properties.map(id => {
@@ -36,7 +35,7 @@ function wikidataPropertySuggestion(params: PropertySuggestionParams) {
         idMap[resultID] = id;
         return resultID;
     });
-    const term = params.key.toLowerCase() || getElementLabel(params.id);
+    const term = params.token.toLowerCase() || getElementLabel(params.elementId);
     const requestBody = {
         threshold: 0.1,
         term,
@@ -136,7 +135,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        propertySuggestionCall: wikidataPropertySuggestion,
+        suggestProperties: wikidataSuggestProperties,
     },
 };
 
