@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.6.1] - 2017-10-17
+### Added
+- Property suggestion handler for scoring properties
+- Toolbar refactored and toolbar customization feature added
+- Using TTL file as diagram source
+
+### Fixed
+- Chrome 61 margin issue
+
 ### [0.6.0] - 2017-09-19
 ### Added
 - RDF data provider with multiple parsers.

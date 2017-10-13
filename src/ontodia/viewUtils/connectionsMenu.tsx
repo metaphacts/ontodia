@@ -25,11 +25,27 @@ const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     diagram: null,
 });
 
+export interface PropertySuggestionParams {
+    elementId: string;
+    token: string;
+    properties: string[];
+    lang: string;
+}
+export type PropertySuggestionHandler = (params: PropertySuggestionParams) => Promise<Dictionary<PropertyScore>>;
+
+type SortMode = 'alphabet' | 'smart';
+
+export interface PropertyScore {
+    propertyIri: string;
+    score: number;
+}
+
 export interface ConnectionsMenuOptions {
     paper: joint.dia.Paper;
     view: DiagramView;
     cellView: joint.dia.CellView;
     onClose: () => void;
+    suggestProperties?: PropertySuggestionHandler;
 }
 
 export class ConnectionsMenu {
@@ -250,6 +266,7 @@ export class ConnectionsMenu {
             onExpandLink: this.onExpandLink,
             onPressAddSelected: this.addSelectedElements,
             onMoveToFilter: this.onMoveToFilter,
+            propertySuggestionCall: this.options.suggestProperties,
         }), this.container);
     };
 
@@ -279,14 +296,24 @@ interface ConnectionsMenuMarkupProps {
     onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
+
+    propertySuggestionCall?: PropertySuggestionHandler;
 }
 
-class ConnectionsMenuMarkup extends React.Component<
-    ConnectionsMenuMarkupProps, { filterKey: string, panel: string }> {
+interface ConnectionsMenuMarkupState {
+    filterKey?: string;
+    panel?: string;
+    sortMode?: SortMode;
+}
 
+class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, ConnectionsMenuMarkupState> {
     constructor (props: ConnectionsMenuMarkupProps) {
         super(props);
-        this.state = { filterKey: '',  panel: 'connections' };
+        this.state = {
+            filterKey: '',
+            panel: 'connections',
+            sortMode: 'alphabet',
+        };
     }
 
     private onChangeFilter = (e: React.FormEvent<HTMLInputElement>) => {
@@ -342,16 +369,58 @@ class ConnectionsMenuMarkup extends React.Component<
             if (this.props.state === 'loading') {
                 return <label className='ontodia-label ontodia-connections-menu__loading'>Loading...</label>;
             }
+
             return <ConnectionsList
+                id={this.props.cellView.model.id}
                 data={this.props.connectionsData}
                 lang={this.props.lang}
                 filterKey={this.state.filterKey}
                 onExpandLink={this.onExpandLink}
-                onMoveToFilter={this.props.onMoveToFilter}/>;
+                onMoveToFilter={this.props.onMoveToFilter}
+                propertySuggestionCall={this.props.propertySuggestionCall}
+                sortMode={this.state.sortMode}/>;
         } else {
             return <div/>;
         }
     };
+
+    private onSortChange = (e: React.FormEvent<HTMLInputElement>) => {
+        const value = (e.target as HTMLInputElement).value as SortMode;
+
+        if (this.state.sortMode === value) { return; }
+
+        this.setState({sortMode: value});
+    }
+
+    private renderSortSwitch = (id: string, icon: string, title: string) => {
+        return (
+            <div>
+                <input
+                    type="radio"
+                    name="sort"
+                    id={id}
+                    value={id}
+                    className="ontodia-connections-menu__sort-switch"
+                    onChange={this.onSortChange}
+                    checked={this.state.sortMode === id}
+                />
+                <label htmlFor={id} className="ontodia-connections-menu__sort-switch-label" title={title}>
+                    <i className={`fa ${icon}`}/>
+                </label>
+            </div>
+        );
+    }
+
+    private renderSortSwitches = () => {
+        if (this.state.panel !== 'connections' || !this.props.propertySuggestionCall) { return null; }
+
+        return (
+            <div className="ontodia-connections-menu_search-line-sort-switches">
+                {this.renderSortSwitch('alphabet', 'fa-sort-alpha-asc', 'Sort alphabetically')}
+                {this.renderSortSwitch('smart', 'fa-lightbulb-o', 'Smart sort')}
+            </div>
+        );
+    }
 
     render() {
         const bBox = this.props.cellView.getBBox();
@@ -369,11 +438,12 @@ class ConnectionsMenuMarkup extends React.Component<
                 <div className='ontodia-connections-menu_search-line'>
                     <input
                         type='text'
-                        className='search-input ontodia-form-control'
+                        className='search-input ontodia-form-control ontodia-connections-menu__search-line-input'
                         value={this.state.filterKey}
                         onChange={this.onChangeFilter}
                         placeholder='Search for...'
                     />
+                    {this.renderSortSwitches()}
                 </div>
                 <div className={`ontodia-connections-menu__progress-bar ` +
                     `ontodia-connections-menu__progress-bar--${this.props.state}`}>
@@ -392,6 +462,7 @@ class ConnectionsMenuMarkup extends React.Component<
 }
 
 interface ConnectionsListProps {
+    id: string;
     data: {
         links: FatLinkType[];
         countMap: { [linkTypeId: string]: ConnectionCount };
@@ -401,11 +472,35 @@ interface ConnectionsListProps {
 
     onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
+
+    propertySuggestionCall?: PropertySuggestionHandler;
+    sortMode: SortMode;
 }
 
-class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
+class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Dictionary<PropertyScore> }> {
     constructor (props: ConnectionsListProps) {
         super(props);
+        this.state = { scores: {} };
+        this.updateScores(props);
+    }
+
+    componentWillReceiveProps(newProps: ConnectionsListProps) {
+        this.updateScores(newProps);
+    }
+
+    private updateScores = (props: ConnectionsListProps) => {
+        if (props.propertySuggestionCall && (props.filterKey || props.sortMode === 'smart')) {
+            const {id, data, lang, filterKey} = props;
+            const token = filterKey.trim();
+            const properties = data.links.map(l => l.id);
+            props.propertySuggestionCall({elementId: id, token, properties, lang}).then(scores =>
+                this.setState({scores})
+            );
+        }
+    }
+
+    private isSmartMode(): boolean {
+        return this.props.sortMode === 'smart' && !this.props.filterKey;
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
@@ -423,20 +518,50 @@ class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
         }
 
         return 0;
-    };
+    }
+
+    private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
+        const aLabel: Label = a.get('label');
+        const bLabel: Label = b.get('label');
+        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
+        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
+
+        const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
+        const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
+
+        if (aWeight > bWeight) {
+            return -1;
+        }
+
+        if (aWeight < bWeight) {
+            return 1;
+        }
+
+        return aText.localeCompare(bText);
+    }
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
             const label: Label = link.get('label');
             const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
-            return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
+            return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
-    };
+    }
 
-    private getViews = (links: FatLinkType[]) => {
+    private getProbableLinks = () => {
+        const isSmartMode = this.isSmartMode();
+        return (this.props.data.links || []).filter(link => {
+            const label: Label = link.get('label');
+            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
+        }).sort(this.compareLinksByWeight);
+    }
+
+    private getViews = (links: FatLinkType[], notSure?: boolean) => {
         const countMap = this.props.data.countMap || {};
         const views: React.ReactElement<any>[] = [];
+
         for (const link of links) {
             ['in', 'out'].forEach((direction: 'in' | 'out') => {
                let count = 0;
@@ -448,17 +573,21 @@ class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
                }
 
                if (count !== 0) {
+                   const postfix = notSure ? '-probable' : '';
                    views.push(
                        <LinkInPopupMenu
-                           key={`${direction}-${link.id}`}
+                           key={`${direction}-${link.id}-${postfix}`}
                            link={link}
                            onExpandLink={this.props.onExpandLink}
                            lang={this.props.lang}
                            count={count}
                            direction={direction}
-                           filterKey={this.props.filterKey}
+                           filterKey={notSure ? '' : this.props.filterKey}
                            onMoveToFilter={this.props.onMoveToFilter}
-                       />
+                           probability={
+                               (this.state.scores[link.id] && notSure ? this.state.scores[link.id].score : 0)
+                           }
+                       />,
                    );
                }
             });
@@ -467,15 +596,19 @@ class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
     };
 
     render() {
-        const links = this.getLinks();
+        const isSmartMode = this.isSmartMode();
+
+        const links = isSmartMode ? [] : this.getLinks();
+        const probableLinks = this.getProbableLinks().filter(link => links.indexOf(link) === -1);
         const views = this.getViews(links);
+        const probableViews = this.getViews(probableLinks, true);
 
         let viewList: React.ReactElement<any> | React.ReactElement<any>[];
-        if (views.length === 0) {
+        if (views.length === 0 && probableViews.length === 0) {
             viewList = <label className='ontodia-label ontodia-connections-menu_links-list__empty'>List empty</label>;
         } else {
             viewList = views;
-            if (links.length > 1) {
+            if (links.length > 1 || (isSmartMode && probableViews.length > 1)) {
                 const countMap = this.props.data.countMap || {};
                 const allRelatedElements = countMap[ALL_RELATED_ELEMENTS_LINK.id];
                 viewList = [
@@ -491,11 +624,19 @@ class ConnectionsList extends React.Component<ConnectionsListProps, {}> {
                 ].concat(viewList);
             }
         }
-
+        let probablePart = null;
+        if (probableViews.length !== 0) {
+            probablePart = [
+                isSmartMode ? null : (
+                    <li key='probable-links'><span className='ontodia-label'>Probably, you're looking for..</span></li>
+                ),
+                probableViews,
+            ];
+        }
         return <ul className={
             'ontodia-connections-menu_links-list '
-                + (views.length === 0 ? 'ocm_links-list-empty' : '')
-        }>{viewList}</ul>;
+                + (views.length === 0 && probableViews.length === 0 ? 'ocm_links-list-empty' : '')
+        }>{viewList}{probablePart}</ul>;
     }
 }
 
@@ -507,6 +648,7 @@ interface LinkInPopupMenuProps {
     filterKey?: string;
     onExpandLink?: (link: FatLinkType, direction?: 'in' | 'out') => void;
     onMoveToFilter?: (link: FatLinkType, direction?: 'in' | 'out') => void;
+    probability?: number;
 }
 
 class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
@@ -525,12 +667,17 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     render() {
         const fullText = chooseLocalizedText(this.props.link.get('label').values, this.props.lang).text;
-        const textLine = getColoredText(fullText, this.props.filterKey);
+        const probability = Math.round(this.props.probability * 100);
+        const textLine = getColoredText(
+            fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
+            this.props.filterKey,
+        );
         const directionName =
             this.props.direction === 'in' ? 'source' :
             this.props.direction === 'out' ? 'target' :
             'all connected';
         const navigationTitle = `Navigate to ${directionName} "${fullText}" elements`;
+
         return (
             <li data-linkTypeId={this.props.link.id}
                 className='link-in-popup-menu' title={navigationTitle}

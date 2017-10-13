@@ -6,6 +6,31 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0px 4px 15px 0px rgba(0, 0, 0, 0.38);
+
+  &__sort-switch {
+    display: none;
+  }
+
+  &__sort-switch:checked + &__sort-switch-label {
+    color: #337ab7;
+    opacity: 1;
+  }
+
+  &__sort-switch-label {
+    cursor: pointer;
+    display: block;
+    margin: 0;
+    opacity: 0.4;
+    text-align: center;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &__search-line-input {
+    flex: 1 1 100%;
+  }
 }
 
 .ontodia-connections-menu_bread-crumbs {
@@ -30,6 +55,14 @@
 
 .ontodia-connections-menu_search-line {
   padding: 10px;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ontodia-connections-menu_search-line-sort-switches {
+  flex: 0 0 20px;
+  margin-left: 10px;
 }
 
 .ontodia-connections-menu_links-list {
