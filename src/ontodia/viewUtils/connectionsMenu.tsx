@@ -438,7 +438,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                 <div className='ontodia-connections-menu_search-line'>
                     <input
                         type='text'
-                        className='search-input ontodia-form-control ontodia-connections-menu_search-line-inp'
+                        className='search-input ontodia-form-control ontodia-connections-menu__search-line-input'
                         value={this.state.filterKey}
                         onChange={this.onChangeFilter}
                         placeholder='Search for...'

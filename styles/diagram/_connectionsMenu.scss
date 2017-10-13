@@ -27,6 +27,10 @@
       opacity: 1;
     }
   }
+
+  &__search-line-input {
+    flex: 1 1 100%;
+  }
 }
 
 .ontodia-connections-menu_bread-crumbs {
@@ -54,10 +58,6 @@
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-}
-
-.ontodia-connections-menu_search-line-inp {
-  flex: 1 1 100%;
 }
 
 .ontodia-connections-menu_search-line-sort-switches {

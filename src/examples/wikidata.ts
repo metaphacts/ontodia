@@ -13,11 +13,11 @@ require('jointjs/css/themes/default.css');
 
 const WIKIDATA_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
-let wspace: Workspace;
+let workspace: Workspace;
 
 function getElementLabel(id: string): string {
-    const model = wspace.getModel();
-    const diagram = wspace.getDiagram();
+    const model = workspace.getModel();
+    const diagram = workspace.getDiagram();
     const element = model.getElement(id);
     return element ? diagram.getLocalizedText(element.template.label.values).text : '';
 }
@@ -78,10 +78,10 @@ function wikidataSuggestProperties(params: PropertySuggestionParams) {
     });
 }
 
-function onWorkspaceMounted(workspace: Workspace) {
-    if (!workspace) { return; }
+function onWorkspaceMounted(wspace: Workspace) {
+    if (!wspace) { return; }
 
-    wspace = workspace;
+    workspace = wspace;
 
     const diagram = workspace.getDiagram();
     diagram.registerTemplateResolver(types => {
