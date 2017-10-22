@@ -1,12 +1,12 @@
 import { TemplateResolver } from '../props';
 
-import { BigIconTemplate } from './bigIcon';
+import { BigIconTemplate } from './bigIconOwl';
 import { LeftBarTemplate } from './leftBar';
 import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
 
-export * from './default';
-export * from './bigIcon';
+export * from './defaultOwl';
+export * from './bigIconOwl';
 export * from './leftBar';
 export * from './organization';
 export * from './person';
