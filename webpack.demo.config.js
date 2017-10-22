@@ -9,7 +9,7 @@ var npmDir = path.join(__dirname, 'node_modules');
 module.exports = {
     entry: {
         rdf: path.join(__dirname, 'src', 'examples', 'rdf.ts'),
-        demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
+        demo: path.join(__dirname, 'src', 'examples', 'demoOwl.ts'),
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         dbpedia: path.join(__dirname, 'src', 'examples', 'dbpedia.ts'),
         sparqlNoStats: path.join(__dirname, 'src', 'examples', 'sparqlNoStats.ts'),
@@ -20,7 +20,6 @@ module.exports = {
         wikidata: path.join(__dirname, 'src', 'examples', 'wikidata.ts'),
         composite: path.join(__dirname, 'src', 'examples', 'composite.ts'),
         wikidataGraph: path.join(__dirname, 'src', 'examples', 'wikidataGraph.ts'),
-        owl: path.join(__dirname, 'src', 'examples', 'demo.ts'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
@@ -110,12 +109,6 @@ module.exports = {
             filename: 'composite.html',
             title: 'Ontodia composite DP Demo',
             chunks: ['commons', 'composite'],
-            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
-        }),
-        new HtmlWebpackPlugin({
-            filename: 'owl.html',
-            title: 'owl',
-            chunks: ['commons', 'owl', ],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new CommonsChunkPlugin('commons', 'commons.chunk.js'),
