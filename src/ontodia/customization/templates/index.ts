@@ -1,13 +1,13 @@
 import { TemplateResolver } from '../props';
 
 import { BigIconTemplate } from './bigIconOwl';
-import { LeftBarTemplate } from './leftBar';
+import { LeftBarTemplate } from './leftBarOwl';
 import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
 
 export * from './defaultOwl';
 export * from './bigIconOwl';
-export * from './leftBar';
+export * from './leftBarOwl';
 export * from './organization';
 export * from './person';
 
