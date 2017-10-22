@@ -62,14 +62,14 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                         </a>
                     </div>
                 </div>
-                <hr className='ontodia-default-owl_template_body_expander__hr'/>
+                <hr className='ontodia-default-owl_template_body_expander__hr' style={{ borderTopColor: 'black'}}/>
                 {propertyTable}
             </div>
         ) : undefined;
 
         return (
             <div className='ontodia-default-owl_template'
-            style={{borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} //changesAydar 
+            style={{borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
             data-expanded={this.props.isExpanded}>
                 {image}
                 <div className='ontodia-default-owl_template_body'>

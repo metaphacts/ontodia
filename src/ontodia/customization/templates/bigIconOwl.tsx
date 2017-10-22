@@ -26,7 +26,7 @@ export class BigIconTemplate extends Component<TemplateProps, {}> {
                 </div>
                 {isExpanded ? (
                     <div className='ontodia-big-icon-owl_template_property' 
-                        style={{borderColor: 'black'/* color */}}>
+                        style={{borderColor: 'black'}}>
                         {imgUrl ? (
                             <CrossOriginImage className={`${CLASS_NAME}__picture`}
                                 style={{borderColor: 'black'}}
@@ -43,7 +43,8 @@ export class BigIconTemplate extends Component<TemplateProps, {}> {
                                 </div>
                             </div>
                             
-                            <hr className='ontodia-big-icon-owl_template_property_content__hr'/>
+                            <hr className='ontodia-big-icon-owl_template_property_content__hr'
+                                style={{borderTop:'solid', borderWidth:'1px', borderTopColor:'black'}}/>
                             {propsAsList.length ? (
                                 <div className='ontodia-big-icon-owl_template_property_content_property-table'>
                                     {propsAsList.map(({name, id, property}) => (

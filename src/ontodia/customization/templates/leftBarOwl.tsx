@@ -43,7 +43,8 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                             </div>
                         </div>
                     ) : null}
-                    {isExpanded ? (<hr className='ontodia-default-owl_template_body_expander__hr' />) : null}
+                    {isExpanded ? (<hr className='ontodia-default-owl_template_body_expander__hr' 
+                                                    style={{ borderTopColor: 'black'}}        />) : null}
                     {isExpanded ? (
                         propsAsList.length ? (
                             <div className='ontodia-default-owl_template_body_expander_property-table'>
