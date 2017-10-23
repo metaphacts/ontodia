@@ -16,6 +16,24 @@
     max-width: 350px;
   }
 }
+.ontodia-default-owl_thing_template {
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 15px;
+  border-color: grey;
+  padding: 5px;
+
+  &__thumbnail {
+    text-align: center;
+    > img {
+      max-width: 200px;
+    }
+  } 
+
+  &[data-expanded='true'] &__thumbnail > img {
+    max-width: 350px;
+  }
+}
 
 .ontodia-default-owl_template_type-line {
   padding: 0px 7px;
@@ -56,12 +74,38 @@ div.ontodia-default-owl_template_type-line__icon {
   }
 }
 
+.ontodia-default-owl_thing_template_body {
+  width:100px;
+  height:100px;
+  border-Radius:50%;
+  border-Color: black; 
+  border:dashed 2px;
+  background-Color:#ffffff;
+  overflow: hidden;
+  display: flex;
+  padding: 0px 0px 0px 10px;
+  align-items: center;
+  &:hover
+  {
+    background: red;
+  }
+}
+
 .ontodia-default-owl_template_body__label {
   font-size: 19px;
   font-weight: 100;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 0;
+  white-space: nowrap;
+  word-wrap: break-word;
+}
+
+.ontodia-default-owl_thing_template_body__label {
+  font-size: 19px;
+  font-weight: 100;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   word-wrap: break-word;
 }

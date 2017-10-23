@@ -14,9 +14,15 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
             return '#36c';
         else return undefined;
     }
+    public ItIsThing(types: any) : boolean {
+        if ( types.indexOf("Datatype") != -1 || types.indexOf("Property") != -1)
+            return false;
+        else return true;
+    }
 
     render() {
         const props = this.props;
+        const {color, imgUrl, icon, types, label, isExpanded, iri, propsAsList} = this.props;
 
         const image = props.imgUrl ? (
             <CrossOriginImage className={`${CLASS_NAME}__thumbnail`}
@@ -67,9 +73,55 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
             </div>
         ) : undefined;
 
+        const ThingExpander = props.isExpanded ? (
+            <div className='ontodia-big-icon-owl_template_property' 
+                        style={{borderColor: 'black'}}>
+                        {imgUrl ? (
+                            <CrossOriginImage className={`${CLASS_NAME}__picture`}
+                                style={{borderColor: 'black'}}
+                                imageProps={{src: imgUrl, className: `${CLASS_NAME}__picture-image`}}
+                            />
+                        ) : null}
+                        <div className='ontodia-big-icon-owl_template_property_content'>
+                            <div className='ontodia-big-icon-owl_template_property_content_iri-line'>
+                                <div className='ontodia-big-icon-owl_template_property_content_iri-line__label'>
+                                    IRI:
+                                </div>
+                                <div className='ontodia-big-icon-owl_template_property_content_iri-line__iri'>
+                                    <a href={iri} title={iri}>{iri}</a>
+                                </div>
+                            </div>
+                            
+                            <hr className='ontodia-big-icon-owl_template_property_content__hr'
+                                style={{borderTop:'solid', borderWidth:'1px', borderTopColor:'black'}}/>
+                            {propsAsList.length ? (
+                                <div className='ontodia-big-icon-owl_template_property_content_property-table'>
+                                    {propsAsList.map(({name, id, property}) => (
+                                        <div key={id} className='ontodia-big-icon-owl_template_property_content_property-table_row'>
+                                            <div className='ontodia-big-icon-owl_template_property_content_property-table_row__key'
+                                                title={name + ' ' + id}>
+                                                {name}
+                                            </div>
+                                            <div className='ontodia-big-icon-owl_template_property_content_property-table_row_key_values'>
+                                                {property.values.map(({text}, index) => (
+                                                    <div className='ontodia-big-icon-owl_template_property_content_property-table_row_key_values__value'
+                                                    key={index} title={text}>
+                                                        {text}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : 'no properties'}
+                        </div>
+                    </div>
+        ) : undefined;
+
+        if ( !this.ItIsThing(this.props.types) ) {
         return (
             <div className='ontodia-default-owl_template'
-            style={{borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
+            style={{ borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
             data-expanded={this.props.isExpanded}>
                 {image}
                 <div className='ontodia-default-owl_template_body'>
@@ -83,5 +135,23 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                 </div>
             </div>
         );
+    }
+        else {
+            return (
+                <div className='ontodia-default-owl_thing_template'
+                data-expanded={this.props.isExpanded}>
+                    {image}
+                    <div className='ontodia-default-owl_thing_template_body'>
+                        <label className='ontodia-default-owl_thing_template_body__label' title={props.label}>
+                            {props.label}
+                                    <div title={props.types} className='ontodia-big-icon-owl_template_body_type-container'>
+                                    <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
+                                </div>
+                        </label>
+                        {ThingExpander}
+                    </div>
+                </div>
+            );
+        }
     }
 }
