@@ -148,8 +148,8 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                                     <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
                                 </div>
                         </label>
-                        {ThingExpander}
                     </div>
+                    {ThingExpander}
                 </div>
             );
         }
