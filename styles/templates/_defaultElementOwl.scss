@@ -1,9 +1,11 @@
 .ontodia-default-owl_template {
   max-width: 450px;
-  float: left;
   border-style: solid;
   border-width: 2px;
   border-color: black;
+  margin: auto;
+  max-height: 53px;
+  max-width: 170px;
 
   &__thumbnail {
     text-align: center;
@@ -17,11 +19,6 @@
   }
 }
 .ontodia-default-owl_thing_template {
-  border-style: solid;
-  border-width: 1px;
-  border-radius: 15px;
-  border-color: grey;
-  padding: 5px;
 
   &__thumbnail {
     text-align: center;
@@ -64,7 +61,7 @@ div.ontodia-default-owl_template_type-line__icon {
 }
 
 .ontodia-default-owl_template_body {
-  padding: 7px 10px 8px 10px;
+  padding: 7px 10px 0px 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -85,6 +82,7 @@ div.ontodia-default-owl_template_type-line__icon {
   display: flex;
   padding: 0px 0px 0px 10px;
   align-items: center;
+  margin: auto;
   &:hover
   {
     background: red;

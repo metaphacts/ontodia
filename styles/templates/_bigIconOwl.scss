@@ -1,10 +1,5 @@
 .ontodia-big-icon-owl_template {
   max-width: 400px;
-  border-style: solid;
-  border-width: 1px;
-  border-radius: 15px;
-  border-color: grey;
-  padding: 5px;
 
   &__main-part {
     border-radius: 50%;
@@ -85,6 +80,7 @@
   background-color: whitesmoke;
   margin-top: 5px;
   border: 1px solid;
+  float: left;
 }
 
 .ontodia-big-icon-owl_template_property_content {

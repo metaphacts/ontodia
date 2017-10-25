@@ -57,23 +57,6 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
         }
 
         const expander = props.isExpanded ? (
-            <div>
-                <div className='ontodia-default-owl_template_body_expander'>
-                    <div className='ontodia-default-owl_template_body_expander__iri_label'>
-                        IRI:
-                    </div>
-                    <div className='ontodia-default-owl_template_body_expander_iri'>
-                        <a  className='ontodia-default-owl_template_body_expander_iri__link'
-                            href={props.iri} title={props.iri}>{props.iri}
-                        </a>
-                    </div>
-                </div>
-                <hr className='ontodia-default-owl_template_body_expander__hr' style={{ borderTopColor: 'black'}}/>
-                {propertyTable}
-            </div>
-        ) : undefined;
-
-        const ThingExpander = props.isExpanded ? (
             <div className='ontodia-big-icon-owl_template_property' 
                         style={{borderColor: 'black'}}>
                         {imgUrl ? (
@@ -120,19 +103,23 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
 
         if ( !this.ItIsThing(this.props.types) ) {
         return (
-            <div className='ontodia-default-owl_template'
-            style={{ borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
-            data-expanded={this.props.isExpanded}>
-                {image}
-                <div className='ontodia-default-owl_template_body'>
+            <div>
+                <div>
+                    <div className='ontodia-default-owl_template'
+                        style={{ borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
+                        data-expanded={this.props.isExpanded}>
+                            {image}
+                    <div className='ontodia-default-owl_template_body'>
                     <label className='ontodia-default-owl_template_body__label' title={props.label}>
                         {props.label}
                                 <div title={props.types} className='ontodia-big-icon-owl_template_body_type-container'>
                                 <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
                             </div>
                     </label>
-                    {expander}
                 </div>
+                        </div>
+                </div>
+            {expander}
             </div>
         );
     }
@@ -148,8 +135,8 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                                     <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
                                 </div>
                         </label>
-                        {ThingExpander}
                     </div>
+                    {expander}
                 </div>
             );
         }

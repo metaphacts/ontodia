@@ -1,5 +1,7 @@
 .ontodia-left-bar-owl_template {
-  max-width: 400px;
+  margin: auto;
+  max-height: 53px;
+  max-width: 170px;
   border-style: solid;
   border-width: 2px;
 
@@ -26,7 +28,7 @@
   height: 100%;
   width:  100%;
   overflow: hidden;
-  padding: 7px 10px 8px 10px; 
+  padding: 7px 10px 0px 10px; 
   &:hover
   {
     background-color: red;
