@@ -109,15 +109,15 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                         style={{ borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
                         data-expanded={this.props.isExpanded}>
                             {image}
-                    <div className='ontodia-default-owl_template_body'>
-                    <label className='ontodia-default-owl_template_body__label' title={props.label}>
-                        {props.label}
+                        <div className='ontodia-default-owl_template_body'>
+                            <label className='ontodia-default-owl_template_body__label' title={props.label}>
+                            {props.label}
                                 <div title={props.types} className='ontodia-big-icon-owl_template_body_type-container'>
-                                <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
-                            </div>
-                    </label>
-                </div>
+                                    <div className='ontodia-big-icon-owl_template_body_type-container__type'>{props.types}</div>
+                                </div>
+                            </label>
                         </div>
+                    </div>
                 </div>
             {expander}
             </div>
