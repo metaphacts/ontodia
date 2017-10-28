@@ -10,12 +10,19 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
     public SetColor(types: any) : string {
         if ( types.indexOf("Datatype") != -1 )
             return '#fc3';
+        else if (types.indexOf("AnnotationProperty") != -1)
+            return '#ccc';
         else if (types.indexOf("Property") != -1)
-            return '#36c';
+            return '#0588f9fc';
+        else if (types.indexOf("Ontology") != -1)
+            return '#c9c';
         else return undefined;
     }
     public ItIsThing(types: any) : boolean {
-        if ( types.indexOf("Datatype") != -1 || types.indexOf("Property") != -1)
+        if (   types.indexOf("Datatype") != -1 || 
+               types.indexOf("Property") != -1 || 
+               types.indexOf("Ontology") != -1
+           )
             return false;
         else return true;
     }

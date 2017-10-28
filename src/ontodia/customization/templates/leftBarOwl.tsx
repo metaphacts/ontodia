@@ -12,7 +12,7 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
         if ( types.indexOf("DatatypeProperty") != -1 )
             return '#9c6';
         else if (types.indexOf("ObjectProperty") != -1)
-            return '#acf';
+            return '#1bf1ee';
         else return undefined;
     }
     render() {
