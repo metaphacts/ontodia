@@ -9,7 +9,8 @@ var npmDir = path.join(__dirname, 'node_modules');
 module.exports = {
     entry: {
         rdf: path.join(__dirname, 'src', 'examples', 'rdf.ts'),
-        demo: path.join(__dirname, 'src', 'examples', 'demoOwl.ts'),
+        //demo: path.join(__dirname, 'src', 'examples', 'demo.ts'),
+        demo: path.join(__dirname, 'src', 'examples', 'demoOwl.ts'), // #owl mark here
         sparql: path.join(__dirname, 'src', 'examples', 'sparql.ts'),
         dbpedia: path.join(__dirname, 'src', 'examples', 'dbpedia.ts'),
         sparqlNoStats: path.join(__dirname, 'src', 'examples', 'sparqlNoStats.ts'),

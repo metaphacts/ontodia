@@ -1,13 +1,18 @@
 import { TemplateResolver } from '../props';
 
-import { BigIconTemplate } from './bigIconOwl';
-import { LeftBarTemplate } from './leftBarOwl';
+import { BigIconTemplate } from './bigIconOwl'; //#owl mark here
+//import { BigIconTemplate } from './bigIcon';
+import { LeftBarTemplate } from './leftBarOwl'; //#owl mark here
+//import { LeftBarTemplate } from './leftBar';
 import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
 
-export * from './defaultOwl';
-export * from './bigIconOwl';
-export * from './leftBarOwl';
+export * from './defaultOwl'; //#owl mark here
+export * from './bigIconOwl'; //#owl mark here
+export * from './leftBarOwl'; //#owl mark here
+//export * from './default';
+//export * from './bigIcon';
+//export * from './leftBar';
 export * from './organization';
 export * from './person';
 

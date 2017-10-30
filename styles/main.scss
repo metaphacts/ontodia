@@ -13,7 +13,8 @@
 @import "viewUtils/progress";
 
 @import "diagram/connectionsMenu";
-@import "diagram/elementLayerOwl";
+//@import "diagram/elementLayer";
+@import "diagram/elementLayerOwl"; //#owl mark here
 @import "diagram/halo";
 @import "diagram/paperArea";
 
@@ -29,9 +30,12 @@
 @import "workspace/workspace";
 
 @import "templates/icons";
-@import "templates/bigIconOwl";
-@import "templates/defaultElementOwl";
-@import "templates/leftBarOwl";
+//@import "templates/bigIcon";
+@import "templates/bigIconOwl"; //#owl mark here
+//@import "templates/defaultElement";
+@import "templates/defaultElementOwl"; //#owl mark here
+//@import "templates/leftBar";
+@import "templates/leftBarOwl";  //#owl mark here
 @import "templates/organization";
 @import "templates/person";
 
