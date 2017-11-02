@@ -2,11 +2,14 @@ import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import * as React from 'react';
 
+import { Element as DiagramElement } from '../diagram/elements';
+import { boundsOf } from '../diagram/geometry';
+import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
-export interface Props {
+export interface Props extends PaperWidgetProps {
     paper: joint.dia.Paper;
-    cellView: joint.dia.CellView;
+    target: DiagramElement | undefined;
     diagramView: DiagramView;
     onDelete?: () => void;
     onExpand?: () => void;
@@ -20,21 +23,20 @@ const CLASS_NAME = 'ontodia-halo';
 export class Halo extends React.Component<Props, void> {
     private handler = new Backbone.Model();
 
-    componentWillMount() {
-        this.handler.listenTo(this.props.paper, 'translate resize scale', () => this.forceUpdate());
-        this.listenToCell(this.props.cellView);
+    componentDidMount() {
+        this.listenToElement(this.props.target);
     }
 
     componentWillReceiveProps(nextProps: Props) {
-        if (nextProps.cellView !== this.props.cellView) {
-            if (this.props.cellView) { this.handler.stopListening(this.props.cellView.model); }
-            this.listenToCell(nextProps.cellView);
+        if (nextProps.target !== this.props.target) {
+            if (this.props.target) { this.handler.stopListening(this.props.target); }
+            this.listenToElement(nextProps.target);
         }
     }
 
-    listenToCell(cellView: joint.dia.CellView) {
-        if (cellView) {
-            this.handler.listenTo(cellView.model,
+    listenToElement(element: DiagramElement | undefined) {
+        if (element) {
+            this.handler.listenTo(element,
                 'change:isExpanded change:position change:size', () => this.forceUpdate());
         }
     }
@@ -45,20 +47,20 @@ export class Halo extends React.Component<Props, void> {
     }
 
     render() {
-        if (!this.props.cellView) {
+        if (!this.props.target) {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
         }
 
-        const {cellView, navigationMenuOpened} = this.props;
-        const cellExpanded = cellView.model.get('isExpanded');
+        const {paperArea, target, navigationMenuOpened} = this.props;
+        const cellExpanded = target.isExpanded;
 
-        const bbox = this.props.cellView.getBBox();
-        const style = {
-            top: bbox.y,
-            left: bbox.x,
-            height: bbox.height,
-            width: bbox.width,
-        };
+        const bbox = boundsOf(target);
+        const {x: x0, y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
+        const {x: x1, y: y1} = paperArea.paperToScrollablePaneCoords(
+            bbox.x + bbox.width,
+            bbox.y + bbox.height,
+        );
+        const style: React.CSSProperties = {left: x0, top: y0, width: x1 - x0, height: y1 - y0};
 
         return (
             <div className={CLASS_NAME} style={style}>

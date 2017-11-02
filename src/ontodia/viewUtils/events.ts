@@ -1,17 +1,15 @@
 import * as Backbone from 'backbone';
 
-type Listener<T> = (data: T) => void;
-type Unsubscribe = () => void;
+export type Listener<T> = (data: T) => void;
+export type Unsubscribe = () => void;
 
-export interface Event<T> {
-    listen(listener: Listener<T>): Unsubscribe;
-}
-
-export class EventSource<T = undefined> {
+export class Event<T = undefined> {
     private listeners: { [key: number]: Listener<T> } = {};
     private nextKey = 1;
 
-    private listen = (listener: Listener<T>): Unsubscribe => {
+    constructor(readonly owner: EventSource) {}
+
+    listen(listener: Listener<T>): Unsubscribe {
         const key = this.nextKey++;
         this.listeners[key] = listener;
         return () => this.stopListening(key);
@@ -21,16 +19,21 @@ export class EventSource<T = undefined> {
         delete this.listeners[key];
     }
 
-    readonly event: Event<T> = {
-        listen: this.listen,
-    };
-
-    trigger(data: T) {
+    trigger(owner: EventSource, data: T) {
+        if (owner !== this.owner) {
+            throw new Error('Cannot trigger event using invalid owner');
+        }
         for (const key in this.listeners) {
             if (!this.listeners.hasOwnProperty(key)) { continue; }
             const listener = this.listeners[key];
             listener(data);
         }
+    }
+}
+
+export class EventSource {
+    createEvent(): Event<any> {
+        return new Event(this);
     }
 }
 
@@ -51,5 +54,6 @@ export class EventObserver {
             unsubscribe();
         }
         this.onDispose.length = 0;
+        this.backbone.stopListening();
     }
 }

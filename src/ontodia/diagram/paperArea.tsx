@@ -1,9 +1,5 @@
 import * as React from 'react';
-import {
-    render as reactDOMRender,
-    unmountComponentAtNode,
-    unstable_renderSubtreeIntoContainer,
-} from 'react-dom';
+import { ReactElement } from 'react';
 
 import { EventObserver } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
@@ -38,7 +34,11 @@ export interface ScaleOptions {
     pivot?: { x: number; y: number; };
 }
 
-interface State {
+export interface PaperWidgetProps {
+    paperArea?: PaperArea;
+}
+
+export interface State {
     readonly paperWidth?: number;
     readonly paperHeight?: number;
     readonly originX?: number;
@@ -46,31 +46,31 @@ interface State {
     readonly scale?: number;
     readonly paddingX?: number;
     readonly paddingY?: number;
+    readonly renderedWidgets?: ReadonlyArray<ReactElement<any>>;
 }
+
+const CLASS_NAME = 'ontodia-paper-area';
 
 export class PaperArea extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
 
     private area: HTMLDivElement;
-    private paper: Paper;
-
-    private spinnerElement: SVGGElement;
+    private widgets: { [key: string]: ReactElement<any> } = {};
 
     private readonly pageSize = {x: 1500, y: 800};
 
-    // private padding = {x: 0, y: 0};
     private center: { x: number; y: number; };
     private previousOrigin: { x: number; y: number; };
 
     private listeningToPointerMove = false;
+    private pointerMovedWhileListening = false;
+    private pointerDownTarget: Element | Link | undefined;
+    private pointerMoveOrigin: { pageX: number; pageY: number; };
 
     private isPanning = false;
-    private panningOrigin: { pageX: number; pageY: number; };
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
 
     private delayedPaperAdjust = new Debouncer();
-
-    private childContainers: HTMLElement[] = [];
 
     private movingPaperOrigin: {
         pointerX: number;
@@ -101,19 +101,23 @@ export class PaperArea extends React.Component<Props, State> {
             scale: 1,
             paddingX: 0,
             paddingY: 0,
+            renderedWidgets: [],
         };
     }
 
     render() {
         const {view, preventTextSelection} = this.props;
-        const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY} = this.state;
+        const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
+        const paperTransformStyle = {
+            position: 'absolute', left: 0, top: 0,
+            transform: `scale(${scale},${scale})translate(${originX}px,${originY}px)`,
+        };
         return (
-            <div className='paper-area'
+            <div className={CLASS_NAME}
                 ref={area => this.area = area}
                 onMouseDown={this.onAreaPointerDown}
                 onWheel={this.onWheel}>
-                <Paper ref={paper => this.paper = paper}
-                    view={view}
+                <Paper view={view}
                     width={paperWidth}
                     height={paperHeight}
                     originX={originX}
@@ -122,11 +126,13 @@ export class PaperArea extends React.Component<Props, State> {
                     paddingX={paddingX}
                     paddingY={paddingY}
                     onPointerDown={this.onPaperPointerDown}>
-                    <ElementLayer view={view} paper={view.paper}
-                        origin={{x: originX, y: originY}}
-                        scale={scale}
-                    />
-                    {this.props.children}
+                    <ElementLayer view={view} style={paperTransformStyle} />
+                    <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
+                        {renderedWidgets.map(widget => {
+                            const props: PaperWidgetProps = {paperArea: this};
+                            return React.cloneElement(widget, props);
+                        })}
+                    </div>
                 </Paper>
             </div>
         );
@@ -169,9 +175,15 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.listenTo(this.props.view.model.graph, 'add remove change:position', () => {
             this.delayedPaperAdjust.call(this.adjustPaper);
         });
+        this.listener.listenTo(this.props.view.model, 'state:dataLoaded', () => {
+            this.delayedPaperAdjust.call(this.adjustPaper);
+        });
         this.listener.listen(this.props.view.syncUpdate, ({layer}) => {
             if (layer !== RenderingLayer.PaperArea) { return; }
             this.delayedPaperAdjust.runSynchronously();
+        });
+        this.listener.listen(this.props.view.updateWidgets, ({widgets}) => {
+            this.updateWidgets(widgets);
         });
         // this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
         // this.listener.listenTo(this.paper, 'ontodia:adjustSize', this.adjustPaper);
@@ -220,12 +232,10 @@ export class PaperArea extends React.Component<Props, State> {
             const scrollLeft = this.scrollBeforeUpdate.left + scrollX;
             const scrollTop = this.scrollBeforeUpdate.top + scrollY;
 
-            //console.log('update before scroll', Math.floor(this.area.scrollLeft));
             if (this.area.scrollLeft !== scrollLeft) { this.area.scrollLeft = scrollLeft; }
             if (this.area.scrollTop !== scrollTop) { this.area.scrollTop = scrollTop; }
 
             this.scrollBeforeUpdate = undefined;
-            //console.log('didUpdate: scroll(', Math.floor(scrollX), ') => ', Math.floor(this.area.scrollLeft), ' and resume events');
         }
     }
 
@@ -234,10 +244,20 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
-        unmountComponentAtNode(this.spinnerElement);
-        for (const container of this.childContainers) {
-            unmountComponentAtNode(container);
-        }
+    }
+
+    private updateWidgets(update: { [key: string]: ReactElement<any> }) {
+        this.widgets = {...this.widgets, ...update};
+        const renderedWidgets = Object.keys(this.widgets).map(key => {
+            const widget = this.widgets[key];
+            return widget ? React.cloneElement(widget, {key}) : undefined;
+        }).filter(widget => widget !== undefined);
+        this.setState({renderedWidgets});
+    }
+
+    private onWidgetsMouseDown = (e: React.MouseEvent<any>) => {
+        // prevent PaperArea from generating click on a blank area
+        e.stopPropagation();
     }
 
     private pageToPaperCoords(pageX: number, pageY: number) {
@@ -246,15 +266,29 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     clientToPaperCoords(areaClientX: number, areaClientY: number) {
-        // const ctm = this.paper.viewport.getCTM();
-        // let x = areaClientX + this.area.scrollLeft - this.padding.x - ctm.e;
-        // x /= ctm.a;
-        // let y = areaClientY + this.area.scrollTop - this.padding.y - ctm.f;
-        // y /= ctm.d;
+        const {x: paneX, y: paneY} = this.clientToScrollablePaneCoords(areaClientX, areaClientY);
+        return this.scrollablePaneToPaperCoords(paneX, paneY);
+    }
+
+    clientToScrollablePaneCoords(areaClientX: number, areaClientY: number) {
+        const {paddingX, paddingY} = this.state;
+        const paneX = areaClientX + this.area.scrollLeft - paddingX;
+        const paneY = areaClientY + this.area.scrollTop - paddingY;
+        return {x: paneX, y: paneY};
+    }
+
+    scrollablePaneToPaperCoords(paneX: number, paneY: number) {
         const {scale, paddingX, paddingY, originX, originY} = this.state;
-        const x = (areaClientX + this.area.scrollLeft - paddingX) / scale - originX;
-        const y = (areaClientY + this.area.scrollTop - paddingY) / scale - originY;
-        return {x, y};
+        const paperX = paneX / scale - originX;
+        const paperY = paneY / scale - originY;
+        return {x: paperX, y: paperY};
+    }
+
+    paperToScrollablePaneCoords(paperX: number, paperY: number) {
+        const {scale, paddingX, paddingY, originX, originY} = this.state;
+        const paneX = (paperX + originX) * scale;
+        const paneY = (paperY + originY) * scale;
+        return {x: paneX, y: paneY};
     }
 
     /** Returns bounding box of paper content in paper coordinates. */
@@ -283,10 +317,10 @@ export class PaperArea extends React.Component<Props, State> {
         }
 
         return {
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY,
+            x: Number.isFinite(minX) ? minX : 0,
+            y: Number.isFinite(minY) ? minY : 0,
+            width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
+            height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
         };
     }
 
@@ -404,7 +438,7 @@ export class PaperArea extends React.Component<Props, State> {
         if (this.center) {
             this.centerTo(this.center);
         }
-    };
+    }
 
     private onPaperTranslate = (originX: number, originY: number) => {
         if (this.previousOrigin) {
@@ -425,7 +459,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Element | Link | undefined) => {
-        if (e.button !== 0) {
+        if (this.listeningToPointerMove || e.button !== 0 /* left mouse button */) {
             return;
         }
 
@@ -434,11 +468,19 @@ export class PaperArea extends React.Component<Props, State> {
             if (cell instanceof Element) {
                 e.preventDefault();
                 this.startMoving(e, cell);
+            } else if (cell instanceof Link) {
+                e.preventDefault();
+                // TODO: insert vertices at correct place
+                const vertices: any[] = cell.get('vertices') || [];
+                const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
+                cell.set('vertices', [...vertices, {x: Math.round(x), y: Math.round(y)}]);
             }
         } else if (this.shouldStartPanning(e)) {
             e.preventDefault();
             this.startPanning(e);
         }
+
+        this.listenToPointerMove(e, cell);
     }
 
     private startMoving(e: React.MouseEvent<HTMLElement>, element: Element) {
@@ -446,7 +488,6 @@ export class PaperArea extends React.Component<Props, State> {
         const {x: elementX, y: elementY} = element.get('position');
         this.movingPaperOrigin = {pointerX, pointerY, elementX, elementY};
         this.movingElement = element;
-        this.listenToPointerMove();
     }
 
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -454,24 +495,25 @@ export class PaperArea extends React.Component<Props, State> {
             if (this.shouldStartPanning(e)) {
                 e.preventDefault();
                 this.startPanning(e);
+                this.listenToPointerMove(e, undefined);
             }
         }
     }
 
     private startPanning(event: React.MouseEvent<any>) {
         this.props.preventTextSelection();
-
-        const {pageX, pageY} = event;
-        this.panningOrigin = {pageX, pageY};
         const {scrollLeft, scrollTop} = this.area;
         this.panningScrollOrigin = {scrollLeft, scrollTop};
-
         this.isPanning = true;
-        this.listenToPointerMove();
     }
 
-    private listenToPointerMove() {
+    private listenToPointerMove(event: React.MouseEvent<any>, cell: Element | Link | undefined) {
         if (this.listeningToPointerMove) { return; }
+        const {pageX, pageY} = event;
+        this.pointerMoveOrigin = {pageX, pageY};
+        this.pointerDownTarget = cell;
+        this.listeningToPointerMove = true;
+        this.pointerMovedWhileListening = false;
         document.addEventListener('mousemove', this.onPointerMove);
         document.addEventListener('mouseup', this.stopListeningToPointerMove);
     }
@@ -479,14 +521,17 @@ export class PaperArea extends React.Component<Props, State> {
     private onPointerMove = (e: MouseEvent) => {
         if (this.scrollBeforeUpdate) { return; }
 
+        const pageOffsetX = e.pageX - this.pointerMoveOrigin.pageX;
+        const pageOffsetY = e.pageY - this.pointerMoveOrigin.pageY;
+        if (Math.abs(pageOffsetX) >= 1 && Math.abs(pageOffsetY) >= 1) {
+            this.pointerMovedWhileListening = true;
+        }
+
         if (this.isPanning) {
-            const offsetX = e.pageX - this.panningOrigin.pageX;
-            const offsetY = e.pageY - this.panningOrigin.pageY;
-            this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - offsetX;
-            this.area.scrollTop = this.panningScrollOrigin.scrollTop - offsetY;
+            this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - pageOffsetX;
+            this.area.scrollTop = this.panningScrollOrigin.scrollTop - pageOffsetY;
         } else if (this.movingElement) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
-            // console.log('moving at', Math.floor(x), Math.floor(y), '; area scroll ', this.area.scrollLeft);
             const {pointerX, pointerY, elementX, elementY} = this.movingPaperOrigin;
             this.movingElement.set('position', {
                 x: elementX + x - pointerX,
@@ -496,17 +541,24 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    private stopListeningToPointerMove = () => {
-        if (this.isPanning) {
-            this.isPanning = false;
-        } else if (this.movingElement) {
-            this.movingElement = undefined;
-        }
+    private stopListeningToPointerMove = (e?: MouseEvent) => {
+        const targetCell = this.pointerDownTarget;
+        const triggerPointerUp = e && this.listeningToPointerMove;
+        const triggerAsClick = !this.pointerMovedWhileListening;
 
         if (this.listeningToPointerMove) {
-            this.listeningToPointerMove = false;
             document.removeEventListener('mousemove', this.onPointerMove);
             document.removeEventListener('mouseup', this.stopListeningToPointerMove);
+        }
+
+        this.listeningToPointerMove = false;
+        this.pointerMovedWhileListening = false;
+        this.pointerDownTarget = undefined;
+        this.movingElement = undefined;
+        this.isPanning = false;
+
+        if (triggerPointerUp) {
+            this.props.view.onPaperPointerUp(e, targetCell, triggerAsClick);
         }
     }
 

@@ -21,6 +21,8 @@ export interface LinkLayerProps {
     view: DiagramView;
 }
 
+const CLASS_NAME = 'ontodia-link-layer';
+
 export class LinkLayer extends Component<LinkLayerProps, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();
@@ -42,7 +44,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         const graph = view.model.graph;
 
         this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
-        this.listener.listenTo(graph, 'change:position change:size', this.scheduleUpdateAll);
+        this.listener.listenTo(graph, 'change:position change:size change:vertices', this.scheduleUpdateAll);
         this.listener.listen(view.syncUpdate, ({layer}) => {
             if (layer !== RenderingLayer.Link) { return; }
             this.delayedUpdate.runSynchronously();
@@ -73,7 +75,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
     render() {
         const {view} = this.props;
-        return <g>
+        return <g className={CLASS_NAME}>
             {view.model.links.map(model => (
                 <LinkView key={model.id}
                     view={view}
@@ -90,6 +92,8 @@ interface LinkViewProps {
     model: DiagramLink;
     route?: RoutedLink;
 }
+
+const LINK_CLASS = 'ontodia-link';
 
 class LinkView extends Component<LinkViewProps, void> {
     private templateTypeId: string;
@@ -137,36 +141,30 @@ class LinkView extends Component<LinkViewProps, void> {
         const pathAttributes = this.getPathAttributes(style);
 
         return (
-            <g data-link-id={model.id} data-source-id={source.id} data-target-id={target.id}>
-                <path className='connection' d={path} {...pathAttributes}
+            <g className={LINK_CLASS} data-link-id={model.id} data-source-id={source.id} data-target-id={target.id}>
+                <path className={`${LINK_CLASS}__connection`} d={path} {...pathAttributes}
                     markerStart={`url(#${linkMarkerKey(typeIndex, true)})`}
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />
-                <path className='connection-wrap' d={path} stroke='none' fill='none' />
+                <path className={`${LINK_CLASS}__wrap`} d={path} stroke='none' fill='none' />
                 {this.renderLabels(polyline, style)}
-                <g className='marker-vertices' />
-                <g className='link-tools' />
+                <g className={`${LINK_CLASS}__vertices`} />
             </g>
         );
     }
 
     private getPathAttributes(style: LinkStyle): SVGAttributes<SVGPathElement> {
         const {model} = this.props;
-        let attributes: SVGAttributes<SVGPathElement> = {
-            stroke: 'black',
-            strokeDasharray: model.layoutOnly ? '5,5' : null,
-            fill: 'none',
-        };
-        if (style.connection) {
-            const {fill, stroke, 'stroke-width': strokeWidth, 'stroke-dasharray': strokeDasharray} = style.connection;
-            attributes = {
-                ...attributes,
-                fill,
-                stroke,
-                strokeWidth,
-                strokeDasharray,
-            };
-        }
-        return attributes;
+
+        const connectionAttributes: LinkStyle['connection'] = style.connection || {};
+        const defaultStrokeDasharray = model.layoutOnly ? '5,5' : undefined;
+        const {
+            fill = 'none',
+            stroke = 'black',
+            'stroke-width': strokeWidth,
+            'stroke-dasharray': strokeDasharray = defaultStrokeDasharray,
+        } = connectionAttributes;
+
+        return {fill, stroke, strokeWidth, strokeDasharray};
     }
 
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {

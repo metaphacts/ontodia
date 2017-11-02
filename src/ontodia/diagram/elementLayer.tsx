@@ -14,10 +14,8 @@ import { uri2name } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
 export interface Props {
-    paper: joint.dia.Paper;
     view: DiagramView;
-    origin: { x: number; y: number; };
-    scale: number;
+    style: React.CSSProperties;
 }
 
 export class ElementLayer extends React.Component<Props, void> {
@@ -29,15 +27,12 @@ export class ElementLayer extends React.Component<Props, void> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, origin, scale} = this.props;
+        const {view, style} = this.props;
         const models = view.model.elements;
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
-            style={{
-                position: 'absolute', left: 0, top: 0,
-                transform: `scale(${scale},${scale})translate(${origin.x}px,${origin.y}px)`,
-            }}>
+            style={style}>
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
                 view={view}
@@ -47,11 +42,9 @@ export class ElementLayer extends React.Component<Props, void> {
     }
 
     componentDidMount() {
-        const {paper, view} = this.props;
+        const {view} = this.props;
         const graph = view.model.graph;
         this.listener.listenTo(graph, 'add remove reset', this.updateAll);
-        this.listener.listenTo(paper, 'scale', this.updateAll);
-        this.listener.listenTo(paper, 'translate resize', this.updateAll);
         this.listener.listen(view.syncUpdate, ({layer}) => {
             if (layer !== RenderingLayer.ElementSize) { return; }
             this.updateSizes.runSynchronously();

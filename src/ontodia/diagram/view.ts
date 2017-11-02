@@ -2,9 +2,7 @@ import { hcl } from 'd3-color';
 import * as Backbone from 'backbone';
 import * as joint from 'jointjs';
 import { defaultsDeep, cloneDeep } from 'lodash';
-import { createElement } from 'react';
-import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
-import getDefaultLinkRouter from './defaultLinkRouter';
+import { ReactElement, createElement } from 'react';
 
 import {
     TypeStyleResolver,
@@ -22,14 +20,14 @@ import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
-import { EventSource } from '../viewUtils/events';
+import { Event, EventSource } from '../viewUtils/events';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
-import { Element, FatClassModel, linkMarkerKey } from './elements';
+import { Element, Link, FatClassModel, linkMarkerKey } from './elements';
 import { LinkView } from './linkView';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { SeparatedElementView } from './separatedElementView';
@@ -71,13 +69,14 @@ const DefaultToSVGOptions: ToSVGOptions = {
  *     (private) dispose - fires on view dispose
  */
 export class DiagramView extends Backbone.Model {
+    private readonly eventSource = new EventSource();
+
     private typeStyleResolvers: TypeStyleResolver[];
     private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
     paper: joint.dia.Paper;
-    halo: Halo;
-    connectionsMenu: ConnectionsMenu;
+    private connectionsMenuTarget: Element | undefined;
 
     readonly selection = new Backbone.Collection<Element>();
 
@@ -85,11 +84,11 @@ export class DiagramView extends Backbone.Model {
 
     private linkTemplates: { [linkTypeId: string]: LinkTemplate } = {};
 
-    private linkTemplatesChangedSource = new EventSource();
-    readonly linkTemplatesChanged = this.linkTemplatesChangedSource.event;
-
-    private syncUpdateSource = new EventSource<{ layer: RenderingLayer }>();
-    readonly syncUpdate = this.syncUpdateSource.event;
+    readonly linkTemplatesChanged: Event<undefined> = this.eventSource.createEvent();
+    readonly syncUpdate: Event<{ layer: RenderingLayer }> = this.eventSource.createEvent();
+    readonly updateWidgets: Event<{
+        widgets: { [key: string]: ReactElement<any> }
+    }> = this.eventSource.createEvent();
 
     constructor(
         public readonly model: DiagramModel,
@@ -164,20 +163,15 @@ export class DiagramView extends Backbone.Model {
         });
     }
 
-    adjustPaper() {
-        this.paper.trigger('ontodia:adjustSize');
-    }
-
     performSyncUpdate() {
         for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
-            this.syncUpdateSource.trigger({layer});
+            this.syncUpdate.trigger(this.eventSource, {layer});
         }
     }
 
     initializePaperComponents() {
         if (!this.model.isViewOnly()) {
-            this.configureSelection();
-            this.configureDefaultHalo();
+            this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
             this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
         }
@@ -204,55 +198,38 @@ export class DiagramView extends Backbone.Model {
         this.model.graph.trigger('batch:stop');
     }
 
-    private configureSelection() {
+    onPaperPointerUp(event: MouseEvent, cell: Element | Link | undefined, isClick: boolean) {
         if (this.model.isViewOnly()) { return; }
-
-        this.listenTo(this.paper, 'cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
-            // We don't want a Halo for links.
-            if (cellView.model instanceof joint.dia.Link) { return; }
-            if (evt.ctrlKey || evt.shiftKey || evt.metaKey) { return; }
-            const element = cellView.model as Element;
-            this.selection.reset([element]);
-            element.focus();
-        });
-
-        let pointerScreenCoords = {x: NaN, y: NaN};
-        this.listenTo(this.paper, 'blank:pointerdown', (evt: MouseEvent) => {
-            pointerScreenCoords = {x: evt.screenX, y: evt.screenY};
-        });
-
-        this.listenTo(this.paper, 'blank:pointerup', (evt: MouseEvent) => {
-            if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
+        // We don't want a Halo for links.
+        if (cell instanceof Link) { return; }
+        if (event.ctrlKey || event.shiftKey || event.metaKey) { return; }
+        if (cell) {
+            this.selection.reset([cell]);
+            cell.focus();
+        } else if (isClick) {
             this.selection.reset();
             this.hideNavigationMenu();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
-        });
+        }
     }
 
-    private configureDefaultHalo() {
+    private configureHalo() {
         if (this.options.disableDefaultHalo) { return; }
 
-        const container = document.createElement('div');
-        this.paper.el.appendChild(container);
-
         const renderDefaultHalo = (selectedElement?: Element) => {
-            let cellView: joint.dia.CellView = undefined;
-            if (selectedElement) {
-                cellView = this.paper.findViewByModel(selectedElement);
-            }
-            reactDOMRender(createElement(Halo, {
+            const halo = createElement(Halo, {
                 paper: this.paper,
                 diagramView: this,
-                cellView: cellView,
+                target: selectedElement,
                 onDelete: () => this.removeSelectedElements(),
                 onExpand: () => {
-                    cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                    selectedElement.isExpanded = !selectedElement.isExpanded;
                 },
-                navigationMenuOpened: Boolean(this.connectionsMenu),
+                navigationMenuOpened: Boolean(this.connectionsMenuTarget),
                 onToggleNavigationMenu: () => {
-                    if (this.connectionsMenu) {
+                    if (this.connectionsMenuTarget) {
                         this.hideNavigationMenu();
                     } else {
                         this.showNavigationMenu(selectedElement);
@@ -260,42 +237,36 @@ export class DiagramView extends Backbone.Model {
                     renderDefaultHalo(selectedElement);
                 },
                 onAddToFilter: () => selectedElement.addToFilter(),
-            }), container);
+            });
+            this.updateWidgets.trigger(this.eventSource, {widgets: {halo}});
         };
 
         this.listenTo(this.selection, 'add remove reset', () => {
             const selected = this.selection.length === 1 ? this.selection.first() : undefined;
-            if (this.connectionsMenu && selected !== this.connectionsMenu.cellView.model) {
+            if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
                 this.hideNavigationMenu();
             }
             renderDefaultHalo(selected);
         });
 
         renderDefaultHalo();
-        this.onDispose(() => {
-            unmountComponentAtNode(container);
-            this.paper.el.removeChild(container);
-        });
     }
 
-    showNavigationMenu(element: Element) {
-        const cellView = this.paper.findViewByModel(element);
-        this.connectionsMenu = new ConnectionsMenu({
-            paper: this.paper,
+    showNavigationMenu(target: Element) {
+        const connectionsMenu = createElement(ConnectionsMenu, {
             view: this,
-            cellView,
-            onClose: () => {
-                this.connectionsMenu.remove();
-                this.connectionsMenu = undefined;
-            },
+            target,
+            onClose: () => this.hideNavigationMenu(),
             suggestProperties: this.options.suggestProperties,
         });
+        this.connectionsMenuTarget = target;
+        this.updateWidgets.trigger(this.eventSource, {widgets: {connectionsMenu}});
     }
 
     hideNavigationMenu() {
-        if (this.connectionsMenu) {
-            this.connectionsMenu.remove();
-            this.connectionsMenu = undefined;
+        if (this.connectionsMenuTarget) {
+            this.connectionsMenuTarget = undefined;
+            this.updateWidgets.trigger(this.eventSource, {widgets: {connectionsMenu: undefined}});
         }
     }
 
@@ -455,7 +426,7 @@ export class DiagramView extends Backbone.Model {
 
         fillLinkTemplateDefaults(template, this.model);
         this.linkTemplates[linkTypeId] = template;
-        this.linkTemplatesChangedSource.trigger(undefined);
+        this.linkTemplatesChanged.trigger(this.eventSource, undefined);
         return template;
     }
 
