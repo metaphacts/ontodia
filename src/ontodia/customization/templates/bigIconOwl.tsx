@@ -7,7 +7,7 @@ import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-big-icon-owl_template';
 
-export class BigIconTemplate extends Component<TemplateProps, {}> {
+export class BigIconTemplateOwl extends Component<TemplateProps, {}> {
     render() {
         const {color, imgUrl, icon, types, label, isExpanded, iri, propsAsList} = this.props;
         return (

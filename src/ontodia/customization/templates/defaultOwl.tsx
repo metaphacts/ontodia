@@ -6,7 +6,7 @@ import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-default-owl_template';
 
-export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
+export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}> {
     public SetColor(types: any) : string {
         if ( types.indexOf("Datatype") != -1 )
             return '#fc3';

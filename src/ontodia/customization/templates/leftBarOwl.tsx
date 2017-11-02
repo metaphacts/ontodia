@@ -7,7 +7,7 @@ import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-left-bar-owl_template';
 
-export class LeftBarTemplate extends Component<TemplateProps, {}> {
+export class LeftBarTemplateOwl extends Component<TemplateProps, {}> {
     public SetColor(types: any) : string {
         if ( types.indexOf("DatatypeProperty") != -1 )
             return '#9c6';

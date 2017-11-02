@@ -17,7 +17,7 @@ export interface Props {
     view: DiagramView;
 }
 
-export class ElementLayer extends React.Component<Props, void> {
+export class ElementLayerOwl extends React.Component<Props, void> {
     private readonly listener = new Backbone.Model();
 
     private layer: HTMLDivElement;
