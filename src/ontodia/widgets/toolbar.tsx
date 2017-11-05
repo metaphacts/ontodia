@@ -41,7 +41,7 @@ export class EditorToolbar extends React.Component<Props, void> {
 
         return (
             <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-primary'
-                    onClick={this.props.onSaveDiagram}>
+                onClick={this.props.onSaveDiagram}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
             </button>
         );
@@ -52,14 +52,14 @@ export class EditorToolbar extends React.Component<Props, void> {
 
         return (
             <button type='button' className='ontodia-btn ontodia-btn-default'
-                    onClick={this.props.onShowTutorial}>
+                onClick={this.props.onShowTutorial}>
                 <span className='fa fa-info-circle' aria-hidden='true' /> Help
             </button>
         );
     }
 
     private renderLanguages = () => {
-        const {selectedLanguage, languages} = this.props;
+        const { selectedLanguage, languages } = this.props;
 
         if (languages.length <= 1) { return null; }
 
@@ -67,7 +67,7 @@ export class EditorToolbar extends React.Component<Props, void> {
             <span className={`ontodia-btn-group ${CLASS_NAME}__language-selector`}>
                 <label className='ontodia-label'><span>Data Language - </span></label>
                 <select value={selectedLanguage} onChange={this.onChangeLanguage}>
-                    {languages.map(({code, label}) => <option key={code} value={code}>{label}</option>)}
+                    {languages.map(({ code, label }) => <option key={code} value={code}>{label}</option>)}
                 </select>
             </span>
         );
@@ -82,41 +82,43 @@ export class EditorToolbar extends React.Component<Props, void> {
         return (
             <div className={CLASS_NAME}>
                 <div className='ontodia-btn-group ontodia-btn-group-sm'
-                     data-position='bottom' data-step='6' data-intro={intro}>
+                    data-position='bottom' data-step='6' data-intro={intro}>
                     {this.renderBtnSaveDiagram()}
+                    <p style={{ float: 'right' }}>
+                        <input id="owlNotation" type="checkbox" /> Owl Visualisation</p>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Force layout' onClick={this.props.onForceLayout}>
-                        <span className='fa fa-sitemap' aria-hidden='true'/> Layout
+                        title='Force layout' onClick={this.props.onForceLayout}>
+                        <span className='fa fa-sitemap' aria-hidden='true' /> Layout
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Zoom In' onClick={this.props.onZoomIn}>
-                        <span className='fa fa-search-plus' aria-hidden='true'/>
+                        title='Zoom In' onClick={this.props.onZoomIn}>
+                        <span className='fa fa-search-plus' aria-hidden='true' />
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Zoom Out' onClick={this.props.onZoomOut}>
-                        <span className='fa fa-search-minus' aria-hidden='true'/>
+                        title='Zoom Out' onClick={this.props.onZoomOut}>
+                        <span className='fa fa-search-minus' aria-hidden='true' />
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Fit to Screen' onClick={this.props.onZoomToFit}>
-                        <span className='fa fa-arrows-alt' aria-hidden='true'/>
+                        title='Fit to Screen' onClick={this.props.onZoomToFit}>
+                        <span className='fa fa-arrows-alt' aria-hidden='true' />
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Export diagram as PNG' onClick={this.onExportPNG}>
-                        <span className='fa fa-picture-o' aria-hidden='true'/> PNG
+                        title='Export diagram as PNG' onClick={this.onExportPNG}>
+                        <span className='fa fa-picture-o' aria-hidden='true' /> PNG
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Export diagram as SVG' onClick={this.onExportSVG}>
-                        <span className='fa fa-picture-o' aria-hidden='true'/> SVG
+                        title='Export diagram as SVG' onClick={this.onExportSVG}>
+                        <span className='fa fa-picture-o' aria-hidden='true' /> SVG
                     </button>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Print diagram' onClick={this.props.onPrint}>
-                        <span className='fa fa-print' aria-hidden='true'/>
+                        title='Print diagram' onClick={this.props.onPrint}>
+                        <span className='fa fa-print' aria-hidden='true' />
                     </button>
                     {this.renderLanguages()}
                     {this.renderBtnHelp()}
                 </div>
                 <a href='#' ref={link => { this.downloadImageLink = link; }}
-                   style={{display: 'none', visibility: 'collapse'}}/>
+                    style={{ display: 'none', visibility: 'collapse' }} />
             </div>
         );
     }

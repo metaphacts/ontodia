@@ -5,7 +5,7 @@ import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 import { ElementLayer } from '../diagram/elementLayer';
-import { ElementLayerOwl } from '../diagram/elementLayerOwl'; //#owl mark here
+//import { ElementLayerOwl } from '../diagram/elementLayerOwl';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
@@ -137,7 +137,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                             preventTextSelection={() => this.preventTextSelection()}
                             onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
-                            <ElementLayerOwl view={this.props.view} paper={this.props.view.paper} />
+                            <ElementLayer view={this.props.view} paper={this.props.view.paper} />
                         </PaperArea>
                     </div>
                     {!this.props.isViewOnly ? rightPanel : null}
