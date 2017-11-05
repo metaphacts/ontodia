@@ -63,7 +63,9 @@ export class LinkView extends joint.dia.LinkView {
     private updateLabelWithOptions(options?: { silent?: boolean }) {
         const template = this.view.getLinkTemplate(this.model.typeId);
         const style = template.renderLink(this.model.template);
-        merge(style, {connection: {'stroke-dasharray': this.model.layoutOnly ? '5,5' : undefined}});
+        const customStrokeDashArray = style.connection ? style.connection['stroke-dasharray'] : undefined;
+        const strokeDashArray = this.model.layoutOnly ? '5,5' : customStrokeDashArray || null;
+        merge(style, {connection: {'stroke-dasharray': strokeDashArray}});
 
         const linkAttributes: joint.dia.LinkAttributes = {
             labels: this.createLabelsAttributes(style),
