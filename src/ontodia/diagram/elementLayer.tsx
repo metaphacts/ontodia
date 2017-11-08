@@ -27,8 +27,8 @@ export class ElementLayer extends React.Component<Props, void> {
 
         // SVGElement.getCTM() returns null in Firefox if paper isn't mounted in the DOM yet
         const ctm = this.props.paper.viewport.getCTM();
-        const scale = ctm ? {x: ctm.a, y: ctm.d} : {x: 1, y: 1};
-        const translate = ctm ? {x: ctm.e, y: ctm.f} : {x: 0, y: 0};
+        const scale = ctm ? { x: ctm.a, y: ctm.d } : { x: 1, y: 1 };
+        const translate = ctm ? { x: ctm.e, y: ctm.f } : { x: 0, y: 0 };
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
@@ -45,7 +45,7 @@ export class ElementLayer extends React.Component<Props, void> {
     }
 
     componentDidMount() {
-        const {paper} = this.props;
+        const { paper } = this.props;
         const graph = paper.model;
         this.listener.listenTo(graph, 'add remove reset', this.updateAll);
         this.listener.listenTo(paper, 'scale', this.updateAll);
@@ -59,8 +59,8 @@ export class ElementLayer extends React.Component<Props, void> {
     }
 
     private updateElementSize = (element: Element, node: HTMLDivElement) => {
-        const {clientWidth, clientHeight} = node;
-        element.set('size', {width: clientWidth, height: clientHeight});
+        const { clientWidth, clientHeight } = node;
+        element.set('size', { width: clientWidth, height: clientHeight });
     }
 }
 
@@ -107,24 +107,29 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         };
     }
 
-    private rerenderTemplate = () => this.setState({templateProps: this.templateProps()});
+    private rerenderTemplate = () => this.setState({ templateProps: this.templateProps() });
 
     render(): React.ReactElement<any> {
-        const {model, view, onResize, onRender} = this.props;
+        const { model, view, onResize, onRender } = this.props;
 
         this.typesObserver.observe(model.template.types);
         this.propertyObserver.observe(Object.keys(model.template.properties));
 
         const template = view.getElementTemplate(model.template.types);
 
-        const {x = 0, y = 0} = model.get('position') || {};
+        const { x = 0, y = 0 } = model.get('position') || {};
         let transform = `translate(${x}px,${y}px)`;
 
         const angle = model.get('angle') || 0;
         if (angle) { transform += `rotate(${angle}deg)`; }
+        
+        var divStyle;
+        if ( window.location.href == "http://localhost:10444/vowl.html" )
+             divStyle = {position: 'absolute', transform, borderStyle: "solid", borderWidth: '1px', borderRadius: '15px', borderColor: "grey", padding: '5px'}
+        else divStyle = {position: 'absolute', transform}
 
         return <div className='ontodia-overlayed-element'
-            style={{position: 'absolute', transform}}
+            style={divStyle}
             tabIndex={0}
             // resize element when child image loaded
             onLoad={() => onResize(model, findDOMNode(this) as HTMLDivElement)}
@@ -150,7 +155,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     componentDidMount() {
-        const {model, view} = this.props;
+        const { model, view } = this.props;
         this.listener.listenTo(view, 'change:language', this.rerenderTemplate);
         this.listener.listenTo(model, 'state:loaded', this.rerenderTemplate);
         this.listener.listenTo(model, 'focus-on-me', () => {
@@ -193,12 +198,12 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     private templateProps(): TemplateProps {
-        const {model, view} = this.props;
+        const { model, view } = this.props;
 
         const types = model.template.types.length > 0
             ? view.getElementTypeString(model.template) : 'Thing';
         const label = view.getLocalizedText(model.template.label.values).text;
-        const {color, icon} = this.styleFor(model);
+        const { color, icon } = this.styleFor(model);
         const propsAsList = this.getPropertyTable();
 
         return {
@@ -215,7 +220,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     private getPropertyTable(): Array<{ id: string; name: string; property: Property; }> {
-        const {model, view} = this.props;
+        const { model, view } = this.props;
 
         if (!model.template.properties) { return []; }
 
@@ -238,7 +243,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     private styleFor(model: Element) {
-        const {color: {h, c, l}, icon} = this.props.view.getTypeStyle(model.template.types);
+        const { color: { h, c, l }, icon } = this.props.view.getTypeStyle(model.template.types);
         return {
             icon: icon ? icon : 'ontodia-default-icon',
             color: hcl(h, c, l).toString(),

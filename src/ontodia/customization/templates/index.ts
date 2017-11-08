@@ -3,6 +3,8 @@ import { TemplateResolver } from '../props';
 import { VOWLClassTemplate } from './VOWLClass';
 import { BigIconTemplate } from './bigIcon';
 import { VOWLDatatypeObjectPropertyTemplate } from './VOWLDatatypeObjectProperty';
+import { DefaultElementTemplateOwl } from './defaultOwl';
+import { DefaultElementTemplate } from './default';
 import { LeftBarTemplate } from './leftBar';
 import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
@@ -18,7 +20,7 @@ export * from './person';
 
 export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {
-        if ( true) {
+        if (window.location.href == "http://localhost:10444/vowl.html") {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                 return VOWLClassTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
@@ -27,19 +29,13 @@ export const DefaultTemplateBundle: TemplateResolver[] = [
                 return VOWLDatatypeObjectPropertyTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
                 return VOWLDatatypeObjectPropertyTemplate;
-            } else if (types.indexOf('http://xmlns.com/foaf/0.1/Person') !== -1 ||
-                types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
-                return PersonTemplate;
-            } else if (
-                types.indexOf('http://schema.org/Organization') !== -1 ||
-                types.indexOf('http://dbpedia.org/ontology/Organisation') !== -1 ||
-                types.indexOf('http://xmlns.com/foaf/0.1/Organization') !== -1
-            ) {
-                return OrganizationTemplate;
-            } else {
-                return undefined;
-            }
-        }/* 
+            } else (
+                types.indexOf('"http://www.w3.org/2000/01/rdf-schema#Datatype"') !== -1 ||
+                types.indexOf('"http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"') !== -1 ||
+                types.indexOf('"http://www.w3.org/2002/07/owl#Ontology"') !== -1
+            )
+            return DefaultElementTemplateOwl;
+        }
         else {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                 return BigIconTemplate;
@@ -59,8 +55,8 @@ export const DefaultTemplateBundle: TemplateResolver[] = [
             ) {
                 return OrganizationTemplate;
             } else {
-                return undefined;
+                return DefaultElementTemplate;
             }
-        } */
+        }
     },
 ];

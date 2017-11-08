@@ -5,7 +5,6 @@ import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 import { ElementLayer } from '../diagram/elementLayer';
-//import { ElementLayerOwl } from '../diagram/elementLayerOwl';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';

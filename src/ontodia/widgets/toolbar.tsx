@@ -20,6 +20,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-toolbar';
 
+
 export class EditorToolbar extends React.Component<Props, void> {
     private downloadImageLink: HTMLAnchorElement;
 
@@ -78,14 +79,11 @@ export class EditorToolbar extends React.Component<Props, void> {
             '<p>You can use additional tools for working with your diagram, such as choosing between automatic ' +
             'layouts or fit diagram to screen, etc.</p>' +
             '<p>Don’t forget to save diagrams, it always comes handy after all.</p>';
-
         return (
             <div className={CLASS_NAME}>
                 <div className='ontodia-btn-group ontodia-btn-group-sm'
                     data-position='bottom' data-step='6' data-intro={intro}>
                     {this.renderBtnSaveDiagram()}
-                    <p style={{ float: 'right' }}>
-                        <input id="owlNotation" type="checkbox" /> Owl Visualisation</p>
                     <button type='button' className='ontodia-btn ontodia-btn-default'
                         title='Force layout' onClick={this.props.onForceLayout}>
                         <span className='fa fa-sitemap' aria-hidden='true' /> Layout
