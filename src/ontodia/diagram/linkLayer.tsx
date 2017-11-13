@@ -94,7 +94,6 @@ interface LinkViewProps {
 }
 
 const LINK_CLASS = 'ontodia-link';
-const LINK_VERTEX_RADIUS = 10;
 
 class LinkView extends Component<LinkViewProps, void> {
     private templateTypeId: string;
@@ -139,18 +138,34 @@ class LinkView extends Component<LinkViewProps, void> {
                 <path className={`${LINK_CLASS}__connection`} d={path} {...pathAttributes}
                     markerStart={`url(#${linkMarkerKey(typeIndex, true)})`}
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />
-                <path className={`${LINK_CLASS}__wrap`} d={path} stroke='none' fill='none' />
+                <path className={`${LINK_CLASS}__wrap`} d={path} />
                 {this.renderLabels(polyline, style)}
-                <g className={`${LINK_CLASS}__vertices`}>
-                    {verticesDefinedByUser.map(({x, y}, index) =>
-                        <circle key={index} className={`${LINK_CLASS}__vertex`}
-                            data-vertex={index} cx={x} cy={y} r={LINK_VERTEX_RADIUS}
-                            fill={pathAttributes.stroke}
-                        />
-                    )}
-                </g>
+                {this.renderVertices(verticesDefinedByUser, pathAttributes.stroke)}
             </g>
         );
+    }
+
+    private renderVertices(vertices: ReadonlyArray<Vector>, fill: string) {
+        const elements: ReactElement<any>[] = [];
+
+        const vertexClass = `${LINK_CLASS}__vertex`;
+        const vertexRadius = 10;
+
+        let index = 0;
+        for (const {x, y} of vertices) {
+            elements.push(
+                <circle key={index * 2} data-vertex={index} className={vertexClass}
+                    cx={x} cy={y} r={vertexRadius} fill={fill} />
+            );
+            elements.push(
+                <VertexTools className={`${LINK_CLASS}__vertex-tools`}
+                    model={this.props.model} vertexIndex={index}
+                    vertexRadius={vertexRadius} x={x} y={y} />
+            );
+            index++;
+        }
+
+        return <g className={`${LINK_CLASS}__vertices`}>{elements}</g>;
     }
 
     private getPathAttributes(style: LinkStyle): SVGAttributes<SVGPathElement> {
@@ -224,6 +239,37 @@ class LinkView extends Component<LinkViewProps, void> {
                 })}
             </g>
         );
+    }
+}
+
+class VertexTools extends Component<{
+    className: string;
+    model: DiagramLink;
+    vertexIndex: number;
+    vertexRadius: number;
+    x: number;
+    y: number;
+}, {}> {
+    render() {
+        const {className, vertexIndex, vertexRadius, x, y} = this.props;
+        let transform = `translate(${x + 2 * vertexRadius},${y - 2 * vertexRadius})scale(${vertexRadius})`;
+        return (
+            <g className={className} transform={transform} onMouseDown={this.onRemoveVertex}>
+                <title>Remove vertex</title>
+                <circle r={1} />
+                <path d='M-0.5,-0.5 L0.5,0.5 M0.5,-0.5 L-0.5,0.5' strokeWidth={2 / vertexRadius} />
+            </g>
+        );
+    }
+
+    private onRemoveVertex = (e: React.MouseEvent<SVGElement>) => {
+        if (e.button !== 0 /* left button */) { return; }
+        e.preventDefault();
+        e.stopPropagation();
+        const {model, vertexIndex} = this.props;
+        const vertices = [...model.vertices];
+        vertices.splice(vertexIndex, 1);
+        model.setVertices(vertices);
     }
 }
 

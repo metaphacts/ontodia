@@ -217,7 +217,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     exportSvg = (link: HTMLAnchorElement) => {
-        this.diagram.exportSVG().then(svg => {
+        this.markup.paperArea.exportSVG().then(svg => {
             if (!link.download || link.download.match(/^diagram\.[a-z]+$/)) {
                 link.download = 'diagram.svg';
             }
@@ -229,7 +229,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     exportPng = (link: HTMLAnchorElement) => {
-        this.diagram.exportPNG({backgroundColor: 'white'}).then(dataUri => {
+        this.markup.paperArea.exportPNG({backgroundColor: 'white'}).then(dataUri => {
             if (!link.download || link.download.match(/^diagram\.[a-z]+$/)) {
                 link.download = 'diagram.png';
             }
@@ -259,7 +259,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     print = () => {
-        this.diagram.print();
+        this.markup.paperArea.exportSVG().then(svg => {
+            const printWindow = window.open('', undefined, 'width=1280,height=720');
+            printWindow.document.write(svg);
+            printWindow.print();
+        });
     }
 
     changeLanguage = (language: string) => {

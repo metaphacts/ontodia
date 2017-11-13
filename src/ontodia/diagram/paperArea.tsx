@@ -3,7 +3,7 @@ import { ReactElement } from 'react';
 
 import { EventObserver } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
-import { fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
+import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
 import { Debouncer } from './dataFetchingThread';
 import { Element, Link } from './elements';
@@ -778,7 +778,27 @@ export class PaperArea extends React.Component<Props, State> {
         } else {
             this.renderSpinner();
         }
-    };
+    }
+
+    private makeToSVGOptions(): ToSVGOptions {
+        return {
+            model: this.props.view.model,
+            paper: this.area.querySelector('svg'),
+            contentBox: this.getContentFittingBox(),
+            getOverlayedElement: id => this.area.querySelector(`[data-element-id='${id}']`) as HTMLElement,
+            preserveDimensions: true,
+            convertImagesToDataUris: true,
+            elementsToRemoveSelector: '.ontodia-link__vertex-tools',
+        };
+    }
+
+    exportSVG(): Promise<string> {
+        return toSVG(this.makeToSVGOptions());
+    }
+
+    exportPNG(options: ToDataURLOptions): Promise<string> {
+        return toDataURL({...options, ...this.makeToSVGOptions()});
+    }
 }
 
 function clientCoordsFor(container: HTMLElement, e: MouseEvent) {

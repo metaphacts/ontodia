@@ -142,7 +142,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         if (angle) { transform += `rotate(${angle}deg)`; }
 
         return <div className='ontodia-overlayed-element'
-            // set `model-id` to translate mouse events to paper
+            // set `element-id` to translate mouse events to paper
             data-element-id={model.id}
             style={{position: 'absolute', transform}}
             tabIndex={0}

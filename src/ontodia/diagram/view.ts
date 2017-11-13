@@ -56,11 +56,6 @@ export enum RenderingLayer {
     LastToUpdate = Link,
 }
 
-const DefaultToSVGOptions: ToSVGOptions = {
-    elementsToRemoveSelector: '.link-tools, .marker-vertices',
-    convertImagesToDataUris: true,
-};
-
 /**
  * Properties:
  *     language: string
@@ -143,25 +138,6 @@ export class DiagramView extends Backbone.Model {
     }
 
     cancelSelection() { this.selection.reset([]); }
-
-    print() {
-        toSVG(this.paper, DefaultToSVGOptions).then(svg => {
-            const printWindow = window.open('', undefined, 'width=1280,height=720');
-            printWindow.document.write(svg);
-            printWindow.print();
-        });
-    }
-
-    exportSVG(): Promise<string> {
-        return toSVG(this.paper, {...DefaultToSVGOptions, preserveDimensions: true});
-    }
-
-    exportPNG(options: ToDataURLOptions = {}): Promise<string> {
-        return toDataURL(this.paper, {
-            ...options,
-            svgOptions: {...DefaultToSVGOptions, ...options.svgOptions},
-        });
-    }
 
     performSyncUpdate() {
         for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
