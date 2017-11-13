@@ -262,7 +262,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);
-            this.setState({error});
+            this.setState({quering: false, error});
         });
     }
 

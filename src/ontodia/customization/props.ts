@@ -60,7 +60,7 @@ export interface RoutedLinks {
 
 export interface RoutedLink {
     linkId: string;
-    vertices: Vertex[];
+    vertices: ReadonlyArray<Vertex>;
     labelTextAnchor?: string;
 }
 

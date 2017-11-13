@@ -11,7 +11,7 @@ import { EventObserver } from '../viewUtils/events';
 
 import { Element as DiagramElement, Link as DiagramLink, linkMarkerKey } from './elements';
 import {
-    Vector, boundsOf, centerOfRectangle, intersectRayFromRectangleCenter, computePolylineLength, getPointAlongPolyline,
+    Vector, computePolyline, computePolylineLength, getPointAlongPolyline,
 } from './geometry';
 import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel } from './model';
@@ -94,6 +94,7 @@ interface LinkViewProps {
 }
 
 const LINK_CLASS = 'ontodia-link';
+const LINK_VERTEX_RADIUS = 10;
 
 class LinkView extends Component<LinkViewProps, void> {
     private templateTypeId: string;
@@ -124,16 +125,9 @@ class LinkView extends Component<LinkViewProps, void> {
             return null;
         }
 
-        const vertices: Array<{ x: number; y: number; }> = route ? route.vertices : (model.get('vertices') || []);
-
-        const sourceRect = boundsOf(source);
-        const targetRect = boundsOf(target);
-
-        const startPoint = intersectRayFromRectangleCenter(
-            sourceRect, vertices.length > 0 ? vertices[0] : centerOfRectangle(targetRect));
-        const endPoint = intersectRayFromRectangleCenter(
-            targetRect, vertices.length > 0 ? vertices[vertices.length - 1] : centerOfRectangle(sourceRect));
-        const polyline = [startPoint, ...vertices, endPoint];
+        const verticesDefinedByUser = model.vertices || [];
+        const vertices = route ? route.vertices : verticesDefinedByUser;
+        const polyline = computePolyline(source, target, vertices);
 
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
@@ -147,7 +141,14 @@ class LinkView extends Component<LinkViewProps, void> {
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />
                 <path className={`${LINK_CLASS}__wrap`} d={path} stroke='none' fill='none' />
                 {this.renderLabels(polyline, style)}
-                <g className={`${LINK_CLASS}__vertices`} />
+                <g className={`${LINK_CLASS}__vertices`}>
+                    {verticesDefinedByUser.map(({x, y}, index) =>
+                        <circle key={index} className={`${LINK_CLASS}__vertex`}
+                            data-vertex={index} cx={x} cy={y} r={LINK_VERTEX_RADIUS}
+                            fill={pathAttributes.stroke}
+                        />
+                    )}
+                </g>
             </g>
         );
     }
@@ -208,7 +209,7 @@ class LinkView extends Component<LinkViewProps, void> {
         }
 
         return (
-            <g className='labels'>
+            <g className={`${LINK_CLASS}__labels`}>
                 {labels.map((label, index) => {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
                     // missing from typings

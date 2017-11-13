@@ -18,7 +18,7 @@ export function boundsOf(element: DiagramElement): Rect {
     return {x, y, width, height};
 }
 
-export function centerOfRectangle({x, y, width, height}: Rect): Vector {
+function centerOfRectangle({x, y, width, height}: Rect): Vector {
     return {x: x + width / 2, y: y + height / 2};
 }
 
@@ -32,11 +32,15 @@ export function normalize({x, y}: Vector) {
     return {x: x * inverseLength, y: y * inverseLength};
 }
 
+function dot({x: x1, y: y1}: Vector, {x: x2, y: y2}: Vector): number {
+    return x1 * x2 + y1 * y2;
+}
+
 function cross2D({x: x1, y: y1}: Vector, {x: x2, y: y2}: Vector) {
     return x1 * y2 - y1 * x2;
 }
 
-export function intersectRayFromRectangleCenter(sourceRect: Rect, rayTarget: Vector) {
+function intersectRayFromRectangleCenter(sourceRect: Rect, rayTarget: Vector) {
     const isTargetInsideRect =
         sourceRect.width === 0 || sourceRect.height === 0 ||
         rayTarget.x > sourceRect.x && rayTarget.x < (sourceRect.x + sourceRect.width) &&
@@ -75,6 +79,20 @@ export function intersectRayFromRectangleCenter(sourceRect: Rect, rayTarget: Vec
     }
 }
 
+export function computePolyline(
+    source: DiagramElement,
+    target: DiagramElement,
+    vertices: ReadonlyArray<Vector>,
+): Vector[] {
+    const sourceRect = boundsOf(source);
+    const targetRect = boundsOf(target);
+    const startPoint = intersectRayFromRectangleCenter(
+        sourceRect, vertices.length > 0 ? vertices[0] : centerOfRectangle(targetRect));
+    const endPoint = intersectRayFromRectangleCenter(
+        targetRect, vertices.length > 0 ? vertices[vertices.length - 1] : centerOfRectangle(sourceRect));
+    return [startPoint, ...vertices, endPoint];
+}
+
 export function computePolylineLength(polyline: ReadonlyArray<Vector>): number {
     let previous: Vector;
     return polyline.reduce((acc, point) => {
@@ -109,4 +127,30 @@ export function getPointAlongPolyline(polyline: ReadonlyArray<Vector>, offset: n
         }
     }
     return polyline[polyline.length - 1];
+}
+
+export function findNearestSegmentIndex(polyline: ReadonlyArray<Vector>, location: Vector): number {
+    let minDistance = Infinity;
+    let foundIndex = 0;
+
+    for (let i = 0; i < polyline.length - 1; i++) {
+        const pivot = polyline[i];
+        const next = polyline[i + 1];
+
+        const target = {x: location.x - pivot.x, y: location.y - pivot.y};
+        const segment = {x: next.x - pivot.x, y: next.y - pivot.y};
+        const segmentLength = length(segment);
+
+        const projectionToSegment = dot(target, segment) / segmentLength;
+        if (projectionToSegment < 0 || projectionToSegment > segmentLength) {
+            continue;
+        }
+
+        const distanceToSegment = Math.abs(cross2D(target, segment)) / segmentLength;
+        if (distanceToSegment < minDistance) {
+            minDistance = distanceToSegment;
+            foundIndex = i;
+        }
+    }
+    return foundIndex;
 }

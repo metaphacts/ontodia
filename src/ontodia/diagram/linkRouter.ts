@@ -139,7 +139,7 @@ export class DefaultLinkRouter implements LinkRouter {
 }
 
 function hasUserPlacedVertices(link: DiagramLink) {
-    const vertices: Vertex[] = link.get('vertices');
+    const vertices = link.vertices;
     return vertices && vertices.length > 0;
 }
 

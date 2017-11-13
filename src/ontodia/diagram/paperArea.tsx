@@ -8,9 +8,10 @@ import { fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 import { Debouncer } from './dataFetchingThread';
 import { Element, Link } from './elements';
 import { ElementLayer } from './elementLayer';
+import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
-import { Paper } from './paper';
+import { Paper, Cell, LinkVertex, isLinkVertex } from './paper';
 
 export interface Props {
     view: DiagramView;
@@ -64,21 +65,23 @@ export class PaperArea extends React.Component<Props, State> {
 
     private listeningToPointerMove = false;
     private pointerMovedWhileListening = false;
-    private pointerDownTarget: Element | Link | undefined;
+    private pointerDownTarget: Cell | undefined;
     private pointerMoveOrigin: { pageX: number; pageY: number; };
 
     private isPanning = false;
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
 
-    private delayedPaperAdjust = new Debouncer();
-
+    private movingElement: Element | undefined;
     private movingPaperOrigin: {
         pointerX: number;
         pointerY: number;
         elementX: number;
         elementY: number;
     };
-    private movingElement: Element | undefined;
+
+    private movingVertex: LinkVertex | undefined;
+
+    private delayedPaperAdjust = new Debouncer();
     private scrollBeforeUpdate: undefined | {
         left: number;
         top: number;
@@ -205,24 +208,6 @@ export class PaperArea extends React.Component<Props, State> {
         // });
     }
 
-    // private renderChildren() {
-    //     React.Children.forEach(this.props.children, child => {
-    //         const container = document.createElement('div');
-    //         this.paper.el.appendChild(container);
-    //         this.childContainers.push(container);
-    //         const wrapped = typeof child === 'object' ? child : <span>{child}</span>;
-    //         if (unstable_renderSubtreeIntoContainer) {
-    //             unstable_renderSubtreeIntoContainer(this, wrapped, container);
-    //         } else {
-    //             reactDOMRender(wrapped, container);
-    //         }
-    //     });
-    // }
-
-    // shouldComponentUpdate() {
-    //     return false;
-    // }
-
     componentDidUpdate(prevProps: Props, prevState: State) {
         if (this.scrollBeforeUpdate) {
             const {scale, originX, originY, paddingX, paddingY} = this.state;
@@ -307,7 +292,7 @@ export class PaperArea extends React.Component<Props, State> {
         }
 
         for (const link of model.links) {
-            const vertices: ReadonlyArray<{ x: number; y: number }> = link.get('vertices') || [];
+            const vertices = link.vertices || [];
             for (const {x, y} of vertices) {
                 minX = Math.min(minX, x);
                 minY = Math.min(minY, y);
@@ -446,7 +431,7 @@ export class PaperArea extends React.Component<Props, State> {
             const translatedX = originX - x;
             const translatedY = originY - y;
             // update visible area when paper change origin without resizing
-            // e.g. paper shinks from left side and grows from right
+            // e.g. paper shrinks from left side and grows from right
             this.area.scrollLeft += translatedX;
             this.area.scrollTop += translatedY;
         }
@@ -458,7 +443,7 @@ export class PaperArea extends React.Component<Props, State> {
         return Boolean(modifierPressed) === Boolean(this.props.panningRequireModifiers);
     }
 
-    private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Element | Link | undefined) => {
+    private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
         if (this.listeningToPointerMove || e.button !== 0 /* left mouse button */) {
             return;
         }
@@ -470,10 +455,13 @@ export class PaperArea extends React.Component<Props, State> {
                 this.startMoving(e, cell);
             } else if (cell instanceof Link) {
                 e.preventDefault();
-                // TODO: insert vertices at correct place
-                const vertices: any[] = cell.get('vertices') || [];
-                const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
-                cell.set('vertices', [...vertices, {x: Math.round(x), y: Math.round(y)}]);
+                const location = this.pageToPaperCoords(e.pageX, e.pageY);
+                const vertexIndex = this.createLinkVertex(cell, location);
+                this.movingVertex = {link: cell, vertexIndex};
+                // prevent click on newly created vertex
+                this.pointerMovedWhileListening = true;
+            } else if (isLinkVertex(cell)) {
+                this.movingVertex = cell;
             }
         } else if (this.shouldStartPanning(e)) {
             e.preventDefault();
@@ -507,7 +495,23 @@ export class PaperArea extends React.Component<Props, State> {
         this.isPanning = true;
     }
 
-    private listenToPointerMove(event: React.MouseEvent<any>, cell: Element | Link | undefined) {
+    /** @returns created vertex index */
+    private createLinkVertex(link: Link, location: Vector) {
+        const previous = link.vertices;
+        const vertices = previous ? [...previous] : [];
+        const model = this.props.view.model;
+        const polyline = computePolyline(
+            model.getElement(link.sourceId),
+            model.getElement(link.targetId),
+            vertices,
+        );
+        const segmentIndex = findNearestSegmentIndex(polyline, location);
+        vertices.splice(segmentIndex, 0, location);
+        link.setVertices(vertices);
+        return segmentIndex;
+    }
+
+    private listenToPointerMove(event: React.MouseEvent<any>, cell: Cell | undefined) {
         if (this.listeningToPointerMove) { return; }
         const {pageX, pageY} = event;
         this.pointerMoveOrigin = {pageX, pageY};
@@ -538,6 +542,13 @@ export class PaperArea extends React.Component<Props, State> {
                 y: elementY + y - pointerY,
             });
             this.props.view.performSyncUpdate();
+        } else if (this.movingVertex) {
+            const {link, vertexIndex} = this.movingVertex;
+            const location = this.pageToPaperCoords(e.pageX, e.pageY);
+            const vertices = [...link.vertices];
+            vertices.splice(vertexIndex, 1, location);
+            link.setVertices(vertices);
+            this.props.view.performSyncUpdate();
         }
     }
 
@@ -554,10 +565,11 @@ export class PaperArea extends React.Component<Props, State> {
         this.listeningToPointerMove = false;
         this.pointerMovedWhileListening = false;
         this.pointerDownTarget = undefined;
-        this.movingElement = undefined;
         this.isPanning = false;
+        this.movingElement = undefined;
+        this.movingVertex = undefined;
 
-        if (triggerPointerUp) {
+        if (triggerPointerUp && !isLinkVertex(targetCell)) {
             this.props.view.onPaperPointerUp(e, targetCell, triggerAsClick);
         }
     }

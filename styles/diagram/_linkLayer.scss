@@ -1,9 +1,15 @@
 .ontodia-link {
   &__wrap {
     stroke-width: 10px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
     stroke: transparent;
   }
   &:hover &__wrap {
     stroke: rgba(140, 140, 140, 0.44);
+  }
+
+  &:not(:hover) &__vertex {
+    fill: transparent;
   }
 }

@@ -3,6 +3,7 @@ import * as joint from 'jointjs';
 
 import { ClassModel, ElementModel, LinkModel, LocalizedString } from '../data/model';
 import { DiagramModel, PreventLinksLoading } from './model';
+import { Vector } from './geometry';
 
 export class UIElement extends joint.shapes.basic.Generic {
     markup: string;
@@ -130,6 +131,9 @@ export class Link extends joint.dia.Link {
     get layoutOnly(): boolean { return this.get('layoutOnly'); }
     set layoutOnly(value: boolean) { this.set('layoutOnly', value); }
 
+    get vertices(): ReadonlyArray<Vector> { return this.get('vertices'); }
+    setVertices(value: ReadonlyArray<Vector>) { this.set('vertices', value); }
+
     template: LinkModel;
 
     constructor(props: {
@@ -137,7 +141,7 @@ export class Link extends joint.dia.Link {
         typeId: string;
         source: { id: string };
         target: { id: string };
-        vertices?: Array<{ x: number; y: number; }>;
+        vertices?: ReadonlyArray<Vector>;
     }) {
         super(props);
     }

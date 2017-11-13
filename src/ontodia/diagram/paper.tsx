@@ -21,8 +21,10 @@ export interface PaperProps {
     scale: number;
     paddingX: number;
     paddingY: number;
-    onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: DiagramElement | DiagramLink | undefined) => void;
+    onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
 }
+
+export type Cell = DiagramElement | DiagramLink | LinkVertex;
 
 const CLASS_NAME = 'ontodia-paper';
 
@@ -92,14 +94,29 @@ export class Paper extends Component<PaperProps, void> {
     }
 }
 
-function findCell(bottom: Element, top: Element, model: DiagramModel): DiagramElement | DiagramLink | undefined {
+export interface LinkVertex {
+    link: DiagramLink;
+    vertexIndex: number;
+}
+
+export function isLinkVertex(cell: Cell | undefined): cell is LinkVertex {
+    return cell && typeof cell === 'object'
+        && 'link' in cell
+        && 'vertexIndex' in cell;
+}
+
+function findCell(bottom: Element, top: Element, model: DiagramModel): Cell | undefined {
     let target: Node = bottom;
+    let vertexIndex: number | undefined = undefined;
     while (true) {
         if (target instanceof Element) {
             if (target.hasAttribute('data-element-id')) {
                 return model.getElement(target.getAttribute('data-element-id'));
             } else if (target.hasAttribute('data-link-id')) {
-                return model.getLinkById(target.getAttribute('data-link-id'));
+                const link = model.getLinkById(target.getAttribute('data-link-id'));
+                return typeof vertexIndex === 'number' ? {link, vertexIndex} : link;
+            } else if (target.hasAttribute('data-vertex')) {
+                vertexIndex = Number(target.getAttribute('data-vertex'));
             }
         }
         if (!target || target === top) { break; }
