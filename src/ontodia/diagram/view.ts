@@ -16,7 +16,7 @@ import {
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
-import { DefaultElementTemplateOwl, DefaultTemplateBundle } from '../customization/templates';
+import { DefaultOwlTemplate, DefaultTemplateBundle } from '../customization/templates';
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
@@ -396,7 +396,7 @@ export class DiagramView extends Backbone.Model {
                 return result;
             }
         }
-        return DefaultElementTemplateOwl;
+        return DefaultOwlTemplate;
     }
 
     public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {

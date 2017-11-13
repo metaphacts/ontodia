@@ -1,17 +1,17 @@
 import { TemplateResolver } from '../props';
 
-import { VOWLClassTemplate } from './VOWLClass';
+import { VowlClassTemplate } from './vowlClass';
 import { BigIconTemplate } from './bigIcon';
-import { VOWLDatatypeObjectPropertyTemplate } from './VOWLDatatypeObjectProperty';
-import { DefaultElementTemplateOwl } from './defaultOwl';
+import { vowlPropertyTemplate } from './vowlPropertyTemplate';
+import { DefaultOwlTemplate } from './defaultOwl';
 import { DefaultElementTemplate } from './default';
 import { LeftBarTemplate } from './leftBar';
 import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
 
 export * from './defaultOwl';
-export * from './VOWLClass';
-export * from './VOWLDatatypeObjectProperty';
+export * from './vowlClass';
+export * from './vowlPropertyTemplate';
 export * from './default';
 export * from './bigIcon';
 export * from './leftBar';
@@ -22,19 +22,19 @@ export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {
         if (window.location.href == "http://localhost:10444/vowl.html") {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
-                return VOWLClassTemplate;
+                return VowlClassTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
-                return VOWLClassTemplate;
+                return VowlClassTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
-                return VOWLDatatypeObjectPropertyTemplate;
+                return vowlPropertyTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
-                return VOWLDatatypeObjectPropertyTemplate;
+                return vowlPropertyTemplate;
             } else (
                 types.indexOf('"http://www.w3.org/2000/01/rdf-schema#Datatype"') !== -1 ||
                 types.indexOf('"http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"') !== -1 ||
                 types.indexOf('"http://www.w3.org/2002/07/owl#Ontology"') !== -1
             )
-            return DefaultElementTemplateOwl;
+            return DefaultOwlTemplate;
         }
         else {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {

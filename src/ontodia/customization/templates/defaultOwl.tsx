@@ -4,10 +4,10 @@ import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 
 import { TemplateProps } from '../props';
 
-const CLASS_NAME = 'ontodia-default-owl_template';
+const CLASS_NAME = 'ontodia-default-owl-template';
 
-export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}> {
-    public SetColor(types: any) : string {
+export class DefaultOwlTemplate extends React.Component<TemplateProps, {}> {
+    private GetColor(types: string) : string {
         if ( types.indexOf("Datatype") != -1 )
             return '#fc3';
         else if (types.indexOf("AnnotationProperty") != -1)
@@ -38,21 +38,21 @@ export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}
 
         let propertyTable: React.ReactElement<any>;
         if (props.propsAsList && props.propsAsList.length > 0) {
-            propertyTable = <div className='ontodia-default-owl_template_body_expander_property-table'>
+            propertyTable = <div className='ontodia-default-owl-template_body_expander_property-table'>
                 {props.propsAsList.map(prop => {
                     const values = prop.property.values.map(({text}, index) => (
-                        <div className='ontodia-default-owl_template_body_expander_property-table_row_key_values__value'
+                        <div className='ontodia-default-owl-template_body_expander_property-table_row_key_values__value'
                             key={index} title={text}>
                             {text}
                         </div>
                     ));
                     return (
-                        <div key={prop.id} className='ontodia-default-owl_template_body_expander_property-table_row'>
+                        <div key={prop.id} className='ontodia-default-owl-template_body_expander_property-table_row'>
                             <div title={prop.name + ' (' + prop.id + ')'}
-                                className='ontodia-default-owl_template_body_expander_property-table_row__key'>
+                                className='ontodia-default-owl-template_body_expander_property-table_row__key'>
                                 {prop.name}
                             </div>
-                            <div className='ontodia-default-owl_template_body_expander_property-table_row_key_values'>
+                            <div className='ontodia-default-owl-template_body_expander_property-table_row_key_values'>
                                 {values}
                             </div>
                         </div>
@@ -64,7 +64,7 @@ export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}
         }
 
         const expander = props.isExpanded ? (
-            <div className='ontodia-VOWLClass_template_property' 
+            <div className='ontodia-vowl-class-template_property' 
                         style={{borderColor: 'black'}}>
                         {imgUrl ? (
                             <CrossOriginImage className={`${CLASS_NAME}__picture`}
@@ -72,29 +72,29 @@ export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}
                                 imageProps={{src: imgUrl, className: `${CLASS_NAME}__picture-image`}}
                             />
                         ) : null}
-                        <div className='ontodia-VOWLClass_template_property_content'>
-                            <div className='ontodia-VOWLClass_template_property_content_iri-line'>
-                                <div className='ontodia-VOWLClass_template_property_content_iri-line__label'>
+                        <div className='ontodia-vowl-class-template_property_content'>
+                            <div className='ontodia-vowl-class-template_property_content_iri-line'>
+                                <div className='ontodia-vowl-class-template_property_content_iri-line__label'>
                                     IRI:
                                 </div>
-                                <div className='ontodia-VOWLClass_template_property_content_iri-line__iri'>
+                                <div className='ontodia-vowl-class-template_property_content_iri-line__iri'>
                                     <a href={iri} title={iri}>{iri}</a>
                                 </div>
                             </div>
                             
-                            <hr className='ontodia-VOWLClass_template_property_content__hr'
+                            <hr className='ontodia-vowl-class-template_property_content__hr'
                                 style={{borderTop:'solid', borderWidth:'1px', borderTopColor:'black'}}/>
                             {propsAsList.length ? (
-                                <div className='ontodia-VOWLClass_template_property_content_property-table'>
+                                <div className='ontodia-vowl-class-template_property_content_property-table'>
                                     {propsAsList.map(({name, id, property}) => (
-                                        <div key={id} className='ontodia-VOWLClass_template_property_content_property-table_row'>
-                                            <div className='ontodia-VOWLClass_template_property_content_property-table_row__key'
+                                        <div key={id} className='ontodia-vowl-class-template_property_content_property-table_row'>
+                                            <div className='ontodia-vowl-class-template_property_content_property-table_row__key'
                                                 title={name + ' ' + id}>
                                                 {name}
                                             </div>
-                                            <div className='ontodia-VOWLClass_template_property_content_property-table_row_key_values'>
+                                            <div className='ontodia-vowl-class-template_property_content_property-table_row_key_values'>
                                                 {property.values.map(({text}, index) => (
-                                                    <div className='ontodia-VOWLClass_template_property_content_property-table_row_key_values__value'
+                                                    <div className='ontodia-vowl-class-template_property_content_property-table_row_key_values__value'
                                                     key={index} title={text}>
                                                         {text}
                                                     </div>
@@ -112,15 +112,15 @@ export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}
         return (
             <div>
                 <div>
-                    <div className='ontodia-default-owl_template'
-                        style={{ borderColor: "black", backgroundColor:this.SetColor(this.props.types)}} 
+                    <div className='ontodia-default-owl-template'
+                        style={{ borderColor: "black", backgroundColor:this.GetColor(this.props.types)}} 
                         data-expanded={this.props.isExpanded}>
                             {image}
-                        <div className='ontodia-default-owl_template_body'>
-                            <label className='ontodia-default-owl_template_body__label' title={props.label}>
+                        <div className='ontodia-default-owl-template_body'>
+                            <label className='ontodia-default-owl-template_body__label' title={props.label}>
                             {props.label}
-                                <div title={props.types} className='ontodia-VOWLClass_template_body_type-container'>
-                                    <div className='ontodia-VOWLClass_template_body_type-container__type'>{props.types}</div>
+                                <div title={props.types} className='ontodia-vowl-class-template_body_type-container'>
+                                    <div className='ontodia-vowl-class-template_body_type-container__type'>{props.types}</div>
                                 </div>
                             </label>
                         </div>
@@ -138,8 +138,8 @@ export class DefaultElementTemplateOwl extends React.Component<TemplateProps, {}
                     <div className='ontodia-default-owl_thing_template_body'>
                         <label className='ontodia-default-owl_thing_template_body__label' title={props.label}>
                             {props.label}
-                                    <div title={props.types} className='ontodia-VOWLClass_template_body_type-container'>
-                                    <div className='ontodia-VOWLClass_template_body_type-container__type'>{props.types}</div>
+                                    <div title={props.types} className='ontodia-vowl-class-template_body_type-container'>
+                                    <div className='ontodia-vowl-class-template_body_type-container__type'>{props.types}</div>
                                 </div>
                         </label>
                     </div>

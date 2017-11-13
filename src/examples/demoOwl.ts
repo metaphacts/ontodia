@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, DemoDataProvider, LinkTemplate  } from '../index';
+import { Workspace, WorkspaceProps, DemoDataProvider, LinkTemplate } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -13,10 +13,10 @@ const CUSTOM_LINK_TEMPLATE_SUBCLASSOF: LinkTemplate = {
         connection: {
             stroke: 'black',
             'stroke-width': 2,
-            'stroke-dasharray':'5,5',
+            'stroke-dasharray': '5,5',
         },
         label: {
-            attrs: {text: {fill: 'black'}},
+            attrs: { text: { fill: 'black' } },
         },
     }),
 };
@@ -27,10 +27,11 @@ const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
             'stroke-width': 2,
         },
         label: {
-            attrs: {text: {fill: 'black'}},
+            attrs: { text: { fill: 'black' } },
         },
     }),
 };
+
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
@@ -38,22 +39,22 @@ function onWorkspaceMounted(workspace: Workspace) {
     model.graph.on('action:iriClick', (iri: string) => console.log(iri));
 
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({layoutData, dataProvider: new DemoDataProvider(), validateLinks: true});
+    model.importLayout({ layoutData, dataProvider: new DemoDataProvider(), validateLinks: true });
 }
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
+        const { layoutData } = workspace.getModel().exportLayout();
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
     viewOptions: {
         linkTemplateResolvers: [
             type => {
-                if ( type.indexOf('subClassOf') !== -1 )
+                if (type.indexOf('subClassOf') !== -1)
                     return CUSTOM_LINK_TEMPLATE_SUBCLASSOF;
-                else 
+                else
                     return CUSTOM_LINK_TEMPLATE;
             }
         ],

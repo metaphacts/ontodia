@@ -27,8 +27,8 @@ export class ElementLayer extends React.Component<Props, void> {
 
         // SVGElement.getCTM() returns null in Firefox if paper isn't mounted in the DOM yet
         const ctm = this.props.paper.viewport.getCTM();
-        const scale = ctm ? { x: ctm.a, y: ctm.d } : { x: 1, y: 1 };
-        const translate = ctm ? { x: ctm.e, y: ctm.f } : { x: 0, y: 0 };
+        const scale = ctm ? {x: ctm.a, y: ctm.d} : {x: 1, y: 1};
+        const translate = ctm ? {x: ctm.e, y: ctm.f} : {x: 0, y: 0};
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
