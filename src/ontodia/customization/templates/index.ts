@@ -20,7 +20,7 @@ export * from './person';
 
 export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {
-        if (window.location.href == "http://localhost:10444/vowl.html") {
+        if (window.location.href === 'http://localhost:10444/vowl.html') {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                 return VowlClassTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
@@ -29,14 +29,8 @@ export const DefaultTemplateBundle: TemplateResolver[] = [
                 return vowlPropertyTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
                 return vowlPropertyTemplate;
-            } else (
-                types.indexOf('"http://www.w3.org/2000/01/rdf-schema#Datatype"') !== -1 ||
-                types.indexOf('"http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"') !== -1 ||
-                types.indexOf('"http://www.w3.org/2002/07/owl#Ontology"') !== -1
-            )
-            return DefaultOwlTemplate;
-        }
-        else {
+            } else { return DefaultOwlTemplate; }
+        } else {
             if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
                 return BigIconTemplate;
             } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {

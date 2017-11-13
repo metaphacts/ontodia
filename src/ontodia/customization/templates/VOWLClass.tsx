@@ -25,7 +25,7 @@ export class VowlClassTemplate extends Component<TemplateProps, {}> {
                     </div> 
                 </div>
                 {isExpanded ? (
-                    <div className='ontodia-vowl-class-template_property' 
+                    <div className='ontodia-vowl-class-template_property'
                         style={{borderColor: 'black'}}>
                         {imgUrl ? (
                             <CrossOriginImage className={`${CLASS_NAME}__picture`}
@@ -44,7 +44,7 @@ export class VowlClassTemplate extends Component<TemplateProps, {}> {
                             </div>
                             
                             <hr className='ontodia-vowl-class-template_property_content__hr'
-                                style={{borderTop:'solid', borderWidth:'1px', borderTopColor:'black'}}/>
+                                style={{borderTop: 'solid', borderWidth: '1px', borderTopColor: 'black'}}/>
                             {propsAsList.length ? (
                                 <div className='ontodia-vowl-class-template_property_content_property-table'>
                                     {propsAsList.map(({name, id, property}) => (
