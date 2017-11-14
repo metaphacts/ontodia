@@ -15,7 +15,6 @@ import { Paper, Cell, LinkVertex, isLinkVertex } from './paper';
 
 export interface Props {
     view: DiagramView;
-    preventTextSelection: () => void;
     zoomOptions?: ZoomOptions;
     panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
@@ -109,7 +108,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     render() {
-        const {view, preventTextSelection} = this.props;
+        const {view} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
         const paperTransformStyle = {
             position: 'absolute', left: 0, top: 0,
@@ -217,8 +216,8 @@ export class PaperArea extends React.Component<Props, State> {
             const scrollLeft = this.scrollBeforeUpdate.left + scrollX;
             const scrollTop = this.scrollBeforeUpdate.top + scrollY;
 
-            if (this.area.scrollLeft !== scrollLeft) { this.area.scrollLeft = scrollLeft; }
-            if (this.area.scrollTop !== scrollTop) { this.area.scrollTop = scrollTop; }
+            this.area.scrollLeft = scrollLeft;
+            this.area.scrollTop = scrollTop;
 
             this.scrollBeforeUpdate = undefined;
         }
@@ -448,7 +447,6 @@ export class PaperArea extends React.Component<Props, State> {
             return;
         }
 
-        this.props.preventTextSelection();
         if (cell) {
             if (cell instanceof Element) {
                 e.preventDefault();
@@ -489,7 +487,6 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private startPanning(event: React.MouseEvent<any>) {
-        this.props.preventTextSelection();
         const {scrollLeft, scrollTop} = this.area;
         this.panningScrollOrigin = {scrollLeft, scrollTop};
         this.isPanning = true;

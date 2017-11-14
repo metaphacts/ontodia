@@ -8,7 +8,6 @@ import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
 export interface Props extends PaperWidgetProps {
-    paper: joint.dia.Paper;
     target: DiagramElement | undefined;
     diagramView: DiagramView;
     onDelete?: () => void;

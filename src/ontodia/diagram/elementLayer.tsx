@@ -78,7 +78,7 @@ export class ElementLayer extends React.Component<Props, void> {
             element.set('size', {width: clientWidth, height: clientHeight});
         }
 
-        this.props.view.model.trigger('state:renderDone');
+        this.props.view.model.onRenderDone();
     }
 }
 

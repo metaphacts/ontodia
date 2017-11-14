@@ -65,12 +65,12 @@ export enum RenderingLayer {
  */
 export class DiagramView extends Backbone.Model {
     private readonly eventSource = new EventSource();
+    private disposed = false;
 
     private typeStyleResolvers: TypeStyleResolver[];
     private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
-    paper: joint.dia.Paper;
     private connectionsMenuTarget: Element | undefined;
 
     readonly selection = new Backbone.Collection<Element>();
@@ -91,22 +91,6 @@ export class DiagramView extends Backbone.Model {
     ) {
         super();
         this.setLanguage('en');
-        this.paper = new joint.dia.Paper({
-            model: new joint.dia.Graph(),
-            gridSize: 1,
-            elementView: SeparatedElementView,
-            linkView: LinkView,
-            width: 1500,
-            height: 800,
-            async: true,
-            preventContextMenu: false,
-            guard: (evt, view) => {
-                // filter right mouse button clicks
-                if (evt.type === 'mousedown' && evt.button !== 0) { return true; }
-                return false;
-            },
-        });
-        (this.paper as any).diagramView = this;
 
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
@@ -116,13 +100,6 @@ export class DiagramView extends Backbone.Model {
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
-
-        this.listenTo(this.paper, 'render:done', () => {
-            this.model.trigger('state:renderDone');
-        });
-        this.listenTo(model, 'state:dataLoaded', () => {
-            this.model.resetHistory();
-        });
     }
 
     getLanguage(): string { return this.get('language'); }
@@ -196,7 +173,6 @@ export class DiagramView extends Backbone.Model {
 
         const renderDefaultHalo = (selectedElement?: Element) => {
             const halo = createElement(Halo, {
-                paper: this.paper,
                 diagramView: this,
                 target: selectedElement,
                 onDelete: () => this.removeSelectedElements(),
@@ -429,11 +405,10 @@ export class DiagramView extends Backbone.Model {
     }
 
     dispose() {
-        if (!this.paper) { return; }
+        if (this.disposed) { return; }
         this.trigger('dispose');
         this.stopListening();
-        this.paper.remove();
-        this.paper = undefined;
+        this.disposed = true;
     }
 }
 

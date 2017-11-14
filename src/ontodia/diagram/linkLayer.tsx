@@ -21,14 +21,22 @@ export interface LinkLayerProps {
     view: DiagramView;
 }
 
+enum UpdateRequest {
+    /** Some part of layer requested an update */
+    Partial = 1,
+    /** Full update requested */
+    All,
+}
+
 const CLASS_NAME = 'ontodia-link-layer';
 
 export class LinkLayer extends Component<LinkLayerProps, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();
 
-    // /** List of link IDs to update at the next flush event */
-    // private pendingUpdates: string[] = [];
+    private updateState = UpdateRequest.Partial;
+    /** List of link IDs to update at the next flush event */
+    private scheduledToUpdate = createStringMap<true>();
 
     private router: LinkRouter;
     private routings: RoutedLinks;
@@ -44,7 +52,14 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         const graph = view.model.graph;
 
         this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
-        this.listener.listenTo(graph, 'change:position change:size change:vertices', this.scheduleUpdateAll);
+        this.listener.listenTo(graph, 'change:position change:size', (element: DiagramElement) => {
+            for (const link of element.links) {
+                this.scheduleUpdateLink(link.id);
+            }
+        });
+        this.listener.listenTo(graph, 'change:vertices', (link: DiagramLink) => {
+            this.scheduleUpdateLink(link.id);
+        });
         this.listener.listen(view.syncUpdate, ({layer}) => {
             if (layer !== RenderingLayer.Link) { return; }
             this.delayedUpdate.runSynchronously();
@@ -61,10 +76,30 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     private scheduleUpdateAll = () => {
-        this.delayedUpdate.call(this.updateAll);
+        if (this.updateState !== UpdateRequest.All) {
+            this.updateState = UpdateRequest.All;
+            this.scheduledToUpdate = createStringMap<true>();
+        }
+        this.delayedUpdate.call(this.performUpdate);
     }
 
-    private updateAll = () => {
+    private scheduleUpdateLink(linkId: string) {
+        if (this.updateState === UpdateRequest.Partial) {
+            this.scheduledToUpdate[linkId] = true;
+        }
+        this.delayedUpdate.call(this.performUpdate);
+    }
+
+    private popShouldUpdatePredicate(): (model: DiagramLink) => boolean {
+        const {updateState, scheduledToUpdate} = this;
+        this.scheduledToUpdate = createStringMap<true>();
+        this.updateState = UpdateRequest.Partial;
+        return updateState === UpdateRequest.All
+            ? () => true
+            : link => Boolean(scheduledToUpdate[link.id]);
+    }
+
+    private performUpdate = () => {
         this.updateRoutings();
         this.forceUpdate();
     }
@@ -75,11 +110,13 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
     render() {
         const {view} = this.props;
+        const shouldUpdate = this.popShouldUpdatePredicate();
         return <g className={CLASS_NAME}>
             {view.model.links.map(model => (
                 <LinkView key={model.id}
                     view={view}
-                    model={model as DiagramLink}
+                    model={model}
+                    shouldUpdate={shouldUpdate(model)}
                     route={this.routings[model.id]}
                 />
             ))}
@@ -87,15 +124,23 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 }
 
+function createStringMap<V>(): { [key: string]: V } {
+    const map = Object.create(null);
+    // tslint:disable-next-line:no-string-literal
+    delete map['hint'];
+    return map;
+}
+
 interface LinkViewProps {
     view: DiagramView;
     model: DiagramLink;
+    shouldUpdate: boolean;
     route?: RoutedLink;
 }
 
 const LINK_CLASS = 'ontodia-link';
 
-class LinkView extends Component<LinkViewProps, void> {
+class LinkView extends Component<LinkViewProps, {}> {
     private templateTypeId: string;
     private template: LinkTemplate;
 
@@ -108,6 +153,10 @@ class LinkView extends Component<LinkViewProps, void> {
         if (this.templateTypeId !== nextProps.model.typeId) {
             this.grabLinkTemplate();
         }
+    }
+
+    shouldComponentUpdate(nextProps: LinkViewProps, nextState: {}) {
+        return nextProps.shouldUpdate;
     }
 
     private grabLinkTemplate() {
@@ -154,11 +203,13 @@ class LinkView extends Component<LinkViewProps, void> {
         let index = 0;
         for (const {x, y} of vertices) {
             elements.push(
-                <circle key={index * 2} data-vertex={index} className={vertexClass}
+                <circle key={index * 2}
+                    data-vertex={index} className={vertexClass}
                     cx={x} cy={y} r={vertexRadius} fill={fill} />
             );
             elements.push(
-                <VertexTools className={`${LINK_CLASS}__vertex-tools`}
+                <VertexTools key={index * 2 + 1}
+                    className={`${LINK_CLASS}__vertex-tools`}
                     model={this.props.model} vertexIndex={index}
                     vertexRadius={vertexRadius} x={x} y={y} />
             );
@@ -273,7 +324,7 @@ class VertexTools extends Component<{
     }
 }
 
-export class LinkMarkers extends Component<{ view: DiagramView }, void> {
+export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();
 
@@ -338,7 +389,7 @@ interface LinkMarkerProps {
     style: LinkMarkerStyle;
 }
 
-class LinkMarker extends Component<LinkMarkerProps, void> {
+class LinkMarker extends Component<LinkMarkerProps, {}> {
     render() {
         return <marker ref={this.onMarkerMount}></marker>;
     }

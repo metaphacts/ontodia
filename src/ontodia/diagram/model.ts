@@ -61,6 +61,10 @@ export class DiagramModel extends Backbone.Model {
         this.classFetchingThread = new DataFetchingThread();
         this.linkFetchingThread = new DataFetchingThread();
         this.propertyLabelFetchingThread = new DataFetchingThread();
+
+        this.listenTo(this, 'state:dataLoaded', () => {
+            this.resetHistory();
+        });
     }
 
     isViewOnly(): boolean { return this.get('isViewOnly'); }
@@ -226,6 +230,10 @@ export class DiagramModel extends Backbone.Model {
             each(cl.children, addClass);
         };
         each(rootClasses, addClass);
+    }
+
+    onRenderDone() {
+        this.trigger('state:renderDone');
     }
 
     private initDiagram(params: {

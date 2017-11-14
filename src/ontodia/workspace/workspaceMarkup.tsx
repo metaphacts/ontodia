@@ -131,7 +131,6 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                         <PaperArea ref={el => this.paperArea = el}
                             view={this.props.view}
                             zoomOptions={this.props.zoomOptions}
-                            preventTextSelection={() => this.preventTextSelection()}
                             onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
                         </PaperArea>
