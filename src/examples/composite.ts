@@ -141,7 +141,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         data: [
             {
                 content: data,
-                type: 'text/turtle',
+                // type: 'text/turtle',
             },
         ],
         dataFetching: true,

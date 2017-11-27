@@ -1,6 +1,7 @@
 declare module "rdf-data-model" {
     export class Stream<Type> {
         on(targetEvent: string, callback: (response: Type) => void): void;
+        once(targetEvent: string, callback: (response: Type | Error) => void): void;
     }
     
     export class Quad {
