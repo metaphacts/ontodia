@@ -122,11 +122,11 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         const angle = model.get('angle') || 0;
         if (angle) { transform += `rotate(${angle}deg)`; }
-        
         var divStyle;
-        if ( window.location.href == "http://localhost:10444/vowl.html" )
-             divStyle = {position: 'absolute', transform, borderStyle: "solid", borderWidth: '1px', borderRadius: '15px', borderColor: "grey", padding: '5px'}
-        else divStyle = {position: 'absolute', transform}
+        if ( window.location.href === 'http://localhost:10444/vowl.html' ) {
+             divStyle = {position: 'absolute', transform, borderStyle: 'solid', borderWidth: '1px', borderRadius: '15px', borderColor: 'grey', padding: '5px'}; }
+        else {
+            divStyle = {position: 'absolute', transform}; }
 
         return <div className='ontodia-overlayed-element'
             style={divStyle}

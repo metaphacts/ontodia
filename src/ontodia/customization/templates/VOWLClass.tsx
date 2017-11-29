@@ -14,7 +14,7 @@ export class VowlClassTemplate extends Component<TemplateProps, {}> {
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__main-part`}>
                         <div className='ontodia-vowl-class-template_body'>
-                        <div style={{flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                        <div className='ontodia-vowl-class-template_body_label'>
                             <span title={label} className='ontodia-vowl-class-template_body__label'>
                                 {label}
                             </span>

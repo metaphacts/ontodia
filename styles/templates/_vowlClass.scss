@@ -38,6 +38,11 @@
     border-color: red !important;
     outline: none !important;
   }
+  &_label{
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .ontodia-vowl-class-template_body__label {

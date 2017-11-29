@@ -65,8 +65,7 @@ div.ontodia-default-owl-template_type-line__icon {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  &:hover
-  {
+  &:hover {
     background: red;
   }
 }
@@ -74,8 +73,8 @@ div.ontodia-default-owl-template_type-line__icon {
 .ontodia-default-owl_thing_template_body {
   width:100px;
   height:100px;
-  border-Radius:50%;
-  border-Color: black; 
+  border-radius:50%;
+  border-color: black; 
   border:dashed 2px;
   background-Color:#ffffff;
   overflow: hidden;
@@ -83,8 +82,7 @@ div.ontodia-default-owl-template_type-line__icon {
   padding: 0px 0px 0px 10px;
   align-items: center;
   margin: auto;
-  &:hover
-  {
+  &:hover {
     background: red;
   }
 }

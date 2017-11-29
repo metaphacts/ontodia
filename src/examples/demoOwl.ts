@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, DemoDataProvider, LinkTemplate } from '../index';
+import { Workspace, WorkspaceProps, DemoDataProvider, LinkTemplate, VowlTemplateBundle } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -52,14 +52,15 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     viewOptions: {
         linkTemplateResolvers: [
             type => {
-                if (type.indexOf('subClassOf') !== -1)
+                if (type.indexOf('subClassOf') !== -1) {
                     return CUSTOM_LINK_TEMPLATE_SUBCLASSOF;
-                else
+                } else {
                     return CUSTOM_LINK_TEMPLATE;
-            }
+                }
+            },
         ],
+        templatesResolvers: VowlTemplateBundle,
     },
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));
-
