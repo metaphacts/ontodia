@@ -1,8 +1,8 @@
 import { TemplateResolver } from '../props';
 
-import { VowlClassTemplate } from './VowlClass';
+import { VowlClassTemplate } from './vowlClass';
 import { BigIconTemplate } from './bigIcon';
-import { VowlProperty } from './VowlProperty';
+import { VowlProperty } from './vowlProperty';
 import { DefaultOwlTemplate } from './defaultOwl';
 import { DefaultElementTemplate } from './default';
 import { LeftBarTemplate } from './leftBar';
@@ -10,8 +10,8 @@ import { OrganizationTemplate } from './organization';
 import { PersonTemplate } from './person';
 
 export * from './defaultOwl';
-export * from './VowlClass';
-export * from './VowlProperty';
+export * from './vowlClass';
+export * from './vowlProperty';
 export * from './default';
 export * from './bigIcon';
 export * from './leftBar';
