@@ -483,7 +483,11 @@ export class PaperArea extends React.Component<Props, {}> {
     private renderLoadingIndicator(elementCount: number | undefined, error?: any) {
         const WARN_ELEMENT_COUNT = 70;
         if (error) {
-            this.renderSpinner({statusText: error.statusText || error.message, errorOccured: true});
+            this.renderSpinner({
+                statusText: (error.statusText || error.message) +
+                (error.response && error.response.status ? ` (${error.response.status})` : ''),
+                errorOccured: true,
+            });
         } else if (elementCount > WARN_ELEMENT_COUNT) {
             this.renderSpinner({statusText:
                 `The diagram contains more than ${WARN_ELEMENT_COUNT} ` +

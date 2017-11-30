@@ -147,7 +147,7 @@ export class DiagramModel extends Backbone.Model {
             return this.initDiagram({preloadedElements: {}, markLinksAsLayoutOnly: false});
         }).catch(err => {
             console.error(err);
-            this.trigger('state:endLoad', null, err.errorKind, err.message);
+            this.trigger('state:loadError', err);
         });
     }
 
@@ -188,7 +188,7 @@ export class DiagramModel extends Backbone.Model {
             });
         }).catch(err => {
             console.error(err);
-            this.trigger('state:endLoad', null, err.errorKind, err.message);
+            this.trigger('state:loadError', err);
         });
     }
 
