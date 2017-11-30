@@ -55,6 +55,7 @@ module.exports = {
         'backbone': true,
         'webcola': true,
         'whatwg-fetch': true,
+        'string-to-stream': true,
     } : {},
     devtool: '#source-map',
 };

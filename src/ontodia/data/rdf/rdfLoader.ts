@@ -1,7 +1,7 @@
+import { waitFor } from 'rdf-ext';
 import SimpleDataset = require('rdf-dataset-simple');
 import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
-import { waitFor } from 'rdf-ext';
+import { RdfCompositeParser } from './rdfCompositeParser';
 
 const stringToStream = require<(input: string) => any>('string-to-stream');
 
@@ -9,11 +9,11 @@ export const DEFAULT_PROXY = '/lod-proxy/';
 
 export class RDFLoader {
     private fetchingFileCatche: Dictionary<Promise<SimpleDataset>> = {};
-    public parser: RDFCompositeParser;
+    public parser: RdfCompositeParser;
     public proxy: string;
 
     constructor(parameters: {
-        parser: RDFCompositeParser,
+        parser: RdfCompositeParser,
         proxy?: string;
     }) {
         this.parser = parameters.parser;

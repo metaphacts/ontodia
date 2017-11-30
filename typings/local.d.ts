@@ -5,5 +5,6 @@
 /// <reference path="local-modules/rdf-ext/index.d.ts" />
 /// <reference path="local-modules/rdf-data-model/index.d.ts" />
 /// <reference path="local-modules/rdf-dataset-simple/index.d.ts" />
+/// <reference path="local-modules/string-to-stream/index.d.ts" />
 /// <reference path='local-modules/d3/index.d.ts' />
 /// <reference path="local-modules/webcola/index.d.ts" />

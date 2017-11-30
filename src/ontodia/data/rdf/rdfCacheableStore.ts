@@ -2,7 +2,7 @@ import { waitFor } from 'rdf-ext';
 import { Node, Quad, Graph, Literal, NamedNode, Stream, namedNode } from 'rdf-data-model';
 import SimpleDataset = require('rdf-dataset-simple');
 import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
+import { RdfCompositeParser } from './rdfCompositeParser';
 import { uniqueId } from 'lodash';
 
 const DEFAULT_STORAGE_TYPE = 'text/turtle';
@@ -33,7 +33,7 @@ export type MatchStatement = {
 };
 
 export const LABEL_URIS = [
-    namedNode('http://www.w3.org/2004/02/skos/core#prefLabel'),
+    'http://www.w3.org/2004/02/skos/core#prefLabel',
     'http://www.w3.org/2004/02/skos/core#label',
     'http://www.w3.org/2004/02/skos/core#altLabel',
     'http://www.w3.org/2000/01/rdf-schema#prefLabel',
@@ -51,41 +51,41 @@ export const LABEL_POSTFIXES = [
 ];
 
 export class RDFCacheableStore {
-    private _super: SimpleDataset;
+    private base: SimpleDataset;
     private labelsMap: Dictionary<Quad[]> = {};
     private countMap: Dictionary<number> = {};
     private elementTypes: Dictionary<Quad[]> = {};
 
     constructor(quads?: Quad[]) {
-        this._super = new SimpleDataset(quads);
-        this._super.add = (quad: Quad) => {
-            this._super._quads.push(quad);
+        this.base = new SimpleDataset(quads);
+        this.base.add = (quad: Quad) => {
+            this.base._quads.push(quad);
         };
     }
 
     import(dataStream: Stream<Quad>): Promise<any> {
         dataStream.on('data', this.indexData);
-        return this._super.import(dataStream);
+        return this.base.import(dataStream);
     }
 
     get length () {
-        return this._super.length;
+        return this.base.length;
     }
 
     toArray(): Quad[] {
-        return this._super.toArray();
+        return this.base.toArray();
     }
 
     add(quad: Quad) {
         this.indexData(quad);
-        this._super.add(quad);
+        this.base.add(quad);
     }
 
     addAll(quads: Quad[]) {
         for (const quad of quads) {
             this.indexData(quad);
         }
-        this._super.addAll(quads);
+        this.base.addAll(quads);
     }
 
     match(
@@ -94,17 +94,17 @@ export class RDFCacheableStore {
         object?: Node,
         graph?: Graph,
     ): SimpleDataset {
-        if (subject && predicate && (
-                LABEL_URIS.indexOf(predicate.value) !== -1 || predicate.equals(RDF_TYPE)
-            ) && !object
-        ) {
+        const isLabel = predicate && LABEL_URIS.indexOf(predicate.value) !== -1;
+        const isType = predicate && predicate.equals(RDF_TYPE);
+        const valueNotFetched = subject && predicate && !object;
+        if (valueNotFetched && (isLabel || isType)) {
             if (predicate.equals(RDF_TYPE)) {
                 return this.getTypes(subject.value);
             } else {
                 return this.getLabels(subject.value);
             }
         } else {
-            return this._super.match(
+            return this.base.match(
                 subject,
                 predicate,
                 object,
@@ -118,16 +118,16 @@ export class RDFCacheableStore {
         const responses: SimpleDataset[] = [];
 
         statements.forEach(statement => {
-            if (
-                statement.subject &&
-                statement.predicate &&
-                (LABEL_URIS.indexOf(statement.predicate.value) !== -1 || statement.predicate.equals(RDF_TYPE)) &&
-                !statement.object
-            ) {
-                if (statement.predicate.equals(RDF_TYPE)) {
-                    responses.push(this.getTypes(statement.subject.value));
+            const {subject, predicate, object} = statement;
+            const isLabel = predicate && LABEL_URIS.indexOf(predicate.value) !== -1;
+            const isType = predicate && predicate.equals(RDF_TYPE);
+            const valueNotFetched = subject && predicate && !object;
+
+            if (valueNotFetched && (isLabel || isType)) {
+                if (predicate.equals(RDF_TYPE)) {
+                    responses.push(this.getTypes(subject.value));
                 } else {
-                    responses.push(this.getLabels(statement.subject.value));
+                    responses.push(this.getLabels(subject.value));
                 }
             } else {
                 slowQueries.push(statement);
@@ -143,11 +143,11 @@ export class RDFCacheableStore {
         return new SimpleDataset(this.labelsMap[id]);
     }
 
-    // Checks whetger the element is in the storage.
+    // Checks whether the element is in the storage.
     isIncludes(id: string): boolean {
         return (
             this.labelsMap[id] !== undefined ||
-            this._super.match(namedNode(id), null, null).length > 0
+            this.base.match(namedNode(id), null, null).length > 0
         );
     }
 
@@ -159,17 +159,13 @@ export class RDFCacheableStore {
         const subject = quad.subject.value;
         const predicate = quad.predicate.value;
         const object = quad.object.value;
-        if (
-            LABEL_URIS.indexOf(predicate) !== -1 ||
-            (
-                !this.labelsMap[subject] &&
-                LABEL_POSTFIXES.find((value, index, array) => {
-                    const type = predicate.toLocaleLowerCase();
-                    const postfix = value.toLocaleLowerCase();
-                    return type.indexOf(postfix) !== -1;
-                })
-            )
-        ) {
+        const isLabel = LABEL_URIS.indexOf(predicate) !== -1;
+        const typeURI = predicate.toLocaleLowerCase();
+        const hasLabelLikePostfix = LABEL_POSTFIXES.find((value, index, array) => {
+            const postfix = value.toLocaleLowerCase();
+            return typeURI.indexOf(postfix) !== -1;
+        });
+        if (isLabel || (!this.labelsMap[subject] && hasLabelLikePostfix)) {
             if (!this.labelsMap[subject]) {
                 this.labelsMap[subject] = [];
             }
@@ -215,15 +211,15 @@ export class RDFCacheableStore {
 
     private multipleMatch(statements: MatchStatement[]): SimpleDataset {
         const foundQuads: Quad[] = [];
-        for (const quad of this._super._quads) {
+        for (const quad of this.base._quads) {
             for (const statement of statements) {
-                if (
-                    ((!statement.object) || statement.object.equals(quad.object)) &&
-                    ((!statement.predicate) || statement.predicate.equals(quad.predicate)) &&
-                    ((!statement.subject) || statement.subject.equals(quad.subject))
-                ) {
+                const {subject, predicate, object} = statement;
+                const similarObjects = !object || object.equals(quad.object);
+                const similarPredicates = !predicate || predicate.equals(quad.predicate);
+                const similarSubjects = !subject || subject.equals(quad.subject);
+
+                if (similarObjects && similarPredicates && similarSubjects) {
                     foundQuads.push(quad);
-                    continue;
                 }
             }
         }

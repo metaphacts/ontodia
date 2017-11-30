@@ -49,7 +49,7 @@
     "@types/react": "*",
     "react": "^15.0.0",
     "react-dom": "^15.0.0",
-    "rdf-ext": "1.1.0"
+    "rdf-ext": "^1.1.0"
   },
   "devDependencies": {
     "@types/backbone": "1.3.33",

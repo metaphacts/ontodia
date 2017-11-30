@@ -1,6 +1,6 @@
 import { Parsers } from 'rdf-ext';
-import { Dictionary } from '../model';
 import { Stream, Quad } from 'rdf-data-model';
+import { Dictionary } from '../model';
 
 export enum ReaderState {
     reading,
@@ -14,7 +14,7 @@ export type StreamReader<Type> = {
     state: ReaderState,
 };
 
-export class RDFCompositeParser {
+export class RdfCompositeParser {
     private parsers: Parsers;
 
     constructor(parserMap: Dictionary<any>) {
