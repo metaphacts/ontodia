@@ -1,4 +1,5 @@
 import { Component, createElement, ReactElement } from 'react';
+import * as ReactDOM from 'react-dom';
 import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
@@ -57,6 +58,13 @@ export interface WorkspaceLanguage {
 
 export interface State {
     readonly criteria?: SearchCriteria;
+}
+
+export function renderTo<WorkspaceProps>(
+    workspace: React.ComponentClass<WorkspaceProps>,
+    container: HTMLElement, props: WorkspaceProps,
+) {
+    ReactDOM.render(createElement(workspace, props), container);
 }
 
 export class Workspace extends Component<WorkspaceProps, State> {
