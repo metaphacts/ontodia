@@ -78,6 +78,10 @@ export class DiagramModel extends Backbone.Model {
         return cell instanceof Element ? cell : undefined;
     }
 
+    getElementsByIri(iri: string): Element[] {
+        return this.elements.filter(element => element.template.id === iri);
+    }
+
     getLinkById(linkId: string): Link | undefined {
         const cell = this.cells.get(linkId);
         return cell instanceof Link ? cell : undefined;
@@ -335,7 +339,7 @@ export class DiagramModel extends Backbone.Model {
         const model = typeof idOrModel === 'string'
             ? placeholderTemplateFromIri(idOrModel) : idOrModel;
 
-        const element = new Element({id: model.id});
+        const element = new Element({id: `element_${generateRandomID()}`});
         element.template = model;
 
         this.graph.addCell(element);
@@ -344,7 +348,7 @@ export class DiagramModel extends Backbone.Model {
 
     requestElementData(elements: Element[]) {
         if (elements.length == 0) return Promise.resolve([]);
-        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.template.id)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
                 console.error(err);
@@ -358,7 +362,7 @@ export class DiagramModel extends Backbone.Model {
             linkTypeIds = values(this.linkTypes).map(type => type.id);
         }
         return this.dataProvider.linksInfo({
-            elementIds: this.graph.getElements().map(element => element.id),
+            elementIds: this.elements.map(element => element.template.id),
             linkTypeIds: linkTypeIds,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
@@ -440,22 +444,34 @@ export class DiagramModel extends Backbone.Model {
         return fatLinkType;
     }
 
-    private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        for (const id of Object.keys(elements)) {
-            const element = this.getElement(id);
-            if (element) {
-                element.template = elements[id];
+    private onElementInfoLoaded(models: Dictionary<ElementModel>) {
+        for (const id of Object.keys(models)) {
+            const elements = this.getElementsByIri(id);
+            elements.forEach(element => {
+                element.template = models[id];
                 element.trigger('state:loaded');
-            }
+            });
         }
     }
 
     private onLinkInfoLoaded(links: LinkModel[]) {
         this.initBatchCommand();
         for (const linkModel of links) {
-            this.createLink(linkModel);
+            this.createLinks(linkModel);
         }
         this.storeBatchCommand();
+    }
+
+    createLinks(linkModel: LinkModel) {
+        const {sourceId, targetId} = linkModel;
+        const sources = this.getElementsByIri(sourceId);
+        const targets = this.getElementsByIri(targetId);
+
+        sources.forEach(source =>
+            targets.forEach(target =>
+                this.createLink({...linkModel, sourceId: source.id, targetId: target.id})
+            )
+        );
     }
 
     createLink(linkModel: LinkModel & {
