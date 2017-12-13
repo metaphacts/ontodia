@@ -1,4 +1,4 @@
-import { DataProvider, FilterParams } from '../provider';
+import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary,
     ClassModel,
@@ -27,10 +27,12 @@ import {
 export interface DPDefinition {
     name: string;
     dataProvider: DataProvider;
+    useInStats?: boolean;
 }
 
-function isDefenition(dp: DataProvider | DPDefinition): dp is DPDefinition {
-    return (<DPDefinition> dp).name !== undefined && (<DPDefinition> dp).dataProvider !== undefined;
+function isDefinition(dp: DataProvider | DPDefinition): dp is DPDefinition {
+    const definition = dp as Partial<DPDefinition>;
+    return definition.name !== undefined && definition.dataProvider !== undefined;
 }
 
 export type MergeMode = 'fetchAll' | 'sequentialFetching';
@@ -47,7 +49,7 @@ export class CompositeDataProvider implements DataProvider {
     ) {
         let dpCounter = 1;
         this.dataProviders = dataProviders.map(dp => {
-            if (isDefenition(dp)) {
+            if (isDefinition(dp)) {
                 return dp;
             } else {
                 return {
@@ -156,13 +158,7 @@ export class CompositeDataProvider implements DataProvider {
         }
     };
 
-    linkElements(params: {
-        elementId: string;
-        linkId: string;
-        limit: number;
-        offset: number;
-        direction?: 'in' | 'out';
-    }): Promise<Dictionary<ElementModel>> {
+    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         if (this.mergeMode === 'fetchAll') {
             return this.fetchSequentially('linkElements', mergeLinkElements, params);
         } else {
@@ -193,12 +189,13 @@ export class CompositeDataProvider implements DataProvider {
     private processResults<ResponseType>(
         responsePromise: Promise<ResponseType>,
         dpName: string,
+        useProviderInStats?: boolean,
     ): Promise<CompositeResponse<ResponseType>> {
         return responsePromise
-            .then(response => ({dataSourceName: dpName, response: response}))
+            .then(response => ({dataSourceName: dpName, useInStats: useProviderInStats, response: response}))
             .catch(error => {
                 console.error(error);
-                return {dataSourceName: dpName, response: undefined};
+                return {dataSourceName: dpName, useInStats: useProviderInStats, response: undefined};
             });
     };
 
@@ -232,10 +229,10 @@ export class CompositeDataProvider implements DataProvider {
     };
 
     private fetchSequentially<ResponseType>(
-        functionName: string, mergeFunction: (...args: any[]) => ResponseType, params?: any,
+        functionName: keyof DataProvider, mergeFunction: (...args: any[]) => ResponseType, params?: any,
     ) {
-        const resultPromises = this.dataProviders.map(
-            (dp: any) => this.processResults(dp.dataProvider[functionName].call(dp.dataProvider, params), dp.name),
+        const resultPromises = this.dataProviders.map((dp: DPDefinition) =>
+            this.processResults(dp.dataProvider[functionName].call(dp.dataProvider, params), dp.name, dp.useInStats)
         );
         return Promise.all(resultPromises).then(mergeFunction);
     }

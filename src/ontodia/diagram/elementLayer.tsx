@@ -7,6 +7,7 @@ import { TemplateProps } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
+import { PropTypes } from '../viewUtils/react';
 
 import { Element } from './elements';
 import { uri2name } from './model';
@@ -14,6 +15,8 @@ import { DiagramView, RenderingLayer } from './view';
 
 export interface Props {
     view: DiagramView;
+    group?: string;
+    scale: number;
     style: React.CSSProperties;
 }
 
@@ -31,8 +34,8 @@ export class ElementLayer extends React.Component<Props, void> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, style} = this.props;
-        const models = view.model.elements;
+        const {view, group, scale, style} = this.props;
+        const models = view.model.elements.filter(model => model.group === group);
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
@@ -40,6 +43,7 @@ export class ElementLayer extends React.Component<Props, void> {
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
                 view={view}
+                scale={scale}
                 onResize={this.updateElementSize}
                 onRender={this.updateElementSize} />)}
         </div>;
@@ -87,6 +91,7 @@ export class ElementLayer extends React.Component<Props, void> {
 interface OverlayedElementProps {
     model: Element;
     view: DiagramView;
+    scale: number;
     onResize: (model: Element, node: HTMLDivElement) => void;
     onRender: (model: Element, node: HTMLDivElement) => void;
 }
@@ -95,7 +100,23 @@ interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
 }
 
+export const ElementContext = {
+    ontodiaElementContext: PropTypes.anything,
+};
+
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
+    static childContextTypes = ElementContext;
+
+    getChildContext() {
+        return {
+            ontodiaElementContext: {
+                view: this.props.view,
+                element: this.props.model,
+                scale: this.props.scale,
+            }
+        };
+    }
+
     private readonly listener = new EventObserver();
     private disposed = false;
 
@@ -157,7 +178,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
                     view.onIriClick(anchor.href, model, e);
                 }
             }}
-            onDoubleClick={() => {
+            onDoubleClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
                 model.setExpanded(!model.isExpanded);
             }}
             ref={node => {
@@ -174,6 +197,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         this.listener.listen(model.events, 'changeData', this.rerenderTemplate);
         this.listener.listen(model.events, 'changeExpanded', this.rerenderTemplate);
         this.listener.listen(model.events, 'changePosition', () => this.forceUpdate());
+        this.listener.listen(model.events, 'requestedRedraw', () => this.forceUpdate());
         this.listener.listen(model.events, 'requestedFocus', () => {
             const element = findDOMNode(this) as HTMLElement;
             if (element) { element.focus(); }

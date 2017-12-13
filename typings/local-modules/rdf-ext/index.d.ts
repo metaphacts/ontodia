@@ -3,6 +3,10 @@ declare module "rdf-ext" {
 
     export function createGraph(triples: Triple[]):RDFGraph;
 
+    export function createNamedNode(value: string): NamedNode;
+
+    export function createLiteral(value: string, language?: string, datatype?: string): Literal;
+
     export class RDFStore {
         graphs: {
             [id: string]: { _graph: Triple[] };

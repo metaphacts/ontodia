@@ -23,7 +23,6 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
         if (treeNode.parent) {
             const parent = treeNodes[treeNode.parent];
             parent.children.push(treeNode);
-            parent.count += treeNode.count;
         } else {
             tree.push(treeNode);
         }
@@ -70,12 +69,18 @@ function calcCounts(children: ClassModel[]) {
         // ensure all children have their counts completed;
         calcCounts(node.children);
         // we have to preserve no data here. If nor element nor childs have no count information,
-        // we just pass NaN upwards.
-        const childCount = node.children.reduce((acc, val) =>
-                // if val.count is not NaN, turn result into number
-                !isNaN(val.count) ? (!isNaN(acc) ? acc + val.count : val.count) : acc
-            , NaN);
-        node.count = !isNaN(childCount) ? (!isNaN(node.count) ? node.count + childCount : childCount) : node.count;
+        // we just pass undefined upwards.
+        let childCount: number;
+
+        node.children.forEach(({count}) => {
+            if (count === undefined) { return; }
+
+            childCount = childCount === undefined ? count : childCount + count;
+        });
+
+        if (childCount !== undefined) {
+            node.count = node.count === undefined ? childCount : node.count + childCount;
+        }
     }
 }
 
@@ -91,7 +96,7 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
                 model.label.values.push(newLabel);
             }
             const instanceCount = getInstCount(binding.instcount);
-            if (!isNaN(instanceCount)) {
+            if (instanceCount !== undefined) {
                 model.count =  Math.max(model.count, instanceCount);
             }
         } else {
@@ -362,8 +367,8 @@ export function getLocalizedString(label?: RdfLiteral, id?: string): LocalizedSt
     }
 }
 
-export function getInstCount(instcount: RdfLiteral): number {
-    return (instcount ? +instcount.value : NaN);
+export function getInstCount(instcount: RdfLiteral): number | undefined {
+    return (instcount ? +instcount.value : undefined);
 }
 
 /**

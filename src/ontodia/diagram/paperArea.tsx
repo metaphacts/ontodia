@@ -143,7 +143,7 @@ export class PaperArea extends React.Component<Props, State> {
                     paddingX={paddingX}
                     paddingY={paddingY}
                     onPointerDown={this.onPaperPointerDown}>
-                    <ElementLayer view={view} style={paperTransformStyle} />
+                    <ElementLayer view={view} scale={scale} style={paperTransformStyle} />
                     <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
                         {renderedWidgets.map(widget => {
                             const props: PaperWidgetProps = {paperArea: this};
@@ -267,35 +267,8 @@ export class PaperArea extends React.Component<Props, State> {
 
     /** Returns bounding box of paper content in paper coordinates. */
     getContentFittingBox() {
-        let minX = Infinity, minY = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-
-        const model = this.props.view.model;
-        for (const element of model.elements) {
-            const {x, y} = element.position;
-            const size = element.size;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + size.width);
-            maxY = Math.max(maxY, y + size.height);
-        }
-
-        for (const link of model.links) {
-            const vertices = link.vertices || [];
-            for (const {x, y} of vertices) {
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            }
-        }
-
-        return {
-            x: Number.isFinite(minX) ? minX : 0,
-            y: Number.isFinite(minY) ? minY : 0,
-            width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
-            height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
-        };
+        const {elements, links} = this.props.view.model;
+        return getContentFittingBox(elements, links);
     }
 
     /** Returns paper size in paper coordinates. */
@@ -700,4 +673,37 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
             </svg>
         );
     }
+}
+
+export function getContentFittingBox(
+    elements: ReadonlyArray<Element>, links: ReadonlyArray<Link>
+): { x: number; y: number; width: number; height: number; } {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    for (const element of elements) {
+        const {x, y} = element.position;
+        const size = element.size;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + size.width);
+        maxY = Math.max(maxY, y + size.height);
+    }
+
+    for (const link of links) {
+        const vertices = link.vertices || [];
+        for (const {x, y} of vertices) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+    }
+
+    return {
+        x: Number.isFinite(minX) ? minX : 0,
+        y: Number.isFinite(minY) ? minY : 0,
+        width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
+        height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
+    };
 }

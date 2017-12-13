@@ -1,6 +1,6 @@
 import { Triple, Node, RDFGraph } from 'rdf-ext';
 import { RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNode } from './rdfCacheableStore';
-import { DataProvider, FilterParams } from '../provider';
+import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { RDFLoader } from './rdfLoader';
 import {
     LocalizedString, Dictionary, ClassModel, LinkType, ElementModel,
@@ -54,6 +54,10 @@ export class RDFDataProvider implements DataProvider {
         this.initStatement = Promise.all(parsePromises).then(parseResults => {
             return parseResults.filter(pr => pr).length > 0 || params.data.length === 0;
         });
+    }
+
+    addGraph(graph: RDFGraph) {
+        this.rdfStorage.add(graph);
     }
 
     isInitialized(): Promise<boolean> {
@@ -400,13 +404,7 @@ export class RDFDataProvider implements DataProvider {
         });
     };
 
-    linkElements(params: {
-        elementId: string;
-        linkId: string;
-        limit: number;
-        offset: number;
-        direction?: 'in' | 'out';
-    }): Promise<Dictionary<ElementModel>> {
+    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
@@ -417,7 +415,7 @@ export class RDFDataProvider implements DataProvider {
     }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
-        if (params.limit === 0) { params.limit = 100; }
+        if (params.limit === undefined) { params.limit = 100; }
 
         const offsetIndex = params.offset;
         const limitIndex = params.offset + params.limit;

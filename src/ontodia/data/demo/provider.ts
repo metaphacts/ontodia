@@ -1,5 +1,5 @@
 import { cloneDeep, keyBy, map, each } from 'lodash';
-import { DataProvider, FilterParams } from '../provider';
+import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 
 const CLASSES = require<ClassModel[]>('json!./data/classes.json');
@@ -76,7 +76,7 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(map(counts));
     }
 
-    linkElements(params: { elementId: string; linkId: string; limit: number; offset: number, direction?: 'in' | 'out'}): Promise<Dictionary<ElementModel>> {
+    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         //for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
@@ -88,6 +88,8 @@ export class DemoDataProvider implements DataProvider {
     }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
+        if (params.limit === undefined) { params.limit = 100; }
+
         if (params.offset > 0) { return Promise.resolve({}); }
 
         let filtered: Dictionary<ElementModel> = {};

@@ -14,7 +14,7 @@ import {
     FatClassModel, FatClassModelEvents, RichProperty,
 } from './elements';
 import { Vector } from './geometry';
-import { Graph } from './graph';
+import { Graph, generateRandomID } from './graph';
 
 export interface DiagramModelEvents {
     loadingStart: { source: DiagramModel };
@@ -46,6 +46,8 @@ export class DiagramModel {
     private linkFetching: DataFetchingThread;
     private propertyLabelFetching: DataFetchingThread;
 
+    private linkSettings: LinkTypeOptions[];
+
     constructor() {
         this.classFetching = new DataFetchingThread();
         this.linkFetching = new DataFetchingThread();
@@ -57,6 +59,10 @@ export class DiagramModel {
 
     getElement(elementId: string): Element | undefined {
         return this.graph.getElement(elementId);
+    }
+
+    getElementsByIri(iri: string): Element[] {
+        return this.elements.filter(element => element.data.id === iri);
     }
 
     getLinkById(linkId: string): Link | undefined {
@@ -163,6 +169,7 @@ export class DiagramModel {
     }): Promise<void> {
         this.resetGraph();
         this.dataProvider = params.dataProvider;
+        this.linkSettings = params.linkSettings;
         this.source.trigger('loadingStart', {source: this});
 
         return Promise.all<ClassModel[], LinkType[]>([
@@ -171,7 +178,7 @@ export class DiagramModel {
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
             const allLinkTypes = this.initLinkTypes(linkTypes);
-            this.initLinkSettings(allLinkTypes, params.linkSettings);
+            this.initLinkSettings(params.linkSettings);
             return this.loadAndRenderLayout({
                 layoutData: params.layoutData,
                 preloadedElements: params.preloadedElements || {},
@@ -213,17 +220,12 @@ export class DiagramModel {
         }
     }
 
-    private initLinkSettings(linkTypes: ReadonlyArray<FatLinkType>, linkSettings: LinkTypeOptions[]) {
-        const indexedSettings = keyBy(linkSettings, 'id');
-        for (const type of linkTypes) {
-            const settings = indexedSettings[type.id];
-            if (settings) {
-                const {visible = true, showLabel = true} = settings;
-                type.setVisibility({visible, showLabel, preventLoading: true});
-            } else {
-                type.setIsNew(true);
-            }
-        }
+    private initLinkSettings(linkSettings: LinkTypeOptions[]) {
+        linkSettings.forEach(settings => {
+            const {id, visible = true, showLabel = true} = settings;
+            const linkType = this.createLinkType(id);
+            linkType.setVisibility({visible, showLabel, preventLoading: true});
+        });
     }
 
     private loadAndRenderLayout(params: {
@@ -246,10 +248,10 @@ export class DiagramModel {
         const normalizedCells = layoutData.cells.map(normalizeImportedCell);
         for (const cell of normalizedCells) {
             if (cell.type === 'element') {
-                const {id, position, size, isExpanded} = cell;
-                const template = preloadedElements[cell.id];
-                const data = template || placeholderTemplateFromIri(id);
-                const element = new Element({id, data, position, size, expanded: isExpanded});
+                const {id, iri, position, size, isExpanded, group} = cell;
+                const template = preloadedElements[iri];
+                const data = template || placeholderTemplateFromIri(iri);
+                const element = new Element({id, data, position, size, expanded: isExpanded, group});
                 this.graph.addElement(element);
                 if (!template) {
                     elementToRequestData.push(element);
@@ -271,7 +273,9 @@ export class DiagramModel {
                     linkType,
                     vertices,
                 });
-                link.setLayoutOnly(markLinksAsLayoutOnly);
+                if (link) {
+                    link.setLayoutOnly(markLinksAsLayoutOnly);
+                }
             }
         }
 
@@ -303,7 +307,7 @@ export class DiagramModel {
         if (elements.length === 0) {
             return Promise.resolve([]);
         }
-        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.data.id)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
                 console.error(err);
@@ -316,7 +320,7 @@ export class DiagramModel {
             .filter(type => type.visible)
             .map(type => type.id);
         return this.dataProvider.linksInfo({
-            elementIds: this.elements.map(element => element.id),
+            elementIds: this.elements.map(element => element.data.id),
             linkTypeIds: linkTypes,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
@@ -381,7 +385,7 @@ export class DiagramModel {
         return classModel;
     }
 
-    createElement(elementIdOrModel: string | ElementModel): Element {
+    createElement(elementIdOrModel: string | ElementModel, group?: string): Element {
         const elementId = typeof elementIdOrModel === 'string'
             ? elementIdOrModel : elementIdOrModel.id;
         let element = this.graph.getElement(elementId);
@@ -389,7 +393,7 @@ export class DiagramModel {
             let data = typeof elementIdOrModel === 'string'
                 ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
             data = {...data, id: rewriteHttpsInIri(data.id)};
-            element = new Element({id: data.id, data});
+            element = new Element({id: `element_${generateRandomID()}`, data, group});
             this.graph.addElement(element);
         }
         return element;
@@ -408,6 +412,7 @@ export class DiagramModel {
             id: linkTypeId,
             label: [{text: uri2name(linkTypeId), lang: ''}],
         });
+
         this.graph.addLinkType(linkType);
         this.linkFetching.push(linkTypeId).then(linkTypeIds => {
             if (linkTypeIds.length === 0) { return; }
@@ -436,10 +441,9 @@ export class DiagramModel {
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
         for (const id of Object.keys(elements)) {
-            const element = this.getElement(id);
-            if (element) {
-                element.setData(elements[id]);
-            }
+            this.getElementsByIri(id).forEach(element =>
+                element.setData(elements[id])
+            );
         }
     }
 
@@ -447,9 +451,22 @@ export class DiagramModel {
         this.initBatchCommand();
         for (const linkModel of links) {
             const linkType = this.createLinkType(linkModel.linkTypeId);
-            this.graph.createLink({data: linkModel, linkType});
+            this.createLinks(linkModel, linkType);
         }
         this.storeBatchCommand();
+    }
+
+    private createLinks(linkModel: LinkModel, linkType: FatLinkType) {
+        const {sourceId, targetId} = linkModel;
+        const sources = this.getElementsByIri(sourceId);
+        const targets = this.getElementsByIri(targetId);
+
+        sources.forEach(source =>
+            targets.forEach(target => {
+                const data = {...linkModel, sourceId: source.id, targetId: target.id};
+                this.graph.createLink({data, linkType});
+            })
+        );
     }
 }
 

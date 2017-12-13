@@ -82,9 +82,7 @@ export interface DataProvider {
      * Has overlapping functionality with filter, but easier less powerful and easier to implement
      * linkId could be null, if it's the case method should return all elements from all links from current element.
      */
-    linkElements(params: {
-        elementId: string, linkId: string, limit: number, offset: number, direction?: 'in' | 'out'
-    }): Promise<Dictionary<ElementModel>>;
+    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>>;
 
     /**
      * Supports filter functionality with different filters - by type, by element and it's connection, by full-text search
@@ -94,6 +92,14 @@ export interface DataProvider {
 }
 
 export default DataProvider;
+
+export interface LinkElementsParams {
+    elementId: string;
+    linkId: string;
+    limit?: number;
+    offset: number;
+    direction?: 'in' | 'out'
+}
 
 export interface FilterParams {
     /**
@@ -124,7 +130,7 @@ export interface FilterParams {
     /**
      * Limit number of elements returned. Defaults depend on data provider implementation
      */
-    limit: number;
+    limit?: number;
 
     /**
      * Offset within matched data set to use

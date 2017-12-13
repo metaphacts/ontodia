@@ -9,12 +9,14 @@ export interface ElementEvents {
     changePosition: PropertyChange<Element, Vector>;
     changeSize: PropertyChange<Element, Size>;
     changeExpanded: PropertyChange<Element, boolean>;
+    changeGroup: PropertyChange<Element, string>;
     requestedFocus: { source: Element };
     requestedAddToFilter: {
         source: Element;
         linkType?: FatLinkType;
         direction?: 'in' | 'out';
     };
+    requestedRedraw: { source: Element };
 }
 
 export class Element {
@@ -29,6 +31,7 @@ export class Element {
     private _position: Vector;
     private _size: Size;
     private _expanded: boolean;
+    private _group: string;
 
     constructor(props: {
         id: string;
@@ -36,6 +39,7 @@ export class Element {
         position?: Vector;
         size?: Size;
         expanded?: boolean;
+        group?: string;
     }) {
         const {
             id,
@@ -43,6 +47,7 @@ export class Element {
             position = {x: 0, y: 0},
             size = {width: 0, height: 0},
             expanded = false,
+            group,
         } = props;
 
         this.id = id;
@@ -50,6 +55,7 @@ export class Element {
         this._position = position;
         this._size = size;
         this._expanded = expanded;
+        this._group = group;
     }
 
     get data() { return this._data; }
@@ -92,6 +98,14 @@ export class Element {
         this.source.trigger('changeExpanded', {source: this, previous});
     }
 
+    get group(): string { return this._group; }
+    setGroup(value: string) {
+        const previous = this._group;
+        if (previous === value) { return; }
+        this._group = value;
+        this.source.trigger('changeGroup', {source: this, previous});
+    }
+
     focus() {
         this.source.trigger('requestedFocus', {source: this});
     }
@@ -100,6 +114,10 @@ export class Element {
         this.source.trigger('requestedAddToFilter', {
             source: this, linkType, direction
         });
+    }
+
+    redraw() {
+        this.source.trigger('requestedRedraw', {source: this});
     }
 }
 
@@ -131,7 +149,7 @@ export class FatClassModel {
         label: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {
-        const {id, label, count = 0} = props;
+        const {id, label, count} = props;
         this.id = id;
         this._label = label;
         this._count = count;
