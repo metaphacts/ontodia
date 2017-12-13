@@ -37,6 +37,12 @@ export interface DiagramViewOptions {
     linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
     onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
+    groupBy?: GroupBy[];
+}
+
+export interface GroupBy {
+    linkType: string;
+    linkDirection: 'in' | 'out';
 }
 
 export interface TypeStyle {
@@ -436,6 +442,21 @@ export class DiagramView {
         this.source.trigger('dispose', {source: this});
         this.listener.stopListening();
         this.disposed = true;
+    }
+
+    loadEmbeddedElements = (id: string, iri: string): Promise<Dictionary<ElementModel>> => {
+        const elements = this.options.groupBy.map(groupBy =>
+            this.model.dataProvider.linkElements({
+                elementId: iri,
+                linkId: groupBy.linkType,
+                limit: 0,
+                offset: 0,
+                direction: groupBy.linkDirection,
+            })
+        );
+        return Promise.all(elements).then(res =>
+            res.reduce((memo, current) => Object.assign(memo, current), {})
+        );
     }
 }
 

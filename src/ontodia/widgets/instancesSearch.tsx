@@ -132,7 +132,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
                     {...this.props.criteria, refElement: undefined, refElementLink: undefined}))}
                 Connected to <span className={`${CLASS_NAME}__criterion-element`}
-                    title={element && element.id}>{elementLabel}</span>
+                    title={element && element.data.id}>{elementLabel}</span>
                 {linkType && <span>
                     {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
@@ -302,7 +302,7 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
     return {
         text,
         elementTypeId: elementType ? elementType.id : undefined,
-        refElementId: refElement ? refElement.id : undefined,
+        refElementId: refElement ? refElement.data.id : undefined,
         refElementLinkId: refElementLink ? refElementLink.id : undefined,
         linkDirection,
         offset: 0,

@@ -19,6 +19,7 @@ export * from './ontodia/data/sparql/sparqlGraphBuilder';
 
 export { Element, Link } from './ontodia/diagram/elements';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
+export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 
