@@ -14,7 +14,7 @@ import {
     FatClassModel, FatClassModelEvents, RichProperty,
 } from './elements';
 import { Vector } from './geometry';
-import { Graph } from './graph';
+import { Graph, generateRandomID } from './graph';
 
 export interface DiagramModelEvents {
     loadingStart: { source: DiagramModel };
@@ -78,6 +78,10 @@ export class DiagramModel {
 
     getElement(elementId: string): Element | undefined {
         return this.graph.getElement(elementId);
+    }
+
+    getElementsByIri(iri: string): Element[] {
+        return this.elements.filter(element => element.data.id === iri);
     }
 
     getLinkById(linkId: string): Link | undefined {
@@ -324,7 +328,7 @@ export class DiagramModel {
         if (elements.length === 0) {
             return Promise.resolve([]);
         }
-        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.data.id)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
                 console.error(err);
@@ -337,7 +341,7 @@ export class DiagramModel {
             .filter(type => type.visible)
             .map(type => type.id);
         return this.dataProvider.linksInfo({
-            elementIds: this.elements.map(element => element.id),
+            elementIds: this.elements.map(element => element.data.id),
             linkTypeIds: linkTypes,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
@@ -402,14 +406,14 @@ export class DiagramModel {
         return classModel;
     }
 
-    createElement(elementIdOrModel: string | ElementModel): Element {
+    createElement(elementIdOrModel: string | ElementModel, group?: string): Element {
         const elementId = typeof elementIdOrModel === 'string'
             ? elementIdOrModel : elementIdOrModel.id;
         let element = this.graph.getElement(elementId);
         if (!element) {
             const data = typeof elementIdOrModel === 'string'
                 ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
-            element = new Element({id: elementId, data});
+            element = new Element({id: `element_${generateRandomID()}`, data, group});
             this.graph.addElement(element);
         }
         return element;
@@ -456,10 +460,9 @@ export class DiagramModel {
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
         for (const id of Object.keys(elements)) {
-            const element = this.getElement(id);
-            if (element) {
-                element.setData(elements[id]);
-            }
+            this.getElementsByIri(id).forEach(element =>
+                element.setData(elements[id])
+            );
         }
     }
 
@@ -467,9 +470,22 @@ export class DiagramModel {
         this.initBatchCommand();
         for (const linkModel of links) {
             const linkType = this.createLinkType(linkModel.linkTypeId);
-            this.graph.createLink({data: linkModel, linkType});
+            this.createLinks(linkModel, linkType);
         }
         this.storeBatchCommand();
+    }
+
+    private createLinks(linkModel: LinkModel, linkType: FatLinkType) {
+        const {sourceId, targetId} = linkModel;
+        const sources = this.getElementsByIri(sourceId);
+        const targets = this.getElementsByIri(targetId);
+
+        sources.forEach(source =>
+            targets.forEach(target => {
+                const data = {...linkModel, sourceId: source.id, targetId: target.id};
+                this.graph.createLink({data, linkType});
+            })
+        );
     }
 }
 

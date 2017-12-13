@@ -239,7 +239,7 @@ function findLinkIndex(haystack: DiagramLink[], needle: LinkModel) {
 }
 
 /** Generates random 16-digit hexadecimal string. */
-function generateRandomID() {
+export function generateRandomID() {
     function randomHalfDigits() {
         return Math.floor((1 + Math.random()) * 0x100000000)
             .toString(16).substring(1);

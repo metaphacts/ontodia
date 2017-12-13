@@ -11,9 +11,11 @@ import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { Element } from './elements';
 import { uri2name } from './model';
 import { DiagramView, RenderingLayer } from './view';
+import { EmbeddedLayer } from './embeddedLayer';
 
 export interface Props {
     view: DiagramView;
+    group?: string;
     style: React.CSSProperties;
 }
 
@@ -31,8 +33,8 @@ export class ElementLayer extends React.Component<Props, void> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, style} = this.props;
-        const models = view.model.elements;
+        const {view, group, style} = this.props;
+        const models = view.model.elements.filter(model => model.group === group);
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
@@ -96,6 +98,18 @@ interface OverlayedElementState {
 }
 
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
+    static childContextTypes = {
+        view: React.PropTypes.object,
+        element: React.PropTypes.object,
+    };
+
+    getChildContext() {
+        return {
+            view: this.props.view,
+            element: this.props.model,
+        };
+    }
+
     private readonly listener = new EventObserver();
     private disposed = false;
 
@@ -157,7 +171,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
                     view.onIriClick(anchor.href, model, e);
                 }
             }}
-            onDoubleClick={() => {
+            onDoubleClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
                 model.setExpanded(!model.isExpanded);
             }}
             ref={node => {
@@ -174,6 +190,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         this.listener.listen(model.events, 'changeData', this.rerenderTemplate);
         this.listener.listen(model.events, 'changeExpanded', this.rerenderTemplate);
         this.listener.listen(model.events, 'changePosition', () => this.forceUpdate());
+        this.listener.listen(model.events, 'requestedRedraw', () => this.forceUpdate());
         this.listener.listen(model.events, 'requestedFocus', () => {
             const element = findDOMNode(this) as HTMLElement;
             if (element) { element.focus(); }

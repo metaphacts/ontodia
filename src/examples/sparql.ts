@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod, GroupTemplate } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -33,6 +33,17 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     viewOptions: {
         onIriClick: iri => window.open(iri),
+        templatesResolvers: [
+            types => {
+                if (types.indexOf('http://www.ics.forth.gr/isl/CRMinf/I2_Belief') !== -1) {
+                    return GroupTemplate;
+                }
+                return undefined;
+            }
+        ],
+        groupBy: [
+            {linkType: 'http://www.researchspace.org/ontology/group', linkDirection: 'in'},
+        ],
     },
     languages: [
         {code: 'en', label: 'English'},

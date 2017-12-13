@@ -1,0 +1,19 @@
+.ontodia-group-template {
+  overflow: hidden;
+
+  &__wrap {
+    max-width: none;
+  }
+
+  &__body {
+    overflow: visible;
+  }
+
+  &__embedded-layer {
+    margin-top: 7px;
+  }
+
+  .ontodia-paper__canvas {
+    border-color: #fff;
+  }
+}
