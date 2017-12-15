@@ -19,6 +19,7 @@ import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
+    group?: string;
 }
 
 enum UpdateRequest {
@@ -109,10 +110,18 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     render() {
-        const {view} = this.props;
+        const {view, group} = this.props;
         const shouldUpdate = this.popShouldUpdatePredicate();
+
+        const links = view.model.links.filter(link => {
+            const source = view.model.getElement(link.sourceId);
+            const target = view.model.getElement(link.targetId);
+
+            return source.template.group === group && target.template.group === group;
+        });
+
         return <g className={CLASS_NAME}>
-            {view.model.links.map(model => (
+            {links.map(model => (
                 <LinkView key={model.id}
                     view={view}
                     model={model}
@@ -399,6 +408,8 @@ class LinkMarker extends Component<LinkMarkerProps, {}> {
     }
 
     private onMarkerMount = (marker: SVGMarkerElement) => {
+        if (!marker) { return; }
+
         const {linkTypeIndex, isStartMarker, style} = this.props;
 
         marker.setAttribute('id', linkMarkerKey(linkTypeIndex, isStartMarker));

@@ -39,6 +39,12 @@ export interface DiagramViewOptions {
     disableDefaultHalo?: boolean;
     linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
+    groupBy?: GroupBy[];
+}
+
+export interface GroupBy {
+    linkType: string;
+    linkDirection: 'in' | 'out';
 }
 
 export interface TypeStyle {
@@ -409,6 +415,24 @@ export class DiagramView extends Backbone.Model {
         this.trigger('dispose');
         this.stopListening();
         this.disposed = true;
+    }
+
+    loadEmbeddedElements = (id: string, iri: string): Promise<Dictionary<ElementModel>> => {
+        const elements = this.options.groupBy.map(groupBy =>
+            this.model.dataProvider.linkElements({
+                elementId: iri,
+                linkId: groupBy.linkType,
+                limit: 0,
+                offset: 0,
+                direction: groupBy.linkDirection,
+            }).then(res => {
+                Object.keys(res).forEach(key => res[key].group = id);
+                return res;
+            })
+        );
+        return Promise.all(elements).then(res =>
+            res.reduce((memo, current) => Object.assign(memo, current), {})
+        );
     }
 }
 

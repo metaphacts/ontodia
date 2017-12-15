@@ -22,6 +22,7 @@ export interface PaperProps {
     paddingX: number;
     paddingY: number;
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
+    group?: string;
 }
 
 export type Cell = DiagramElement | DiagramLink | LinkVertex;
@@ -70,7 +71,7 @@ export class Paper extends Component<PaperProps, void> {
                     </defs>
                     <LinkMarkers view={this.props.view} />
                     <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                        <LinkLayer view={this.props.view} />
+                        <LinkLayer view={this.props.view} group={this.props.group} />
                         {/*this.renderElements()*/}
                     </g>
                 </svg>

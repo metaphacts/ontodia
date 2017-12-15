@@ -14,6 +14,7 @@ export interface ElementModel {
     image?: string;
     properties: { [id: string]: Property };
     sources?: string[];
+    group?: string;
 }
 
 export interface LinkModel {

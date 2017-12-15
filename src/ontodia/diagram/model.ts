@@ -448,7 +448,7 @@ export class DiagramModel extends Backbone.Model {
         for (const id of Object.keys(models)) {
             const elements = this.getElementsByIri(id);
             elements.forEach(element => {
-                element.template = models[id];
+                element.template = {...models[id], group: element.template.group};
                 element.trigger('state:loaded');
             });
         }

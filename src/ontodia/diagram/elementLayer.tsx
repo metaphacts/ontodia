@@ -12,9 +12,11 @@ import { Debouncer } from './dataFetchingThread';
 import { Element } from './elements';
 import { uri2name } from './model';
 import { DiagramView, RenderingLayer } from './view';
+import { EmbeddedLayer } from './embeddedLayer';
 
 export interface Props {
     view: DiagramView;
+    group?: string;
     style: React.CSSProperties;
 }
 
@@ -27,8 +29,8 @@ export class ElementLayer extends React.Component<Props, void> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, style} = this.props;
-        const models = view.model.elements;
+        const {view, group, style} = this.props;
+        const models = view.model.elements.filter(model => model.template.group === group);
 
         return <div className='ontodia-element-layer'
             ref={layer => this.layer = layer}
@@ -229,6 +231,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             isExpanded: model.isExpanded,
             props: model.template.properties,
             propsAsList,
+            embeddedLayer: <EmbeddedLayer view={view} element={model}/>,
         };
     }
 

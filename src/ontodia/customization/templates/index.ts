@@ -10,6 +10,7 @@ export * from './bigIcon';
 export * from './leftBar';
 export * from './organization';
 export * from './person';
+export * from './group';
 
 export const DefaultTemplateBundle: TemplateResolver[] = [
     types => {
