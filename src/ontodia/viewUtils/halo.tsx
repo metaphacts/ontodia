@@ -45,26 +45,6 @@ export class Halo extends React.Component<Props, void> {
         this.handler.stopListening();
     }
 
-    private calculateOffset = (): {x: number; y: number} => {
-        const {paperArea, target, diagramView} = this.props;
-
-        const groupId = target.template.group;
-        const group = groupId && diagramView.model.getElement(groupId);
-
-        if (!group) {
-            return {x: 0, y: 0};
-        }
-
-        const scale = paperArea.getScale();
-        const groupPos = group.get('position') || {x: 0, y: 0};
-        const paperPos = group.get('paper-position') || {x: 0, y: 0};
-
-        return {
-            x: (groupPos.x + paperPos.x) * scale,
-            y: (groupPos.y + paperPos.y) * scale,
-        };
-    }
-
     render() {
         if (!this.props.target) {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
@@ -79,14 +59,7 @@ export class Halo extends React.Component<Props, void> {
             bbox.x + bbox.width,
             bbox.y + bbox.height,
         );
-        const {x: offsetX, y: offsetY} = this.calculateOffset();
-
-        const style: React.CSSProperties = {
-            left: x0 + offsetX,
-            top: y0 + offsetY,
-            width: x1 - x0,
-            height: y1 - y0,
-        };
+        const style: React.CSSProperties = {left: x0, top: y0, width: x1 - x0, height: y1 - y0};
 
         return (
             <div className={CLASS_NAME} style={style}>
