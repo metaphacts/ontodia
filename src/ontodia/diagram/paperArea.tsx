@@ -277,35 +277,8 @@ export class PaperArea extends React.Component<Props, State> {
 
     /** Returns bounding box of paper content in paper coordinates. */
     getContentFittingBox() {
-        let minX = Infinity, minY = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-
-        const model = this.props.view.model;
-        for (const element of model.elements) {
-            const {x, y} = element.get('position');
-            const size = element.get('size') || {width: 0, height: 0};
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + size.width);
-            maxY = Math.max(maxY, y + size.height);
-        }
-
-        for (const link of model.links) {
-            const vertices = link.vertices || [];
-            for (const {x, y} of vertices) {
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-            }
-        }
-
-        return {
-            x: Number.isFinite(minX) ? minX : 0,
-            y: Number.isFinite(minY) ? minY : 0,
-            width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
-            height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
-        };
+        const {elements, links} = this.props.view.model;
+        return getContentFittingBox(elements, links);
     }
 
     /** Returns paper size in paper coordinates. */
@@ -806,5 +779,38 @@ function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
     return {
         x: e.offsetX + (targetBox.left - containerBox.left),
         y: e.offsetY + (targetBox.top - containerBox.top),
+    };
+}
+
+export function getContentFittingBox(
+    elements: Element[], links: Link[]
+): { x: number; y: number; width: number; height: number; } {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    for (const element of elements) {
+        const {x, y} = element.get('position');
+        const size = element.get('size') || {width: 0, height: 0};
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + size.width);
+        maxY = Math.max(maxY, y + size.height);
+    }
+
+    for (const link of links) {
+        const vertices = link.vertices || [];
+        for (const {x, y} of vertices) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        }
+    }
+
+    return {
+        x: Number.isFinite(minX) ? minX : 0,
+        y: Number.isFinite(minY) ? minY : 0,
+        width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
+        height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
     };
 }
