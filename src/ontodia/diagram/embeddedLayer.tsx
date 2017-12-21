@@ -20,16 +20,25 @@ export interface Props {
     element: Element;
 }
 
-export class EmbeddedLayer extends React.Component<Props, void> {
-    private readonly listener = new EventObserver();
-    private layer: HTMLDivElement;
-    private elements: Element[] = [];
-    private offset: { x: number; y: number } = {x: 0, y: 0};
-    private paperBox: {
-        x: number; y: number; width: number; height: number;
-    } = {x: 0, y: 0, width: 0, height: 0};
+export interface State {
+    paperWidth?: number;
+    paperHeight?: number;
+    offsetX?: number;
+    offsetY?: number;
+}
 
-    private movingElement: Element;
+export class EmbeddedLayer extends React.Component<Props, State> {
+    private readonly listener = new EventObserver();
+
+    private layerOffsetLeft: number = 0;
+    private layerOffsetTop: number = 0;
+
+    private isNestedElementMoving: boolean = false;
+
+    constructor(props: Props) {
+        super(props);
+        this.state = {paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0};
+    }
 
     componentDidMount() {
         const {element} = this.props;
@@ -37,14 +46,21 @@ export class EmbeddedLayer extends React.Component<Props, void> {
         document.addEventListener('mouseup', this.onMouseUp);
 
         this.listener.listenTo(element, 'change', () => {
-            for (const changedKey in element.changed) {
-                if (!element.changed.hasOwnProperty(changedKey)) { continue; }
+            Object.keys(element.changed).forEach(changedKey => {
+                if (changedKey !== 'position') { return; }
 
-                if (changedKey === 'position') {
-                    this.setOffset(this.movingElement === undefined);
-                    this.updateAll();
-                }
-            }
+                this.setState(prevState => {
+                    const {offsetX, offsetY} = this.getOffset();
+
+                    if (!this.isNestedElementMoving) {
+                        const diffX = offsetX - prevState.offsetX;
+                        const diffY = offsetY - prevState.offsetY;
+                        this.setElementsOffset(diffX, diffY);
+                    }
+
+                    return {offsetX, offsetY};
+                });
+            });
         });
 
         this.loadEmbeddedElements();
@@ -53,10 +69,20 @@ export class EmbeddedLayer extends React.Component<Props, void> {
     componentWillUnmount() {
         document.removeEventListener('mouseup', this.onMouseUp);
         this.listener.stopListening();
+        this.removeElements();
     }
 
     private onMouseUp = () => {
-        this.movingElement = undefined;
+        this.isNestedElementMoving = false;
+    }
+
+    private getNestedElements = () => {
+        const {view, element} = this.props;
+        return view.model.elements.filter(el => el.template.group === element.id);
+    }
+
+    private removeElements = () => {
+        this.getNestedElements().forEach(element => element.remove());
     }
 
     private loadEmbeddedElements = () => {
@@ -64,56 +90,74 @@ export class EmbeddedLayer extends React.Component<Props, void> {
         const {id, template} = element;
 
         view.loadEmbeddedElements(id, template.id).then(res => {
-            this.elements = Object.keys(res).map(key => view.model.createElement(res[key]));
-            this.elements.forEach(this.listenElement);
+            const elements = Object.keys(res).map(key => view.model.createElement(res[key]));
 
-            view.model.requestElementData(this.elements);
+            elements.forEach(this.listenNestedElement);
+
+            view.model.requestElementData(elements);
             view.model.requestLinksOfType().then(() => {
                 this.forceLayout();
-                this.setOffset();
 
-                this.paperBox = getContentFittingBox(this.elements, []);
-                this.props.element.trigger('state:loaded');
+                const {width: paperWidth, height: paperHeight} = getContentFittingBox(elements, []);
+                const {offsetX, offsetY} = this.getOffset();
 
-                this.updateAll();
+                this.setElementsOffset(offsetX, offsetY);
+                this.setState({offsetX, offsetY, paperWidth, paperHeight}, () => element.trigger('state:loaded'));
             });
         });
     }
 
-    private listenElement = (element: Element) => {
-        this.listener.listenTo(element, 'change', () => {
-            if (!this.movingElement || this.movingElement.id !== element.id) { return; }
+    private getOffset = (): { offsetX: number; offsetY: number; } => {
+        const {x: elementX, y: elementY} = this.props.element.get('position');
 
-            for (const changedKey in element.changed) {
-                if (!element.changed.hasOwnProperty(changedKey)) { continue; }
+        const offsetX = elementX + this.layerOffsetLeft;
+        const offsetY = elementY + this.layerOffsetTop;
 
-                if (changedKey === 'position') {
-                    this.onChangePosition();
-                }
-            }
+        return {offsetX, offsetY};
+    }
+
+    private setElementsOffset = (offsetX: number, offsetY: number) => {
+        this.getNestedElements().forEach(element => {
+            const {x, y} = element.get('position') || {x: 0, y: 0};
+            const newPosition = {x: x + offsetX, y: y + offsetY};
+            element.set('position', newPosition);
         });
     }
 
-    private onChangePosition = () => {
-        this.paperBox = getContentFittingBox(this.elements, []);
-
-        const {x, y} = this.paperBox;
-        const {offsetLeft, offsetTop} = this.layer;
-
-        this.props.element.set('position', {x: x - offsetLeft, y: y - offsetTop});
-        this.props.element.trigger('state:loaded');
-
-        this.updateAll();
+    private listenNestedElement = (element: Element) => {
+        this.listener.listenTo(element, 'change', () => {
+            Object.keys(element.changed).forEach(changedKey => {
+                if (changedKey === 'position' && this.isNestedElementMoving) {
+                    this.onNestedElementChange();
+                } else if (changedKey === 'size') {
+                    this.onNestedElementChange(this.isNestedElementMoving);
+                }
+            });
+        });
     }
 
-    private updateAll = () => this.forceUpdate();
+    private onNestedElementChange = (shouldUpdateGroup: boolean = true) => {
+        const {element} = this.props;
+
+        const elements = this.getNestedElements();
+        const paperBox = getContentFittingBox(elements, []);
+
+        const {x, y, width, height} = paperBox;
+
+        if (shouldUpdateGroup) {
+            element.set('position', {x: x - this.layerOffsetLeft, y: y - this.layerOffsetTop});
+        }
+
+        this.setState({paperWidth: width, paperHeight: height}, () => element.trigger('state:loaded'));
+    }
 
     private forceLayout = () => {
         const {view} = this.props;
+        const elements = this.getNestedElements();
 
         const nodeById: { [id: string]: LayoutNode } = {};
         const nodes: LayoutNode[] = [];
-        for (const element of this.elements) {
+        for (const element of elements) {
             const size = element.get('size');
             const position = element.get('position');
 
@@ -152,28 +196,6 @@ export class EmbeddedLayer extends React.Component<Props, void> {
         }
     }
 
-    private setOffset = (updatePositions = true) => {
-        const {x: elementX, y: elementY} = this.props.element.get('position');
-        const {offsetLeft, offsetTop} = this.layer;
-        const {x: offsetX, y: offsetY} = this.offset;
-
-        const newOffsetX = elementX + offsetLeft;
-        const newOffsetY = elementY + offsetTop;
-
-        this.offset = {x: newOffsetX, y: newOffsetY};
-
-        if (updatePositions) {
-            const diffX = newOffsetX - offsetX;
-            const diffY = newOffsetY - offsetY;
-
-            this.elements.forEach(element => {
-                const {x, y} = element.get('position') || {x: 0, y: 0};
-                const newPosition = {x: x + diffX, y: y + diffY};
-                element.set('position', newPosition);
-            });
-        }
-    }
-
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
         if (e.button !== 0 /* left mouse button */) {
             return;
@@ -181,24 +203,30 @@ export class EmbeddedLayer extends React.Component<Props, void> {
 
         if (cell && cell instanceof Element) {
             e.preventDefault();
-            this.movingElement = cell;
+            this.isNestedElementMoving = true;
         }
+    }
+
+    private onLayerInit = (layer: HTMLDivElement) => {
+        if (!layer) { return; }
+
+        this.layerOffsetLeft = layer.offsetLeft;
+        this.layerOffsetTop = layer.offsetTop;
     }
 
     render() {
         const {view, element} = this.props;
-        const {x: offsetX, y: offsetY} = this.offset;
-        const {width, height} = this.paperBox;
+        const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
         const style = {
             position: 'absolute', left: -offsetX, top: -offsetY,
         };
 
         return (
-            <div className="ontodia-embedded-layer" ref={layer => this.layer = layer}>
+            <div className="ontodia-embedded-layer" ref={this.onLayerInit}>
                 <Paper view={view}
-                       width={width}
-                       height={height}
+                       width={paperWidth}
+                       height={paperHeight}
                        originX={-offsetX}
                        originY={-offsetY}
                        scale={1}

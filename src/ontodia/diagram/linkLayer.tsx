@@ -109,19 +109,37 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         this.routings = this.router.route(this.props.view.model);
     }
 
-    render() {
+    private getLinks = () => {
         const {view, group} = this.props;
+        const {links} = view.model;
+
+        if (!group) { return links; }
+
+        return links.filter(link => {
+            const {sourceId, targetId} = link;
+
+            const source = view.model.getElement(sourceId);
+            const target = view.model.getElement(targetId);
+
+            const sourceGroup = source ? source.template.group : undefined;
+            const targetGroup = target ? target.template.group : undefined;
+
+            return (
+                sourceId !== group && targetId !== group &&
+                (
+                    (sourceGroup && sourceId !== sourceGroup && targetId !== sourceGroup) ||
+                    (targetGroup && sourceId !== targetGroup && targetId !== targetGroup)
+                )
+            );
+        });
+    }
+
+    render() {
+        const {view} = this.props;
         const shouldUpdate = this.popShouldUpdatePredicate();
 
-        const links = view.model.links.filter(link => {
-            const source = view.model.getElement(link.sourceId);
-            const target = view.model.getElement(link.targetId);
-
-            return source.template.group === group && target.template.group === group;
-        });
-
         return <g className={CLASS_NAME}>
-            {links.map(model => (
+            {this.getLinks().map(model => (
                 <LinkView key={model.id}
                     view={view}
                     model={model}
