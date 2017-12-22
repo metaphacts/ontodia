@@ -1,20 +1,34 @@
-import * as Backbone from 'backbone';
 import { each, size, values, keyBy, defaults } from 'lodash';
-import * as joint from 'jointjs';
 
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
-import { LayoutData, LayoutElement, normalizeImportedCell, cleanExportedLayout } from './layoutData';
-import { Element, Link, FatLinkType, FatClassModel, RichProperty } from './elements';
-import { DataFetchingThread } from './dataFetchingThread';
+import { DataFetchingThread } from '../viewUtils/async';
+import { EventSource, Events, EventObserver, AnyEvent, AnyListener, Listener } from '../viewUtils/events';
 
-export type IgnoreCommandHistory = { ignoreCommandManager?: boolean };
-export type PreventLinksLoading = { preventLoading?: boolean; };
+import { LayoutData, LayoutElement, normalizeImportedCell, exportLayoutData } from './layoutData';
+import {
+    Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
+    FatClassModel, FatClassModelEvents, RichProperty,
+} from './elements';
+import { Vector } from './geometry';
+import { Graph } from './graph';
 
-type ChangeVisibilityOptions = { isFromHandler?: boolean };
+export interface DiagramModelEvents {
+    loadingStart: { source: DiagramModel };
+    loadingSuccess: { source: DiagramModel };
+    loadingError: {
+        source: DiagramModel;
+        error: any;
+    };
+    changeCells: { source: DiagramModel };
+    elementEvent: AnyEvent<ElementEvents>;
+    linkEvent: AnyEvent<LinkEvents>;
+    linkTypeEvent: AnyEvent<FatLinkTypeEvents>;
+    classEvent: AnyEvent<FatClassModelEvents>;
+}
 
 /**
  * Model of diagram.
@@ -36,136 +50,124 @@ type ChangeVisibilityOptions = { isFromHandler?: boolean };
  *     history:initBatchCommand
  *     history:storeBatchCommand
  */
-export class DiagramModel extends Backbone.Model {
-    graph = new joint.dia.Graph();
+export class DiagramModel {
+    private readonly source = new EventSource<DiagramModelEvents>();
+    readonly events: Events<DiagramModelEvents> = this.source;
+
+    private readonly _isViewOnly: boolean;
+    private graph = new Graph();
+    private graphListener = new EventObserver();
 
     dataProvider: DataProvider;
 
-    classTree: ClassTreeElement[];
-    private classesById: Dictionary<FatClassModel> = {};
-    private propertyLabelById: Dictionary<RichProperty> = {};
-
-    private nextLinkTypeIndex = 0;
-    private linkTypes: Dictionary<FatLinkType>;
-
-    private linksByType: Dictionary<Link[]> = {};
-
-    private classFetchingThread: DataFetchingThread;
-    private linkFetchingThread: DataFetchingThread;
-    private propertyLabelFetchingThread: DataFetchingThread;
+    private classFetching: DataFetchingThread;
+    private linkFetching: DataFetchingThread;
+    private propertyLabelFetching: DataFetchingThread;
 
     constructor(isViewOnly = false) {
-        super();
-        this.set('isViewOnly', isViewOnly);
-        this.initializeExternalAddRemoveSupport();
-        this.classFetchingThread = new DataFetchingThread();
-        this.linkFetchingThread = new DataFetchingThread();
-        this.propertyLabelFetchingThread = new DataFetchingThread();
-
-        this.listenTo(this, 'state:dataLoaded', () => {
-            this.resetHistory();
-        });
+        this._isViewOnly = isViewOnly;
+        this.classFetching = new DataFetchingThread();
+        this.linkFetching = new DataFetchingThread();
+        this.propertyLabelFetching = new DataFetchingThread();
     }
 
-    isViewOnly(): boolean { return this.get('isViewOnly'); }
+    isViewOnly(): boolean { return this._isViewOnly; }
 
-    get cells(): Backbone.Collection<joint.dia.Cell> { return this.graph.get('cells'); }
-    get elements() { return this.graph.getElements() as Element[]; }
-    get links() { return this.graph.getLinks() as Link[]; }
+    get elements() { return this.graph.getElements(); }
+    get links() { return this.graph.getLinks(); }
 
     getElement(elementId: string): Element | undefined {
-        const cell = this.cells.get(elementId);
-        return cell instanceof Element ? cell : undefined;
+        return this.graph.getElement(elementId);
     }
 
     getLinkById(linkId: string): Link | undefined {
-        const cell = this.cells.get(linkId);
-        return cell instanceof Link ? cell : undefined;
+        return this.graph.getLink(linkId);
     }
 
     getLinkType(linkTypeId: string): FatLinkType | undefined {
-        return this.linkTypes[linkTypeId];
+        return this.graph.getLinkType(linkTypeId);
     }
 
-    linksOfType(linkTypeId: string): ReadonlyArray<Link> { return this.linksByType[linkTypeId] || []; }
+    linksOfType(linkTypeId: string): ReadonlyArray<Link> {
+        return this.graph.getLinks().filter(link => link.typeId === linkTypeId);
+    }
 
-    sourceOf(link: Link) { return this.getElement(link.get('source').id); }
-    targetOf(link: Link) { return this.getElement(link.get('target').id); }
+    sourceOf(link: Link) { return this.getElement(link.sourceId); }
+    targetOf(link: Link) { return this.getElement(link.targetId); }
     isSourceAndTargetVisible(link: Link): boolean {
         return Boolean(this.sourceOf(link) && this.targetOf(link));
     }
 
-    undo() { this.trigger('history:undo'); }
-    redo() { this.trigger('history:redo'); }
-    resetHistory() { this.trigger('history:reset'); }
-    initBatchCommand() { this.trigger('history:initBatchCommand'); }
-    storeBatchCommand() { this.trigger('history:storeBatchCommand'); }
+    undo() { /*this.trigger('history:undo');*/ }
+    redo() { /*this.trigger('history:redo');*/ }
+    resetHistory() { /*this.trigger('history:reset');*/ }
+    initBatchCommand() { /*this.trigger('history:initBatchCommand');*/ }
+    storeBatchCommand() { /*this.trigger('history:storeBatchCommand');*/ }
 
-    private initializeExternalAddRemoveSupport() {
-        // override graph.addCell to support CommandManager's undo/redo
-        const superAddCell = this.graph.addCell;
-        this.graph['addCell'] = (cell: any, options: any) => {
-            if (cell instanceof Element || cell instanceof Link) {
-                superAddCell.call(this.graph, cell, options);
-            } else if (cell.type === 'link') {
-                this.createLink({
-                    sourceId: cell.source.id,
-                    targetId: cell.target.id,
-                    linkTypeId: cell.typeId,
-                    suggestedId: cell.id,
-                    vertices: cell.vertices,
-                });
-            } else if (cell.type === 'element') {
-                const {id, position, angle, isExpanded} = cell as LayoutElement;
-                const element = new Element({id, position, angle, isExpanded});
-                element.template = placeholderTemplateFromIri(cell.id);
-                superAddCell.call(this.graph, element, options);
-                this.requestElementData([element]);
-                this.requestLinksOfType();
-            } else {
-                superAddCell.call(this.graph, cell, options);
-            }
-        };
-        // listen to external add/remove calls to graph (Halo's remove for example)
-        this.listenTo(this.graph, 'add', (cell: joint.dia.Cell) => {
-            if (cell instanceof Link) {
-                const linkType = this.getLinkType(cell.get('typeId'));
-                linkType.set('visible', true);
-            }
+    private resetGraph() {
+        if (this.graphListener) {
+            this.graphListener.stopListening();
+            this.graphListener = new EventObserver();
+        }
+        this.graph = new Graph();
+        this.classFetching.clear();
+        this.linkFetching.clear();
+        this.propertyLabelFetching.clear();
+    }
+
+    private subscribeGraph() {
+        this.graphListener.listen(this.graph.events, 'changeCells', () => {
+            this.source.trigger('changeCells', {source: this});
         });
-        this.listenTo(this.graph, 'remove', (cell: joint.dia.Cell) => {
-            if (cell instanceof Link) {
-                const {typeId, sourceId, targetId} = cell;
-                this.removeLinkReferences({linkTypeId: typeId, sourceId, targetId});
-            }
+        this.graphListener.listen(this.graph.events, 'elementEvent', e => {
+            this.source.trigger('elementEvent', e);
         });
+        this.graphListener.listen(this.graph.events, 'linkEvent', e => {
+            this.source.trigger('linkEvent', e);
+        });
+        this.graphListener.listen(this.graph.events, 'linkTypeEvent', e => {
+            if (e.key === 'changeVisibility') {
+                this.onLinkTypeVisibilityChanged(e.data[e.key], e.key);
+            }
+            this.source.trigger('linkTypeEvent', e);
+        });
+        this.graphListener.listen(this.graph.events, 'classEvent', e => {
+            this.source.trigger('classEvent', e);
+        });
+
+        this.source.trigger('changeCells', {source: this});
     }
 
     createNewDiagram(dataProvider: DataProvider): Promise<void> {
+        this.resetGraph();
         this.dataProvider = dataProvider;
-        this.trigger('state:beginLoad');
+        this.source.trigger('loadingStart', {source: this});
 
         return Promise.all<any>([
             this.dataProvider.classTree(),
             this.dataProvider.linkTypes(),
         ]).then(([classTree, linkTypes]: [ClassModel[], LinkType[]]) => {
             this.setClassTree(classTree);
-            this.initLinkTypes(linkTypes);
-            this.trigger('state:endLoad', 0);
-            this.initLinkSettings();
-            return this.initDiagram({preloadedElements: {}, markLinksAsLayoutOnly: false});
-        }).catch(err => {
-            console.error(err);
-            this.trigger('state:endLoad', null, err.errorKind, err.message);
+            const allLinkTypes = this.initLinkTypes(linkTypes);
+            return this.loadAndRenderLayout({
+                allLinkTypes,
+                markLinksAsLayoutOnly: false,
+            });
+        }).catch(error => {
+            console.error(error);
+            this.source.trigger('loadingError', {source: this, error});
+            return Promise.reject(error);
         });
     }
 
-    private initLinkTypes(linkTypes: LinkType[]) {
-        this.linkTypes = {};
-        each(linkTypes, ({id, label}: LinkType) => {
-            const linkType = new FatLinkType({id, label, diagram: this, index: this.nextLinkTypeIndex++});
-            this.linkTypes[linkType.id] = linkType;
-        });
+    private initLinkTypes(linkTypes: LinkType[]): FatLinkType[] {
+        const types: FatLinkType[] = [];
+        for (const {id, label} of linkTypes) {
+            const linkType = new FatLinkType({id, label: label.values});
+            this.graph.addLinkType(linkType);
+            types.push(linkType);
+        }
+        return types;
     }
 
     importLayout(params: {
@@ -176,8 +178,9 @@ export class DiagramModel extends Backbone.Model {
         linkSettings?: LinkTypeOptions[];
         hideUnusedLinkTypes?: boolean;
     }): Promise<void> {
+        this.resetGraph();
         this.dataProvider = params.dataProvider;
-        this.trigger('state:beginLoad');
+        this.source.trigger('loadingStart', {source: this});
 
         const cells = (params.layoutData && params.layoutData.cells) || [];
         console.log(`Loading diagram with ${cells.filter(cell => cell.type === 'element').length} `
@@ -189,20 +192,20 @@ export class DiagramModel extends Backbone.Model {
             this.dataProvider.linkTypes(),
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
-            this.initLinkTypes(linkTypes);
-            this.trigger('state:endLoad', size(params.preloadedElements));
-            this.initLinkSettings(params.linkSettings);
-            return this.initDiagram({
+            const allLinkTypes = this.initLinkTypes(linkTypes);
+            this.initLinkSettings(allLinkTypes, params.linkSettings);
+            return this.loadAndRenderLayout({
                 layoutData: params.layoutData,
                 preloadedElements: params.preloadedElements || {},
                 markLinksAsLayoutOnly: params.validateLinks || false,
+                allLinkTypes,
                 hideUnusedLinkTypes: params.hideUnusedLinkTypes,
             }).then(() => {
                 if (params.validateLinks) { this.requestLinksOfType(); }
             });
-        }).catch(err => {
-            console.error(err);
-            this.trigger('state:endLoad', null, err.errorKind, err.message);
+        }).catch(error => {
+            console.error(error);
+            this.source.trigger('loadingError', {source: this, error});
         }).then(() => {
             const end = performance.now();
             const start: number = (window as any).ontodiaStartLoadTime;
@@ -214,136 +217,113 @@ export class DiagramModel extends Backbone.Model {
         layoutData: LayoutData;
         linkSettings: LinkTypeOptions[];
     } {
-        const layoutData = cleanExportedLayout(this.graph.toJSON());
-        const linkSettings = values(this.linkTypes).map((type: FatLinkType) => ({
-            id: type.id,
-            visible: type.get('visible'),
-            showLabel: type.get('showLabel'),
-        }));
+        const layoutData = exportLayoutData(this.graph.getElements(), this.graph.getLinks());
+        const linkSettings = this.graph.getLinkTypes()
+            .map(({id, visible, showLabel}) => ({id, visible, showLabel}));
         return {layoutData, linkSettings};
     }
 
     private setClassTree(rootClasses: ClassModel[]) {
-        this.classTree = rootClasses;
-        const addClass = (cl: ClassTreeElement) => {
-            this.classesById[cl.id] = new FatClassModel(cl);
-            each(cl.children, addClass);
+        const addClass = (base: FatClassModel | undefined, classModel: ClassModel) => {
+            const {id, label, count, children} = classModel;
+            const richClass = new FatClassModel({id, label: label.values, count});
+            richClass.setBase(base);
+            this.graph.addClass(richClass);
+            for (const child of children) {
+                addClass(richClass, child);
+            }
         };
-        each(rootClasses, addClass);
-    }
-
-    onRenderDone() {
-        this.trigger('state:renderDone');
-    }
-
-    private initDiagram(params: {
-        layoutData?: LayoutData;
-        preloadedElements: Dictionary<ElementModel>;
-        markLinksAsLayoutOnly: boolean;
-        hideUnusedLinkTypes?: boolean;
-    }): Promise<void> {
-        const {layoutData, preloadedElements, markLinksAsLayoutOnly, hideUnusedLinkTypes} = params;
-        return new Promise<void>((resolve, reject) => {
-            this.graph.trigger('batch:start', {batchName: 'to-back'});
-
-            this.listenToOnce(this, 'state:renderDone', () => {
-                if (hideUnusedLinkTypes) {
-                    this.hideUnusedLinkTypes();
-                }
-                this.graph.trigger('batch:stop', {batchName: 'to-back'});
-
-                resolve();
-                // notify when graph model is fully initialized
-                this.trigger('state:dataLoaded');
-            });
-
-            this.initLayout(layoutData || {cells: []}, preloadedElements, markLinksAsLayoutOnly);
-        });
-    }
-
-    private initLinkSettings(linkSettings?: LinkTypeOptions[]) {
-        if (linkSettings) {
-            const existingDefaults = { visible: false, showLabel: true };
-            const indexedSettings = keyBy(linkSettings, 'id');
-            each(this.linkTypes, (type, typeId) => {
-                const settings = indexedSettings[typeId] || {isNew: true};
-                const options: PreventLinksLoading = {preventLoading: true};
-                type.set(defaults(settings, existingDefaults), options);
-            });
-        } else {
-            const newDefaults = { visible: true, showLabel: true };
-            const options: PreventLinksLoading = {preventLoading: true};
-            each(this.linkTypes, type => type.set(newDefaults, options));
+        for (const root of rootClasses) {
+            addClass(undefined, root);
         }
     }
 
-    private initLayout(
-        layoutData: LayoutData,
-        preloadedElements: Dictionary<ElementModel>,
-        markLinksAsLayoutOnly: boolean,
-    ) {
-        this.linksByType = {};
+    private initLinkSettings(linkTypes: ReadonlyArray<FatLinkType>, linkSettings: LinkTypeOptions[]) {
+        const indexedSettings = keyBy(linkSettings, 'id');
+        for (const type of linkTypes) {
+            const settings = indexedSettings[type.id];
+            if (settings) {
+                const {visible = true, showLabel = true} = settings;
+                type.setVisibility({visible, showLabel, preventLoading: true});
+            } else {
+                type.setIsNew(true);
+            }
+        }
+    }
 
-        const cellModels: joint.dia.Cell[] = [];
+    private loadAndRenderLayout(params: {
+        layoutData?: LayoutData;
+        preloadedElements?: Dictionary<ElementModel>;
+        markLinksAsLayoutOnly: boolean;
+        allLinkTypes: ReadonlyArray<FatLinkType>;
+        hideUnusedLinkTypes?: boolean;
+    }) {
+        const {
+            layoutData = {cells: []},
+            preloadedElements = {},
+            markLinksAsLayoutOnly,
+            hideUnusedLinkTypes,
+        } = params;
+
         const elementToRequestData: Element[] = [];
+        const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
         for (const layoutCell of layoutData.cells) {
-            let cell = normalizeImportedCell(layoutCell);
+            const cell = normalizeImportedCell(layoutCell);
             if (cell.type === 'element') {
-                // set size to zero to always recompute it on the first render
-                const element = new Element({...cell, size: {width: 0, height: 0}});
+                const {id, position, size, isExpanded} = cell;
                 const template = preloadedElements[cell.id];
+                const data = template || placeholderTemplateFromIri(id);
+                const element = new Element({id, data, position, size, expanded: isExpanded});
+                this.graph.addElement(element);
                 if (!template) {
                     elementToRequestData.push(element);
                 }
-                element.template = template || placeholderTemplateFromIri(cell.id);
-                cellModels.push(element);
             } else if (cell.type === 'link') {
-                const link = new Link(cell);
-                link.layoutOnly = markLinksAsLayoutOnly;
-                link.typeIndex = this.createLinkType(link.typeId).index;
-                cellModels.push(link);
+                const {id, typeId, source, target, vertices} = cell;
+                const linkType = this.createLinkType(typeId);
+                usedLinkTypes[linkType.id] = linkType;
+                const link = this.graph.createLink({
+                    data: {
+                        linkTypeId: typeId,
+                        sourceId: source.id,
+                        targetId: target.id,
+                    },
+                    linkType,
+                    vertices,
+                });
+                link.setLayoutOnly(markLinksAsLayoutOnly);
             }
         }
 
+        this.subscribeGraph();
         this.requestElementData(elementToRequestData);
-        this.trigger('state:renderStart');
-        this.graph.resetCells(cellModels);
 
-        for (const link of this.links) {
-            this.registerLink(link);
+        if (hideUnusedLinkTypes && params.allLinkTypes) {
+            this.hideUnusedLinkTypes(params.allLinkTypes, usedLinkTypes);
         }
+        this.source.trigger('loadingSuccess', {source: this});
+        return Promise.resolve();
     }
 
-    private hideUnusedLinkTypes() {
-        const unusedLinkTypes = {...this.linkTypes};
-        for (const link of this.links) {
-            delete unusedLinkTypes[link.typeId];
+    private hideUnusedLinkTypes(
+        allTypes: ReadonlyArray<FatLinkType>,
+        usedTypes: { [typeId: string]: FatLinkType }
+    ) {
+        for (const linkType of allTypes) {
+            if (!usedTypes[linkType.id]) {
+                linkType.setVisibility({
+                    visible: false,
+                    showLabel: linkType.showLabel,
+                });
+            }
         }
-        for (const typeId in unusedLinkTypes) {
-            if (!unusedLinkTypes.hasOwnProperty(typeId)) { continue; }
-            const unusedLinkType = unusedLinkTypes[typeId];
-            unusedLinkType.set('visible', false);
-        }
-    }
-
-    createElement(idOrModel: string | ElementModel): Element {
-        const id = typeof idOrModel === 'string' ? idOrModel : idOrModel.id;
-        const existing = this.getElement(id);
-        if (existing) { return existing; }
-
-        const model = typeof idOrModel === 'string'
-            ? placeholderTemplateFromIri(idOrModel) : idOrModel;
-
-        const element = new Element({id: model.id});
-        element.template = model;
-
-        this.graph.addCell(element);
-        return element;
     }
 
     requestElementData(elements: Element[]) {
-        if (elements.length == 0) return Promise.resolve([]);
+        if (elements.length === 0) {
+            return Promise.resolve([]);
+        }
         return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
@@ -353,13 +333,12 @@ export class DiagramModel extends Backbone.Model {
     }
 
     requestLinksOfType(linkTypeIds?: string[]) {
-        let linkTypes = linkTypeIds;
-        if (!linkTypes) {
-            linkTypeIds = values(this.linkTypes).map(type => type.id);
-        }
+        const linkTypes = linkTypeIds || this.graph.getLinkTypes()
+            .filter(type => type.visible)
+            .map(type => type.id);
         return this.dataProvider.linksInfo({
-            elementIds: this.graph.getElements().map(element => element.id),
-            linkTypeIds: linkTypeIds,
+            elementIds: this.elements.map(element => element.id),
+            linkTypeIds: linkTypes,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
             console.error(err);
@@ -367,85 +346,119 @@ export class DiagramModel extends Backbone.Model {
         });
     }
 
-    getPropertyById(labelId: string): RichProperty {
-        if (!this.propertyLabelById[labelId]) {
-            this.propertyLabelById[labelId] = new RichProperty({
-                id: labelId,
-                label: {values: [{lang: '', text: uri2name(labelId)}]},
-            });
-            this.propertyLabelFetchingThread.startFetchingThread(labelId).then(propertyIds => {
-                if (!this.dataProvider.propertyInfo) { return; }
-                if (propertyIds.length === 0) { return; }
-                this.dataProvider.propertyInfo({propertyIds}).then(propertyModels => {
-                    for (const propertyId in propertyModels) {
-                        if (!Object.hasOwnProperty.call(propertyModels, propertyId)) { continue; }
-                        const propertyModel = propertyModels[propertyId];
-                        if (!this.propertyLabelById[propertyModel.id]) { continue; }
-                        this.propertyLabelById[propertyModel.id].set('label', propertyModel.label);
-                    }
-                });
-            });
+    getPropertyById(propertyId: string): RichProperty {
+        const existing = this.graph.getProperty(propertyId);
+        if (existing) {
+            return existing;
         }
-        return this.propertyLabelById[labelId];
-    }
-
-    getClassesById(typeId: string): FatClassModel {
-        if (!this.classesById[typeId]) {
-            this.classesById[typeId] = new FatClassModel({
-                id: typeId,
-                label: { values: [{lang: '', text: uri2name(typeId)}] },
-                count: 0,
-                children: [],
-            });
-            this.classFetchingThread.startFetchingThread(typeId).then(typeIds => {
-                if (typeIds.length > 0) {
-                    this.dataProvider.classInfo({classIds: typeIds}).then(classes => {
-                        for (const cl of classes) {
-                            if (!this.classesById[cl.id]) { continue; }
-                            this.classesById[cl.id].set('label', cl.label);
-                            this.classesById[cl.id].set('count', cl.count);
-                        }
-                    });
+        const property = new RichProperty({
+            id: propertyId,
+            label: [{lang: '', text: uri2name(propertyId)}],
+        });
+        this.graph.addProperty(property);
+        this.propertyLabelFetching.push(propertyId).then(propertyIds => {
+            if (!this.dataProvider.propertyInfo) { return; }
+            if (propertyIds.length === 0) { return; }
+            this.dataProvider.propertyInfo({propertyIds}).then(propertyModels => {
+                for (const propId in propertyModels) {
+                    if (!Object.hasOwnProperty.call(propertyModels, propertyId)) { continue; }
+                    const {id, label} = propertyModels[propertyId];
+                    const targetProperty = this.graph.getProperty(id);
+                    if (targetProperty) {
+                        targetProperty.setLabel(label.values);
+                    }
                 }
             });
+        });
+        return property;
+    }
+
+    getClasses() {
+        return this.graph.getClasses();
+    }
+
+    getClassesById(classId: string): FatClassModel {
+        const existing = this.graph.getClass(classId);
+        if (existing) {
+            return existing;
         }
-        return this.classesById[typeId];
+        const classModel = new FatClassModel({
+            id: classId,
+            label: [{lang: '', text: uri2name(classId)}],
+        });
+        this.classFetching.push(classId).then(classIds => {
+            if (classIds.length === 0) { return; }
+            this.dataProvider.classInfo({classIds}).then(classInfos => {
+                for (const {id, label, count} of classInfos) {
+                    const model = this.graph.getClass(id);
+                    if (!model) { continue; }
+                    model.setLabel(label.values);
+                    if (typeof count === 'number') {
+                        model.setCount(count);
+                    }
+                }
+            });
+        });
+        return classModel;
+    }
+
+    createElement(elementIdOrModel: string | ElementModel): Element {
+        const elementId = typeof elementIdOrModel === 'string'
+            ? elementIdOrModel : elementIdOrModel.id;
+        let element = this.graph.getElement(elementId);
+        if (!element) {
+            const data = typeof elementIdOrModel === 'string'
+                ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
+            element = new Element({id: elementId, data});
+            this.graph.addElement(element);
+        }
+        return element;
+    }
+
+    removeElement(elementId: string) {
+        this.graph.removeElement(elementId);
     }
 
     createLinkType(linkTypeId: string): FatLinkType {
-        if (this.linkTypes.hasOwnProperty(linkTypeId)) {
-            return this.linkTypes[linkTypeId];
+        const existing = this.graph.getLinkType(linkTypeId);
+        if (existing) {
+            return existing;
         }
-
-        const defaultLabel = {values: [{text: uri2name(linkTypeId), lang: ''}]};
-        const fatLinkType = new FatLinkType({
+        const linkType = new FatLinkType({
             id: linkTypeId,
-            index: this.nextLinkTypeIndex++,
-            label: defaultLabel,
-            diagram: this,
+            label: [{text: uri2name(linkTypeId), lang: ''}],
         });
+        this.graph.addLinkType(linkType);
+        this.linkFetching.push(linkTypeId).then(linkTypeIds => {
+            if (linkTypeIds.length === 0) { return; }
+            this.dataProvider.linkTypesInfo({linkTypeIds}).then(linkTypesInfo => {
+                for (const {id, label} of linkTypesInfo) {
+                    const model = this.graph.getLinkType(id);
+                    if (!model) { continue; }
+                    model.setLabel(label.values);
+                }
+            });
+        });
+        return linkType;
+    }
 
-        this.linkFetchingThread.startFetchingThread(linkTypeId).then(linkTypeIds => {
-            if (linkTypeIds.length > 0) {
-                this.dataProvider.linkTypesInfo({linkTypeIds}).then(linkTypesInfo => {
-                    for (const lt of linkTypesInfo) {
-                        if (!this.linkTypes[lt.id]) { continue; }
-                        this.linkTypes[lt.id].label = lt.label;
-                    }
-                });
+    private onLinkTypeVisibilityChanged: Listener<FatLinkTypeEvents, 'changeVisibility'> = e => {
+        if (e.source.visible) {
+            if (!e.preventLoading) {
+                this.requestLinksOfType([e.source.id]);
             }
-        });
-
-        this.linkTypes[linkTypeId] = fatLinkType;
-        return fatLinkType;
+        } else {
+            for (const link of this.linksOfType(e.source.id)) {
+                this.graph.removeLink(link.id);
+            }
+        }
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
         for (const id of Object.keys(elements)) {
             const element = this.getElement(id);
             if (element) {
-                element.template = elements[id];
-                element.trigger('state:loaded');
+                element.setData(elements[id]);
             }
         }
     }
@@ -453,90 +466,11 @@ export class DiagramModel extends Backbone.Model {
     private onLinkInfoLoaded(links: LinkModel[]) {
         this.initBatchCommand();
         for (const linkModel of links) {
-            this.createLink(linkModel);
+            const linkType = this.createLinkType(linkModel.linkTypeId);
+            this.graph.createLink({data: linkModel, linkType});
         }
         this.storeBatchCommand();
     }
-
-    createLink(linkModel: LinkModel & {
-        suggestedId?: string;
-        vertices?: Array<{ x: number; y: number; }>;
-    }, options?: IgnoreCommandHistory): Link | undefined {
-        const existingLink = this.getLink(linkModel);
-        if (existingLink) {
-          if (existingLink.layoutOnly) {
-            existingLink.set('layoutOnly', false, {ignoreCommandManager: true} as IgnoreCommandHistory);
-          }
-          return existingLink;
-        }
-
-        const {linkTypeId, sourceId, targetId, suggestedId, vertices} = linkModel;
-        const suggestedIdAvailable = Boolean(suggestedId && !this.cells.get(suggestedId));
-
-        const link = new Link({
-            id: suggestedIdAvailable ? suggestedId : `link_${generateRandomID()}`,
-            typeId: linkTypeId,
-            source: {id: sourceId},
-            target: {id: targetId},
-            vertices,
-        });
-        link.template = linkModel;
-
-        if (this.isSourceAndTargetVisible(link) && this.createLinkType(link.typeId).visible) {
-            this.registerLink(link);
-            this.graph.addCell(link, options);
-            return link;
-        }
-        return undefined;
-    }
-
-    private registerLink(link: Link) {
-        const typeId = link.typeId;
-        if (!this.linksByType.hasOwnProperty(typeId)) {
-            this.linksByType[typeId] = [];
-        }
-        this.linksByType[typeId].push(link);
-
-        if (link.typeIndex === undefined) {
-            link.typeIndex = this.createLinkType(typeId).index;
-        }
-
-        this.sourceOf(link).links.push(link);
-        if (link.sourceId !== link.targetId) {
-            this.targetOf(link).links.push(link);
-        }
-    }
-
-    getLink(linkModel: LinkModel): Link | undefined {
-        const source = this.getElement(linkModel.sourceId);
-        if (!source) { return undefined; }
-        const index = findLinkIndex(source.links, linkModel);
-        return index >= 0 && source.links[index];
-    }
-
-    private removeLinkReferences(linkModel: LinkModel) {
-        const source = this.getElement(linkModel.sourceId);
-        removeLinkFrom(source && source.links, linkModel);
-
-        const target = this.getElement(linkModel.targetId);
-        removeLinkFrom(target && target.links, linkModel);
-
-        const linksOfType = this.linksByType[linkModel.linkTypeId];
-        removeLinkFrom(linksOfType, linkModel);
-    }
-}
-
-export default DiagramModel;
-
-export interface ClassTreeElement {
-    id: string;
-    label: { values: LocalizedString[] };
-    count: number;
-    children: ClassTreeElement[];
-    a_attr?: {
-        href: string;
-        draggable: boolean;
-    };
 }
 
 export interface LinkTypeOptions {
@@ -554,38 +488,6 @@ function placeholderTemplateFromIri(iri: string): ElementModel {
     };
 }
 
-function removeLinkFrom(links: Link[], model: LinkModel) {
-    if (!links) { return; }
-    const index = findLinkIndex(links, model);
-    if (index >= 0) {
-        links.splice(index, 1);
-    }
-}
-
-function findLinkIndex(haystack: Link[], needle: LinkModel) {
-    const {sourceId, targetId, linkTypeId} = needle;
-    for (let i = 0; i < haystack.length; i++) {
-        const link = haystack[i];
-        if (link.sourceId === sourceId &&
-            link.targetId === targetId &&
-            link.typeId === linkTypeId
-        ) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/** Generates random 16-digit hexadecimal string. */
-function generateRandomID() {
-    function randomHalfDigits() {
-        return Math.floor((1 + Math.random()) * 0x100000000)
-            .toString(16).substring(1);
-    }
-    // generate by half because of restricted numerical precision
-    return randomHalfDigits() + randomHalfDigits();
-}
-
 export function uri2name(uri: string): string {
     const hashIndex = uri.lastIndexOf('#');
     if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
@@ -598,7 +500,7 @@ export function uri2name(uri: string): string {
     return uri;
 }
 
-export function chooseLocalizedText(texts: LocalizedString[], language: string): LocalizedString {
+export function chooseLocalizedText(texts: ReadonlyArray<LocalizedString>, language: string): LocalizedString {
     if (texts.length === 0) { return null; }
     // undefined if default language string isn't present
     let defaultLanguageValue: LocalizedString;

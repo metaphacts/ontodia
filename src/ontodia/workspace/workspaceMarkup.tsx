@@ -1,12 +1,11 @@
 import * as React from 'react';
-import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
-import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
+import { LinkTypesToolbox } from '../widgets/linksToolbox';
 
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
@@ -52,8 +51,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
-    private tree: ClassTree;
-    private linksToolbox: LinkTypesToolboxShell;
+
     private untilMouseUpClasses: string[] = [];
 
     render() {
@@ -74,13 +72,19 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Classes' bodyRef={this.intializeClassTree}
+                    <AccordionItem heading='Classes'
                         tutorialProps={{
                             'data-position': 'right',
                             'data-step': '1',
                             'data-intro-id': 'tree-view',
                             'data-intro': INTRO_CLASSES,
                         }}>
+                        <ClassTree view={this.props.view}
+                            onClassSelected={classId => {
+                                const elementType = this.props.view.model.getClassesById(classId);
+                                this.props.onSearchCriteriaChanged({elementType});
+                            }}
+                        />
                     </AccordionItem>
                     <AccordionItem heading='Instances'
                         tutorialProps={{
@@ -91,7 +95,8 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                         }}>
                         <InstancesSearch view={this.props.view}
                             criteria={this.props.searchCriteria || {}}
-                            onCriteriaChanged={this.props.onSearchCriteriaChanged} />
+                            onCriteriaChanged={this.props.onSearchCriteriaChanged}
+                        />
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
@@ -109,13 +114,14 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     verticalResizing: true,
                 })}>
                     <AccordionItem heading='Connections'
-                        bodyClassName='link-types-toolbox' bodyRef={this.initializeLinksToolbox}
+                        bodyClassName='link-types-toolbox'
                         tutorialProps={{
                             'data-position': 'left',
                             'data-step': '4',
                             'data-intro-id': 'link-types-toolbox',
                             'data-intro': INTRO_CONNECTIONS,
                         }}>
+                        <LinkTypesToolbox view={this.props.view} />
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
@@ -147,34 +153,6 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
     componentWillUnmount() {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
-    }
-
-    initializeLinksToolbox = (element: HTMLDivElement) => {
-        if (element) {
-            this.linksToolbox = new LinkTypesToolboxShell({
-                model: new LinkTypesToolboxModel(this.props.view.model),
-                view: this.props.view,
-                el: element,
-            }).render();
-        } else {
-            this.linksToolbox.remove();
-        }
-    }
-
-    intializeClassTree = (element: HTMLDivElement) => {
-        if (element) {
-            this.tree = new ClassTree({
-                model: new Backbone.Model(this.props.view.model),
-                view: this.props.view,
-                el: element,
-            }).render();
-
-            this.tree.on('action:classSelected', (classId: string) => {
-                this.props.onSearchCriteriaChanged({elementTypeId: classId});
-            });
-        } else {
-            this.tree.remove();
-        }
     }
 
     preventTextSelection() {

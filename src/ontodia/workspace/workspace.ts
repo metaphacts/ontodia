@@ -1,23 +1,24 @@
 import { Component, createElement, ReactElement } from 'react';
-import * as Backbone from 'backbone';
 
-import { DiagramModel } from '../diagram/model';
 import { Link, FatLinkType } from '../diagram/elements';
+import { boundsOf } from '../diagram/geometry';
+import { DiagramModel } from '../diagram/model';
+import { ZoomOptions } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
+
+import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
+import { EventObserver } from '../viewUtils/events';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
     LayoutNode, LayoutLink, translateToCenter,
 } from '../viewUtils/layout';
-import { ClassTree } from '../widgets/classTree';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
-import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
+import { ClassTree } from '../widgets/classTree';
 import { SearchCriteria } from '../widgets/instancesSearch';
-import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
+import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
-
-import { ZoomOptions } from '../diagram/paperArea';
 
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
@@ -71,11 +72,14 @@ export class Workspace extends Component<WorkspaceProps, State> {
         language: 'en',
     };
 
-    private markup: WorkspaceMarkup;
+    private readonly listener = new EventObserver();
 
     private readonly model: DiagramModel;
     private readonly diagram: DiagramView;
+
+    private markup: WorkspaceMarkup;
     private tree: ClassTree;
+
     constructor(props: WorkspaceProps) {
         super(props);
         this.model = new DiagramModel(this.props.isViewOnly);
@@ -128,11 +132,13 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
         if (this.props.isViewOnly) { return; }
 
-        this.model.graph.on('add-to-filter', (element: Element, linkType?: FatLinkType, direction?: 'in' | 'out') => {
+        this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
+            if (!data.requestedAddToFilter) { return; }
+            const {source, linkType, direction} = data.requestedAddToFilter;
             this.setState({
                 criteria: {
-                    refElementId: element.id,
-                    refElementLinkId: linkType && linkType.id,
+                    refElement: source,
+                    refElementLink: linkType,
                     linkDirection: direction,
                 },
             });
@@ -144,6 +150,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentWillUnmount() {
+        this.listener.stopListening();
         this.diagram.dispose();
     }
 
@@ -164,15 +171,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
         for (const element of this.model.elements) {
-            const size = element.get('size');
-            const position = element.get('position');
-            const node: LayoutNode = {
-                id: element.id,
-                x: position.x,
-                y: position.y,
-                width: size.width,
-                height: size.height,
-            };
+            const {x, y, width, height} = boundsOf(element);
+            const node: LayoutNode = {id: element.id, x, y, width, height};
             nodeById[element.id] = node;
             nodes.push(node);
         }
@@ -195,7 +195,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
 
         for (const node of nodes) {
-            this.model.getElement(node.id).position(node.x, node.y);
+            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
         }
 
         const adjustedBox = this.markup.paperArea.computeAdjustedBox();
@@ -206,11 +206,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
         });
 
         for (const node of nodes) {
-            this.model.getElement(node.id).position(node.x, node.y);
+            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
         }
 
         for (const {link} of links) {
-            link.set('vertices', []);
+            link.setVertices([]);
         }
 
         this.diagram.performSyncUpdate();

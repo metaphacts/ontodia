@@ -1,5 +1,4 @@
 import * as _ from 'lodash';
-import * as joint from 'jointjs';
 
 import { DiagramModel } from '../diagram/model';
 import { Rect, boundsOf } from '../diagram/geometry';

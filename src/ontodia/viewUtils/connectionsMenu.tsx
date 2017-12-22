@@ -1,5 +1,3 @@
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
@@ -10,6 +8,8 @@ import { DiagramView } from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
+
+import { EventObserver } from './events';
 
 type Label = { values: LocalizedString[] };
 type ConnectionCount = { inCount: number; outCount: number };
@@ -22,9 +22,7 @@ export interface ReactElementModel {
 const MENU_OFFSET = 40;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     id: 'allRelatedElements',
-    index: -1,
-    label: { values: [{lang: '', text: 'All'}] },
-    diagram: null,
+    label: [{lang: '', text: 'All'}],
 });
 
 export interface PropertySuggestionParams {
@@ -51,7 +49,8 @@ export interface ConnectionsMenuProps extends PaperWidgetProps {
 
 export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void> {
     private container: HTMLElement;
-    private readonly handler = new Backbone.Model();
+    private readonly handler = new EventObserver();
+    private readonly linkTypesListener = new EventObserver();
     private loadingState: 'loading' | 'error' | 'completed';
 
     private links: FatLinkType[];
@@ -65,28 +64,23 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
 
     componentDidMount() {
         const {view, target} = this.props;
-        this.handler.listenTo(target,
-            'change:isExpanded change:position change:size', this.updateAll);
-        this.handler.listenTo(view, 'change:language', this.updateAll);
+        this.handler.listen(target.events, 'changePosition', this.updateAll);
+        this.handler.listen(target.events, 'changeSize', this.updateAll);
+        this.handler.listen(view.events, 'changeLanguage', this.updateAll);
 
         this.loadLinks();
     }
 
     componentWillUnmount() {
         this.handler.stopListening();
+        this.linkTypesListener.stopListening();
     }
 
-    private subscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
-            this.handler.listenTo(link, 'change:label', this.updateAll);
-            this.handler.listenTo(link, 'change:visible', this.updateAll);
-            this.handler.listenTo(link, 'change:showLabel', this.updateAll);
-        }
-    }
-
-    private unsubscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
-            this.handler.stopListening(link);
+    private resubscribeOnLinkTypeEvents(linkTypesOfElement: ReadonlyArray<FatLinkType>) {
+        this.linkTypesListener.stopListening();
+        for (const linkType of linkTypesOfElement) {
+            this.linkTypesListener.listen(linkType.events, 'changeLabel', this.updateAll);
+            this.linkTypesListener.listen(linkType.events, 'changeVisibility', this.updateAll);
         }
     }
 
@@ -114,10 +108,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
                     }, {inCount: 0, outCount: 0});
 
                 this.countMap = countMap;
-
-                this.unsubscribeOnLinksEevents(this.links);
                 this.links = links;
-                this.subscribeOnLinksEevents(this.links);
+                this.resubscribeOnLinkTypeEvents(this.links);
 
                 this.updateAll();
             })
@@ -201,13 +193,16 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
             if (yi === Math.round(positionBoxSide / 2)) {
                 yi++;
             }
-            element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
+            element.setPosition({
+                x: startX + (xi++) * GRID_STEP,
+                y: startY + (yi) * GRID_STEP,
+            });
         });
 
         const hasChosenLinkType = this.selectedLink && this.selectedLink !== ALL_RELATED_ELEMENTS_LINK;
         if (hasChosenLinkType && !this.selectedLink.visible) {
             // prevent loading here because of .requestLinksOfType() call
-            this.selectedLink.setVisibility({visible: true, showLabel: true}, {preventLoading: true});
+            this.selectedLink.setVisibility({visible: true, showLabel: true, preventLoading: true});
         }
 
         view.model.requestElementData(addedElements);
@@ -338,7 +333,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                 <a className='ontodia-link' onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
                 {
                     chooseLocalizedText(
-                        this.props.objectsData.selectedLink.get('label').values,
+                        this.props.objectsData.selectedLink.label,
                         this.props.lang
                     ).text.toLowerCase()
                 }
@@ -503,46 +498,32 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.get('label');
-        const bLabel: Label = b.get('label');
-        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
-
-        if (aText < bText) {
-            return -1;
-        }
-
-        if (aText > bText) {
-            return 1;
-        }
-
-        return 0;
+        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
+        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
+        return (
+            aText < bText ? -1 :
+            aText > bText ? 1 :
+            0
+        );
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.get('label');
-        const bLabel: Label = b.get('label');
-        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
+        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
+        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
 
-        if (aWeight > bWeight) {
-            return -1;
-        }
-
-        if (aWeight < bWeight) {
-            return 1;
-        }
-
-        return aText.localeCompare(bText);
+        return (
+            aWeight > bWeight ? -1 :
+            aWeight < bWeight ? 1 :
+            aText.localeCompare(bText)
+        );
     }
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
-            const label: Label = link.get('label');
-            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
             return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -551,8 +532,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private getProbableLinks = () => {
         const isSmartMode = this.isSmartMode();
         return (this.props.data.links || []).filter(link => {
-            const label: Label = link.get('label');
-            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
             return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
@@ -657,15 +637,15 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     private onExpandLink = (direction?: 'in' | 'out') => {
         this.props.onExpandLink(this.props.link, direction);
-    };
+    }
 
     private onMoveToFilter = (evt: React.MouseEvent<any>) => {
         evt.stopPropagation();
         this.props.onMoveToFilter(this.props.link, this.props.direction);
-    };
+    }
 
     render() {
-        const fullText = chooseLocalizedText(this.props.link.get('label').values, this.props.lang).text;
+        const fullText = chooseLocalizedText(this.props.link.label, this.props.lang).text;
         const probability = Math.round(this.props.probability * 100);
         const textLine = getColoredText(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),

@@ -5,6 +5,11 @@ export interface Vector {
     readonly y: number;
 }
 
+export interface Size {
+    readonly width: number;
+    readonly height: number;
+}
+
 export interface Rect {
     readonly x: number;
     readonly y: number;
@@ -13,8 +18,8 @@ export interface Rect {
 }
 
 export function boundsOf(element: DiagramElement): Rect {
-    const {x, y} = element.get('position') || {x: 0, y: 0};
-    const {width, height} = element.get('size') || {width: 0, height: 0};
+    const {x, y} = element.position;
+    const {width, height} = element.size;
     return {x, y, width, height};
 }
 

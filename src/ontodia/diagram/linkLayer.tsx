@@ -2,11 +2,12 @@ import * as React from 'react';
 import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString } from '../data/model';
-import { Debouncer } from '../diagram/dataFetchingThread';
 import {
     LinkTemplate, LinkStyle, LinkLabel, LinkMarkerStyle,
     LinkRouter, RoutedLinks, RoutedLink,
 } from '../customization/props';
+import { Debouncer } from '../viewUtils/async';
+import { createStringMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
 import { Element as DiagramElement, Link as DiagramLink, linkMarkerKey } from './elements';
@@ -49,18 +50,28 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
     componentDidMount() {
         const {view} = this.props;
-        const graph = view.model.graph;
 
-        this.listener.listenTo(graph, 'add remove reset', this.scheduleUpdateAll);
-        this.listener.listenTo(graph, 'change:position change:size', (element: DiagramElement) => {
+        this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
+        this.listener.listen(view.model.events, 'elementEvent', ({key, data}) => {
+            if (!(data.changePosition || data.changeSize)) { return; }
+            const element = data[key].source;
             for (const link of element.links) {
                 this.scheduleUpdateLink(link.id);
             }
         });
-        this.listener.listenTo(graph, 'change:vertices', (link: DiagramLink) => {
+        this.listener.listen(view.model.events, 'linkEvent', ({key, data}) => {
+            if (!data.changeVertices) { return; }
+            const link = data[key].source;
             this.scheduleUpdateLink(link.id);
         });
-        this.listener.listen(view.syncUpdate, ({layer}) => {
+        this.listener.listen(view.model.events, 'linkTypeEvent', ({key, data}) => {
+            if (!data.changeLabel) { return; }
+            const linkTypeId = data.changeLabel.source.id;
+            for (const link of view.model.linksOfType(linkTypeId)) {
+                this.scheduleUpdateLink(link.id);
+            }
+        });
+        this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer !== RenderingLayer.Link) { return; }
             this.delayedUpdate.runSynchronously();
         });
@@ -124,13 +135,6 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 }
 
-function createStringMap<V>(): { [key: string]: V } {
-    const map = Object.create(null);
-    // tslint:disable-next-line:no-string-literal
-    delete map['hint'];
-    return map;
-}
-
 interface LinkViewProps {
     view: DiagramView;
     model: DiagramLink;
@@ -146,12 +150,12 @@ class LinkView extends Component<LinkViewProps, {}> {
 
     constructor(props: LinkViewProps, context: any) {
         super(props, context);
-        this.grabLinkTemplate();
+        this.grabLinkTemplate(this.props);
     }
 
     componentWillReceiveProps(nextProps: LinkViewProps) {
         if (this.templateTypeId !== nextProps.model.typeId) {
-            this.grabLinkTemplate();
+            this.grabLinkTemplate(nextProps);
         }
     }
 
@@ -159,9 +163,10 @@ class LinkView extends Component<LinkViewProps, {}> {
         return nextProps.shouldUpdate;
     }
 
-    private grabLinkTemplate() {
-        this.templateTypeId = this.props.model.typeId;
-        this.template = this.props.view.createLinkTemplate(this.templateTypeId);
+    private grabLinkTemplate(props: LinkViewProps) {
+        this.templateTypeId = props.model.typeId;
+        const linkType = props.view.model.getLinkType(this.templateTypeId);
+        this.template = props.view.createLinkTemplate(linkType);
     }
 
     render() {
@@ -179,7 +184,7 @@ class LinkView extends Component<LinkViewProps, {}> {
 
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
-        const style = this.template.renderLink(model.template);
+        const style = this.template.renderLink(model.data);
         const pathAttributes = this.getPathAttributes(style);
 
         return (
@@ -335,8 +340,10 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
 
         for (const linkTypeId in templates) {
             if (!templates.hasOwnProperty(linkTypeId)) { continue; }
-            const template = templates[linkTypeId];
+
             const typeIndex = view.model.getLinkType(linkTypeId).index;
+            const template = templates[linkTypeId];
+
             if (template.markerSource) {
                 markers.push(
                     <LinkMarker key={typeIndex * 2}
@@ -362,11 +369,11 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
 
     componentDidMount() {
         const {view} = this.props;
-        this.listener.listen(view.syncUpdate, ({layer}) => {
+        this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer !== RenderingLayer.Link) { return; }
             this.delayedUpdate.runSynchronously();
         });
-        this.listener.listen(view.linkTemplatesChanged, () => {
+        this.listener.listen(view.events, 'changeLinkTemplates', () => {
             this.delayedUpdate.call(() => this.forceUpdate());
         });
     }

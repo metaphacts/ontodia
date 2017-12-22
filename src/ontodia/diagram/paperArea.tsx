@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
 
+import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
-import { Debouncer } from './dataFetchingThread';
 import { Element, Link } from './elements';
 import { ElementLayer } from './elementLayer';
 import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
@@ -174,17 +174,24 @@ export class PaperArea extends React.Component<Props, State> {
         // });
         // // automatic paper adjust on element dragged
         // this.listener.listenTo(this.paper, 'cell:pointerup', this.adjustPaper);
-        this.listener.listenTo(this.props.view.model.graph, 'add remove change:position', () => {
-            this.delayedPaperAdjust.call(this.adjustPaper);
+        const {view} = this.props;
+        const delayedAdjust = () => this.delayedPaperAdjust.call(this.adjustPaper);
+        this.listener.listen(view.model.events, 'changeCells', delayedAdjust);
+        this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
+            if (data.changePosition || data.changeSize) {
+                delayedAdjust();
+            }
         });
-        this.listener.listenTo(this.props.view.model, 'state:dataLoaded', () => {
-            this.delayedPaperAdjust.call(this.adjustPaper);
+        this.listener.listen(view.model.events, 'linkEvent', ({data}) => {
+            if (data.changeVertices) {
+                delayedAdjust();
+            }
         });
-        this.listener.listen(this.props.view.syncUpdate, ({layer}) => {
+        this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer !== RenderingLayer.PaperArea) { return; }
             this.delayedPaperAdjust.runSynchronously();
         });
-        this.listener.listen(this.props.view.updateWidgets, ({widgets}) => {
+        this.listener.listen(view.events, 'updateWidgets', ({widgets}) => {
             this.updateWidgets(widgets);
         });
         // this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
@@ -202,9 +209,15 @@ export class PaperArea extends React.Component<Props, State> {
         // this.listener.listenTo(model, 'state:renderStart', () => {
         //     unmountComponentAtNode(this.spinnerElement);
         // });
-        // this.listener.listenTo(model, 'state:dataLoaded', () => {
-        //     this.zoomToFit();
-        // });
+        this.listener.listen(view.model.events, 'loadingStart', () => this.showIndicator());
+        this.listener.listen(view.model.events, 'loadingError', () => {
+            this.updateWidgets({[LoadingWidget.Key]: undefined});
+        });
+        this.listener.listen(view.model.events, 'loadingSuccess', () => {
+            this.updateWidgets({[LoadingWidget.Key]: undefined});
+            view.performSyncUpdate();
+            this.zoomToFit();
+        });
     }
 
     componentDidUpdate(prevProps: Props, prevState: State) {
@@ -282,8 +295,8 @@ export class PaperArea extends React.Component<Props, State> {
 
         const model = this.props.view.model;
         for (const element of model.elements) {
-            const {x, y} = element.get('position');
-            const size = element.get('size') || {width: 0, height: 0};
+            const {x, y} = element.position;
+            const size = element.size;
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x + size.width);
@@ -471,7 +484,7 @@ export class PaperArea extends React.Component<Props, State> {
 
     private startMoving(e: React.MouseEvent<HTMLElement>, element: Element) {
         const {x: pointerX, y: pointerY} = this.pageToPaperCoords(e.pageX, e.pageY);
-        const {x: elementX, y: elementY} = element.get('position');
+        const {x: elementX, y: elementY} = element.position;
         this.movingPaperOrigin = {pointerX, pointerY, elementX, elementY};
         this.movingElement = element;
     }
@@ -490,6 +503,17 @@ export class PaperArea extends React.Component<Props, State> {
         const {scrollLeft, scrollTop} = this.area;
         this.panningScrollOrigin = {scrollLeft, scrollTop};
         this.isPanning = true;
+        this.clearTextSelectionInArea();
+    }
+
+    /** Clears accidental text selection in the diagram area. */
+    private clearTextSelectionInArea() {
+        if (document.getSelection) {
+            const selection = document.getSelection();
+            if (selection.removeAllRanges) {
+                selection.removeAllRanges();
+            }
+        }
     }
 
     /** @returns created vertex index */
@@ -534,7 +558,7 @@ export class PaperArea extends React.Component<Props, State> {
         } else if (this.movingElement) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
             const {pointerX, pointerY, elementX, elementY} = this.movingPaperOrigin;
-            this.movingElement.set('position', {
+            this.movingElement.setPosition({
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
@@ -679,7 +703,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     zoomToFit() {
-        if (this.props.view.model.cells.length === 0) {
+        if (this.props.view.model.elements.length === 0) {
             this.centerTo();
             return;
         }
@@ -732,6 +756,8 @@ export class PaperArea extends React.Component<Props, State> {
         // Necessary. Allows us to drop.
         if (e.preventDefault) { e.preventDefault(); }
         e.dataTransfer.dropEffect = 'move';
+        const {x, y} = clientCoordsFor(this.area, e);
+        console.log(this.clientToPaperCoords(x, y));
         return false;
     }
 
@@ -744,36 +770,22 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private renderSpinner(props: SpinnerProps = {}) {
-        // const paperRect = this.paper.svg.getBoundingClientRect();
-        // const x = props.statusText ? paperRect.width / 3 : paperRect.width / 2;
-        // const position = {x, y: paperRect.height / 2};
-        // reactDOMRender(<Spinner position={position} {...props} />, this.spinnerElement);
+        this.updateWidgets({
+            [LoadingWidget.Key]: <LoadingWidget spinnerProps={props} />,
+        });
     }
 
     showIndicator(operation?: Promise<any>) {
-        // this.centerTo();
-        // this.renderSpinner();
+        this.centerTo();
+        this.renderSpinner();
 
-        // if (operation) {
-        //     operation.then(() => {
-        //         unmountComponentAtNode(this.spinnerElement);
-        //     }).catch(error => {
-        //         console.error(error);
-        //         this.renderSpinner({statusText: 'Unknown error occured', errorOccured: true});
-        //     });
-        // }
-    }
-
-    private renderLoadingIndicator(elementCount: number | undefined, error?: any) {
-        const WARN_ELEMENT_COUNT = 70;
-        if (error) {
-            this.renderSpinner({statusText: error.statusText || error.message, errorOccured: true});
-        } else if (elementCount > WARN_ELEMENT_COUNT) {
-            this.renderSpinner({statusText:
-                `The diagram contains more than ${WARN_ELEMENT_COUNT} ` +
-                `elements. Please wait until it is fully loaded.`});
-        } else {
-            this.renderSpinner();
+        if (operation) {
+            operation.then(() => {
+                this.updateWidgets({[LoadingWidget.Key]: undefined});
+            }).catch(error => {
+                console.error(error);
+                this.renderSpinner({statusText: 'Unknown error occured', errorOccured: true});
+            });
         }
     }
 
@@ -807,4 +819,30 @@ function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
         x: e.offsetX + (targetBox.left - containerBox.left),
         y: e.offsetY + (targetBox.top - containerBox.top),
     };
+}
+
+interface LoadingWidgetProps extends PaperWidgetProps {
+    spinnerProps: Partial<SpinnerProps>;
+}
+
+class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
+    static readonly Key = 'loadingWidget';
+
+    render() {
+        const {spinnerProps, paperArea} = this.props;
+
+        const paperSize = paperArea.getPaperSize();
+        const paneStart = paperArea.paperToScrollablePaneCoords(0, 0);
+        const paneEnd = paperArea.paperToScrollablePaneCoords(paperSize.width, paperSize.height);
+        const paneWidth = paneEnd.x - paneStart.x;
+        const paneHeight = paneEnd.y - paneStart.y;
+
+        const x = spinnerProps.statusText ? paneWidth / 3 : paneWidth / 2;
+        const position = {x, y: paneHeight / 2};
+        return (
+            <svg width={paneWidth} height={paneHeight}>
+                <Spinner position={position} {...spinnerProps} />
+            </svg>
+        );
+    }
 }

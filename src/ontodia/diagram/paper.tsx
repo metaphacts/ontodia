@@ -1,13 +1,7 @@
 import * as React from 'react';
 import { Component, SVGAttributes, CSSProperties } from 'react';
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 
-import { LocalizedString } from '../data/model';
-import { Debouncer } from '../diagram/dataFetchingThread';
-import { LinkStyle, LinkLabel } from '../customization/props';
-
-import { Element as DiagramElement, Link as DiagramLink, linkMarkerKey } from './elements';
+import { Element as DiagramElement, Link as DiagramLink } from './elements';
 import { LinkLayer, LinkMarkers } from './linkLayer';
 import { DiagramModel } from './model';
 import { DiagramView } from './view';
@@ -29,19 +23,6 @@ export type Cell = DiagramElement | DiagramLink | LinkVertex;
 const CLASS_NAME = 'ontodia-paper';
 
 export class Paper extends Component<PaperProps, void> {
-    private readonly listener = new Backbone.Model();
-
-    componentDidMount() {
-        const {view} = this.props;
-        const graph = view.model.graph;
-    }
-
-    componentWillUnmount() {
-        this.listener.stopListening();
-    }
-
-    private updateAll = () => this.forceUpdate();
-
     render() {
         const {width, height, originX, originY, scale, paddingX, paddingY} = this.props;
         const scaledWidth = width * scale;
@@ -71,17 +52,11 @@ export class Paper extends Component<PaperProps, void> {
                     <LinkMarkers view={this.props.view} />
                     <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
                         <LinkLayer view={this.props.view} />
-                        {/*this.renderElements()*/}
                     </g>
                 </svg>
                 {this.props.children}
             </div>
         );
-    }
-
-    private renderElements() {
-        const {view} = this.props;
-        return view.model.elements.map(model => <ElementView key={model.id} model={model} />);
     }
 
     private onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -123,31 +98,4 @@ function findCell(bottom: Element, top: Element, model: DiagramModel): Cell | un
         target = target.parentNode;
     }
     return undefined;
-}
-
-class ElementView extends Component<{ model: joint.dia.Element }, {}> {
-    componentDidMount() {
-        this.props.model.on('change:size', this.onModelChangeSize);
-    }
-
-    componentWillUnmount() {
-        this.props.model.off('change:size', this.onModelChangeSize);
-    }
-
-    private onModelChangeSize = () => {
-        this.forceUpdate();
-    }
-
-    render() {
-        const {model} = this.props;
-        const {x, y} = model.get('position') || {x: 0, y: 0};
-        const size = model.get('size') || {width: 0, height: 0};
-        return (
-            <g data-element-id={model.id}>
-                <rect x={x} y={y} width={size.width} height={size.height}
-                    fill='green' stroke='red' strokeWidth={3}
-                />
-            </g>
-        );
-    }
 }

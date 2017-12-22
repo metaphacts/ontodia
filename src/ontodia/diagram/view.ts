@@ -1,6 +1,4 @@
 import { hcl } from 'd3-color';
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import { defaultsDeep, cloneDeep } from 'lodash';
 import { ReactElement, createElement } from 'react';
 
@@ -20,17 +18,16 @@ import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
-import { Event, EventSource } from '../viewUtils/events';
+import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
-import { Element, Link, FatClassModel, linkMarkerKey } from './elements';
-import { LinkView } from './linkView';
+import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
+import { Size, boundsOf } from './geometry';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { SeparatedElementView } from './separatedElementView';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -39,6 +36,7 @@ export interface DiagramViewOptions {
     disableDefaultHalo?: boolean;
     linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
+    onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
 }
 
 export interface TypeStyle {
@@ -56,16 +54,28 @@ export enum RenderingLayer {
     LastToUpdate = Link,
 }
 
-/**
- * Properties:
- *     language: string
- *
- * Events:
- *     (private) dispose - fires on view dispose
- */
-export class DiagramView extends Backbone.Model {
-    private readonly eventSource = new EventSource();
+export interface DiagramViewEvents {
+    changeLanguage: PropertyChange<DiagramView, string>;
+    changeSelection: PropertyChange<DiagramView, ReadonlyArray<Element>>;
+    changeLinkTemplates: { source: DiagramView };
+    syncUpdate: { layer: RenderingLayer };
+    updateWidgets: UpdateWidgetsEvent;
+    renderDone: { source: DiagramView };
+    dispose: { source: DiagramView };
+}
+
+export interface UpdateWidgetsEvent {
+    widgets: { [key: string]: ReactElement<any> };
+}
+
+export class DiagramView {
+    private readonly listener = new EventObserver();
+    private readonly source = new EventSource<DiagramViewEvents>();
+    readonly events: Events<DiagramViewEvents> = this.source;
+
     private disposed = false;
+
+    private readonly colorSeed = 0x0BADBEEF;
 
     private typeStyleResolvers: TypeStyleResolver[];
     private linkTemplateResolvers: LinkTemplateResolver[];
@@ -73,25 +83,14 @@ export class DiagramView extends Backbone.Model {
 
     private connectionsMenuTarget: Element | undefined;
 
-    readonly selection = new Backbone.Collection<Element>();
-
-    private colorSeed = 0x0BADBEEF;
-
+    private _language = 'en';
+    private _selection: ReadonlyArray<Element> = [];
     private linkTemplates: { [linkTypeId: string]: LinkTemplate } = {};
-
-    readonly linkTemplatesChanged: Event<undefined> = this.eventSource.createEvent();
-    readonly syncUpdate: Event<{ layer: RenderingLayer }> = this.eventSource.createEvent();
-    readonly updateWidgets: Event<{
-        widgets: { [key: string]: ReactElement<any> }
-    }> = this.eventSource.createEvent();
 
     constructor(
         public readonly model: DiagramModel,
         public readonly options: DiagramViewOptions = {},
     ) {
-        super();
-        this.setLanguage('en');
-
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
 
@@ -102,31 +101,56 @@ export class DiagramView extends Backbone.Model {
             ? options.templatesResolvers : DefaultTemplateBundle;
     }
 
-    getLanguage(): string { return this.get('language'); }
+    get selection() { return this._selection; }
+    setSelection(value: ReadonlyArray<Element>) {
+        const previous = this._selection;
+        if (previous === value) { return; }
+        this._selection = value;
+        this.source.trigger('changeSelection', {source: this, previous});
+    }
+
+    getLanguage(): string { return this._language; }
     setLanguage(value: string) {
         if (!value) {
-            throw Error('cannot set empty language');
+            throw new Error('Cannot set empty language.');
         }
-        this.set('language', value);
+        const previous = this._language;
+        if (previous === value) { return; }
+        this._language = value;
+        this.source.trigger('changeLanguage', {source: this, previous});
     }
 
     getLinkTemplates(): { readonly [linkTypeId: string]: LinkTemplate } {
         return this.linkTemplates;
     }
 
-    cancelSelection() { this.selection.reset([]); }
+    cancelSelection() {
+        this.setSelection([]);
+    }
 
     performSyncUpdate() {
         for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
-            this.syncUpdate.trigger(this.eventSource, {layer});
+            this.source.trigger('syncUpdate', {layer});
         }
+    }
+
+    _onRenderDone() {
+        this.source.trigger('renderDone', {source: this});
+    }
+
+    waitUntilRenderDone(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.listener.listenOnce(this.events, 'renderDone', () => resolve());
+        });
     }
 
     initializePaperComponents() {
         if (!this.model.isViewOnly()) {
             this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
-            this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+            this.listener.listen(this.events, 'dispose', () => {
+                document.removeEventListener('keyup', this.onKeyUp);
+            });
         }
     }
 
@@ -140,15 +164,15 @@ export class DiagramView extends Backbone.Model {
     }
 
     private removeSelectedElements() {
-        const elementsToRemove = this.selection.toArray();
+        const elementsToRemove = this.selection;
         if (elementsToRemove.length === 0) { return; }
 
         this.cancelSelection();
-        this.model.graph.trigger('batch:start');
+        this.model.initBatchCommand();
         for (const element of elementsToRemove) {
-            element.remove();
+            this.model.removeElement(element.id);
         }
-        this.model.graph.trigger('batch:stop');
+        this.model.storeBatchCommand();
     }
 
     onPaperPointerUp(event: MouseEvent, cell: Element | Link | undefined, isClick: boolean) {
@@ -157,14 +181,23 @@ export class DiagramView extends Backbone.Model {
         if (cell instanceof Link) { return; }
         if (event.ctrlKey || event.shiftKey || event.metaKey) { return; }
         if (cell) {
-            this.selection.reset([cell]);
+            this.setSelection([cell]);
             cell.focus();
         } else if (isClick) {
-            this.selection.reset();
+            this.setSelection([]);
             this.hideNavigationMenu();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
+        }
+    }
+
+    onIriClick(iri: string, element: Element, event: React.MouseEvent<any>) {
+        event.persist();
+        event.preventDefault();
+        const {onIriClick} = this.options;
+        if (onIriClick) {
+            onIriClick(iri, element, event);
         }
     }
 
@@ -177,7 +210,7 @@ export class DiagramView extends Backbone.Model {
                 target: selectedElement,
                 onDelete: () => this.removeSelectedElements(),
                 onExpand: () => {
-                    selectedElement.isExpanded = !selectedElement.isExpanded;
+                    selectedElement.setExpanded(!selectedElement.isExpanded);
                 },
                 navigationMenuOpened: Boolean(this.connectionsMenuTarget),
                 onToggleNavigationMenu: () => {
@@ -190,11 +223,11 @@ export class DiagramView extends Backbone.Model {
                 },
                 onAddToFilter: () => selectedElement.addToFilter(),
             });
-            this.updateWidgets.trigger(this.eventSource, {widgets: {halo}});
+            this.source.trigger('updateWidgets', {widgets: {halo}});
         };
 
-        this.listenTo(this.selection, 'add remove reset', () => {
-            const selected = this.selection.length === 1 ? this.selection.first() : undefined;
+        this.listener.listen(this.events, 'changeSelection', () => {
+            const selected = this.selection.length === 1 ? this.selection[0] : undefined;
             if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
                 this.hideNavigationMenu();
             }
@@ -212,13 +245,13 @@ export class DiagramView extends Backbone.Model {
             suggestProperties: this.options.suggestProperties,
         });
         this.connectionsMenuTarget = target;
-        this.updateWidgets.trigger(this.eventSource, {widgets: {connectionsMenu}});
+        this.source.trigger('updateWidgets', {widgets: {connectionsMenu}});
     }
 
     hideNavigationMenu() {
         if (this.connectionsMenuTarget) {
             this.connectionsMenuTarget = undefined;
-            this.updateWidgets.trigger(this.eventSource, {widgets: {connectionsMenu: undefined}});
+            this.source.trigger('updateWidgets', {widgets: {connectionsMenu: undefined}});
         }
     }
 
@@ -250,8 +283,8 @@ export class DiagramView extends Backbone.Model {
         let {x, y} = paperPosition;
         for (const elementId of elementIds) {
             const center = elementIds.length === 1;
-            const element = this.createElementAt(elementId, {x: x + totalXOffset, y, center});
-            totalXOffset += element.get('size').width + 20;
+            const {element, size} = this.createElementAt(elementId, {x: x + totalXOffset, y, center});
+            totalXOffset += size.width + 20;
 
             elementsToSelect.push(element);
             element.focus();
@@ -259,26 +292,32 @@ export class DiagramView extends Backbone.Model {
 
         this.model.requestElementData(elementsToSelect);
         this.model.requestLinksOfType();
-        this.selection.reset(elementsToSelect);
+        this.setSelection(elementsToSelect);
 
         this.model.storeBatchCommand();
     }
 
-    private createElementAt(elementId: string, position: { x: number; y: number; center?: boolean; }) {
+    private createElementAt(
+        elementId: string,
+        position: { x: number; y: number; center?: boolean; }
+    ): { element: Element, size: Size } {
         const element = this.model.createElement(elementId);
 
         let {x, y} = position;
-        const size: { width: number; height: number; } = element.get('size');
-        if (position.center) {
-            x -= size.width / 2;
-            y -= size.height / 2;
-        }
-        element.set('position', {x, y});
+        let {width, height} = boundsOf(element);
+        if (width === 0) { width = 100; }
+        if (height === 0) { height = 50; }
 
-        return element;
+        if (position.center) {
+            x -= width / 2;
+            y -= height / 2;
+        }
+        element.setPosition({x, y});
+
+        return {element, size: {width, height}};
     }
 
-    public getLocalizedText(texts: LocalizedString[]): LocalizedString {
+    public getLocalizedText(texts: ReadonlyArray<LocalizedString>): LocalizedString {
         return chooseLocalizedText(texts, this.getLanguage());
     }
 
@@ -290,13 +329,13 @@ export class DiagramView extends Backbone.Model {
     }
 
     public getElementTypeLabel(type: FatClassModel): LocalizedString {
-        const label = this.getLocalizedText(type.get('label').values);
+        const label = this.getLocalizedText(type.label);
         return label ? label : { text: uri2name(type.id), lang: '' };
     }
 
     public getLinkLabel(linkTypeId: string): LocalizedString {
         const type = this.model.getLinkType(linkTypeId);
-        const label = type ? this.getLocalizedText(type.get('label').values) : null;
+        const label = type ? this.getLocalizedText(type.label) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
@@ -361,15 +400,15 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    createLinkTemplate(linkTypeId: string): LinkTemplate {
-        const existingTemplate = this.linkTemplates[linkTypeId];
+    createLinkTemplate(linkType: FatLinkType): LinkTemplate {
+        const existingTemplate = this.linkTemplates[linkType.id];
         if (existingTemplate) {
             return existingTemplate;
         }
 
         let template: LinkTemplate = {};
         for (const resolver of this.linkTemplateResolvers) {
-            const result = resolver(linkTypeId);
+            const result = resolver(linkType.id);
             if (result) {
                 template = cloneDeep(result);
                 break;
@@ -377,8 +416,8 @@ export class DiagramView extends Backbone.Model {
         }
 
         fillLinkTemplateDefaults(template, this.model);
-        this.linkTemplates[linkTypeId] = template;
-        this.linkTemplatesChanged.trigger(this.eventSource, undefined);
+        this.linkTemplates[linkType.id] = template;
+        this.source.trigger('changeLinkTemplates', {source: this});
         return template;
     }
 
@@ -387,27 +426,15 @@ export class DiagramView extends Backbone.Model {
         return resolver;
     }
 
-    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver | undefined {
         const index = this.linkTemplateResolvers.indexOf(resolver);
-        if (index !== -1) {
-            return this.linkTemplateResolvers.splice(index, 1)[0];
-        } else {
-            return undefined;
-        }
-    }
-
-    public getOptions(): DiagramViewOptions {
-        return this.options;
-    }
-
-    private onDispose(handler: () => void) {
-        this.listenTo(this, 'dispose', handler);
+        return index >= 0 ? this.linkTemplateResolvers.splice(index, 1)[0] : undefined;
     }
 
     dispose() {
         if (this.disposed) { return; }
-        this.trigger('dispose');
-        this.stopListening();
+        this.source.trigger('dispose', {source: this});
+        this.listener.stopListening();
         this.disposed = true;
     }
 }

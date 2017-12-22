@@ -23,11 +23,6 @@ module.exports = {
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
-        alias: {
-            // Backbone provided by joint.js, to prevent module duplication which
-            // causes errors when Ontodia uses Backbone models from joint.js
-            'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
-        },
     },
     module: {
         loaders: [

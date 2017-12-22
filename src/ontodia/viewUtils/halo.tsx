@@ -1,11 +1,11 @@
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import * as React from 'react';
 
-import { Element as DiagramElement } from '../diagram/elements';
+import { Element as DiagramElement, ElementEvents } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
+
+import { AnyListener, Unsubscribe } from './events';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
@@ -20,7 +20,7 @@ export interface Props extends PaperWidgetProps {
 const CLASS_NAME = 'ontodia-halo';
 
 export class Halo extends React.Component<Props, void> {
-    private handler = new Backbone.Model();
+    private unsubscribeFromElement: Unsubscribe | undefined = undefined;
 
     componentDidMount() {
         this.listenToElement(this.props.target);
@@ -28,21 +28,30 @@ export class Halo extends React.Component<Props, void> {
 
     componentWillReceiveProps(nextProps: Props) {
         if (nextProps.target !== this.props.target) {
-            if (this.props.target) { this.handler.stopListening(this.props.target); }
             this.listenToElement(nextProps.target);
         }
     }
 
     listenToElement(element: DiagramElement | undefined) {
+        if (this.unsubscribeFromElement) {
+            this.unsubscribeFromElement();
+            this.unsubscribeFromElement = undefined;
+        }
         if (element) {
-            this.handler.listenTo(element,
-                'change:isExpanded change:position change:size', () => this.forceUpdate());
+            element.events.onAny(this.onElementEvent);
+            this.unsubscribeFromElement = () => element.events.offAny(this.onElementEvent);
+        }
+    }
+
+    private onElementEvent: AnyListener<ElementEvents> = data => {
+        if (data.changePosition || data.changeSize || data.changeExpanded) {
+            this.forceUpdate();
         }
     }
 
     componentWillUnmount() {
+        this.listenToElement(undefined);
         this.props.diagramView.hideNavigationMenu();
-        this.handler.stopListening();
     }
 
     render() {

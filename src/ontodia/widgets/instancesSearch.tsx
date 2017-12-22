@@ -1,11 +1,12 @@
 import * as React from 'react';
-import * as Backbone from 'backbone';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 import { FilterParams } from '../data/provider';
 
+import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
 import { uri2name } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
+import { EventObserver } from '../viewUtils/events';
 
 import { ListElementView } from './listElementView';
 
@@ -21,9 +22,9 @@ export interface InstancesSearchProps {
 
 export interface SearchCriteria {
     readonly text?: string;
-    readonly elementTypeId?: string;
-    readonly refElementId?: string;
-    readonly refElementLinkId?: string;
+    readonly elementType?: FatClassModel;
+    readonly refElement?: DiagramElement;
+    readonly refElementLink?: FatLinkType;
     readonly linkDirection?: 'in' | 'out';
 }
 
@@ -40,7 +41,7 @@ export interface State {
 const CLASS_NAME = 'ontodia-instances-search';
 
 export class InstancesSearch extends React.Component<InstancesSearchProps, State> {
-    private readonly listener = new Backbone.Model();
+    private readonly listener = new EventObserver();
 
     private currentRequest: FilterParams;
 
@@ -110,30 +111,29 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         const {criteria = {}, view} = this.props;
         const criterions: React.ReactElement<any>[] = [];
 
-        if (criteria.elementTypeId) {
-            const classInfo = view.model.getClassesById(criteria.elementTypeId);
-            const classLabel = view.getLocalizedText(classInfo.label.values).text;
+        if (criteria.elementType) {
+            const classInfo = criteria.elementType;
+            const classLabel = view.getLocalizedText(classInfo.label).text;
             criterions.push(<div key='hasType' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
-                    {...this.props.criteria, elementTypeId: undefined}))}
+                    {...this.props.criteria, elementType: undefined}))}
                 Has type <span className={`${CLASS_NAME}__criterion-class`}
                     title={classInfo.id}>{classLabel}</span>
             </div>);
-        } else if (criteria.refElementId) {
-            const element = view.model.getElement(criteria.refElementId);
-            const template = element && element.template;
-            const elementLabel = formatLabel(
-                view, criteria.refElementId, template && template.label);
+        } else if (criteria.refElement) {
+            const element = criteria.refElement;
+            const template = element.data;
+            const elementLabel = formatLabel(view, element.id, template.label);
 
-            const linkType = criteria.refElementLinkId && view.model.getLinkType(criteria.refElementLinkId);
-            const linkTypeLabel = linkType && formatLabel(view, linkType.id, linkType.label);
+            const linkType = criteria.refElementLink;
+            const linkTypeLabel = linkType ? view.getLocalizedText(linkType.label).text : undefined;
 
             criterions.push(<div key='hasLinkedElement' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
-                    {...this.props.criteria, refElementId: undefined, refElementLinkId: undefined}))}
+                    {...this.props.criteria, refElement: undefined, refElementLink: undefined}))}
                 Connected to <span className={`${CLASS_NAME}__criterion-element`}
                     title={element && element.id}>{elementLabel}</span>
-                {criteria.refElementLinkId && <span>
+                {linkType && <span>
                     {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
                         title={linkType && linkType.id}>{linkTypeLabel}</span>
@@ -199,8 +199,8 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     }
 
     componentDidMount() {
-        this.listener.listenTo(this.props.view, 'change:language', () => this.forceUpdate());
-        this.listener.listenTo(this.props.view.model.cells, 'add remove reset', () => {
+        this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
+        this.listener.listen(this.props.view.model.events, 'changeCells', () => {
             const selectedItems: Dictionary<true> = {...this.state.selectedItems};
             for (const id of Object.keys(selectedItems)) {
                 if (selectedItems[id] && this.props.view.model.getElement(id)) {
@@ -298,15 +298,16 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 }
 
 function createRequest(criteria: SearchCriteria, language: string): FilterParams {
+    const {text, elementType, refElement, refElementLink, linkDirection} = criteria;
     return {
-        text: criteria.text,
-        elementTypeId: criteria.elementTypeId,
-        refElementId: criteria.refElementId,
-        refElementLinkId: criteria.refElementLinkId,
-        linkDirection: criteria.linkDirection,
+        text,
+        elementTypeId: elementType ? elementType.id : undefined,
+        refElementId: refElement ? refElement.id : undefined,
+        refElementLinkId: refElementLink ? refElementLink.id : undefined,
+        linkDirection,
         offset: 0,
         limit: 100,
-        languageCode: language ? language : 'en',
+        languageCode: language || 'en',
     };
 }
 

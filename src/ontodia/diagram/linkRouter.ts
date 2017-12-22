@@ -29,8 +29,8 @@ export class DefaultLinkRouter implements LinkRouter {
 
     private routeFeedbackSiblingLinks(model: DiagramModel, elementId: string, routings: RoutedLinks) {
         const element = model.getElement(elementId);
-        const {x, y} = element.get('position');
-        const {width, height} = element.get('size');
+        const {x, y} = element.position;
+        const {width, height} = element.size;
 
         let index = 0;
         for (const sibling of element.links) {
@@ -144,7 +144,7 @@ function hasUserPlacedVertices(link: DiagramLink) {
 }
 
 function centerOfElement(element: DiagramElement): { x: number; y: number; } {
-    const {x, y} = element.get('position');
-    const {width, height} = element.get('size');
+    const {x, y} = element.position;
+    const {width, height} = element.size;
     return {x: x + width / 2, y: y + height / 2};
 }

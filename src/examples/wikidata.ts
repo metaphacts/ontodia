@@ -8,9 +8,6 @@ import {
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 const WIKIDATA_PREFIX = 'http://www.wikidata.org/prop/direct/';
 
 let workspace: Workspace;
@@ -19,7 +16,7 @@ function getElementLabel(id: string): string {
     const model = workspace.getModel();
     const diagram = workspace.getDiagram();
     const element = model.getElement(id);
-    return element ? diagram.getLocalizedText(element.template.label.values).text : '';
+    return element ? diagram.getLocalizedText(element.data.label.values).text : '';
 }
 
 function wikidataSuggestProperties(params: PropertySuggestionParams) {
@@ -108,12 +105,6 @@ function onWorkspaceMounted(wspace: Workspace) {
         }
     });
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        window.open(iri);
-        console.log(iri);
-    });
-
     const layoutData = tryLoadLayoutFromLocalStorage();
     const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
@@ -124,7 +115,7 @@ function onWorkspaceMounted(wspace: Workspace) {
         queryMethod: SparqlQueryMethod.POST,
     }, WikidataSettings);
 
-    model.importLayout({layoutData, dataProvider, validateLinks: true});
+    workspace.getModel().importLayout({layoutData, dataProvider, validateLinks: true});
 }
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
@@ -136,6 +127,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     viewOptions: {
         suggestProperties: wikidataSuggestProperties,
+        onIriClick: iri => window.open(iri),
     },
 };
 

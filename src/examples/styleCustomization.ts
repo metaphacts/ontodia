@@ -5,9 +5,6 @@ import { Workspace, WorkspaceProps, SparqlDataProvider, LinkTemplate } from '../
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
     markerSource: {
         fill: '#4b4a67',
@@ -38,13 +35,8 @@ const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        console.log(iri);
-    });
-
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({
+    workspace.getModel().importLayout({
         layoutData,
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql-endpoint',
@@ -82,6 +74,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         linkTemplateResolvers: [
             type => CUSTOM_LINK_TEMPLATE,
         ],
+        onIriClick: iri => console.log(iri),
     },
 };
 
