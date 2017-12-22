@@ -18,6 +18,7 @@ import { getContentFittingBox } from './paperArea';
 export interface Props {
     view: DiagramView;
     element: Element;
+    isOpen: boolean;
 }
 
 export interface State {
@@ -40,7 +41,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
         this.state = {paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0};
     }
 
-    componentDidMount() {
+    private open = () => {
         const {element} = this.props;
 
         document.addEventListener('mouseup', this.onMouseUp);
@@ -66,10 +67,31 @@ export class EmbeddedLayer extends React.Component<Props, State> {
         this.loadEmbeddedElements();
     }
 
-    componentWillUnmount() {
+    private close = () => {
         document.removeEventListener('mouseup', this.onMouseUp);
         this.listener.stopListening();
         this.removeElements();
+        this.setState({paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0});
+    }
+
+    componentWillReceiveProps(nextProps: Props) {
+        if (nextProps.isOpen === this.props.isOpen) { return; }
+
+        if (nextProps.isOpen) {
+            this.open();
+        } else {
+            this.close();
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.isOpen) {
+            this.open();
+        }
+    }
+
+    componentWillUnmount() {
+        this.close();
     }
 
     private onMouseUp = () => {

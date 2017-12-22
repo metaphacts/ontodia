@@ -109,11 +109,28 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         this.routings = this.router.route(this.props.view.model);
     }
 
+    private getNestedGroups = (group: string, groups: {[id: string]: string}): {[id: string]: string} => {
+        const {view} = this.props;
+        const elements = view.model.elements.filter(el => el.template.group === group);
+
+        if (elements.length) {
+            groups[group] = group;
+
+            elements.forEach(element =>
+                groups = this.getNestedGroups(element.id, groups)
+            );
+        }
+
+        return groups;
+    }
+
     private getLinks = () => {
         const {view, group} = this.props;
         const {links} = view.model;
 
         if (!group) { return links; }
+
+        const nestedGroups = this.getNestedGroups(group, {});
 
         return links.filter(link => {
             const {sourceId, targetId} = link;
@@ -121,15 +138,14 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             const source = view.model.getElement(sourceId);
             const target = view.model.getElement(targetId);
 
-            const sourceGroup = source ? source.template.group : undefined;
-            const targetGroup = target ? target.template.group : undefined;
+            if (!source || !target) { return false; }
+
+            const sourceGroup = source.template.group;
+            const targetGroup = target.template.group;
 
             return (
                 sourceId !== group && targetId !== group &&
-                (
-                    (sourceGroup && sourceId !== sourceGroup && targetId !== sourceGroup) ||
-                    (targetGroup && sourceId !== targetGroup && targetId !== targetGroup)
-                )
+                (nestedGroups[sourceGroup] || nestedGroups[targetGroup])
             );
         });
     }

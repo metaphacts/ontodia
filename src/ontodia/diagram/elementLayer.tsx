@@ -158,7 +158,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
                     e.preventDefault();
                 }
             }}
-            onDoubleClick={() => {
+            onDoubleClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
                 model.isExpanded = !model.isExpanded;
             }}
             ref={node => {
@@ -231,7 +233,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             isExpanded: model.isExpanded,
             props: model.template.properties,
             propsAsList,
-            embeddedLayer: <EmbeddedLayer view={view} element={model}/>,
+            embeddedLayer: <EmbeddedLayer view={view} element={model} isOpen={model.isExpanded}/>,
         };
     }
 
