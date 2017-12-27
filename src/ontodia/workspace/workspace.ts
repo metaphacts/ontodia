@@ -2,7 +2,7 @@ import { Component, createElement, ReactElement } from 'react';
 import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
-import { Link, FatLinkType } from '../diagram/elements';
+import { Element, Link, FatLinkType } from '../diagram/elements';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
@@ -17,7 +17,7 @@ import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
-import { ZoomOptions } from '../diagram/paperArea';
+import { ZoomOptions, getContentFittingBox } from '../diagram/paperArea';
 
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
@@ -160,10 +160,18 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.showIndicator(promise);
     }
 
-    forceLayout = () => {
+    private forceLayoutElements = (elements: Element[], group?: Element) => {
+        elements.forEach(element => {
+            const nestedNodes = this.model.elements.filter(el => el.template.group === element.id);
+
+            if (!nestedNodes.length) { return; }
+
+            this.forceLayoutElements(nestedNodes, element);
+        });
+
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
-        for (const element of this.model.elements) {
+        for (const element of elements) {
             const size = element.get('size');
             const position = element.get('position');
             const node: LayoutNode = {
@@ -177,41 +185,54 @@ export class Workspace extends Component<WorkspaceProps, State> {
             nodes.push(node);
         }
 
-        type LinkWithReference = LayoutLink & { link: Link };
-        const links: LinkWithReference[] = [];
+        const links: LayoutLink[] = [];
         for (const link of this.model.links) {
             if (!this.model.isSourceAndTargetVisible(link)) { continue; }
             const source = this.model.sourceOf(link);
             const target = this.model.targetOf(link);
-            links.push({
-                link,
-                source: nodeById[source.id],
-                target: nodeById[target.id],
-            });
+
+            const sourceNode = nodeById[source.id];
+            const targetNode = nodeById[target.id];
+
+            if (!sourceNode || !targetNode) { continue; }
+
+            links.push({source: sourceNode, target: targetNode});
         }
 
         forceLayout({nodes, links, preferredLinkLength: 200});
         padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
-        translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
+
+        const padding: { x: number; y: number; } = (
+            group ? getContentFittingBox(elements, []) : {x: 150, y: 150}
+        );
+
+        translateToPositiveQuadrant({nodes, padding});
 
         for (const node of nodes) {
             this.model.getElement(node.id).position(node.x, node.y);
         }
 
-        const adjustedBox = this.markup.paperArea.computeAdjustedBox();
-        translateToCenter({
-            nodes,
-            paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
-            contentBBox: this.markup.paperArea.getContentFittingBox(),
-        });
+        if (!group) {
+            const adjustedBox = this.markup.paperArea.computeAdjustedBox();
+            translateToCenter({
+                nodes,
+                paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
+                contentBBox: this.markup.paperArea.getContentFittingBox(),
+            });
 
-        for (const node of nodes) {
-            this.model.getElement(node.id).position(node.x, node.y);
+            for (const node of nodes) {
+                this.model.getElement(node.id).position(node.x, node.y);
+            }
         }
+    }
 
-        for (const {link} of links) {
-            link.set('vertices', []);
-        }
+    forceLayout = () => {
+        const elements = this.model.elements.filter(element => !element.template.group);
+        this.forceLayoutElements(elements);
+
+        this.model.links.forEach(link =>
+            link.set('vertices', [])
+        );
 
         this.diagram.performSyncUpdate();
     }
