@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { DiagramView } from './view';
+import { Dictionary, ElementModel } from '../data/model';
 import { Paper, Cell } from './paper';
 import { Element } from './elements';
 import { ElementLayer } from './elementLayer';
@@ -15,12 +15,6 @@ import {
 } from '../viewUtils/layout';
 import { getContentFittingBox } from './paperArea';
 
-export interface Props {
-    view: DiagramView;
-    element: Element;
-    isOpen: boolean;
-}
-
 export interface State {
     paperWidth?: number;
     paperHeight?: number;
@@ -28,7 +22,12 @@ export interface State {
     offsetY?: number;
 }
 
-export class EmbeddedLayer extends React.Component<Props, State> {
+export class EmbeddedLayer extends React.Component<{}, State> {
+    static contextTypes = {
+        view: React.PropTypes.object,
+        element: React.PropTypes.object,
+    };
+
     private readonly listener = new EventObserver();
 
     private layerOffsetLeft: number = 0;
@@ -36,13 +35,13 @@ export class EmbeddedLayer extends React.Component<Props, State> {
 
     private isNestedElementMoving: boolean = false;
 
-    constructor(props: Props) {
+    constructor(props: {}) {
         super(props);
         this.state = {paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0};
     }
 
     private open = () => {
-        const {element} = this.props;
+        const {element} = this.context;
 
         document.addEventListener('mouseup', this.onMouseUp);
 
@@ -71,20 +70,8 @@ export class EmbeddedLayer extends React.Component<Props, State> {
         this.setState({paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0});
     }
 
-    componentWillReceiveProps(nextProps: Props) {
-        if (nextProps.isOpen === this.props.isOpen) { return; }
-
-        if (nextProps.isOpen) {
-            this.open();
-        } else {
-            this.close();
-        }
-    }
-
     componentDidMount() {
-        if (this.props.isOpen) {
-            this.open();
-        }
+        this.open();
     }
 
     componentWillUnmount() {
@@ -96,8 +83,8 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private getNestedElements = () => {
-        const {view, element} = this.props;
-        return view.model.elements.filter(el => el.template.group === element.id);
+        const {view, element} = this.context;
+        return view.model.elements.filter((el: Element) => el.template.group === element.id);
     }
 
     private getContentFittingBox = (): { x: number; y: number; width: number; height: number; } => {
@@ -106,14 +93,14 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private removeElements = () => {
-        this.getNestedElements().forEach(element => element.remove());
+        this.getNestedElements().forEach((element: Element) => element.remove());
     }
 
     private loadEmbeddedElements = () => {
-        const {view, element} = this.props;
+        const {view, element} = this.context;
         const {id, template} = element;
 
-        view.loadEmbeddedElements(id, template.id).then(res => {
+        view.loadEmbeddedElements(id, template.id).then((res: Dictionary<ElementModel>) => {
             const elements = Object.keys(res).map(key => view.model.createElement(res[key]));
 
             elements.forEach(this.listenNestedElement);
@@ -129,7 +116,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private getOffset = (): { offsetX: number; offsetY: number; } => {
-        const {x: elementX, y: elementY} = this.props.element.get('position');
+        const {x: elementX, y: elementY} = this.context.element.get('position');
 
         const offsetX = elementX + this.layerOffsetLeft;
         const offsetY = elementY + this.layerOffsetTop;
@@ -138,7 +125,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private setElementsOffset = (offsetX: number, offsetY: number) => {
-        this.getNestedElements().forEach(element => {
+        this.getNestedElements().forEach((element: Element) => {
             const {x, y} = element.get('position') || {x: 0, y: 0};
             const newPosition = {x: x + offsetX, y: y + offsetY};
             element.set('position', newPosition);
@@ -156,7 +143,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private onNestedElementChange = () => {
-        const {element} = this.props;
+        const {element} = this.context;
         const {x: offsetX, y: offsetY, width: paperWidth, height: paperHeight} = this.getContentFittingBox();
 
         if (this.isNestedElementMoving) {
@@ -171,7 +158,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     private forceLayout = () => {
-        const {view} = this.props;
+        const {view} = this.context;
         const elements = this.getNestedElements();
 
         const nodeById: { [id: string]: LayoutNode } = {};
@@ -234,7 +221,7 @@ export class EmbeddedLayer extends React.Component<Props, State> {
     }
 
     render() {
-        const {view, element} = this.props;
+        const {view, element} = this.context;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
         const style = {

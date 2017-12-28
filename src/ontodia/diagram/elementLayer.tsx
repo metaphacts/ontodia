@@ -96,6 +96,18 @@ interface OverlayedElementState {
 }
 
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
+    static childContextTypes = {
+        view: React.PropTypes.object,
+        element: React.PropTypes.object,
+    };
+
+    getChildContext() {
+        return {
+            view: this.props.view,
+            element: this.props.model,
+        };
+    }
+
     private readonly listener = new Backbone.Model();
 
     private typesObserver = new KeyedObserver({
@@ -233,7 +245,6 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             isExpanded: model.isExpanded,
             props: model.template.properties,
             propsAsList,
-            embeddedLayer: <EmbeddedLayer view={view} element={model} isOpen={model.isExpanded}/>,
         };
     }
 

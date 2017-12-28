@@ -1,6 +1,5 @@
-import { ComponentClass, ReactElement } from 'react';
+import { ComponentClass } from 'react';
 import { DiagramModel } from '../diagram/model';
-import { EmbeddedLayer } from '../diagram/embeddedLayer'
 
 import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
@@ -25,7 +24,6 @@ export interface TemplateProps {
     isExpanded?: boolean;
     propsAsList?: PropArray;
     props?: Dictionary<Property>;
-    embeddedLayer?: ReactElement<EmbeddedLayer>;
 }
 
 export type PropArray = Array<{

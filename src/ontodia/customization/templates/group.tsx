@@ -1,10 +1,10 @@
 import * as React from 'react';
 
-import { TemplateProps } from '../props';
+import { TemplateProps, EmbeddedLayer } from '../../../index';
 
 export class GroupTemplate extends React.Component<TemplateProps, void> {
     render() {
-        const {label, icon, types, color, isExpanded, embeddedLayer} = this.props;
+        const {label, icon, types, color, isExpanded} = this.props;
 
         return (
             <div className='ontodia-group-template'>
@@ -26,7 +26,9 @@ export class GroupTemplate extends React.Component<TemplateProps, void> {
                     </span>
                         {
                             isExpanded ? (
-                                <div className='ontodia-group-template__embedded-layer'>{embeddedLayer}</div>
+                                <div className='ontodia-group-template__embedded-layer'>
+                                    <EmbeddedLayer />
+                                </div>
                             ) : null
                         }
                     </div>
