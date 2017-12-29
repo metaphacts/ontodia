@@ -27,7 +27,7 @@ export class LinkTypesToolboxModel extends Backbone.Model {
     private onSelectedElementChanged(self: LinkTypesToolboxModel, element: Element) {
         this.trigger('state:beginQuery');
         if (element) {
-            const request = {elementId: element.id};
+            const request = {elementId: element.template.id};
             this.currentRequest = request;
             this.diagram.dataProvider.linkTypesOf(request).then(linkTypes => {
                 if (this.currentRequest !== request) { return; }
