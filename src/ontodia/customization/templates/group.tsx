@@ -1,6 +1,7 @@
 import * as React from 'react';
 
-import { TemplateProps, EmbeddedLayer } from '../../../index';
+import { TemplateProps } from '../props';
+import { EmbeddedLayer } from '../../diagram/embeddedLayer';
 
 export class GroupTemplate extends React.Component<TemplateProps, void> {
     render() {
