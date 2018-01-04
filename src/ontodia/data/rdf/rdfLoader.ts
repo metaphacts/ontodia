@@ -1,35 +1,39 @@
-import { RDFGraph } from 'rdf-ext';
+import { waitFor } from 'rdf-ext';
+import SimpleDataset = require('rdf-dataset-simple');
 import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
+import { RdfCompositeParser } from './rdfCompositeParser';
+
+const stringToStream = require<(input: string) => any>('string-to-stream');
 
 export const DEFAULT_PROXY = '/lod-proxy/';
 
 export class RDFLoader {
-    private fetchingFileCatche: Dictionary<Promise<RDFGraph>> = {};
-    public parser: RDFCompositeParser;
+    private fetchingFileCatche: Dictionary<Promise<SimpleDataset>> = {};
+    public parser: RdfCompositeParser;
     public proxy: string;
 
     constructor(parameters: {
-        parser: RDFCompositeParser,
+        parser: RdfCompositeParser,
         proxy?: string;
     }) {
         this.parser = parameters.parser;
         this.proxy = parameters.proxy || DEFAULT_PROXY;
     }
 
-    private parseData(data: string, contentType?: string, prefix?: string): Promise<RDFGraph> {
-        let result: Promise<RDFGraph>;
-        result = this.parser.parse(data, contentType);
-        return result;
+    private parseData(data: string, contentType?: string, prefix?: string): Promise<SimpleDataset> {
+        let dataset = new SimpleDataset();
+        return dataset.import(
+            this.parser.import(stringToStream(data), contentType),
+        ).then(() => dataset);
     }
 
-    downloadElement(elementId: string): Promise<RDFGraph> {
+    downloadElement(elementId: string): Promise<SimpleDataset> {
         const sharpIndex = elementId.indexOf('#');
         const fileUrl = sharpIndex !== -1 ? elementId.substr(0, sharpIndex) : elementId;
         let typePointer = 0;
-        const mimeTypes = Object.keys(this.parser.parserMap);
+        const mimeTypes: any[] = this.parser.list();
 
-        const recursivePart = (): Promise<RDFGraph> => {
+        const recursivePart = (): Promise<SimpleDataset> => {
             const acceptType = mimeTypes[typePointer++];
 
             if (acceptType && (elementId.startsWith('http') || elementId.startsWith('file'))) {

@@ -1,11 +1,13 @@
-import { RDFStore, RDFGraph, createStore, createGraph, Node, Literal, NamedNode, Triple } from 'rdf-ext';
+import { waitFor } from 'rdf-ext';
+import { Node, Quad, Graph, Literal, NamedNode, Stream, namedNode } from 'rdf-data-model';
+import SimpleDataset = require('rdf-dataset-simple');
 import { Dictionary } from '../model';
-import { RDFCompositeParser } from './rdfCompositeParser';
-
+import { RdfCompositeParser } from './rdfCompositeParser';
 import { uniqueId } from 'lodash';
 
 const DEFAULT_STORAGE_TYPE = 'text/turtle';
 const DEFAULT_STORAGE_URI = 'http://ontodia.org/defaultGraph';
+const RDF_TYPE = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
 
 export function prefixFactory(prefix: string): ((id: string) => string) {
     const lastSymbol = prefix[prefix.length - 1];
@@ -15,33 +17,19 @@ export function prefixFactory(prefix: string): ((id: string) => string) {
     };
 }
 
-export interface RDFStore {
-    add: (id: string, graph: RDFGraph) => void;
-    match: (
-        subject?: string,
-        predicate?: string,
-        object?: string,
-        iri?: string,
-        callback?: (result: any) => void,
-        limit?: number,
-    ) => Promise<RDFGraph>;
-}
-
 export function isLiteral(el: Node): el is Literal {
-    return el.interfaceName === 'Literal';
+    return el.termType === 'Literal';
 }
 
 export function isNamedNode(el: Node): el is NamedNode {
-    return el.interfaceName === 'NamedNode';
+    return el.termType === 'NamedNode';
 }
 
 export type MatchStatement = {
-    subject?: string,
-    predicate?: string,
-    object?: string,
-    iri?: string,
-    callback?: (...args: any[]) => void,
-    limit?: number,
+    subject?: Node,
+    predicate?: Node,
+    object?: Node,
+    graph?: Graph,
 };
 
 export const LABEL_URIS = [
@@ -63,193 +51,178 @@ export const LABEL_POSTFIXES = [
 ];
 
 export class RDFCacheableStore {
-    private rdfStorage: RDFStore;
-    private checkingElementMap: Dictionary<Promise<boolean>> = {};
-    private labelsMap: Dictionary<Triple[]> = {};
+    private base: SimpleDataset;
+    private labelsMap: Dictionary<Quad[]> = {};
     private countMap: Dictionary<number> = {};
-    private elementTypes: Dictionary<Triple[]> = {};
-    private prefs: { [id: string]: (id: string) => string };
-    constructor(
-        private parser: RDFCompositeParser,
-    ) {
-        this.rdfStorage = createStore();
-        this.prefs = {
-            RDF: prefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
-            RDFS: prefixFactory('http://www.w3.org/2000/01/rdf-schema#'),
-            FOAF: prefixFactory('http://xmlns.com/foaf/0.1/'),
-            XSD: prefixFactory('http://www.w3.org/2001/XMLSchema#'),
-            OWL: prefixFactory('http://www.w3.org/2002/07/owl#'),
+    private elementTypes: Dictionary<Quad[]> = {};
+
+    constructor(quads?: Quad[]) {
+        this.base = new SimpleDataset(quads);
+        this.base.add = (quad: Quad) => {
+            this.base._quads.push(quad);
         };
     }
 
-    add(rdfGraph: RDFGraph, prefix?: string) {
-        this.rdfStorage.add(uniqueId(prefix) || (uniqueId(DEFAULT_STORAGE_URI)), rdfGraph);
-        this.enrichMaps(rdfGraph);
+    import(dataStream: Stream<Quad>): Promise<any> {
+        dataStream.on('data', this.indexData);
+        return this.base.import(dataStream);
+    }
+
+    get length () {
+        return this.base.length;
+    }
+
+    toArray(): Quad[] {
+        return this.base.toArray();
+    }
+
+    add(quad: Quad) {
+        this.indexData(quad);
+        this.base.add(quad);
+    }
+
+    addAll(quads: Quad[]) {
+        for (const quad of quads) {
+            this.indexData(quad);
+        }
+        this.base.addAll(quads);
     }
 
     match(
-        subject?: string,
-        predicate?: string,
-        object?: string,
-        iri?: string,
-        callback?: (...args: any[]) => void,
-        limit?: number,
-    ): Promise<RDFGraph> {
-        if (subject && (LABEL_URIS.indexOf(predicate) !== -1) && !object) {
-            return Promise.resolve(this._getLabels(subject));
-        } else if (subject && predicate === this.prefs.RDF('type') && !object) {
-            return Promise.resolve(this.getTypes(subject));
+        subject?: Node,
+        predicate?: Node,
+        object?: Node,
+        graph?: Graph,
+    ): SimpleDataset {
+        const isLabel = predicate && LABEL_URIS.indexOf(predicate.value) !== -1;
+        const isType = predicate && predicate.equals(RDF_TYPE);
+        const valueNotFetched = subject && predicate && !object;
+        if (valueNotFetched && (isLabel || isType)) {
+            if (predicate.equals(RDF_TYPE)) {
+                return this.getTypes(subject.value);
+            } else {
+                return this.getLabels(subject.value);
+            }
         } else {
-            return this.rdfStorage.match(
+            return this.base.match(
                 subject,
                 predicate,
                 object,
-                iri,
-                callback,
-                limit,
+                graph,
             );
         }
     }
 
-    matchAll(statements: MatchStatement[]): Promise<RDFGraph> {
+    matchAll(statements: MatchStatement[]): SimpleDataset {
         const slowQueries: MatchStatement[] = [];
-        const queries: RDFGraph[] = [];
+        const responses: SimpleDataset[] = [];
 
         statements.forEach(statement => {
-            if (statement.subject && (LABEL_URIS.indexOf(statement.predicate) !== -1) && !statement.object) {
-                queries.push(this._getLabels(statement.subject));
-            } else if (statement.subject && statement.predicate === this.prefs.RDF('type') && !statement.object) {
-                queries.push(this.getTypes(statement.subject));
+            const {subject, predicate, object} = statement;
+            const isLabel = predicate && LABEL_URIS.indexOf(predicate.value) !== -1;
+            const isType = predicate && predicate.equals(RDF_TYPE);
+            const valueNotFetched = subject && predicate && !object;
+
+            if (valueNotFetched && (isLabel || isType)) {
+                if (predicate.equals(RDF_TYPE)) {
+                    responses.push(this.getTypes(subject.value));
+                } else {
+                    responses.push(this.getLabels(subject.value));
+                }
             } else {
                 slowQueries.push(statement);
             }
         });
 
-        queries.push(this.multipleMatch(slowQueries));
+        responses.push(this.multipleMatch(slowQueries));
 
-        return Promise.resolve(this.combineGraphs(queries));
+        return this.mergeDatasets(responses); // fix it.
     }
 
-    getLabels(id: string): Promise<RDFGraph> {
-        return Promise.resolve(createGraph(this.labelsMap[id]));
+    getLabels(id: string): SimpleDataset {
+        return new SimpleDataset(this.labelsMap[id]);
     }
 
-    // Checks whetger the element is in the storage.
-    checkElement(id: string): Promise<boolean> {
-        if (this.labelsMap[id]) { // if there is label for an id then the element is already fetched
-            return Promise.resolve(true);
-        } else {
-            if (!this.checkingElementMap[id]) {
-                this.checkingElementMap[id] = this.rdfStorage.match(id, null, null).then(result => {
-                    const resultArray = result.toArray();
-                    return resultArray.length !== 0;
-                });
-            }
-            return this.checkingElementMap[id];
-        }
+    // Checks whether the element is in the storage.
+    isIncludes(id: string): boolean {
+        return (
+            this.labelsMap[id] !== undefined ||
+            this.base.match(namedNode(id), null, null).length > 0
+        );
     }
 
     getTypeCount(id: string): number {
         return this.countMap[id] || 0;
     }
 
-    private enrichMaps(newGraph: RDFGraph): boolean {
-        const triples = newGraph.toArray();
-
-        for (const triple of triples) {
-            const element = triple.subject.nominalValue;
-            const predicate = triple.predicate.nominalValue;
-            if (
-                LABEL_URIS.indexOf(predicate) !== -1 ||
-                (
-                    !this.labelsMap[element] &&
-                    LABEL_POSTFIXES.find((value, index, array) => {
-                        const type = predicate.toLocaleLowerCase();
-                        const postfix = value.toLocaleLowerCase();
-                        return type.indexOf(postfix) !== -1;
-                    })
-                )
-            ) {
-                if (!this.labelsMap[element]) {
-                    this.labelsMap[element] = [];
-                }
-                if (isLiteral(triple.object)) {
-                    this.labelsMap[element].push(triple);
-                    this.labelsMap[element].sort((a, b) => {
-                        const index1 = LABEL_URIS.indexOf(a.predicate.nominalValue);
-                        const index2 = LABEL_URIS.indexOf(b.predicate.nominalValue);
-                        if (index1 > index2) {
-                            return 1;
-                        } else if (index1 < index2) {
-                            return -1;
-                        } else {
-                            return 0;
-                        }
-                    });
-                }
+    private indexData = (quad: Quad) => {
+        const subject = quad.subject.value;
+        const predicate = quad.predicate.value;
+        const object = quad.object.value;
+        const isLabel = LABEL_URIS.indexOf(predicate) !== -1;
+        const typeURI = predicate.toLocaleLowerCase();
+        const hasLabelLikePostfix = LABEL_POSTFIXES.find((value, index, array) => {
+            const postfix = value.toLocaleLowerCase();
+            return typeURI.indexOf(postfix) !== -1;
+        });
+        if (isLabel || (!this.labelsMap[subject] && hasLabelLikePostfix)) {
+            if (!this.labelsMap[subject]) {
+                this.labelsMap[subject] = [];
             }
-        }
-
-        const typeInstances = newGraph.match(
-            null,
-            this.prefs.RDF('type'),
-            null,
-        ).toArray();
-        const typeInstMap: Dictionary<string[]> = {};
-        for (const instTriple of typeInstances) {
-            const type = instTriple.object.nominalValue;
-            const inst = instTriple.subject.nominalValue;
-            if (!typeInstMap[type]) {
-                typeInstMap[type] = [];
-            }
-            if (!this.elementTypes[inst]) {
-                this.elementTypes[inst] = [];
-            }
-            if (typeInstMap[type].indexOf(inst) === -1) {
-                typeInstMap[type].push(inst);
-            }
-            this.elementTypes[inst].push(instTriple);
-        }
-        Object.keys(typeInstMap).forEach(key => this.countMap[key] = typeInstMap[key].length);
-
-        return true;
-    }
-
-    private _getLabels(id: string): RDFGraph {
-        return createGraph(this.labelsMap[id]);
-    }
-
-    private getTypes(id: string): RDFGraph {
-        return createGraph(this.elementTypes[id]);
-    }
-
-    private combineGraphs(graphs: RDFGraph[]): RDFGraph {
-        const triples: Triple[] = [];
-        for (const graph of graphs) {
-            for (const triple of graph.toArray()) {
-                triples.push(triple);
-            }
-        }
-        return createGraph(triples);
-    }
-
-    private multipleMatch(statements: MatchStatement[]): RDFGraph {
-        const triples: Triple[] = [];
-        const graphs = Object.keys(this.rdfStorage.graphs).map(id => this.rdfStorage.graphs[id]);
-        for (const graph of graphs) {
-            for (const triple of graph._graph) {
-                for (const statement of statements) {
-                    if (
-                        ((!statement.object) || statement.object === triple.object.nominalValue) &&
-                        ((!statement.predicate) || statement.predicate === triple.predicate.nominalValue) &&
-                        ((!statement.subject) || statement.subject === triple.subject.nominalValue)
-                    ) {
-                        triples.push(triple);
-                        continue;
+            if (isLiteral(quad.object)) {
+                this.labelsMap[subject].push(quad);
+                this.labelsMap[subject].sort((a, b) => {
+                    const index1 = LABEL_URIS.indexOf(a.predicate.value);
+                    const index2 = LABEL_URIS.indexOf(b.predicate.value);
+                    if (index1 > index2) {
+                        return 1;
+                    } else if (index1 < index2) {
+                        return -1;
+                    } else {
+                        return 0;
                     }
+                });
+            }
+        } else if (quad.predicate.equals(RDF_TYPE)) {
+            if (!this.elementTypes[object]) {
+                this.elementTypes[object] = [];
+                this.countMap[object] = 0;
+            }
+            this.elementTypes[object].push(quad);
+            this.countMap[object] = this.elementTypes[object].length;
+        }
+    }
+
+    private mergeDatasets(datasets: SimpleDataset[]): SimpleDataset {
+        let compositeDataset;
+        for (const ds of datasets) {
+            if (!compositeDataset) {
+                compositeDataset = ds;
+            } else {
+                compositeDataset = compositeDataset.merge(ds);
+            }
+        }
+        return compositeDataset;
+    }
+
+    private getTypes(id: string): SimpleDataset {
+        return new SimpleDataset(this.elementTypes[id]);
+    }
+
+    private multipleMatch(statements: MatchStatement[]): SimpleDataset {
+        const foundQuads: Quad[] = [];
+        for (const quad of this.base._quads) {
+            for (const statement of statements) {
+                const {subject, predicate, object} = statement;
+                const similarObjects = !object || object.equals(quad.object);
+                const similarPredicates = !predicate || predicate.equals(quad.predicate);
+                const similarSubjects = !subject || subject.equals(quad.subject);
+
+                if (similarObjects && similarPredicates && similarSubjects) {
+                    foundQuads.push(quad);
                 }
             }
         }
-        return createGraph(triples);
+        return new SimpleDataset(foundQuads);
     }
 }
