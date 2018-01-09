@@ -60,9 +60,15 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             }
         });
         this.listener.listen(view.model.events, 'linkEvent', ({key, data}) => {
-            if (!data.changeVertices) { return; }
-            const link = data[key].source;
-            this.scheduleUpdateLink(link.id);
+            const anyPropertyChanged = (
+                data.changeData ||
+                data.changeLayoutOnly ||
+                data.changeVertices
+            );
+            if (anyPropertyChanged) {
+                const link = data[key].source;
+                this.scheduleUpdateLink(link.id);
+            }
         });
         this.listener.listen(view.model.events, 'linkTypeEvent', ({key, data}) => {
             if (!data.changeLabel) { return; }
