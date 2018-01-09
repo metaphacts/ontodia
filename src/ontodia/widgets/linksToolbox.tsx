@@ -274,14 +274,12 @@ export interface LinkTypesToolboxProps {
     view: DiagramView;
 }
 
-interface LinkTypesToolboxState {
-    readonly dataState?: DataState;
+export interface LinkTypesToolboxState {
+    readonly dataState?: 'querying' | 'error' | 'finished';
     readonly selectedElement?: Element;
     readonly linksOfElement?: ReadonlyArray<FatLinkType>;
     readonly countMap?: { readonly [linkTypeId: string]: number };
 }
-
-type DataState = 'querying' | 'error' | 'finished';
 
 export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, LinkTypesToolboxState> {
     private readonly listener = new EventObserver();
