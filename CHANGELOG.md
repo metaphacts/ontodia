@@ -8,32 +8,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.6.1] - 2017-10-17
 ### Added
-- Property suggestion handler for scoring properties
-- Toolbar refactored and toolbar customization feature added
-- Using TTL file as diagram source
+- Property suggestion handler for scoring properties.
+- Ability to use custom toolbar for a workspace.
+- Ability to use turtle (`.ttl`) file as diagram source.
 
 ### Fixed
-- Chrome 61 margin issue
+- Collapsing margins of scrollable diagram area in Chrome >= 61.
 
-### [0.6.0] - 2017-09-19
+## [0.6.0] - 2017-09-19
 ### Added
 - RDF data provider with multiple parsers.
 - LOD data fetching for RDF data provider.
 - Composite data provider to combine results from multiple data providers.
-- Ability to specify rdf pattern to use as a link on a diagram in Spaql Data Provider.
+- Ability to specify RDF pattern to use as a link on a diagram with `SpaqlDataProvider`.
 
-### [0.5.3] - 2017-08-23
+## [0.5.3] - 2017-08-23
 ### Fixed
-- Unpredictable behaviour with language selection.
+- Unpredictable display language selection behaviour.
 
 ### Changed
 - Blank nodes are no longer displayed in class tree in default configuration.
 
-### [0.5.2] - 2017-08-17
+## [0.5.2] - 2017-08-17
 ### Fixed
-- Safari bug preventing displaying class tree workaround
+- Safari bug preventing displaying class tree workaround.
 
-### [0.5.1] - 2017-08-04
+## [0.5.1] - 2017-08-04
 ### Fixed
 - No element thumbnails issue when trying to export to PNG even with
 CORS-enabled images.
@@ -240,7 +240,9 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/ontodia-org/ontodia/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/ontodia-org/ontodia/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/ontodia-org/ontodia/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...v0.5.1

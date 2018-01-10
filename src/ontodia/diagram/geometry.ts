@@ -1,4 +1,5 @@
 import { Element as DiagramElement, Link as DiagramLink } from './elements';
+import { isIE11 } from '../viewUtils/detectBrowser';
 
 export interface Vector {
     readonly x: number;
@@ -70,6 +71,12 @@ function intersectRayFromRectangleCenter(sourceRect: Rect, rayTarget: Vector) {
     const isHorizontal =
         cross2D({x: halfWidth, y: -halfHeight}, rightDirection) > 0 &&
         cross2D({x: halfWidth, y: halfHeight}, rightDirection) < 0;
+
+    if (isIE11()) {
+        Math.sign = function (n: number): number {
+            if (n > 0) { return 1; } else if (n < 0) { return -1; } else { return 0; }
+        };
+    }
 
     if (isHorizontal) {
         return {
