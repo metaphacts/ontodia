@@ -21,6 +21,7 @@ import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from '../widgets/
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
+const saveAs = require<(file: Blob, fileName: string) => void>('file-saverjs');
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
@@ -243,25 +244,26 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.diagram.performSyncUpdate();
     }
 
-    exportSvg = (link: HTMLAnchorElement) => {
+    exportSvg = (fileName?: string) => {
         this.markup.paperArea.exportSVG().then(svg => {
-            if (!link.download || link.download.match(/^diagram\.[a-z]+$/)) {
-                link.download = 'diagram.svg';
-            }
+            fileName = fileName || 'diagram.svg';
             const xmlEncodingHeader = '<?xml version="1.0" encoding="UTF-8"?>';
-            link.href = window.URL.createObjectURL(
-                new Blob([xmlEncodingHeader + svg], {type: 'image/svg+xml'}));
-            link.click();
+            const blob = new Blob([xmlEncodingHeader + svg], {type: 'image/svg+xml'});
+            saveAs(blob, fileName);
         });
     }
 
-    exportPng = (link: HTMLAnchorElement) => {
+    exportPng = (fileName?: string) => {
         this.markup.paperArea.exportPNG({backgroundColor: 'white'}).then(dataUri => {
-            if (!link.download || link.download.match(/^diagram\.[a-z]+$/)) {
-                link.download = 'diagram.png';
+            fileName = fileName || 'diagram.png';
+            const byteString = atob(dataUri.split(',')[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
             }
-            link.href = window.URL.createObjectURL(dataURLToBlob(dataUri));
-            link.click();
+            const blob = new Blob([ab], { type: 'image/png' });
+            saveAs(blob, fileName);
         });
     }
 

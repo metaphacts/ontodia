@@ -81,7 +81,7 @@ export class PersonTemplate extends Component<TemplateProps, {}> {
                                         </div>
                                     ))}
                                 </div>
-                            ) : 'no properties'}
+                            ) : <div>no properties</div>}
                         </div>
                     </div>
                 ) : null}
