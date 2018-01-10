@@ -278,10 +278,10 @@ export class DiagramModel {
         for (const layoutCell of layoutData.cells) {
             const cell = normalizeImportedCell(layoutCell);
             if (cell.type === 'element') {
-                const {id, position, size, isExpanded} = cell;
-                const template = preloadedElements[cell.id];
-                const data = template || placeholderTemplateFromIri(id);
-                const element = new Element({id, data, position, size, expanded: isExpanded});
+                const {id, iri, position, size, isExpanded, group} = cell;
+                const template = preloadedElements[iri];
+                const data = template || placeholderTemplateFromIri(iri);
+                const element = new Element({id, data, position, size, expanded: isExpanded, group});
                 this.graph.addElement(element);
                 if (!template) {
                     elementToRequestData.push(element);

@@ -12,10 +12,12 @@ export type LayoutCell = LayoutElement | LayoutLink;
 export interface LayoutElement {
     type: 'element';
     id: string;
+    iri: string;
     position: Vector;
     size?: Size;
     angle?: number;
     isExpanded?: boolean;
+    group?: string;
 }
 
 export interface LayoutLink {
@@ -29,7 +31,7 @@ export interface LayoutLink {
 
 const serializedCellProperties = [
     'id', 'type',                              // common properties
-    'size', 'angle', 'isExpanded', 'position', // element properties
+    'size', 'angle', 'isExpanded', 'position', 'iri', 'group', // element properties
     'typeId', 'source', 'target', 'vertices',  // link properties
 ];
 
@@ -48,9 +50,11 @@ export function exportLayoutData(
     const elementData = elements.map((element): LayoutElement => ({
         type: 'element',
         id: element.id,
+        iri: element.data.id,
         position: element.position,
         size: element.size,
         isExpanded: element.isExpanded,
+        group: element.group,
     }));
     const linkData = links.map((link): LayoutLink => ({
         type: 'link',

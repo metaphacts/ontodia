@@ -59,7 +59,20 @@ export class EmbeddedLayer extends React.Component<{}, State> {
             this.setState({offsetX, offsetY});
         });
 
-        this.loadEmbeddedElements();
+        const nestedElements = this.getNestedElements();
+        nestedElements.forEach(this.listenNestedElement);
+
+        if (nestedElements.length) {
+            const {
+                x: offsetX,
+                y: offsetY,
+                width: paperWidth,
+                height: paperHeight,
+            } = this.getContentFittingBox();
+            this.setState({offsetX, offsetY, paperWidth, paperHeight}, () => element.redraw());
+        } else {
+            this.loadEmbeddedElements();
+        }
     }
 
     private close = () => {
