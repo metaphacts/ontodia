@@ -160,10 +160,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             const sourceGroup = source.group;
             const targetGroup = target.group;
 
-            return (
-                sourceId !== group && targetId !== group &&
-                (nestedGroups[sourceGroup] || nestedGroups[targetGroup])
-            );
+            return nestedGroups[sourceGroup] || nestedGroups[targetGroup];
         });
     }
 

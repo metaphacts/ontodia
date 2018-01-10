@@ -21,6 +21,9 @@ function onWorkspaceMounted(workspace: Workspace) {
             queryMethod: SparqlQueryMethod.GET,
             acceptBlankNodes: true,
         }, OWLStatsSettings),
+        linkSettings: [
+            {id: 'http://www.researchspace.org/ontology/group', visible: false},
+        ],
     });
 }
 

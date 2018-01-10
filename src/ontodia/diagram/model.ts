@@ -64,6 +64,8 @@ export class DiagramModel {
     private linkFetching: DataFetchingThread;
     private propertyLabelFetching: DataFetchingThread;
 
+    private linkSettings: LinkTypeOptions[];
+
     constructor(isViewOnly = false) {
         this._isViewOnly = isViewOnly;
         this.classFetching = new DataFetchingThread();
@@ -184,6 +186,7 @@ export class DiagramModel {
     }): Promise<void> {
         this.resetGraph();
         this.dataProvider = params.dataProvider;
+        this.linkSettings = params.linkSettings;
         this.source.trigger('loadingStart', {source: this});
 
         const cells = (params.layoutData && params.layoutData.cells) || [];
@@ -432,6 +435,9 @@ export class DiagramModel {
             id: linkTypeId,
             label: [{text: uri2name(linkTypeId), lang: ''}],
         });
+
+        this.initLinkSettings([linkType], this.linkSettings);
+
         this.graph.addLinkType(linkType);
         this.linkFetching.push(linkTypeId).then(linkTypeIds => {
             if (linkTypeIds.length === 0) { return; }
