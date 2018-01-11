@@ -1,6 +1,7 @@
 require('intro.js/introjs.css');
 require('../styles/main.scss');
 
+require('es6-promise/auto')
 import 'whatwg-fetch';
 
 export * from './ontodia/customization/props';

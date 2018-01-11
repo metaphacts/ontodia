@@ -8,8 +8,8 @@ export interface Props {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onZoomToFit: () => void;
-    onExportSVG: (link: HTMLAnchorElement) => void;
-    onExportPNG: (link: HTMLAnchorElement) => void;
+    onExportSVG: (fileName?: string) => void;
+    onExportPNG: (fileName?: string) => void;
     onPrint: () => void;
     languages: ReadonlyArray<WorkspaceLanguage>;
     selectedLanguage: string;
@@ -29,11 +29,11 @@ export class EditorToolbar extends React.Component<Props, void> {
     }
 
     private onExportSVG = () => {
-        this.props.onExportSVG(this.downloadImageLink);
+        this.props.onExportSVG();
     }
 
     private onExportPNG = () => {
-        this.props.onExportPNG(this.downloadImageLink);
+        this.props.onExportPNG();
     }
 
     private renderBtnSaveDiagram = () => {
