@@ -11,6 +11,8 @@ import {
     LocalizedString,
 } from '../model';
 
+const DATA_PROVIDER_PROPERTY = 'http://ontodia.org/property/DataProvider';
+
 export interface CompositeResponse<Type> {
     dataSourceName: string;
     response: Type;
@@ -160,7 +162,7 @@ export function mergeElementInfo(response: CompositeResponse<Dictionary<ElementM
 
         for (const em of list) {
             em.sources = [resp.dataSourceName];
-            em.properties.DataProvider = {
+            em.properties[DATA_PROVIDER_PROPERTY] = {
                 type: 'string', values: [{ text: resp.dataSourceName, lang: '' }],
             };
             if (!dictionary[em.id]) {
