@@ -8,10 +8,12 @@ import {
     getLinkTypes,
     getElementsInfo,
     getLinksInfo,
-    getLinksTypesOf,
+    getLinksTypeIds,
     getFilteredData,
     getEnrichedElementsInfo,
     getLinkTypesInfo,
+    getLinksTypesOf,
+    getLinkStatistic,
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
@@ -233,11 +235,37 @@ export class SparqlDataProvider implements DataProvider {
             return Promise.resolve(getLinksTypesOf(BlankNodes.linkTypesOf(params)));
         }
         const elementIri = escapeIri(params.elementId);
+        // Ask for linkTypes
         const query = this.settings.defaultPrefix
-            + resolveTemplate(this.settings.linkTypesOfQuery,
+            + resolveTemplate(this.settings.linkTypesOfQuery1,
                 {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
-                );
-        return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
+            );
+        return this.executeSparqlQuery<LinkTypeBinding>(query)
+            .then(linkTypeBinding => {
+                const linkTypeIds = getLinksTypeIds(linkTypeBinding);
+                const requests: Promise<LinkCount>[] = [];
+                for (const id of linkTypeIds) {
+                    const q = this.settings.defaultPrefix
+                    + resolveTemplate(this.settings.linkTypesOfQuery2, {
+                        linkId:  escapeIri(id),
+                        elementIri,
+                        linkConfigurations: this.formatLinkTypesOf(params.elementId)
+                    });
+                    requests.push(
+                        this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistic)
+                    );
+                }
+                return Promise.all(requests);
+            });
+
+        // SparqlResponse<Binding> {
+        //     head: { vars: string[] };
+        //     results: { bindings: {
+        //         link: RdfIri | RdfBlank;
+        //         inCount: RdfLiteral;
+        //         outCount: RdfLiteral;
+        //     }[] };
+        // }
     };
 
     linkElements(params: {
