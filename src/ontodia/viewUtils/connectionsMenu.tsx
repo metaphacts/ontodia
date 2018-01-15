@@ -101,7 +101,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
         this.loadingState = 'loading';
         this.links = [];
         this.countMap = {};
-        view.model.dataProvider.linkTypesOf({elementId: target.id})
+        view.model.dataProvider.linkTypesOf({elementId: target.data.id})
             .then(linkTypes => {
                 this.loadingState = 'completed';
 
@@ -142,7 +142,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
         this.objects = [];
 
         view.model.dataProvider.linkElements({
-            elementId: target.id,
+            elementId: target.data.id,
             linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : link.id),
             limit: offset + MAX_LINK_COUNT,
             offset: offset,

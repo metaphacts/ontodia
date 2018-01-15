@@ -1,3 +1,5 @@
+import { keyBy } from 'lodash';
+
 import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
 import { Dictionary, ElementModel, LinkModel } from '../model';
@@ -68,16 +70,25 @@ export class GraphBuilder {
 
         const layoutElements: LayoutCell[] = elementsIds.map<LayoutElement>((id, index) => {
             const {x, y} = grid(index);
-            return {type: 'element', id, position: {x, y}};
+            return {type: 'element', id: 'element_' + index, iri: id, position: {x, y}};
         });
-        const layoutLinks = linksInfo.map<LayoutLink>((link, index) => {
-            return {
+
+        const layoutElementsMap: {[iri: string]: LayoutCell} = keyBy(layoutElements, 'iri');
+        const layoutLinks: LayoutLink[] = [];
+
+        linksInfo.forEach((link, index) => {
+            const source = layoutElementsMap[link.sourceId];
+            const target = layoutElementsMap[link.targetId];
+
+            if (!source || !target) { return; }
+
+            layoutLinks.push({
                 type: 'link',
                 id: 'link_' + index,
                 typeId: link.linkTypeId,
-                source: {id: link.sourceId},
-                target: {id: link.targetId},
-            };
+                source: {id: source.id},
+                target: {id: target.id},
+            })
         });
         return {cells: layoutElements.concat(layoutLinks)};
     }

@@ -56,6 +56,10 @@ export class RDFDataProvider implements DataProvider {
         });
     }
 
+    addGraph(graph: RDFGraph) {
+        this.rdfStorage.add(graph);
+    }
+
     isInitialized(): Promise<boolean> {
         if (this.initStatement instanceof Object) {
             return (<Promise<boolean>> this.initStatement).then(state => {
