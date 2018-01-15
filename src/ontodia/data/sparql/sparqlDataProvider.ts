@@ -237,7 +237,7 @@ export class SparqlDataProvider implements DataProvider {
         const elementIri = escapeIri(params.elementId);
         // Ask for linkTypes
         const query = this.settings.defaultPrefix
-            + resolveTemplate(this.settings.linkTypesOfQuery1,
+            + resolveTemplate(this.settings.linkTypesOfQuery,
                 {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
             );
         return this.executeSparqlQuery<LinkTypeBinding>(query)
@@ -246,7 +246,7 @@ export class SparqlDataProvider implements DataProvider {
                 const requests: Promise<LinkCount>[] = [];
                 for (const id of linkTypeIds) {
                     const q = this.settings.defaultPrefix
-                    + resolveTemplate(this.settings.linkTypesOfQuery2, {
+                    + resolveTemplate(this.settings.linkTypesOfStatsQuery, {
                         linkId:  escapeIri(id),
                         elementIri,
                         linkConfigurations: this.formatLinkTypesOf(params.elementId)

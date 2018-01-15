@@ -52,9 +52,12 @@ export interface SparqlDataProviderSettings {
     /**
      * link types of returns possible link types from specified instance with statistics
      */
-    linkTypesOfQuery1: string;
-    linkTypesOfQuery2: string;
-    // linkTypesOfQuery3: string;
+    linkTypesOfQuery: string;
+
+    /**
+     * link types of stats returns statistics of a link type for specified resource
+     */
+    linkTypesOfStatsQuery: string;
 
     /**
      * when fetching all links from element, we could specify additional filter
@@ -142,8 +145,8 @@ export const RDFSettings: SparqlDataProviderSettings = {
     elementInfoQuery: ``,
     imageQueryPattern: ``,
 
-    linkTypesOfQuery1: ``,
-    linkTypesOfQuery2: ``,
+    linkTypesOfQuery: ``,
+    linkTypesOfStatsQuery: ``,
     filterRefElementLinkPattern: '',
     filterTypePattern: ``,
     filterAdditionalRestriction: ``,
@@ -214,7 +217,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } union { ?inst wdt:P163/wdt:P18 ?fullImage }
                 BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
                     STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
-    linkTypesOfQuery1: `
+    linkTypesOfQuery: `
         SELECT DISTINCT ?link
         WHERE {
             {
@@ -231,7 +234,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             FILTER regex(STR(?link), "direct")
         }
     `,
-    linkTypesOfQuery2: `
+    linkTypesOfStatsQuery: `
         SELECT ?link ?outCount ?inCount
         WHERE {
             { 
@@ -312,7 +315,7 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             } VALUES (?inst) {\${ids}}
         `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
-    linkTypesOfQuery1: `
+    linkTypesOfQuery: `
         SELECT DISTINCT ?link
         WHERE {
             { \${elementIri} ?link ?outObject }
@@ -320,7 +323,7 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             { ?inObject ?link \${elementIri} }
         }
     `,
-    linkTypesOfQuery2: `
+    linkTypesOfStatsQuery: `
         SELECT ?link ?outCount ?inCount
         WHERE {
             { 
