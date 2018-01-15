@@ -829,7 +829,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
                 <label className='ontodia-label ontodia-connections-menu__loading-objects'>No available nodes</label> :
                 <div className='ontodia-connections-menu_objects-panel_objects-list'>
                     {objectViews}
-                    {this.props.data.linkDataChunk.expectedCount > activeObjCount ?
+                    {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ?
                         <div
                             className='element-in-popup-menu'
                             onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}
