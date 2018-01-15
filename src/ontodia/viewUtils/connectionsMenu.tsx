@@ -8,7 +8,6 @@ import { DiagramView } from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
-
 import { EventObserver } from './events';
 
 type Label = { values: LocalizedString[] };
@@ -39,6 +38,13 @@ type SortMode = 'alphabet' | 'smart';
 export interface PropertyScore {
     propertyIri: string;
     score: number;
+}
+
+export interface LinkDataChunk {
+    link: FatLinkType;
+    direction?: 'in' | 'out';
+    expectedCount: number;
+    offset?: number;
 }
 
 export interface ObjectsData {
@@ -619,13 +625,6 @@ interface LinkInPopupMenuProps {
     onExpandLink?: (linkDataChunk: LinkDataChunk) => void;
     onMoveToFilter?: (linkDataChunk: LinkDataChunk) => void;
     probability?: number;
-}
-
-interface LinkDataChunk {
-    link: FatLinkType;
-    direction?: 'in' | 'out';
-    expectedCount: number;
-    offset?: number;
 }
 
 class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
