@@ -299,7 +299,9 @@ export class DiagramModel {
                     linkType,
                     vertices,
                 });
-                link.setLayoutOnly(markLinksAsLayoutOnly);
+                if (link) {
+                    link.setLayoutOnly(markLinksAsLayoutOnly);
+                }
             }
         }
 
