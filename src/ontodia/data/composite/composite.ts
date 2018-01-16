@@ -26,6 +26,7 @@ import {
 
 export interface DPDefinition {
     name: string;
+    useInStats?: boolean;
     dataProvider: DataProvider;
 }
 
@@ -193,12 +194,13 @@ export class CompositeDataProvider implements DataProvider {
     private processResults<ResponseType>(
         responsePromise: Promise<ResponseType>,
         dpName: string,
+        dpUseInStats?: boolean,
     ): Promise<CompositeResponse<ResponseType>> {
         return responsePromise
-            .then(response => ({dataSourceName: dpName, response: response}))
+            .then(response => ({dataSourceName: dpName, useInStats: dpUseInStats, response: response}))
             .catch(error => {
                 console.error(error);
-                return {dataSourceName: dpName, response: undefined};
+                return {dataSourceName: dpName, useInStats: dpUseInStats, response: undefined};
             });
     };
 
@@ -234,8 +236,8 @@ export class CompositeDataProvider implements DataProvider {
     private fetchSequentially<ResponseType>(
         functionName: string, mergeFunction: (...args: any[]) => ResponseType, params?: any,
     ) {
-        const resultPromises = this.dataProviders.map(
-            (dp: any) => this.processResults(dp.dataProvider[functionName].call(dp.dataProvider, params), dp.name),
+        const resultPromises = this.dataProviders.map((dp: any) =>
+            this.processResults(dp.dataProvider[functionName].call(dp.dataProvider, params), dp.name, dp.useInStats)
         );
         return Promise.all(resultPromises).then(mergeFunction);
     }
