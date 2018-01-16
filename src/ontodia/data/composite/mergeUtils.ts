@@ -11,19 +11,24 @@ import {
     LocalizedString,
 } from '../model';
 
+const DATA_PROVIDER_PROPERTY = 'http://ontodia.org/property/DataProvider';
+
 export interface CompositeResponse<Type> {
     dataSourceName: string;
+    useInStats?: boolean;
     response: Type;
 }
 
 export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): ClassModel[] {
-    const lists = response.filter(r => r.response).map(r => classTreeToArray(r.response));
+    const lists = response.filter(r => r.response).map(({useInStats, response}) =>
+        ({useInStats, classes: classTreeToArray(response)})
+    );
     const dictionary: Dictionary<ClassModel> = {};
     const topLevelModels: Dictionary<ClassModel> = {};
     const childrenMap: Dictionary<string[]> = {};
 
-    for (const list of lists) {
-        for (const model of list) {
+    for (const {useInStats, classes} of lists) {
+        for (const model of classes) {
             const childrenIds: string[] = childrenMap[model.id] || [];
             model.children.map(ch => ch.id).forEach(id => {
                 if (childrenIds.indexOf(id) === -1) {
@@ -31,7 +36,10 @@ export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): Cla
                 }
             });
             model.children = [];
-            model.count = undefined;
+
+            if (!useInStats) {
+                model.count = NaN;
+            }
 
             if (!dictionary[model.id]) {
                 topLevelModels[model.id] = model;
@@ -160,7 +168,7 @@ export function mergeElementInfo(response: CompositeResponse<Dictionary<ElementM
 
         for (const em of list) {
             em.sources = [resp.dataSourceName];
-            em.properties.DataProvider = {
+            em.properties[DATA_PROVIDER_PROPERTY] = {
                 type: 'string', values: [{ text: resp.dataSourceName, lang: '' }],
             };
             if (!dictionary[em.id]) {
@@ -301,6 +309,20 @@ export function mergeLabels(
     };
 }
 
+export function mergeCounts(a: number, b: number): number {
+    if (Number.isNaN(a) && Number.isNaN(b)) { return NaN; }
+
+    if (Number.isNaN(a)) {
+        a = 0;
+    }
+
+    if (Number.isNaN(b)) {
+        b = 0;
+    }
+
+    return a + b;
+}
+
 export function mergeClassModel(a: ClassModel, b: ClassModel): ClassModel {
     const childrenDictionary: Dictionary<ClassModel> = {};
     for (const child of a.children.concat(b.children)) {
@@ -312,7 +334,7 @@ export function mergeClassModel(a: ClassModel, b: ClassModel): ClassModel {
     return {
         id: a.id,
         label: mergeLabels(a.label, b.label),
-        count: a.count + b.count,
+        count: mergeCounts(a.count, b.count),
         children: Object.keys(childrenDictionary).map(key => childrenDictionary[key]),
     };
 }
