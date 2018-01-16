@@ -4,17 +4,17 @@ import { WorkspaceLanguage } from '../workspace/workspace';
 
 export interface Props {
     onSaveDiagram?: () => void;
-    onForceLayout: () => void;
-    onZoomIn: () => void;
-    onZoomOut: () => void;
-    onZoomToFit: () => void;
-    onExportSVG: (link: HTMLAnchorElement) => void;
-    onExportPNG: (link: HTMLAnchorElement) => void;
-    onPrint: () => void;
-    languages: ReadonlyArray<WorkspaceLanguage>;
-    selectedLanguage: string;
-    onChangeLanguage: (language: string) => void;
-    onShowTutorial: () => void;
+    onForceLayout?: () => void;
+    onZoomIn?: () => void;
+    onZoomOut?: () => void;
+    onZoomToFit?: () => void;
+    onExportSVG?: (link: HTMLAnchorElement) => void;
+    onExportPNG?: (link: HTMLAnchorElement) => void;
+    onPrint?: () => void;
+    languages?: ReadonlyArray<WorkspaceLanguage>;
+    selectedLanguage?: string;
+    onChangeLanguage?: (language: string) => void;
+    onShowTutorial?: () => void;
     isViewOnly?: boolean;
 }
 

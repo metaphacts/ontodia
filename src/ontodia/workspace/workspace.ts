@@ -1,4 +1,4 @@
-import { Component, createElement, ReactElement } from 'react';
+import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import { Link, FatLinkType } from '../diagram/elements';
@@ -95,19 +95,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
     }
 
-    render(): ReactElement<any> {
-        const {languages, toolbar, isViewOnly, onSaveDiagram} = this.props;
-        return createElement(WorkspaceMarkup, {
-            ref: markup => { this.markup = markup; },
-            isViewOnly: this.props.isViewOnly,
-            view: this.diagram,
-            leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
-            rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
-            searchCriteria: this.state.criteria,
-            onSearchCriteriaChanged: criteria => this.setState({criteria}),
-            zoomOptions: this.props.zoomOptions,
-            onZoom: this.props.onZoom,
-            toolbar: toolbar !== undefined ? toolbar : createElement<EditorToolbarProps>(EditorToolbar, {
+    private getToolbar = () => {
+        const {languages, onSaveDiagram, isViewOnly, toolbar} = this.props;
+        return cloneElement(
+            toolbar || createElement<EditorToolbarProps>(EditorToolbar), {
                 onZoomIn: this.zoomIn,
                 onZoomOut: this.zoomOut,
                 onZoomToFit: this.zoomToFit,
@@ -124,7 +115,23 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onChangeLanguage: this.changeLanguage,
                 onShowTutorial: this.showTutorial,
                 isViewOnly,
-            }),
+            },
+        );
+    }
+
+    render(): ReactElement<any> {
+        const {languages, toolbar, isViewOnly, onSaveDiagram} = this.props;
+        return createElement(WorkspaceMarkup, {
+            ref: markup => { this.markup = markup; },
+            isViewOnly: this.props.isViewOnly,
+            view: this.diagram,
+            leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
+            rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
+            searchCriteria: this.state.criteria,
+            onSearchCriteriaChanged: criteria => this.setState({criteria}),
+            zoomOptions: this.props.zoomOptions,
+            onZoom: this.props.onZoom,
+            toolbar: this.getToolbar(),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
