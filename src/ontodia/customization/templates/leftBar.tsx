@@ -62,7 +62,7 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                                     </div>
                                 ))}
                             </div>
-                        ) : 'no properties'
+                        ) : <div>no properties</div>
                     ) : null}
                 </div>
             </div>

@@ -1,7 +1,7 @@
 import * as Backbone from 'backbone';
 import { each, size, values, keyBy, defaults } from 'lodash';
 import * as joint from 'jointjs';
-
+import 'es6-promise';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
 } from '../data/model';

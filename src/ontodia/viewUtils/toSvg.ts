@@ -2,12 +2,16 @@ import * as _ from 'lodash';
 import * as joint from 'jointjs';
 
 import { isIE11 } from './detectBrowser';
+import { htmlToSvg } from './htmlToSvg';
+
+const canvg = require<(canvas: HTMLCanvasElement, svg: string) => void>('canvg-fixed');
 
 export interface ToSVGOptions {
     preserveDimensions?: boolean;
     convertImagesToDataUris?: boolean;
     blacklistedCssAttributes?: string[];
     elementsToRemoveSelector?: string;
+    mockImages?: boolean;
 }
 
 type Bounds = { width: number; height: number; };
@@ -20,16 +24,11 @@ type Bounds = { width: number; height: number; };
 const ForeignObjectSizePadding = 2;
 
 export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
-    if (isIE11()) {
-        return Promise.reject(new Error(
-            'Export to SVG is not supported in the Internet Explorer'));
-    }
-
     const viewportTransform = paper.viewport.getAttribute('transform');
     paper.viewport.setAttribute('transform', '');
 
     const bbox = paper.getContentBBox();
-    const {svgClone, imageBounds} = clonePaperSvg(paper, ForeignObjectSizePadding);
+    const {svgClone, imageBounds} = clonePaperSvg(paper, ForeignObjectSizePadding, opt.mockImages);
 
     paper.viewport.setAttribute('transform', viewportTransform || '');
 
@@ -43,26 +42,34 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
     }
     svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
 
-    const nodes = svgClone.querySelectorAll('img');
     const images: HTMLImageElement[] = [];
-    foreachNode(nodes, node => images.push(node));
+    if (!isIE11) {
+        const nodes = svgClone.querySelectorAll('img');
+        foreachNode(nodes, node => images.push(node));
+    }
 
     const convertingImages = Promise.all(images.map(img => {
-        const {width, height} = imageBounds[nodeRelativePath(svgClone, img)];
-        img.setAttribute('width', width.toString());
-        img.setAttribute('height', height.toString());
-        if (!opt.convertImagesToDataUris) {
+        const exportKey = img.getAttribute('export-key');
+        img.removeAttribute('export-key');
+        if (exportKey) {
+            const {width, height} = imageBounds[exportKey];
+            img.setAttribute('width', width.toString());
+            img.setAttribute('height', height.toString());
+            if (!opt.convertImagesToDataUris) {
+                return Promise.resolve();
+            }
+            return exportAsDataUri(img).then(dataUri => {
+                // check for empty svg data URI which happens when mockJointXHR catches an exception
+                if (dataUri && dataUri !== 'data:image/svg+xml,') {
+                    img.src = dataUri;
+                }
+            }).catch(err => {
+                console.warn('Failed to export image: ' + img.src);
+                console.warn(err);
+            });
+        } else {
             return Promise.resolve();
         }
-        return exportAsDataUri(img).then(dataUri => {
-            // check for empty svg data URI which happens when mockJointXHR catches an exception
-            if (dataUri && dataUri !== 'data:image/svg+xml,') {
-                img.src = dataUri;
-            }
-        }).catch(err => {
-            console.warn('Failed to export image: ' + img.src);
-            console.warn(err);
-        });
     }));
 
     return convertingImages.then(() => {
@@ -75,11 +82,46 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
 
         if (opt.elementsToRemoveSelector) {
             foreachNode(svgClone.querySelectorAll(opt.elementsToRemoveSelector),
-                node => node.remove());
+                node => {
+                    node.parentNode.removeChild(node);
+                });
         }
 
         return new XMLSerializer().serializeToString(svgClone);
     });
+}
+
+function clearMarkers(svg: SVGElement) {
+    const availableIds: { [ key: string ]: boolean } = {};
+    const defss = svg.querySelectorAll('defs');
+    foreachNode(defss, defs => {
+        foreachNode(defs.childNodes, def => {
+            availableIds[(def as SVGElement).getAttribute('id')] = true;
+        });
+    });
+    const paths = svg.querySelectorAll('path');
+    foreachNode(paths, path => {
+        const markerStart = extractId(path.getAttribute('marker-start'));
+        if (markerStart && !availableIds[markerStart]) {
+            path.removeAttribute('marker-start');
+        }
+        const markerEnd = extractId(path.getAttribute('marker-end'));
+        if (markerEnd && !availableIds[markerEnd]) {
+            path.removeAttribute('marker-end');
+        }
+    });
+
+    function extractId(attributeValue: string) {
+        if (attributeValue) {
+            if (!isIE11) {
+                return (attributeValue.match(/#(.*?)\)/) || [])[1];
+            } else {
+                return (attributeValue.match(/#(.*?)"/) || [])[1];
+            }
+        } else {
+            return undefined;
+        }
+    }
 }
 
 function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): string[] {
@@ -113,11 +155,12 @@ function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): st
     return cssTexts;
 }
 
-function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
+function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number, mockImages: boolean): {
     svgClone: SVGElement;
     imageBounds: { [path: string]: Bounds };
 } {
     const svgClone = paper.svg.cloneNode(true) as SVGElement;
+    clearMarkers(svgClone);
     const imageBounds: { [path: string]: Bounds } = {};
 
     const cells: Backbone.Collection<joint.dia.Cell> = paper.model.get('cells');
@@ -127,27 +170,33 @@ function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
             `.ontodia-overlayed-element[model-id='${modelId}']`);
         if (!overlayedView) { return; }
 
-        const newRoot = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-        const model = cells.get(modelId);
-        const modelSize = model.get('size');
-        newRoot.setAttribute('width', modelSize.width + elementSizePadding);
-        newRoot.setAttribute('height', modelSize.height + elementSizePadding);
-        const overlayedViewContent = overlayedView.firstChild as HTMLElement;
-        newRoot.appendChild(overlayedViewContent.cloneNode(true));
+        const overlayedViewContent = overlayedView.firstChild.cloneNode(true) as HTMLElement;
+        let newRoot;
+        if (!isIE11()) {
+            newRoot = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+            const model = cells.get(modelId);
+            const modelSize = model.get('size');
+            newRoot.setAttribute('width', modelSize.width + elementSizePadding);
+            newRoot.setAttribute('height', modelSize.height + elementSizePadding);
+            newRoot.appendChild(overlayedViewContent);
 
-        separatedView.setAttribute('class',
-            `${separatedView.getAttribute('class')} ontodia-exported-element`);
+            separatedView.setAttribute('class',
+                `${separatedView.getAttribute('class')} ontodia-exported-element`);
+        } else {
+            newRoot = htmlToSvg(overlayedView.firstChild, [], mockImages);
+        }
         const oldRoot = separatedView.querySelector('.rootOfUI');
-        const rootParent = oldRoot.parentElement;
+        const rootParent = oldRoot.parentElement || oldRoot.parentNode;
         rootParent.removeChild(oldRoot);
         rootParent.appendChild(newRoot);
 
-        foreachNode(overlayedViewContent.querySelectorAll('img'), img => {
-            const rootPath = nodeRelativePath(svgClone, rootParent);
-            const imgPath = nodeRelativePath(overlayedViewContent, img);
-            // combine path "from SVG to root" and "from root to image"
-            // with additional separator to consider newly added nodes
-            imageBounds[rootPath + ':0:0:' + imgPath] = {
+        const originalNodes = (overlayedView.firstChild as HTMLElement).querySelectorAll('img');
+        const clonedNodes = overlayedViewContent.querySelectorAll('img');
+
+        foreachNode(originalNodes, (img, index) => {
+            const exportKey = _.uniqueId('export-key-');
+            clonedNodes[index].setAttribute('export-key', exportKey);
+            imageBounds[exportKey] = {
                 width: img.clientWidth,
                 height: img.clientHeight,
             };
@@ -201,40 +250,10 @@ function loadCrossOriginImage(src: string): Promise<HTMLImageElement> {
     return promise;
 }
 
-function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T) => void) {
+function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node?: T, index?: number) => void) {
     for (let i = 0; i < nodeList.length; i++) {
-        callback(nodeList[i]);
+        callback(nodeList[i], i);
     }
-}
-
-/**
- * Returns colon-separeted path from `parent` to `child` where each part
- * corresponds to child index at each tree level.
- * 
- * @example
- * <div id='root'>
- *   <span></span>
- *   <ul>
- *     <li id='target'></li>
- *     <li></li>
- *   </ul>
- * </div>
- * 
- * nodeRelativePath(root, target) === '1:0'
- */
-function nodeRelativePath(parent: Node, child: Node) {
-    const path: number[] = [];
-    let current = child;
-    while (current && current !== parent) {
-        let sibling = current;
-        let indexAtLevel = 0;
-        while (sibling = sibling.previousSibling) {
-            indexAtLevel++;
-        }
-        path.unshift(indexAtLevel);
-        current = current.parentNode;
-    }
-    return path.join(':');
 }
 
 export interface ToDataURLOptions {
@@ -268,38 +287,48 @@ export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): P
         contentHeight = imageRect.height - 2 * padding;
 
         const img = new Image();
-        img.onload = function () {
-            let dataURL: string;
-            let context: CanvasRenderingContext2D;
-            let canvas: HTMLCanvasElement;
 
-            function createCanvas() {
-                canvas = document.createElement('canvas');
-                canvas.width = imageRect.width;
-                canvas.height = imageRect.height;
-                context = canvas.getContext('2d');
-                context.fillStyle = options.backgroundColor || 'white';
-                context.fillRect(0, 0, imageRect.width, imageRect.height);
-            }
-
-            createCanvas();
-            try {
-                context.drawImage(img, padding, padding, contentWidth, contentHeight);
-                dataURL = canvas.toDataURL(options.type, options.quality);
-                resolve(dataURL);
-            } catch (e) {
-                reject(e);
-                return;
-            }
-        };
         const svgOptions = _.clone(options.svgOptions || {convertImagesToDataUris: true});
         svgOptions.convertImagesToDataUris = true;
-        toSVG(paper, svgOptions).then(svgString => {
-            svgString = svgString
-                .replace('width="100%"', 'width="' + contentWidth + '"')
-                .replace('height="100%"', 'height="' + contentHeight + '"');
-            img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
-        });
+        if (!isIE11()) {
+            img.onload = function () {
+                const { canvas, context } = createCanvas();
+                try {
+                    context.drawImage(img, padding, padding, contentWidth, contentHeight);
+                    resolve(canvas.toDataURL(options.type, options.quality));
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            };
+            toSVG(paper, svgOptions).then(svgString => {
+                svgString = svgString
+                    .replace('width="100%"', 'width="' + contentWidth + '"')
+                    .replace('height="100%"', 'height="' + contentHeight + '"');
+                img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
+            });
+        } else {
+            svgOptions.mockImages = true;
+            toSVG(paper, svgOptions).then(svgString => {
+                const { canvas, context } = createCanvas();
+                svgString = svgString
+                    .replace('width="100%"', 'width="' + contentWidth + '"')
+                    .replace('height="100%"', 'height="' + contentHeight + '"');
+                canvg(canvas, svgString);
+                resolve(canvas.toDataURL(options.type, options.quality));
+            });
+        }
+
+        function createCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = imageRect.width;
+            canvas.height = imageRect.height;
+            const context = canvas.getContext('2d');
+            context.fillStyle = options.backgroundColor || 'white';
+            context.fillRect(0, 0, imageRect.width, imageRect.height);
+            return { canvas, context };
+        }
+
     });
 }
 

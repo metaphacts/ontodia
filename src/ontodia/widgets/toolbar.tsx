@@ -8,8 +8,8 @@ export interface Props {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onZoomToFit: () => void;
-    onExportSVG: (link: HTMLAnchorElement) => void;
-    onExportPNG: (link: HTMLAnchorElement) => void;
+    onExportSVG: (fileName?: string) => void;
+    onExportPNG: (fileName?: string) => void;
     onPrint: () => void;
     languages: ReadonlyArray<WorkspaceLanguage>;
     selectedLanguage: string;
@@ -21,7 +21,6 @@ export interface Props {
 const CLASS_NAME = 'ontodia-toolbar';
 
 export class EditorToolbar extends React.Component<Props, void> {
-    private downloadImageLink: HTMLAnchorElement;
 
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value;
@@ -29,11 +28,11 @@ export class EditorToolbar extends React.Component<Props, void> {
     }
 
     private onExportSVG = () => {
-        this.props.onExportSVG(this.downloadImageLink);
+        this.props.onExportSVG();
     }
 
     private onExportPNG = () => {
-        this.props.onExportPNG(this.downloadImageLink);
+        this.props.onExportPNG();
     }
 
     private renderBtnSaveDiagram = () => {
@@ -115,8 +114,6 @@ export class EditorToolbar extends React.Component<Props, void> {
                     {this.renderLanguages()}
                     {this.renderBtnHelp()}
                 </div>
-                <a href='#' ref={link => { this.downloadImageLink = link; }}
-                   style={{display: 'none', visibility: 'collapse'}}/>
             </div>
         );
     }
