@@ -7,9 +7,6 @@ import {
 
 import { onPageLoad } from './common';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 

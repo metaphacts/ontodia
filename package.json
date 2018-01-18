@@ -1,6 +1,6 @@
 {
   "name": "ontodia",
-  "version": "0.6.1",
+  "version": "0.8.0",
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
@@ -36,7 +36,6 @@
   "dependencies": {
     "d3-color": "~1.0.2",
     "intro.js": "1.1.1",
-    "jquery": "~2.2.1",
     "lodash": "~4.17.4",
     "n3": "~0.10.0",
     "rdf-ext": "~0.3.0",
@@ -44,15 +43,11 @@
     "whatwg-fetch": "~2.0.2"
   },
   "peerDependencies": {
-    "@types/backbone": "*",
     "@types/react": "*",
     "react": "^15.0.0",
     "react-dom": "^15.0.0"
   },
   "devDependencies": {
-    "rdf-parser-jsonld": "0.3.3",
-    "rdf-parser-n3": "0.3.0",
-    "rdf-parser-rdfxml": "0.3.1",
     "@types/d3-color": "1.0.4",
     "@types/jquery": "2.0.47",
     "@types/lodash": "4.14.63",
@@ -66,8 +61,12 @@
     "html-webpack-plugin": "2.22.0",
     "json-loader": "0.5.4",
     "jstree": "3.2.1",
+    "jquery": "2.2.4",
     "node-sass": "3.10.1",
     "raw-loader": "0.5.1",
+    "rdf-parser-jsonld": "0.3.3",
+    "rdf-parser-n3": "0.3.0",
+    "rdf-parser-rdfxml": "0.3.1",
     "react": "15.3.2",
     "react-dom": "15.3.2",
     "sass-loader": "4.0.2",

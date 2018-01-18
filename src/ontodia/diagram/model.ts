@@ -83,9 +83,9 @@ export class DiagramModel {
 
     undo() { throw new Error('History is not implemented'); }
     redo() { throw new Error('History is not implemented'); }
-    resetHistory() { throw new Error('History is not implemented'); }
-    initBatchCommand() { throw new Error('History is not implemented'); }
-    storeBatchCommand() { throw new Error('History is not implemented'); }
+    resetHistory() { /* TODO */ }
+    initBatchCommand() { /* TODO */ }
+    storeBatchCommand() { /* TODO */ }
 
     private resetGraph() {
         if (this.graphListener) {
@@ -243,8 +243,8 @@ export class DiagramModel {
         const elementToRequestData: Element[] = [];
         const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
-        for (const layoutCell of layoutData.cells) {
-            const cell = normalizeImportedCell(layoutCell);
+        const normalizedCells = layoutData.cells.map(normalizeImportedCell);
+        for (const cell of normalizedCells) {
             if (cell.type === 'element') {
                 const {id, position, size, isExpanded} = cell;
                 const template = preloadedElements[cell.id];
@@ -254,7 +254,11 @@ export class DiagramModel {
                 if (!template) {
                     elementToRequestData.push(element);
                 }
-            } else if (cell.type === 'link') {
+            }
+        }
+
+        for (const cell of normalizedCells) {
+            if (cell.type === 'link') {
                 const {id, typeId, source, target, vertices} = cell;
                 const linkType = this.createLinkType(typeId);
                 usedLinkTypes[linkType.id] = linkType;

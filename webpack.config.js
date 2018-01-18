@@ -41,13 +41,10 @@ module.exports = {
     externals: !bundlePeers ? {
         'd3-color': true,
         'intro.js': true,
-        'jointjs': true,
-        'jquery': true,
         'lodash': true,
         'n3': true,
         'react': true,
         'react-dom': true,
-        'backbone': true,
         'webcola': true,
         'whatwg-fetch': true,
     } : {},
