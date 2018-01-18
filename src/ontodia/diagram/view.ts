@@ -1,10 +1,6 @@
 import { hcl } from 'd3-color';
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import { defaultsDeep, cloneDeep } from 'lodash';
-import { createElement } from 'react';
-import { render as reactDOMRender, unmountComponentAtNode } from 'react-dom';
-import getDefaultLinkRouter from './defaultLinkRouter';
+import { ReactElement, createElement } from 'react';
 
 import {
     TypeStyleResolver,
@@ -12,7 +8,9 @@ import {
     TemplateResolver,
     CustomTypeStyle,
     ElementTemplate,
-    LinkTemplate, LinkMarkerStyle,
+    LinkTemplate,
+    LinkMarkerStyle,
+    LinkRouter,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
@@ -20,24 +18,25 @@ import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/
 
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
+import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 import {
     toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
 } from '../viewUtils/toSvg';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 
+import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
+import { Size, boundsOf } from './geometry';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
-import { Element, FatClassModel, linkMarkerKey } from './elements';
-
-import { LinkView } from './linkView';
-import { SeparatedElementView } from './separatedElementView';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
     linkTemplateResolvers?: LinkTemplateResolver[];
     templatesResolvers?: TemplateResolver[];
     disableDefaultHalo?: boolean;
+    linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
+    onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
 }
 
 export interface TypeStyle {
@@ -45,60 +44,53 @@ export interface TypeStyle {
     icon?: string;
 }
 
-const DefaultToSVGOptions: ToSVGOptions = {
-    elementsToRemoveSelector: '.link-tools, .marker-vertices',
-    convertImagesToDataUris: true,
-};
+export enum RenderingLayer {
+    Element = 1,
+    ElementSize,
+    PaperArea,
+    Link,
 
-/**
- * Properties:
- *     language: string
- *
- * Events:
- *     (private) dispose - fires on view dispose
- */
-export class DiagramView extends Backbone.Model {
+    FirstToUpdate = Element,
+    LastToUpdate = Link,
+}
+
+export interface DiagramViewEvents {
+    changeLanguage: PropertyChange<DiagramView, string>;
+    changeSelection: PropertyChange<DiagramView, ReadonlyArray<Element>>;
+    changeLinkTemplates: { source: DiagramView };
+    syncUpdate: { layer: RenderingLayer };
+    updateWidgets: UpdateWidgetsEvent;
+    renderDone: { source: DiagramView };
+    dispose: { source: DiagramView };
+}
+
+export interface UpdateWidgetsEvent {
+    widgets: { [key: string]: ReactElement<any> };
+}
+
+export class DiagramView {
+    private readonly listener = new EventObserver();
+    private readonly source = new EventSource<DiagramViewEvents>();
+    readonly events: Events<DiagramViewEvents> = this.source;
+
+    private disposed = false;
+
+    private readonly colorSeed = 0x0BADBEEF;
+
     private typeStyleResolvers: TypeStyleResolver[];
     private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
-    paper: joint.dia.Paper;
-    halo: Halo;
-    connectionsMenu: ConnectionsMenu;
+    private connectionsMenuTarget: Element | undefined;
 
-    readonly selection = new Backbone.Collection<Element>();
-
-    private colorSeed = 0x0BADBEEF;
-
-    private linkTemplates: Dictionary<{
-        template: LinkTemplate;
-        start: SVGMarkerElement;
-        end: SVGMarkerElement;
-    }> = {};
+    private _language = 'en';
+    private _selection: ReadonlyArray<Element> = [];
+    private linkTemplates: { [linkTypeId: string]: LinkTemplate } = {};
 
     constructor(
         public readonly model: DiagramModel,
         public readonly options: DiagramViewOptions = {},
     ) {
-        super();
-        this.setLanguage('en');
-        this.paper = new joint.dia.Paper({
-            model: this.model.graph,
-            gridSize: 1,
-            elementView: SeparatedElementView,
-            linkView: LinkView,
-            width: 1500,
-            height: 800,
-            async: true,
-            preventContextMenu: false,
-            guard: (evt, view) => {
-                // filter right mouse button clicks
-                if (evt.type === 'mousedown' && evt.button !== 0) { return true; }
-                return false;
-            },
-        });
-        (this.paper as any).diagramView = this;
-
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
 
@@ -107,54 +99,58 @@ export class DiagramView extends Backbone.Model {
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
-
-        this.listenTo(this.paper, 'render:done', () => {
-            this.model.trigger('state:renderDone');
-        });
-        this.listenTo(model, 'state:dataLoaded', () => {
-            this.model.resetHistory();
-        });
     }
 
-    getLanguage(): string { return this.get('language'); }
+    get selection() { return this._selection; }
+    setSelection(value: ReadonlyArray<Element>) {
+        const previous = this._selection;
+        if (previous === value) { return; }
+        this._selection = value;
+        this.source.trigger('changeSelection', {source: this, previous});
+    }
+
+    getLanguage(): string { return this._language; }
     setLanguage(value: string) {
         if (!value) {
-            throw Error('cannot set empty language');
+            throw new Error('Cannot set empty language.');
         }
-        this.set('language', value);
+        const previous = this._language;
+        if (previous === value) { return; }
+        this._language = value;
+        this.source.trigger('changeLanguage', {source: this, previous});
     }
 
-    cancelSelection() { this.selection.reset([]); }
+    getLinkTemplates(): { readonly [linkTypeId: string]: LinkTemplate } {
+        return this.linkTemplates;
+    }
 
-    print() {
-        toSVG(this.paper, DefaultToSVGOptions).then(svg => {
-            const printWindow = window.open('', undefined, 'width=1280,height=720');
-            printWindow.document.write(svg);
-            printWindow.print();
+    cancelSelection() {
+        this.setSelection([]);
+    }
+
+    performSyncUpdate() {
+        for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
+            this.source.trigger('syncUpdate', {layer});
+        }
+    }
+
+    _onRenderDone() {
+        this.source.trigger('renderDone', {source: this});
+    }
+
+    waitUntilRenderDone(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.listener.listenOnce(this.events, 'renderDone', () => resolve());
         });
-    }
-
-    exportSVG(): Promise<string> {
-        return toSVG(this.paper, {...DefaultToSVGOptions, preserveDimensions: true});
-    }
-
-    exportPNG(options: ToDataURLOptions = {}): Promise<string> {
-        return toDataURL(this.paper, {
-            ...options,
-            svgOptions: {...DefaultToSVGOptions, ...options.svgOptions},
-        });
-    }
-
-    adjustPaper() {
-        this.paper.trigger('ontodia:adjustSize');
     }
 
     initializePaperComponents() {
         if (!this.model.isViewOnly()) {
-            this.configureSelection();
-            this.configureDefaultHalo();
+            this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
-            this.onDispose(() => document.removeEventListener('keyup', this.onKeyUp));
+            this.listener.listen(this.events, 'dispose', () => {
+                document.removeEventListener('keyup', this.onKeyUp);
+            });
         }
     }
 
@@ -168,66 +164,57 @@ export class DiagramView extends Backbone.Model {
     }
 
     private removeSelectedElements() {
-        const elementsToRemove = this.selection.toArray();
+        const elementsToRemove = this.selection;
         if (elementsToRemove.length === 0) { return; }
 
         this.cancelSelection();
-        this.model.graph.trigger('batch:start');
+        this.model.initBatchCommand();
         for (const element of elementsToRemove) {
-            element.remove();
+            this.model.removeElement(element.id);
         }
-        this.model.graph.trigger('batch:stop');
+        this.model.storeBatchCommand();
     }
 
-    private configureSelection() {
+    onPaperPointerUp(event: MouseEvent, cell: Element | Link | undefined, isClick: boolean) {
         if (this.model.isViewOnly()) { return; }
-
-        this.listenTo(this.paper, 'cell:pointerup', (cellView: joint.dia.CellView, evt: MouseEvent) => {
-            // We don't want a Halo for links.
-            if (cellView.model instanceof joint.dia.Link) { return; }
-            if (evt.ctrlKey || evt.shiftKey || evt.metaKey) { return; }
-            const element = cellView.model as Element;
-            this.selection.reset([element]);
-            element.focus();
-        });
-
-        let pointerScreenCoords = {x: NaN, y: NaN};
-        this.listenTo(this.paper, 'blank:pointerdown', (evt: MouseEvent) => {
-            pointerScreenCoords = {x: evt.screenX, y: evt.screenY};
-        });
-
-        this.listenTo(this.paper, 'blank:pointerup', (evt: MouseEvent) => {
-            if (evt.screenX !== pointerScreenCoords.x || evt.screenY !== pointerScreenCoords.y) { return; }
-            this.selection.reset();
+        // We don't want a Halo for links.
+        if (cell instanceof Link) { return; }
+        if (event.ctrlKey || event.shiftKey || event.metaKey) { return; }
+        if (cell) {
+            this.setSelection([cell]);
+            cell.focus();
+        } else if (isClick) {
+            this.setSelection([]);
             this.hideNavigationMenu();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
-        });
+        }
     }
 
-    private configureDefaultHalo() {
+    onIriClick(iri: string, element: Element, event: React.MouseEvent<any>) {
+        event.persist();
+        event.preventDefault();
+        const {onIriClick} = this.options;
+        if (onIriClick) {
+            onIriClick(iri, element, event);
+        }
+    }
+
+    private configureHalo() {
         if (this.options.disableDefaultHalo) { return; }
 
-        const container = document.createElement('div');
-        this.paper.el.appendChild(container);
-
         const renderDefaultHalo = (selectedElement?: Element) => {
-            let cellView: joint.dia.CellView = undefined;
-            if (selectedElement) {
-                cellView = this.paper.findViewByModel(selectedElement);
-            }
-            reactDOMRender(createElement(Halo, {
-                paper: this.paper,
+            const halo = createElement(Halo, {
                 diagramView: this,
-                cellView: cellView,
+                target: selectedElement,
                 onDelete: () => this.removeSelectedElements(),
                 onExpand: () => {
-                    cellView.model.set('isExpanded', !cellView.model.get('isExpanded'));
+                    selectedElement.setExpanded(!selectedElement.isExpanded);
                 },
-                navigationMenuOpened: Boolean(this.connectionsMenu),
+                navigationMenuOpened: Boolean(this.connectionsMenuTarget),
                 onToggleNavigationMenu: () => {
-                    if (this.connectionsMenu) {
+                    if (this.connectionsMenuTarget) {
                         this.hideNavigationMenu();
                     } else {
                         this.showNavigationMenu(selectedElement);
@@ -235,42 +222,36 @@ export class DiagramView extends Backbone.Model {
                     renderDefaultHalo(selectedElement);
                 },
                 onAddToFilter: () => selectedElement.addToFilter(),
-            }), container);
+            });
+            this.source.trigger('updateWidgets', {widgets: {halo}});
         };
 
-        this.listenTo(this.selection, 'add remove reset', () => {
-            const selected = this.selection.length === 1 ? this.selection.first() : undefined;
-            if (this.connectionsMenu && selected !== this.connectionsMenu.cellView.model) {
+        this.listener.listen(this.events, 'changeSelection', () => {
+            const selected = this.selection.length === 1 ? this.selection[0] : undefined;
+            if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
                 this.hideNavigationMenu();
             }
             renderDefaultHalo(selected);
         });
 
         renderDefaultHalo();
-        this.onDispose(() => {
-            unmountComponentAtNode(container);
-            this.paper.el.removeChild(container);
-        });
     }
 
-    showNavigationMenu(element: Element) {
-        const cellView = this.paper.findViewByModel(element);
-        this.connectionsMenu = new ConnectionsMenu({
-            paper: this.paper,
+    showNavigationMenu(target: Element) {
+        const connectionsMenu = createElement(ConnectionsMenu, {
             view: this,
-            cellView,
-            onClose: () => {
-                this.connectionsMenu.remove();
-                this.connectionsMenu = undefined;
-            },
+            target,
+            onClose: () => this.hideNavigationMenu(),
             suggestProperties: this.options.suggestProperties,
         });
+        this.connectionsMenuTarget = target;
+        this.source.trigger('updateWidgets', {widgets: {connectionsMenu}});
     }
 
     hideNavigationMenu() {
-        if (this.connectionsMenu) {
-            this.connectionsMenu.remove();
-            this.connectionsMenu = undefined;
+        if (this.connectionsMenuTarget) {
+            this.connectionsMenuTarget = undefined;
+            this.source.trigger('updateWidgets', {widgets: {connectionsMenu: undefined}});
         }
     }
 
@@ -302,8 +283,8 @@ export class DiagramView extends Backbone.Model {
         let {x, y} = paperPosition;
         for (const elementId of elementIds) {
             const center = elementIds.length === 1;
-            const element = this.createElementAt(elementId, {x: x + totalXOffset, y, center});
-            totalXOffset += element.get('size').width + 20;
+            const {element, size} = this.createElementAt(elementId, {x: x + totalXOffset, y, center});
+            totalXOffset += size.width + 20;
 
             elementsToSelect.push(element);
             element.focus();
@@ -311,26 +292,32 @@ export class DiagramView extends Backbone.Model {
 
         this.model.requestElementData(elementsToSelect);
         this.model.requestLinksOfType();
-        this.selection.reset(elementsToSelect);
+        this.setSelection(elementsToSelect);
 
         this.model.storeBatchCommand();
     }
 
-    private createElementAt(elementId: string, position: { x: number; y: number; center?: boolean; }) {
+    private createElementAt(
+        elementId: string,
+        position: { x: number; y: number; center?: boolean; }
+    ): { element: Element, size: Size } {
         const element = this.model.createElement(elementId);
 
         let {x, y} = position;
-        const size: { width: number; height: number; } = element.get('size');
-        if (position.center) {
-            x -= size.width / 2;
-            y -= size.height / 2;
-        }
-        element.set('position', {x, y});
+        let {width, height} = boundsOf(element);
+        if (width === 0) { width = 100; }
+        if (height === 0) { height = 50; }
 
-        return element;
+        if (position.center) {
+            x -= width / 2;
+            y -= height / 2;
+        }
+        element.setPosition({x, y});
+
+        return {element, size: {width, height}};
     }
 
-    public getLocalizedText(texts: LocalizedString[]): LocalizedString {
+    public getLocalizedText(texts: ReadonlyArray<LocalizedString>): LocalizedString {
         return chooseLocalizedText(texts, this.getLanguage());
     }
 
@@ -342,13 +329,13 @@ export class DiagramView extends Backbone.Model {
     }
 
     public getElementTypeLabel(type: FatClassModel): LocalizedString {
-        const label = this.getLocalizedText(type.get('label').values);
+        const label = this.getLocalizedText(type.label);
         return label ? label : { text: uri2name(type.id), lang: '' };
     }
 
     public getLinkLabel(linkTypeId: string): LocalizedString {
         const type = this.model.getLinkType(linkTypeId);
-        const label = type ? this.getLocalizedText(type.get('label').values) : null;
+        const label = type ? this.getLocalizedText(type.label) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
@@ -413,15 +400,15 @@ export class DiagramView extends Backbone.Model {
         }
     }
 
-    getLinkTemplate(linkTypeId: string): LinkTemplate {
-        const existingTemplate = this.linkTemplates[linkTypeId];
+    createLinkTemplate(linkType: FatLinkType): LinkTemplate {
+        const existingTemplate = this.linkTemplates[linkType.id];
         if (existingTemplate) {
-            return existingTemplate.template;
+            return existingTemplate;
         }
 
         let template: LinkTemplate = {};
         for (const resolver of this.linkTemplateResolvers) {
-            const result = resolver(linkTypeId);
+            const result = resolver(linkType.id);
             if (result) {
                 template = cloneDeep(result);
                 break;
@@ -429,40 +416,9 @@ export class DiagramView extends Backbone.Model {
         }
 
         fillLinkTemplateDefaults(template, this.model);
-        this.linkTemplates[linkTypeId] = {
-            template,
-            start: this.createLinkMarker(linkTypeId, true, template.markerSource),
-            end: this.createLinkMarker(linkTypeId, false, template.markerTarget),
-        };
+        this.linkTemplates[linkType.id] = template;
+        this.source.trigger('changeLinkTemplates', {source: this});
         return template;
-    }
-
-    private createLinkMarker(linkTypeId: string, startMarker: boolean, style: LinkMarkerStyle) {
-        if (!style) { return undefined; }
-
-        const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
-        const defs = this.paper.svg.getElementsByTagNameNS(SVG_NAMESPACE, 'defs')[0];
-        const marker = document.createElementNS(SVG_NAMESPACE, 'marker');
-        const linkTypeIndex = this.model.getLinkType(linkTypeId).index;
-        marker.setAttribute('id', linkMarkerKey(linkTypeIndex, startMarker));
-        marker.setAttribute('markerWidth', style.width.toString());
-        marker.setAttribute('markerHeight', style.height.toString());
-        marker.setAttribute('orient', 'auto');
-
-        let xOffset = startMarker ? 0 : (style.width - 1);
-        marker.setAttribute('refX', xOffset.toString());
-        marker.setAttribute('refY', (style.height / 2).toString());
-        marker.setAttribute('markerUnits', 'userSpaceOnUse');
-
-        const path = document.createElementNS(SVG_NAMESPACE, 'path');
-        path.setAttribute('d', style.d);
-        if (style.fill !== undefined) { path.setAttribute('fill', style.fill); }
-        if (style.stroke !== undefined) { path.setAttribute('stroke', style.stroke); }
-        if (style.strokeWidth !== undefined) { path.setAttribute('stroke-width', style.strokeWidth); }
-
-        marker.appendChild(path);
-        defs.appendChild(marker);
-        return marker;
     }
 
     public registerLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
@@ -470,29 +426,16 @@ export class DiagramView extends Backbone.Model {
         return resolver;
     }
 
-    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
+    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver | undefined {
         const index = this.linkTemplateResolvers.indexOf(resolver);
-        if (index !== -1) {
-            return this.linkTemplateResolvers.splice(index, 1)[0];
-        } else {
-            return undefined;
-        }
-    }
-
-    public getOptions(): DiagramViewOptions {
-        return this.options;
-    }
-
-    private onDispose(handler: () => void) {
-        this.listenTo(this, 'dispose', handler);
+        return index >= 0 ? this.linkTemplateResolvers.splice(index, 1)[0] : undefined;
     }
 
     dispose() {
-        if (!this.paper) { return; }
-        this.trigger('dispose');
-        this.stopListening();
-        this.paper.remove();
-        this.paper = undefined;
+        if (this.disposed) { return; }
+        this.source.trigger('dispose', {source: this});
+        this.listener.stopListening();
+        this.disposed = true;
     }
 }
 
@@ -512,9 +455,6 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
     defaultsDeep(template, defaults);
     if (!template.renderLink) {
         template.renderLink = () => ({});
-    }
-    if (!template.router) {
-        template.router = getDefaultLinkRouter(model);
     }
 }
 

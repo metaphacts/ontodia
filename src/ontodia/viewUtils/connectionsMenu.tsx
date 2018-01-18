@@ -1,13 +1,15 @@
-import * as Backbone from 'backbone';
-import * as joint from 'jointjs';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 import { FatLinkType, Element } from '../diagram/elements';
-import DiagramView from '../diagram/view';
+import { boundsOf } from '../diagram/geometry';
+import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
+import { DiagramView } from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
+
+import { EventObserver } from './events';
 
 type Label = { values: LocalizedString[] };
 type ConnectionCount = { inCount: number; outCount: number };
@@ -20,9 +22,7 @@ export interface ReactElementModel {
 const MENU_OFFSET = 40;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     id: 'allRelatedElements',
-    index: -1,
-    label: { values: [{lang: '', text: 'All'}] },
-    diagram: null,
+    label: [{lang: '', text: 'All'}],
 });
 
 export interface PropertySuggestionParams {
@@ -40,19 +40,18 @@ export interface PropertyScore {
     score: number;
 }
 
-export interface ConnectionsMenuOptions {
-    paper: joint.dia.Paper;
+export interface ConnectionsMenuProps extends PaperWidgetProps {
     view: DiagramView;
-    cellView: joint.dia.CellView;
+    target: Element;
     onClose: () => void;
     suggestProperties?: PropertySuggestionHandler;
 }
 
-export class ConnectionsMenu {
+export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void> {
     private container: HTMLElement;
-    private handler: Backbone.Model;
-    private view: DiagramView;
-    private state: 'loading' | 'error' | 'completed';
+    private readonly handler = new EventObserver();
+    private readonly linkTypesListener = new EventObserver();
+    private loadingState: 'loading' | 'error' | 'completed';
 
     private links: FatLinkType[];
     private countMap: { [linkTypeId: string]: ConnectionCount };
@@ -61,52 +60,45 @@ export class ConnectionsMenu {
     private objects: ReactElementModel[];
     private direction: 'in' | 'out';
 
-    public cellView: joint.dia.CellView;
+    private updateAll = () => this.forceUpdate();
 
-    constructor(private options: ConnectionsMenuOptions) {
-        this.container = document.createElement('div');
-        this.options.paper.el.appendChild(this.container);
-
-        this.cellView = this.options.cellView;
-        this.view = this.options.view;
-
-        this.handler = new Backbone.Model();
-        this.handler.listenTo(this.options.cellView.model,
-            'change:isExpanded change:position change:size', this.render);
-        this.handler.listenTo(this.options.paper, 'scale', this.render);
-        this.handler.listenTo(this.view, 'change:language', this.render);
+    componentDidMount() {
+        const {view, target} = this.props;
+        this.handler.listen(target.events, 'changePosition', this.updateAll);
+        this.handler.listen(target.events, 'changeSize', this.updateAll);
+        this.handler.listen(view.events, 'changeLanguage', this.updateAll);
 
         this.loadLinks();
-        this.render();
     }
 
-    private subscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
-            this.handler.listenTo(link, 'change:label', this.render);
-            this.handler.listenTo(link, 'change:visible', this.render);
-            this.handler.listenTo(link, 'change:showLabel', this.render);
-        };
+    componentWillUnmount() {
+        this.handler.stopListening();
+        this.linkTypesListener.stopListening();
     }
 
-    private unsubscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
-            this.handler.stopListening(link);
-        };
+    private resubscribeOnLinkTypeEvents(linkTypesOfElement: ReadonlyArray<FatLinkType>) {
+        this.linkTypesListener.stopListening();
+        for (const linkType of linkTypesOfElement) {
+            this.linkTypesListener.listen(linkType.events, 'changeLabel', this.updateAll);
+            this.linkTypesListener.listen(linkType.events, 'changeVisibility', this.updateAll);
+        }
     }
 
     private loadLinks() {
-        this.state = 'loading';
+        const {view, target} = this.props;
+
+        this.loadingState = 'loading';
         this.links = [];
         this.countMap = {};
-        this.view.model.dataProvider.linkTypesOf({elementId: this.cellView.model.id})
+        view.model.dataProvider.linkTypesOf({elementId: target.id})
             .then(linkTypes => {
-                this.state = 'completed';
+                this.loadingState = 'completed';
 
                 const countMap: Dictionary<ConnectionCount> = {};
                 const links: FatLinkType[] = [];
                 for (const {id: linkTypeId, inCount, outCount} of linkTypes) {
                     countMap[linkTypeId] = {inCount, outCount};
-                    links.push(this.view.model.createLinkType(linkTypeId));
+                    links.push(view.model.createLinkType(linkTypeId));
                 }
 
                 countMap[ALL_RELATED_ELEMENTS_LINK.id] = Object.keys(countMap)
@@ -116,22 +108,22 @@ export class ConnectionsMenu {
                     }, {inCount: 0, outCount: 0});
 
                 this.countMap = countMap;
-
-                this.unsubscribeOnLinksEevents(this.links);
                 this.links = links;
-                this.subscribeOnLinksEevents(this.links);
+                this.resubscribeOnLinkTypeEvents(this.links);
 
-                this.render();
+                this.updateAll();
             })
             .catch(err => {
                 console.error(err);
-                this.state = 'error';
-                this.render();
+                this.loadingState = 'error';
+                this.updateAll();
             });
     }
 
     private loadObjects(link: FatLinkType, direction?: 'in' | 'out') {
-        this.state = 'loading';
+        const {view, target} = this.props;
+
+        this.loadingState = 'loading';
         this.selectedLink = link;
         this.objects = [];
         this.direction = direction;
@@ -147,8 +139,8 @@ export class ConnectionsMenu {
         const requests: Promise<Dictionary<ElementModel>>[] = [];
         for (let i = 0; i < requestsCount; i++) {
             requests.push(
-                this.view.model.dataProvider.linkElements({
-                    elementId: this.cellView.model.id,
+                view.model.dataProvider.linkElements({
+                    elementId: target.id,
                     linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : this.selectedLink.id),
                     limit: 100,
                     offset: i * 100,
@@ -158,40 +150,37 @@ export class ConnectionsMenu {
         }
 
         Promise.all(requests).then(results => {
-            this.state = 'completed';
+            this.loadingState = 'completed';
             this.objects = [];
             results.forEach(elements => {
                 Object.keys(elements).forEach(key => this.objects.push({
                     model: elements[key],
-                    presentOnDiagram: Boolean(this.view.model.getElement(key)),
+                    presentOnDiagram: Boolean(view.model.getElement(key)),
                 }));
             });
-            this.render();
+            this.updateAll();
         }).catch(err => {
             console.error(err);
-            this.state = 'error';
-            this.render();
+            this.loadingState = 'error';
+            this.updateAll();
         });
     }
 
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
+        const {view, target, onClose} = this.props;
+
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
         const GRID_STEP = 100;
-        let pos;
-        if (this.cellView.model instanceof joint.dia.Element) {
-            pos = this.cellView.model.position(); // the position() is more stable than getBBox
-        } else {
-            pos = this.cellView.getBBox();
-        }
-        const startX = pos.x - positionBoxSide * GRID_STEP / 2;
-        const startY = pos.y - positionBoxSide * GRID_STEP / 2;
+        const {x: targetX, y: targetY} = boundsOf(target);
+        const startX = targetX - positionBoxSide * GRID_STEP / 2;
+        const startY = targetY - positionBoxSide * GRID_STEP / 2;
         let xi = 0;
         let yi = 0;
 
         const addedElements: Element[] = [];
         selectedObjects.forEach(el => {
-            let element = this.view.model.getElement(el.model.id);
-            if (!element) { element = this.view.model.createElement(el.model); }
+            let element = view.model.getElement(el.model.id);
+            if (!element) { element = view.model.createElement(el.model); }
             addedElements.push(element);
 
             if (xi > positionBoxSide) {
@@ -204,42 +193,42 @@ export class ConnectionsMenu {
             if (yi === Math.round(positionBoxSide / 2)) {
                 yi++;
             }
-            element.position(startX + (xi++) * GRID_STEP, startY + (yi) * GRID_STEP);
+            element.setPosition({
+                x: startX + (xi++) * GRID_STEP,
+                y: startY + (yi) * GRID_STEP,
+            });
         });
 
         const hasChosenLinkType = this.selectedLink && this.selectedLink !== ALL_RELATED_ELEMENTS_LINK;
         if (hasChosenLinkType && !this.selectedLink.visible) {
             // prevent loading here because of .requestLinksOfType() call
-            this.selectedLink.setVisibility({visible: true, showLabel: true}, {preventLoading: true});
+            this.selectedLink.setVisibility({visible: true, showLabel: true, preventLoading: true});
         }
 
-        this.view.model.requestElementData(addedElements);
-        this.view.model.requestLinksOfType();
+        view.model.requestElementData(addedElements);
+        view.model.requestLinksOfType();
 
-        this.options.view.adjustPaper();
-        this.options.onClose();
-    };
+        onClose();
+    }
 
     private onExpandLink = (link: FatLinkType, direction?: 'in' | 'out') => {
         if (this.selectedLink !== link || !this.objects || this.direction !== direction) {
             this.loadObjects(link, direction);
         }
-        this.render();
-    };
+        this.updateAll();
+    }
 
     private onMoveToFilter = (link: FatLinkType, direction?: 'in' | 'out') => {
+        const {view, target} = this.props;
         if (link === ALL_RELATED_ELEMENTS_LINK) {
-            const element = this.cellView.model as Element;
-            element.addToFilter();
-            // this.options.onClose();
+            target.addToFilter();
         } else {
-            const selectedElement = this.view.model.getElement(this.cellView.model.id);
+            const selectedElement = view.model.getElement(target.id);
             selectedElement.addToFilter(link, direction);
-            // this.options.onClose();
         }
-    };
+    }
 
-    private render = () => {
+    render() {
         const connectionsData = {
             links: this.links || [],
             countMap: this.countMap || {},
@@ -257,28 +246,27 @@ export class ConnectionsMenu {
             };
         }
 
-        ReactDOM.render(React.createElement(ConnectionsMenuMarkup, {
-            cellView: this.options.cellView,
-            connectionsData: connectionsData,
-            objectsData: objectsData,
-            state: this.state,
-            lang: this.view.getLanguage(),
-            onExpandLink: this.onExpandLink,
-            onPressAddSelected: this.addSelectedElements,
-            onMoveToFilter: this.onMoveToFilter,
-            propertySuggestionCall: this.options.suggestProperties,
-        }), this.container);
-    };
-
-    remove() {
-        this.handler.stopListening();
-        ReactDOM.unmountComponentAtNode(this.container);
-        this.options.paper.el.removeChild(this.container);
+        const {paperArea, view, target, suggestProperties} = this.props;
+        return (
+            <ConnectionsMenuMarkup
+                target={target}
+                paperArea={paperArea}
+                connectionsData={connectionsData}
+                objectsData={objectsData}
+                state={this.loadingState}
+                lang={view.getLanguage()}
+                onExpandLink={this.onExpandLink}
+                onPressAddSelected={this.addSelectedElements}
+                onMoveToFilter={this.onMoveToFilter}
+                propertySuggestionCall={suggestProperties}
+            />
+        );
     }
 }
 
 interface ConnectionsMenuMarkupProps {
-    cellView: joint.dia.CellView;
+    target: Element;
+    paperArea: PaperArea;
 
     connectionsData: {
         links: FatLinkType[];
@@ -345,7 +333,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                 <a className='ontodia-link' onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
                 {
                     chooseLocalizedText(
-                        this.props.objectsData.selectedLink.get('label').values,
+                        this.props.objectsData.selectedLink.label,
                         this.props.lang
                     ).text.toLowerCase()
                 }
@@ -371,7 +359,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
             }
 
             return <ConnectionsList
-                id={this.props.cellView.model.id}
+                id={this.props.target.id}
                 data={this.props.connectionsData}
                 lang={this.props.lang}
                 filterKey={this.state.filterKey}
@@ -423,10 +411,16 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     }
 
     render() {
-        const bBox = this.props.cellView.getBBox();
+        const bbox = boundsOf(this.props.target);
+        const {x: x0, y: y0} = this.props.paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
+        const {x: x1, y: y1} = this.props.paperArea.paperToScrollablePaneCoords(
+            bbox.x + bbox.width,
+            bbox.y + bbox.height,
+        );
+
         const style = {
-            top: (bBox.y + bBox.height / 2 - 150),
-            left: (bBox.x + bBox.width + MENU_OFFSET),
+            top: (y0 + y1) / 2 - 150,
+            left: x1 + MENU_OFFSET,
             backgroundColor: 'white',
             border: '1px solid black',
         };
@@ -504,46 +498,32 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.get('label');
-        const bLabel: Label = b.get('label');
-        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
-
-        if (aText < bText) {
-            return -1;
-        }
-
-        if (aText > bText) {
-            return 1;
-        }
-
-        return 0;
+        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
+        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
+        return (
+            aText < bText ? -1 :
+            aText > bText ? 1 :
+            0
+        );
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.get('label');
-        const bLabel: Label = b.get('label');
-        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.lang).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.lang).text.toLowerCase() : null);
+        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
+        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
 
-        if (aWeight > bWeight) {
-            return -1;
-        }
-
-        if (aWeight < bWeight) {
-            return 1;
-        }
-
-        return aText.localeCompare(bText);
+        return (
+            aWeight > bWeight ? -1 :
+            aWeight < bWeight ? 1 :
+            aText.localeCompare(bText)
+        );
     }
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
-            const label: Label = link.get('label');
-            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
             return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -552,8 +532,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private getProbableLinks = () => {
         const isSmartMode = this.isSmartMode();
         return (this.props.data.links || []).filter(link => {
-            const label: Label = link.get('label');
-            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
             return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
@@ -658,15 +637,15 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     private onExpandLink = (direction?: 'in' | 'out') => {
         this.props.onExpandLink(this.props.link, direction);
-    };
+    }
 
     private onMoveToFilter = (evt: React.MouseEvent<any>) => {
         evt.stopPropagation();
         this.props.onMoveToFilter(this.props.link, this.props.direction);
-    };
+    }
 
     render() {
-        const fullText = chooseLocalizedText(this.props.link.get('label').values, this.props.lang).text;
+        const fullText = chooseLocalizedText(this.props.link.label, this.props.lang).text;
         const probability = Math.round(this.props.probability * 100);
         const textLine = getColoredText(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),

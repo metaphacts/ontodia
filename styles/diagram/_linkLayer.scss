@@ -1,0 +1,32 @@
+.ontodia-link {
+  &__wrap {
+    stroke-width: 12px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke: transparent;
+    fill: none;
+  }
+  &:hover &__wrap {
+    stroke: rgba(140, 140, 140, 0.44);
+  }
+
+  &__vertex {
+    cursor: all-scroll;
+  }
+  &:not(:hover) &__vertex {
+    fill: transparent;
+  }
+
+  &__vertex-tools {
+    opacity: 0;
+    cursor: pointer;
+    > circle { fill: gray; }
+    > path { stroke: white; }
+    &:hover {
+      > circle { fill: black; }
+    }
+  }
+  &:hover &__vertex-tools {
+    opacity: 0.8;
+  }
+}

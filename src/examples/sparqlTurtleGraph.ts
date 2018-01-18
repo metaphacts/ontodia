@@ -7,9 +7,6 @@ import { onPageLoad } from './common';
 import { RDFDataProvider } from '../ontodia/data/rdf/rdfDataProvider';
 import { GraphBuilder } from '../ontodia/data/sparql/graphBuilder';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 const N3Parser: any = require('rdf-parser-n3');
 const RdfXmlParser: any = require('rdf-parser-rdfxml');
 const JsonLdParser: any = require('rdf-parser-jsonld');

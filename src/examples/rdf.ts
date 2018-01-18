@@ -11,19 +11,11 @@ const JsonLdParser: any = require('rdf-parser-jsonld');
 
 const data = require<string>('raw-loader!./resources/testData.ttl');
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        window.open(iri);
-    });
-
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({
+    workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
         dataProvider: new RDFDataProvider({
@@ -50,6 +42,9 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
+    viewOptions: {
+        onIriClick: iri => window.open(iri),
+    }
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

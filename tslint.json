@@ -7,6 +7,7 @@
         "max-classes-per-file": [false],
         "member-access": [false],
         "member-ordering": [true, "fields-first"],
+        "no-namespace": false,
         "no-var-requires": false,
         "object-literal-key-quotes": [false],
         "object-literal-sort-keys": false,
@@ -22,6 +23,17 @@
             "method": "never",
             "constructor": "never"
         }],
+        "switch-default": false,
+        "trailing-comma": [true, {
+            "singleline": "never",
+            "multiline": {
+                "objects": "always",
+                "arrays": "always",
+                "functions": "ignore",
+                "typeLiterals": "ignore"
+            }
+        }],
+        "type-literal-delimiter": true,
         "quotemark": [true, "single"],
         "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-pascal-case"]
     }

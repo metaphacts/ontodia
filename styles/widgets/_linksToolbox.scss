@@ -70,61 +70,72 @@
   padding: 0 0 0 5px;
   word-break: break-word;
 }
-.linkInToolBox > div {
-  display: inline;
-}
-.linkInToolBox .label {
-  margin-left: .5em;
-  white-space: normal;
-  word-wrap: normal;
+
+.linkInToolBox {
+  & > div { display: inline; }
+
+  &__new-tag {
+    margin-left: .5em;
+    white-space: normal;
+    word-wrap: normal;
+    border-radius: 2px;
+    padding: 0 5px;
+    background: orange;
+  }
+
+  .ontodia-badge {
+    display: none;
+    margin-left: .5em;
+    white-space: normal;
+    word-wrap: normal;
+  }
+
+  .link-title {
+    font-size: 16px;
+    color: black;
+    display: inline;
+  }
+
+  .ontodia-btn-group {
+    float: left;
+    margin-top: 2px;
+    margin-right: 6px;
+    margin-bottom: 2px;
+  }
+
+  .ontodia-btn.ontodia-btn-default {
+    border-color: rgb(195, 195, 195);
+  }
+
+  .filter-button {
+    display: none;
+    float: right;
+    margin: 3px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 200ms 0ms;
+    img {
+      content: url("../images/add-to-filter.png");
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+    }
+  }
+  &:hover .filter-button {
+    opacity: 1.0;
+    transition: opacity 200ms 0ms;
+  }
 }
 
-.linkInToolBox .ontodia-badge {
-  display: none;
-  margin-left: .5em;
-  white-space: normal;
-  word-wrap: normal;
-}
 .connected-links .linkInToolBox .ontodia-badge {
   /* show connection count badge only in "Connected to Element" list */
   display: inline;
-}
-.linkInToolBox .link-title {
-  font-size: 16px;
-  color: black;
-  display: inline;
-}
-.linkInToolBox .ontodia-btn-group {
-  float: left;
-  margin-top: 2px;
-  margin-right: 6px;
-  margin-bottom: 2px;
-}
-.linkInToolBox .ontodia-btn.ontodia-btn-default {
-  border-color: rgb(195, 195, 195);
-}
-.linkInToolBox .filter-button {
-  display: none;
-  float: right;
-  margin: 3px;
-  cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 200ms 0ms;
-}
-.linkInToolBox:hover .filter-button {
-  opacity: 1.0;
-  transition: opacity 200ms 0ms;
 }
 .connected-links .linkInToolBox .filter-button {
   /* show filter button only in "Connected to Element" list */
   display: inline;
 }
-.linkInToolBox .filter-button img {
-  content: url("../images/add-to-filter.png");
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
-}
+
 .link-in-popup-menu .filter-button img {
   opacity: 0.4;
   margin-left: 10px;
