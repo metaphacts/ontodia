@@ -141,39 +141,8 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     componentDidMount() {
-        // this.paper = this.props.paper;
-        // this.renderChildren();
-
-        // this.pageSize = {
-        //     x: this.paper.options.width,
-        //     y: this.paper.options.height,
-        // };
-        // (this.paper.svg as any as HTMLElement).style.overflow = 'visible';
-        // this.area.appendChild(this.paper.el);
-        this.updatePaperMargins();
         this.centerTo();
 
-        // this.spinnerElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        // this.paper.svg.appendChild(this.spinnerElement);
-
-        // this.listener.listenTo(this.paper, 'scale', this.onPaperScale);
-        // this.listener.listenTo(this.paper, 'resize', this.onPaperResize);
-        // this.listener.listenTo(this.paper, 'translate', this.onPaperTranslate);
-        // this.listener.listenTo(this.paper, 'blank:pointerdown', (e: MouseEvent) => {
-        //     if (this.shouldStartPanning(e)) {
-        //         e.preventDefault();
-        //         this.startPanning(e);
-        //     }
-        // });
-        // this.listener.listenTo(this.paper, 'render:done', () => {
-        //     this.adjustPaper();
-        //     this.centerTo();
-        // });
-        // this.listener.listenTo(this.paper, 'cell:pointerdown', () => {
-        //     this.props.preventTextSelection();
-        // });
-        // // automatic paper adjust on element dragged
-        // this.listener.listenTo(this.paper, 'cell:pointerup', this.adjustPaper);
         const {view} = this.props;
         const delayedAdjust = () => this.delayedPaperAdjust.call(this.adjustPaper);
         this.listener.listen(view.model.events, 'changeCells', delayedAdjust);
@@ -194,21 +163,10 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.listen(view.events, 'updateWidgets', ({widgets}) => {
             this.updateWidgets(widgets);
         });
-        // this.listener.listenTo(this.props.model.graph, 'change:size', this.adjustPaper);
-        // this.listener.listenTo(this.paper, 'ontodia:adjustSize', this.adjustPaper);
 
         this.area.addEventListener('dragover', this.onDragOver);
         this.area.addEventListener('drop', this.onDragDrop);
 
-        // const model = this.props.model;
-        // this.listener.listenTo(model, 'state:beginLoad', () => this.showIndicator());
-        // this.listener.listenTo(model, 'state:endLoad',
-        //     (elementCount: number) => this.renderLoadingIndicator(elementCount));
-        // this.listener.listenTo(model, 'state:loadError',
-        //     (error: any) => this.renderLoadingIndicator(undefined, error));
-        // this.listener.listenTo(model, 'state:renderStart', () => {
-        //     unmountComponentAtNode(this.spinnerElement);
-        // });
         this.listener.listen(view.model.events, 'loadingStart', () => this.showIndicator());
         this.listener.listen(view.model.events, 'loadingError', () => {
             this.updateWidgets({[LoadingWidget.Key]: undefined});
@@ -323,16 +281,11 @@ export class PaperArea extends React.Component<Props, State> {
 
     /** Returns paper size in paper coordinates. */
     getPaperSize(): { width: number; height: number; } {
-        // const scale = this.getScale();
-        // const {width, height} = this.paper.options;
         const {paperWidth: width, paperHeight: height, scale} = this.state;
         return {width: width / scale, height: height / scale};
     }
 
     computeAdjustedBox(): Partial<State> {
-        // this.center = this.clientToPaperCoords(
-        //     this.area.clientWidth / 2, this.area.clientHeight / 2);
-
         // bbox in paper coordinates
         const bbox = this.getContentFittingBox();
         const bboxLeft = bbox.x;
@@ -354,17 +307,8 @@ export class PaperArea extends React.Component<Props, State> {
         const originX = -bboxGrid.left * gridWidth;
         const originY = -bboxGrid.top * gridHeight;
 
-        // if (newOrigin.x !== oldOrigin.x || newOrigin.y !== oldOrigin.y) {
-        //     this.paper.setOrigin(newOrigin.x, newOrigin.y);
-        // }
-
-        // const oldWidth = this.paper.options.width;
-        // const oldHeight = this.paper.options.height;
         const paperWidth = Math.max(bboxGrid.right - bboxGrid.left, 1) * gridWidth;
         const paperHeight = Math.max(bboxGrid.bottom - bboxGrid.top, 1) * gridHeight;
-        // if (newWidth !== oldWidth || newHeight !== oldHeight) {
-        //     this.paper.setDimensions(newWidth, newHeight);
-        // }
 
         return {paperWidth, paperHeight, originX, originY};
     }
@@ -386,50 +330,13 @@ export class PaperArea extends React.Component<Props, State> {
             adjusted.paddingY === previous.paddingY
         );
         if (!samePaperProps) {
-            //console.log(`width ${Math.floor(newWidth)}; origin ${Math.floor(newOrigin.x)}; padding: ${Math.floor(paddingX)}`);
             this.scrollBeforeUpdate = {
                 left: this.area.scrollLeft,
                 top: this.area.scrollTop,
             };
             this.setState(adjusted);
         }
-
-        // this.updatePaperMargins();
     }
-
-    private updatePaperMargins() {
-        // const previousPadding = this.padding;
-        // this.padding = {
-        //     x: Math.ceil(this.area.clientWidth * 0.75),
-        //     y: Math.ceil(this.area.clientHeight * 0.75),
-        // };
-
-        // const paddingUnchanged =
-        //     this.padding.x === previousPadding.x &&
-        //     this.padding.y === previousPadding.y;
-        // if (paddingUnchanged) { return; }
-
-        // const paperElement: HTMLElement = this.paper.el;
-        // paperElement.style.marginLeft = `${this.padding.x}px`;
-        // paperElement.style.marginRight = `${this.padding.x}px`;
-        // paperElement.style.marginTop = `${this.padding.y}px`;
-        // paperElement.style.marginBottom = `${this.padding.y}px`;
-
-        // if (previousPadding) {
-        //     this.area.scrollLeft += this.padding.x - previousPadding.x;
-        //     this.area.scrollTop += this.padding.y - previousPadding.y;
-        // }
-    }
-
-    // private onPaperScale = (scaleX: number, scaleY: number, originX: number, originY: number) => {
-    //     this.adjustPaper();
-    //     if (originX !== undefined || originY !== undefined) {
-    //         this.centerTo({x: originX, y: originY});
-    //     }
-    //     if (this.props.onZoom) {
-    //         this.props.onZoom(scaleX, scaleY);
-    //     }
-    // };
 
     private onPaperResize = () => {
         if (this.center) {
@@ -605,28 +512,6 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     centerTo(paperPosition?: { x: number; y: number; }) {
-        // const ctm = this.paper.viewport.getCTM();
-        // let clientX: number;
-        // let clientY: number;
-
-        // if (paperPosition) {
-        //     const scale = ctm.a;
-        //     clientX = paperPosition.x * scale;
-        //     clientY = paperPosition.y * scale;
-        // } else {
-        //     const x1 = -ctm.e;
-        //     const y1 = -ctm.f;
-        //     const x2 = x1 + this.paper.options.width;
-        //     const y2 = y1 + this.paper.options.height;
-        //     clientX = (x1 + x2) / 2;
-        //     clientY = (y1 + y2) / 2;
-        // }
-
-        // const {clientWidth, clientHeight} = this.area;
-        // this.updatePaperMargins();
-        // this.area.scrollLeft = clientX - clientWidth / 2 + ctm.e + this.padding.x;
-        // this.area.scrollTop = clientY - clientHeight / 2 + ctm.f + this.padding.y;
-
         const {paperWidth, paperHeight, scale, originX, originY, paddingX, paddingY} = this.state;
         const paperCenter = paperPosition || {x: paperWidth / 2, y: paperHeight / 2};
         const clientCenterX = (paperCenter.x + originX) * scale;
@@ -642,21 +527,9 @@ export class PaperArea extends React.Component<Props, State> {
             x: bbox.x + bbox.width / 2,
             y: bbox.y + bbox.height / 2,
         });
-
-        // const {x, y, width, height} = this.paper.viewport.getBBox();
-        // const viewportCenter = {
-        //     x: x + width / 2,
-        //     y: y + height / 2,
-        // };
-        // this.centerTo(viewportCenter);
     }
 
     getScale() {
-        // const ctm = this.paper.viewport.getCTM();
-        // // scale should be uniform (scaleX == scaleY)
-        // // and no rotation present, so
-        // // ctm.a == ctm.d and ctm.b == ctm.c == 0
-        // return ctm.a;
         return this.state.scale;
     }
 
@@ -727,29 +600,6 @@ export class PaperArea extends React.Component<Props, State> {
                 this.props.onZoom(scale, scale);
             }
         });
-
-        // if (this.paper.options.model.get('cells').length === 0) {
-        //     this.centerTo();
-        //     return;
-        // }
-
-        // const {x: originX, y: originY} = this.paper.options.origin;
-        // const fittingBBox = {
-        //     x: originX,
-        //     y: originY,
-        //     width: this.area.clientWidth,
-        //     height: this.area.clientHeight,
-        // };
-        // this.paper.scaleContentToFit({
-        //     fittingBBox,
-        //     padding: this.zoomOptions.fitPadding,
-        //     minScale: this.zoomOptions.min,
-        //     maxScale: this.zoomOptions.maxFit,
-        // });
-        // this.paper.setOrigin(originX, originY);
-
-        // this.adjustPaper();
-        // this.centerContent();
     }
 
     private onDragOver = (e: DragEvent) => {
@@ -757,7 +607,6 @@ export class PaperArea extends React.Component<Props, State> {
         if (e.preventDefault) { e.preventDefault(); }
         e.dataTransfer.dropEffect = 'move';
         const {x, y} = clientCoordsFor(this.area, e);
-        console.log(this.clientToPaperCoords(x, y));
         return false;
     }
 

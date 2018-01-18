@@ -7,42 +7,42 @@ import {
 
 import { onPageLoad } from './common';
 
+require('jointjs/css/layout.css');
+require('jointjs/css/themes/default.css');
+
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
     const model = workspace.getModel();
-    const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlDataProvider(
-        {endpointUrl, queryMethod: SparqlQueryMethod.POST},
-        OWLStatsSettings
-    );
+    const sparqlDataProvider = new SparqlDataProvider({
+        endpointUrl: '/sparql-endpoint',
+        queryMethod: SparqlQueryMethod.GET
+    }, OWLStatsSettings);
     const graphBuilder = new SparqlGraphBuilder(sparqlDataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(
-        `CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o FILTER(isIRI(?s) && isIRI(?o)) } LIMIT 3000`,
+        `CONSTRUCT {
+            ?inst rdf:type ?class.
+            ?inst ?propType1 ?propValue1.
+            ?inst rdfs:label ?label .
+            ?propValue2 ?propType2 ?inst .
+        } WHERE {
+            BIND (<http://collection.britishmuseum.org/id/object/JCF8939> as ?inst)
+            ?inst rdf:type ?class.	
+            OPTIONAL {?inst rdfs:label ?label}
+            OPTIONAL {?inst ?propType1 ?propValue1.  FILTER(isURI(?propValue1)). }  	
+            OPTIONAL {?propValue2 ?propType2 ?inst.  FILTER(isURI(?propValue2)). }  
+        } LIMIT 100`,
     );
     workspace.showWaitIndicatorWhile(loadingGraph);
 
-    loadingGraph.then(({layoutData, preloadedElements}) => {
-        const links = layoutData.cells.filter(cell => cell.type === 'link');
-        // layoutData = {
-        //     ...layoutData,
-        //     cells: [
-        //         ...layoutData.cells.filter(cell => cell.type === 'element'),
-        //         ...links.slice(0, Math.min(links.length, 500))
-        //     ]
-        // };
-        return model.importLayout({
-            layoutData,
-            preloadedElements,
-            dataProvider: sparqlDataProvider,
-        });
-    }).then(() => {
-        const start = performance.now();
-        //workspace.forceLayout();
+    loadingGraph.then(({layoutData, preloadedElements}) => model.importLayout({
+        layoutData,
+        preloadedElements,
+        dataProvider: sparqlDataProvider,
+    })).then(() => {
+        workspace.forceLayout();
         workspace.zoomToFit();
-        const end = performance.now();
-        console.log(`Layout performed in ${Math.round(end - start)} ms`);
     });
 }
 

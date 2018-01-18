@@ -32,23 +32,6 @@ export interface DiagramModelEvents {
 
 /**
  * Model of diagram.
- *
- * Properties:
- *     isViewOnly: boolean
- *
- * Events:
- *     state:beginLoad
- *     state:endLoad (diagramElementCount?: number)
- *     state:loadError (error: any)
- *     state:renderStart
- *     state:renderDone
- *     state:dataLoaded
- *
- *     history:undo
- *     history:redo
- *     history:reset
- *     history:initBatchCommand
- *     history:storeBatchCommand
  */
 export class DiagramModel {
     private readonly source = new EventSource<DiagramModelEvents>();
@@ -98,11 +81,11 @@ export class DiagramModel {
         return Boolean(this.sourceOf(link) && this.targetOf(link));
     }
 
-    undo() { /*this.trigger('history:undo');*/ }
-    redo() { /*this.trigger('history:redo');*/ }
-    resetHistory() { /*this.trigger('history:reset');*/ }
-    initBatchCommand() { /*this.trigger('history:initBatchCommand');*/ }
-    storeBatchCommand() { /*this.trigger('history:storeBatchCommand');*/ }
+    undo() { throw new Error('History is not implemented'); }
+    redo() { throw new Error('History is not implemented'); }
+    resetHistory() { throw new Error('History is not implemented'); }
+    initBatchCommand() { throw new Error('History is not implemented'); }
+    storeBatchCommand() { throw new Error('History is not implemented'); }
 
     private resetGraph() {
         if (this.graphListener) {
@@ -182,11 +165,6 @@ export class DiagramModel {
         this.dataProvider = params.dataProvider;
         this.source.trigger('loadingStart', {source: this});
 
-        const cells = (params.layoutData && params.layoutData.cells) || [];
-        console.log(`Loading diagram with ${cells.filter(cell => cell.type === 'element').length} `
-            + `elements and ${cells.filter(cell => cell.type === 'link').length} links...`);
-        (window as any).ontodiaStartLoadTime = performance.now();
-
         return Promise.all<ClassModel[], LinkType[]>([
             this.dataProvider.classTree(),
             this.dataProvider.linkTypes(),
@@ -206,10 +184,7 @@ export class DiagramModel {
         }).catch(error => {
             console.error(error);
             this.source.trigger('loadingError', {source: this, error});
-        }).then(() => {
-            const end = performance.now();
-            const start: number = (window as any).ontodiaStartLoadTime;
-            console.log(`Diagram loaded in ${Math.round(end - start)} ms`);
+            return Promise.reject(error);
         });
     }
 
