@@ -3,7 +3,7 @@ import {
     SparqlResponse, ClassBinding, ElementBinding,
     LinkBinding, isRdfIri, isRdfBlank, RdfIri,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding,
-    PropertyBinding, SimpleTriple, RdfNode,
+    PropertyBinding, Triple, RdfNode,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
@@ -155,7 +155,7 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
 }
 
 export function triplesToElementBinding(
-    response: SparqlResponse<SimpleTriple>,
+    tripples: Triple[],
 ): SparqlResponse<ElementBinding> {
     const map: Dictionary<ElementBinding> = {};
     const convertedResponse: SparqlResponse<ElementBinding> = {
@@ -166,38 +166,37 @@ export function triplesToElementBinding(
             bindings: [],
         },
     };
-    const tripples = response.results.bindings;
     for (const tripple of tripples) {
-        const trippleId = tripple.s.value;
+        const trippleId = tripple.subject.value;
         if (!map[trippleId]) {
             map[trippleId] = createAndPushBinding(tripple);
         }
 
-        if (tripple.p.value === LABEL_URI && isRdfLiteral(tripple.o)) { // Label
+        if (tripple.predicate.value === LABEL_URI && isRdfLiteral(tripple.object)) { // Label
             if (map[trippleId].label) {
                 map[trippleId] = createAndPushBinding(tripple);
             }
-            map[trippleId].label = tripple.o;
-        } else if (isRdfLiteral(tripple.o) && isRdfIri(tripple.p)) { // Property
+            map[trippleId].label = tripple.object;
+        } else if (isRdfLiteral(tripple.object) && isRdfIri(tripple.predicate)) { // Property
             if (map[trippleId].propType) {
                 map[trippleId] = createAndPushBinding(tripple);
             }
-            map[trippleId].propType = tripple.p;
-            map[trippleId].propValue = tripple.o;
+            map[trippleId].propType = tripple.predicate;
+            map[trippleId].propValue = tripple.object;
         } else if ( // Class
-            tripple.p.value === RDF_TYPE_URI &&
-            isRdfIri(tripple.o) && isRdfIri(tripple.p)
+            tripple.predicate.value === RDF_TYPE_URI &&
+            isRdfIri(tripple.object) && isRdfIri(tripple.predicate)
         ) {
             if (map[trippleId].class) {
                 map[trippleId] = createAndPushBinding(tripple);
             }
-            map[trippleId].class = tripple.o;
+            map[trippleId].class = tripple.object;
         }
     }
 
-    function createAndPushBinding(tripple: SimpleTriple): ElementBinding {
+    function createAndPushBinding(tripple: Triple): ElementBinding {
         const binding: ElementBinding = {
-            inst: (tripple.s as RdfIri),
+            inst: (tripple.subject as RdfIri),
         };
         convertedResponse.results.bindings.push(binding);
         return binding;

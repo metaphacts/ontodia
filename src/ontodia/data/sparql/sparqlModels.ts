@@ -54,12 +54,6 @@ export function isBlankBinding(binding: ElementBinding | BlankBinding): binding 
         || blank.blankSrc !== undefined;
 }
 
-export interface SimpleTriple {
-    s: RdfNode;
-    p: RdfNode;
-    o: RdfNode;
-}
-
 export interface ElementBinding {
     inst: RdfIri | RdfBlank;
     class?: RdfIri;

@@ -18,7 +18,7 @@ import {
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
-    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode, SimpleTriple,
+    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
@@ -156,7 +156,7 @@ export class SparqlDataProvider implements DataProvider {
         const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
         const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
 
-        return this.executeSparqlQuery<SimpleTriple>(query)
+        return this.executeSparqlConstruct(query)
             .then(triplesToElementBinding)
             .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))

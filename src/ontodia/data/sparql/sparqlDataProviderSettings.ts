@@ -205,6 +205,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             ?inst rdfs:label ?label .
             ?inst ?propType ?propValue.
         } WHERE {
+            VALUES (?inst) {\${ids}}
             OPTIONAL {
                 {
                     ?inst wdt:P31 ?class .
@@ -218,8 +219,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
                 ?inst ?propType ?propValue .
                 FILTER (isLiteral(?propValue))
             }
-            VALUES (?inst) {\${ids}}
-        } 
+        }
     `,
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } union { ?inst wdt:P163/wdt:P18 ?fullImage }
                 BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
@@ -318,12 +318,12 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             ?inst rdfs:label ?label .
             ?inst ?propType ?propValue.
         } WHERE {
+            VALUES (?inst) {\${ids}}
             OPTIONAL {?inst rdf:type ?class . }
             OPTIONAL {?inst \${dataLabelProperty} ?label}
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
-            VALUES (?inst) {\${ids}}
-        } 
+        }
     `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
@@ -405,13 +405,13 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             ?inst rdfs:label ?label .
             ?inst ?propType ?propValue.
         } WHERE {
+            VALUES (?inst) {\${ids}}
             ?inst rdf:type ?class . 
             ?inst rdfs:label ?label .
             FILTER (!contains(str(?class), 'http://dbpedia.org/class/yago'))
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
-            VALUES (?inst) {\${ids}}
-        } 
+        }
     `,
 
     filterElementInfoPattern: `
