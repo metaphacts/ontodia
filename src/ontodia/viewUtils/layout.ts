@@ -16,6 +16,7 @@ export interface LayoutLink {
 }
 
 export function forceLayout(params: {
+    iterations: number;
     nodes: LayoutNode[];
     links: LayoutLink[];
     preferredLinkLength: number;
@@ -26,7 +27,23 @@ export function forceLayout(params: {
         .convergenceThreshold(1e-9)
         .jaccardLinkLengths(params.preferredLinkLength)
         .handleDisconnected(true);
-    layout.start(30, 0, 10, undefined, false);
+    layout.start(params.iterations, 0, params.iterations/3, undefined, false);
+}
+
+export function flowLayout(params: {
+    iterations: number;
+    nodes: LayoutNode[];
+    links: LayoutLink[];
+    preferredLinkLength: number;
+}) {
+    const layout = new cola.Layout()
+        .flowLayout('y', 300)
+        .nodes(params.nodes)
+        .links(params.links)
+        .convergenceThreshold(1e-9)
+        .jaccardLinkLengths(params.preferredLinkLength)
+        .handleDisconnected(true);
+    layout.start(params.iterations, 0, params.iterations/3, undefined, false);
 }
 
 export function removeOverlaps(nodes: LayoutNode[]) {

@@ -1,0 +1,102 @@
+.layout-algorithm-manager {
+  display: inline-block;
+  position: relative;
+  margin: 5px;
+  height: 30px;
+
+  &__button, &__arrow-button {
+    height: 100%;
+    background-color: #f2f2f2;
+    border: 1px solid #d0d0d0;
+    box-shadow: inset 0px -7px 19px -16px black;
+    cursor: pointer;
+    border-bottom-width: 2px;
+
+    &:hover {
+      background-color: #d5d5da;
+    }
+  }
+
+  &__button {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-right-width: 1px;
+  }
+
+  &__arrow-button {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-left: 1px;
+  }
+}
+
+.layout-algorithm-manager_panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  z-index: 999999;
+  background-color: #f8f8f8;
+  top: 100%;
+  width: 300px;
+  height: 300px;
+  border-radius: 5px;
+  border: 1px solid #dedede;
+  box-shadow: 0px 0px 13px -3px black;
+  overflow: hidden;
+
+  &__title {
+    flex-grow: 0;
+    padding: 3px 10px;
+    background: #e4e4e4;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+    border-bottom: 1px solid #d2d2d2;
+    color: gray;
+  }
+
+  &__algorithms {
+    flex-grow: 1;
+    display: flex;
+    margin: 0px;
+    padding: 0px;
+
+    li {
+      margin: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      background-color: #f0f0f0;
+      border-radius: 3px;
+      border: 1px solid darkgrey;
+      box-shadow: 1px 1px 10px -2px black;
+      padding: 5px;
+      overflow: hidden;
+      cursor: pointer;
+
+      &.selected-layout-algorithm {
+        background-color: #c7c6c6;
+        border: 1px solid gray;
+      }
+
+      &:hover {
+        background-color: #b8b8b8;
+      }
+
+      span {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 40px;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.layout-algorithm-manager_panel.hidden {
+  display: none;
+}

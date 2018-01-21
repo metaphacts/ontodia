@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { WorkspaceLanguage } from '../workspace/workspace';
+import { LayoutAlgorithmManagerProps } from './layoutAlgorithmManager/layoutAlgorithmManager';
 
 export interface ToolbarProps {
     onSaveDiagram?: () => void;
@@ -20,6 +21,7 @@ export interface ToolbarProps {
     onLeftPanelToggle?: () => void;
     isRightPanelOpen?: boolean;
     onRightPanelToggle?: () => void;
+    layoutAlgorithmManager: React.ReactElement<LayoutAlgorithmManagerProps>;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
@@ -115,10 +117,7 @@ export class DefaultToolbar extends React.Component<ToolbarProps, void> {
                 <div className='ontodia-btn-group ontodia-btn-group-sm'
                      data-position='bottom' data-step='6' data-intro={intro}>
                     {this.renderBtnSaveDiagram()}
-                    <button type='button' className='ontodia-btn ontodia-btn-default'
-                            title='Force layout' onClick={this.props.onForceLayout}>
-                        <span className='fa fa-sitemap' aria-hidden='true'/> Layout
-                    </button>
+                    {this.props.layoutAlgorithmManager}
                     <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Zoom In' onClick={this.props.onZoomIn}>
                         <span className='fa fa-search-plus' aria-hidden='true'/>

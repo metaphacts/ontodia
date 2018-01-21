@@ -10,7 +10,7 @@ import { DiagramView, DiagramViewOptions } from '../diagram/view';
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 import { EventObserver } from '../viewUtils/events';
 import {
-    forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
+    forceLayout, flowLayout, removeOverlaps, padded, translateToPositiveQuadrant,
     LayoutNode, LayoutLink, translateToCenter,
 } from '../viewUtils/layout';
 import { dataURLToBlob } from '../viewUtils/toSvg';
@@ -20,6 +20,9 @@ import { SearchCriteria } from '../widgets/instancesSearch';
 import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from '../widgets/toolbar';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
+import { LayoutAlgorithmManager, LayoutAlgorithmManagerProps } from '../widgets/layoutAlgorithmManager/layoutAlgorithmManager';
+import { Dictionary, Vertex } from '../../index';
+
 
 const saveAs = require<(file: Blob, fileName: string) => void>('file-saverjs');
 export interface WorkspaceProps {
@@ -118,10 +121,33 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onExportSVG: this.exportSvg,
                 onExportPNG: this.exportPng,
                 onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
-                onForceLayout: () => {
-                    this.forceLayout();
-                    this.zoomToFit();
-                },
+                layoutAlgorithmManager: createElement<LayoutAlgorithmManagerProps>(
+                    LayoutAlgorithmManager, {
+                        algorithms: [{
+                            id: 'forceLayout',
+                            label: 'Force layout',
+                            icon: 'fa fa-snowflake-o',
+                            supportAnimation: true,
+                            layoutFunction: (interactive) => {
+                                this.forceLayout(interactive);
+                                if (!interactive) {
+                                    this.zoomToFit();
+                                }
+                            }
+                        },{
+                            id: 'floweLayout',
+                            label: 'Flowe layout',
+                            icon: 'fa fa-sitemap',
+                            supportAnimation: true,
+                            layoutFunction: (interactive) => {
+                                this.flowLayout(interactive);
+                                if (!interactive) {
+                                    this.zoomToFit();
+                                }
+                            }
+                        }],
+                    },
+                ),
                 languages,
                 selectedLanguage: this.diagram.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
@@ -214,7 +240,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.showIndicator(promise);
     }
 
-    forceLayout = () => {
+    forceLayout = (interactive?: boolean) => {
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
         for (const element of this.model.elements) {
@@ -236,13 +262,24 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 target: nodeById[target.id],
             });
         }
+        const iterations = interactive ? 1 : 30;
+        forceLayout({iterations, nodes, links, preferredLinkLength: 200});
 
-        forceLayout({nodes, links, preferredLinkLength: 200});
         padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
         translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
 
+        
+        const oldPositions: Dictionary<LayoutNode> = {};
+
         for (const node of nodes) {
-            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
+            const element = this.model.getElement(node.id);
+            oldPositions[node.id] = {
+                x: element.position.x,
+                y: element.position.y,
+                width: node.width,
+                height: node.height,
+            };
+            element.setPosition({x: node.x, y: node.y});
         }
 
         const adjustedBox = this.markup.paperArea.computeAdjustedBox();
@@ -252,8 +289,100 @@ export class Workspace extends Component<WorkspaceProps, State> {
             contentBBox: this.markup.paperArea.getContentFittingBox(),
         });
 
+        if (interactive) {
+            const MAX_OFFSET = 30;
+            for(const node of nodes) {
+                const element = this.model.getElement(node.id);
+                const prevPosition = oldPositions[node.id];
+                
+                let dx = node.x - prevPosition.x;
+                if (Math.abs(dx) > MAX_OFFSET) {
+                    dx = dx > 0 ? MAX_OFFSET : -MAX_OFFSET;
+                    node.x = prevPosition.x + dx;
+                }
+                let dy = node.y - prevPosition.y;
+                if (Math.abs(dy) > MAX_OFFSET) {
+                    dy = dy > 0 ? MAX_OFFSET : -MAX_OFFSET;
+                    node.y = prevPosition.y + dy;
+                }
+                element.setPosition({x: node.x, y: node.y});
+            }
+        }
+
+        for (const {link} of links) {
+            link.setVertices([]);
+        }
+
+        this.diagram.performSyncUpdate();
+    }
+
+    flowLayout = (interactive?: boolean) => {
+        const nodes: LayoutNode[] = [];
+        const nodeById: { [id: string]: LayoutNode } = {};
+        for (const element of this.model.elements) {
+            const {x, y, width, height} = boundsOf(element);
+            const node: LayoutNode = {id: element.id, x, y, width, height};
+            nodeById[element.id] = node;
+            nodes.push(node);
+        }
+
+        type LinkWithReference = LayoutLink & { link: Link };
+        const links: LinkWithReference[] = [];
+        for (const link of this.model.links) {
+            if (!this.model.isSourceAndTargetVisible(link)) { continue; }
+            const source = this.model.sourceOf(link);
+            const target = this.model.targetOf(link);
+            links.push({
+                link,
+                source: nodeById[source.id],
+                target: nodeById[target.id],
+            });
+        }
+        const iterations = interactive ? 1 : 30;
+        flowLayout({iterations, nodes, links, preferredLinkLength: 200});
+
+        padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
+        translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
+
+        
+        const oldPositions: Dictionary<LayoutNode> = {};
+
         for (const node of nodes) {
-            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
+            const element = this.model.getElement(node.id);
+            oldPositions[node.id] = {
+                x: element.position.x,
+                y: element.position.y,
+                width: node.width,
+                height: node.height,
+            };
+            element.setPosition({x: node.x, y: node.y});
+        }
+
+        const adjustedBox = this.markup.paperArea.computeAdjustedBox();
+        translateToCenter({
+            nodes,
+            paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
+            contentBBox: this.markup.paperArea.getContentFittingBox(),
+        });
+
+        if (interactive) {
+            const MAX_OFFSET = 30;
+            for(const node of nodes) {
+                const element = this.model.getElement(node.id);
+                const prevPosition = oldPositions[node.id];
+                
+                let dx = node.x - prevPosition.x;
+                if (Math.abs(dx) > MAX_OFFSET) {
+                    dx = dx > 0 ? MAX_OFFSET : -MAX_OFFSET;
+                    node.x = prevPosition.x + dx;
+                }
+                let dy = node.y - prevPosition.y;
+                if (Math.abs(dy) > MAX_OFFSET) {
+                    dy = dy > 0 ? MAX_OFFSET : -MAX_OFFSET;
+                    node.y = prevPosition.y + dy;
+                }
+                element.setPosition({x: node.x, y: node.y});
+            }
         }
 
         for (const {link} of links) {
