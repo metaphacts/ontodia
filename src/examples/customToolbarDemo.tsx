@@ -1,13 +1,11 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, DemoDataProvider } from '../index';
-
+import { Workspace, WorkspaceProps, DemoDataProvider, ToolbarProps } from '../index';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
-export interface Props {
-    onForceLayout?: () => void;
-    onFlowLayout?: () => void;
+export interface Props extends ToolbarProps {
+    onExampleClick?: () => void;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
@@ -28,8 +26,8 @@ export class Toolbar extends React.Component<Props, void> {
                                 <span title='Force layout' className='fa fa-snowflake-o' aria-hidden='true' />
                             </button>
                             <button type='button' className='ontodia-btn ontodia-btn-default'
-                                    onClick={this.props.onFlowLayout}>
-                                <span title='Flow layout' className='fa fa-sitemap' aria-hidden='true' />
+                                    onClick={this.props.onExampleClick}>
+                                <span title='Example button'>Exapmle button</span>
                             </button>
                         </span>
                     </span>
@@ -55,7 +53,7 @@ const props: WorkspaceProps & React.ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
-    toolbar: <Toolbar/>,
+    toolbar: <Toolbar onExampleClick={() => { alert('Example button have been pressed!'); }}/>,
 };
 
 onPageLoad(container => ReactDOM.render(React.createElement(Workspace, props), container));

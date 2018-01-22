@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { WorkspaceLanguage } from '../workspace/workspace';
 
-export interface Props {
+export interface ToolbarProps {
     onSaveDiagram?: () => void;
     onForceLayout?: () => void;
     onZoomIn?: () => void;
@@ -20,7 +20,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-toolbar';
 
-export class EditorToolbar extends React.Component<Props, void> {
+export class DefaultToolbar extends React.Component<ToolbarProps, void> {
     private downloadImageLink: HTMLAnchorElement;
 
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {

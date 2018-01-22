@@ -17,7 +17,7 @@ import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';
 import { SearchCriteria } from '../widgets/instancesSearch';
-import { EditorToolbar, Props as EditorToolbarProps } from '../widgets/toolbar';
+import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from '../widgets/toolbar';
 
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
@@ -98,7 +98,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private getToolbar = () => {
         const {languages, onSaveDiagram, isViewOnly, toolbar} = this.props;
         return cloneElement(
-            toolbar || createElement<EditorToolbarProps>(EditorToolbar), {
+            toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
                 onZoomOut: this.zoomOut,
                 onZoomToFit: this.zoomToFit,
