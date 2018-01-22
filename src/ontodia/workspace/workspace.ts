@@ -25,7 +25,9 @@ export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
     onEditAtMainSite?: (workspace: Workspace) => void;
-    isViewOnly?: boolean;
+    hidePanels?: boolean;
+    hideToolbar?: boolean;
+    hideHalo?: boolean;
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
@@ -59,6 +61,8 @@ export interface WorkspaceLanguage {
 
 export interface State {
     readonly criteria?: SearchCriteria;
+    readonly isLeftPanelOpen?: boolean;
+    readonly isRightPanelOpen?: boolean;
 }
 
 export class Workspace extends Component<WorkspaceProps, State> {
@@ -83,10 +87,14 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     constructor(props: WorkspaceProps) {
         super(props);
-        this.model = new DiagramModel(this.props.isViewOnly);
-        this.diagram = new DiagramView(this.model, this.props.viewOptions);
+        this.model = new DiagramModel();
+        const viewOptions = {...this.props.viewOptions, disableDefaultHalo: this.props.hideHalo};
+        this.diagram = new DiagramView(this.model, viewOptions);
         this.diagram.setLanguage(this.props.language);
-        this.state = {};
+        this.state = {
+            isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
+            isRightPanelOpen: this.props.rightPanelInitiallyOpen,
+        };
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
@@ -96,7 +104,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private getToolbar = () => {
-        const {languages, onSaveDiagram, isViewOnly, toolbar} = this.props;
+        const {languages, onSaveDiagram, hidePanels, toolbar} = this.props;
         return cloneElement(
             toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
@@ -114,16 +122,25 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 selectedLanguage: this.diagram.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
                 onShowTutorial: this.showTutorial,
-                isViewOnly,
+                hidePanels,
+                isLeftPanelOpen: this.state.isLeftPanelOpen,
+                onLeftPanelToggle: () => {
+                    this.setState(prevState => ({isLeftPanelOpen: !prevState.isLeftPanelOpen}));
+                },
+                isRightPanelOpen: this.state.isRightPanelOpen,
+                onRightPanelToggle: () => {
+                    this.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
+                },
             },
         );
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, isViewOnly, onSaveDiagram} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, onSaveDiagram} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
-            isViewOnly: this.props.isViewOnly,
+            hidePanels,
+            hideToolbar,
             view: this.diagram,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
@@ -131,14 +148,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
+            isLeftPanelOpen: this.state.isLeftPanelOpen,
+            onToggleLeftPanel: isLeftPanelOpen => this.setState({isLeftPanelOpen}),
+            isRightPanelOpen: this.state.isRightPanelOpen,
+            onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: this.getToolbar(),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {
         this.diagram.initializePaperComponents();
-
-        if (this.props.isViewOnly) { return; }
 
         this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
             if (!data.requestedAddToFilter) { return; }

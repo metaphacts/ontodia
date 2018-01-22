@@ -8,6 +8,40 @@
       > span { vertical-align: middle; }
     }
   }
+
+  &__toggle {
+    line-height: 1;
+  }
+
+  &__toggle:after {
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    content: '';
+    display: block;
+    height: 12px;
+    margin: 3px 0;
+    width: 12px;
+  }
+
+  &__toggle-left:after {
+    background-image: url('../images/left-panel.svg');
+  }
+
+  &__toggle-right:after {
+    background-image: url('../images/right-panel.svg');
+  }
+
+  &__toggle.active {
+    border-color: #c3c3c3;
+  }
+
+  &__toggle-left.active:after {
+    background-image: url('../images/left-panel-active.svg');
+  }
+
+  &__toggle-right.active:after {
+    background-image: url('../images/right-panel-active.svg');
+  }
 }
 
 .ontodia-toolbar {

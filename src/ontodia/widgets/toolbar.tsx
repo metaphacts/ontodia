@@ -15,7 +15,11 @@ export interface ToolbarProps {
     selectedLanguage?: string;
     onChangeLanguage?: (language: string) => void;
     onShowTutorial?: () => void;
-    isViewOnly?: boolean;
+    hidePanels?: boolean;
+    isLeftPanelOpen?: boolean;
+    onLeftPanelToggle?: () => void;
+    isRightPanelOpen?: boolean;
+    onRightPanelToggle?: () => void;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
@@ -48,7 +52,7 @@ export class DefaultToolbar extends React.Component<ToolbarProps, void> {
     }
 
     private renderBtnHelp = () => {
-        if (this.props.isViewOnly) { return null; }
+        if (this.props.hidePanels) { return null; }
 
         return (
             <button type='button' className='ontodia-btn ontodia-btn-default'
@@ -70,6 +74,33 @@ export class DefaultToolbar extends React.Component<ToolbarProps, void> {
                     {languages.map(({code, label}) => <option key={code} value={code}>{label}</option>)}
                 </select>
             </span>
+        );
+    }
+
+    private renderButtonsTogglePanels = () => {
+        const {
+            hidePanels,
+            isLeftPanelOpen,
+            onLeftPanelToggle,
+            isRightPanelOpen,
+            onRightPanelToggle
+        } = this.props;
+
+        if (hidePanels) { return null; }
+
+        const className = `ontodia-btn ontodia-btn-default ${CLASS_NAME}__toggle`;
+
+        return (
+            <div className='ontodia-btn-group ontodia-btn-group-sm'>
+                <button type='button'
+                        className={`${className} ${CLASS_NAME}__toggle-left ${isLeftPanelOpen ? 'active' : ''}`}
+                        onClick={onLeftPanelToggle}
+                        title='Classes Panel'/>
+                <button type='button'
+                        className={`${className} ${CLASS_NAME}__toggle-right ${isRightPanelOpen ? 'active' : ''}`}
+                        onClick={onRightPanelToggle}
+                        title='Connections Panel'/>
+            </div>
         );
     }
 
@@ -115,6 +146,7 @@ export class DefaultToolbar extends React.Component<ToolbarProps, void> {
                     {this.renderLanguages()}
                     {this.renderBtnHelp()}
                 </div>
+                {this.renderButtonsTogglePanels()}
                 <a href='#' ref={link => { this.downloadImageLink = link; }}
                    style={{display: 'none', visibility: 'collapse'}}/>
             </div>
