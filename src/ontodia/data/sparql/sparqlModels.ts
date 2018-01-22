@@ -56,7 +56,7 @@ export function isBlankBinding(binding: ElementBinding | BlankBinding): binding 
 
 export interface ElementBinding {
     inst: RdfIri | RdfBlank;
-    class?: RdfLiteral;
+    class?: RdfIri;
     label?: RdfLiteral;
     propType?: RdfIri;
     propValue?: RdfLiteral;
