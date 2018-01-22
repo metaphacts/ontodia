@@ -2,25 +2,25 @@ import * as React from 'react';
 
 import { WorkspaceLanguage } from '../workspace/workspace';
 
-export interface Props {
+export interface ToolbarProps {
     onSaveDiagram?: () => void;
-    onForceLayout: () => void;
-    onZoomIn: () => void;
-    onZoomOut: () => void;
-    onZoomToFit: () => void;
-    onExportSVG: (link: HTMLAnchorElement) => void;
-    onExportPNG: (link: HTMLAnchorElement) => void;
-    onPrint: () => void;
-    languages: ReadonlyArray<WorkspaceLanguage>;
-    selectedLanguage: string;
-    onChangeLanguage: (language: string) => void;
-    onShowTutorial: () => void;
+    onForceLayout?: () => void;
+    onZoomIn?: () => void;
+    onZoomOut?: () => void;
+    onZoomToFit?: () => void;
+    onExportSVG?: (link: HTMLAnchorElement) => void;
+    onExportPNG?: (link: HTMLAnchorElement) => void;
+    onPrint?: () => void;
+    languages?: ReadonlyArray<WorkspaceLanguage>;
+    selectedLanguage?: string;
+    onChangeLanguage?: (language: string) => void;
+    onShowTutorial?: () => void;
     isViewOnly?: boolean;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
 
-export class EditorToolbar extends React.Component<Props, void> {
+export class DefaultToolbar extends React.Component<ToolbarProps, void> {
     private downloadImageLink: HTMLAnchorElement;
 
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {

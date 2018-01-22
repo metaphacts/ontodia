@@ -26,4 +26,6 @@ export * from './ontodia/viewUtils/crossOriginImage';
 export { PropertySuggestionParams, PropertyScore } from './ontodia/viewUtils/connectionsMenu';
 export * from './ontodia/viewUtils/events';
 
+export * from './ontodia/widgets/toolbar';
+
 export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
