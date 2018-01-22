@@ -9,7 +9,6 @@ import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
 } from '../model';
 import * as _ from 'lodash';
-import { isLiteral } from '../rdf/rdfCacheableStore';
 
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 const RDF_TYPE_URI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
