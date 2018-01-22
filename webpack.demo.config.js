@@ -20,7 +20,7 @@ module.exports = {
         wikidata: path.join(__dirname, 'src', 'examples', 'wikidata.ts'),
         composite: path.join(__dirname, 'src', 'examples', 'composite.ts'),
         wikidataGraph: path.join(__dirname, 'src', 'examples', 'wikidataGraph.ts'),
-        customToolbarDemo: path.join(__dirname, 'src', 'examples', 'customToolbarDemo.tsx'),
+        toolbarCustomization: path.join(__dirname, 'src', 'examples', 'toolbarCustomization.tsx'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
@@ -108,9 +108,9 @@ module.exports = {
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new HtmlWebpackPlugin({
-            filename: 'customToolbarDemo.html',
-            title: 'Ontodia custom toolbar',
-            chunks: ['commons', 'customToolbarDemo'],
+            filename: 'toolbarCustomization.html',
+            title: 'Ontodia Toolbar Customization Demo',
+            chunks: ['commons', 'toolbarCustomization'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new CommonsChunkPlugin('commons', 'commons.chunk.js'),

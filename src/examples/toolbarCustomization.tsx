@@ -11,8 +11,6 @@ export interface Props extends ToolbarProps {
 const CLASS_NAME = 'ontodia-toolbar';
 
 export class Toolbar extends React.Component<Props, void> {
-    private downloadImageLink: HTMLAnchorElement;
-
     render() {
         return (
             <div className={CLASS_NAME}>
