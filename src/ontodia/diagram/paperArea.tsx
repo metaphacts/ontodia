@@ -216,8 +216,11 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private pageToPaperCoords(pageX: number, pageY: number) {
-        const {offsetLeft, offsetTop} = this.area;
-        return this.clientToPaperCoords(pageX - offsetLeft, pageY - offsetTop);
+        const {left, top} = this.area.getBoundingClientRect();
+        return this.clientToPaperCoords(
+            pageX - (left + window.pageXOffset),
+            pageY - (top + window.pageYOffset),
+        );
     }
 
     clientToPaperCoords(areaClientX: number, areaClientY: number) {
