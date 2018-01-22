@@ -194,24 +194,30 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
 `,
 
     elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                OPTIONAL {
-                    { ?inst wdt:P31 ?class } UNION
-                    { ?inst wdt:P31 ?realClass .
-                        ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class }
+        CONSTRUCT {
+            ?inst rdf:type ?class .
+            ?inst rdfs:label ?label .
+            ?inst ?propType ?propValue.
+        } WHERE {
+            VALUES (?inst) {\${ids}}
+            OPTIONAL {
+                {
+                    ?inst wdt:P31 ?class .
+                } UNION {
+                    ?inst wdt:P31 ?realClass .
+                    ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class .
                 }
-                OPTIONAL {?inst rdfs:label ?label}
-                OPTIONAL {
-                    ?inst ?propType ?propValue .
-                    FILTER (isLiteral(?propValue))
-                }
-            } VALUES (?inst) {\${ids}}
-        `,
+            }
+            OPTIONAL {?inst rdfs:label ?label}
+            OPTIONAL {
+                ?inst ?propType ?propValue .
+                FILTER (isLiteral(?propValue))
+            }
+        }
+    `,
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } union { ?inst wdt:P163/wdt:P18 ?fullImage }
                 BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
                     STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
-
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
         WHERE {
@@ -281,16 +287,20 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
                     ?link a owl:ObjectProperty
                 }
                 BIND('' as ?instcount)
-`,
+    `,
     elementInfoQuery: `
-            SELECT ?inst ?class ?label ?propType ?propValue
-            WHERE {
-                OPTIONAL {?inst rdf:type ?class . }
-                OPTIONAL {?inst \${dataLabelProperty} ?label}
-                OPTIONAL {?inst ?propType ?propValue.
-                FILTER (isLiteral(?propValue)) }
-            } VALUES (?inst) {\${ids}}
-        `,
+        CONSTRUCT {
+            ?inst rdf:type ?class .
+            ?inst rdfs:label ?label .
+            ?inst ?propType ?propValue.
+        } WHERE {
+            VALUES (?inst) {\${ids}}
+            OPTIONAL {?inst rdf:type ?class . }
+            OPTIONAL {?inst \${dataLabelProperty} ?label}
+            OPTIONAL {?inst ?propType ?propValue.
+            FILTER (isLiteral(?propValue)) }
+        }
+    `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
@@ -352,14 +362,18 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
     `,
 
     elementInfoQuery: `
-        SELECT ?inst ?class ?label ?propType ?propValue
-        WHERE {
+        CONSTRUCT {
+            ?inst rdf:type ?class .
+            ?inst rdfs:label ?label .
+            ?inst ?propType ?propValue.
+        } WHERE {
+            VALUES (?inst) {\${ids}}
             ?inst rdf:type ?class . 
             ?inst rdfs:label ?label .
             FILTER (!contains(str(?class), 'http://dbpedia.org/class/yago'))
             OPTIONAL {?inst ?propType ?propValue.
             FILTER (isLiteral(?propValue)) }
-        } VALUES (?inst) {\${ids}}
+        }
     `,
 
     filterElementInfoPattern: `

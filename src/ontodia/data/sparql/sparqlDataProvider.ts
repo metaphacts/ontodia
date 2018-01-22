@@ -2,6 +2,7 @@ import * as N3 from 'n3';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
+    triplesToElementBinding,
     getClassTree,
     getClassInfo,
     getPropertyInfo,
@@ -153,7 +154,8 @@ export class SparqlDataProvider implements DataProvider {
         const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
         const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
 
-        return this.executeSparqlQuery<ElementBinding>(query)
+        return this.executeSparqlConstruct(query)
+            .then(triplesToElementBinding)
             .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
