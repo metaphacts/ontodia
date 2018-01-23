@@ -72,12 +72,6 @@ function intersectRayFromRectangleCenter(sourceRect: Rect, rayTarget: Vector) {
         cross2D({x: halfWidth, y: -halfHeight}, rightDirection) > 0 &&
         cross2D({x: halfWidth, y: halfHeight}, rightDirection) < 0;
 
-    if (isIE11()) {
-        Math.sign = function (n: number): number {
-            if (n > 0) { return 1; } else if (n < 0) { return -1; } else { return 0; }
-        };
-    }
-
     if (isHorizontal) {
         return {
             x: center.x + halfWidth * Math.sign(direction.x),

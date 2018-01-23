@@ -254,15 +254,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     exportPng = (fileName?: string) => {
+        fileName = fileName || 'diagram.png';
         this.markup.paperArea.exportPNG({backgroundColor: 'white'}).then(dataUri => {
-            fileName = fileName || 'diagram.png';
-            const byteString = atob(dataUri.split(',')[1]);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: 'image/png' });
+            const blob = dataURLToBlob(dataUri);
             saveAs(blob, fileName);
         });
     }

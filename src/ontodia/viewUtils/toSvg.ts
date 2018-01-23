@@ -30,14 +30,10 @@ type Bounds = { width: number; height: number; };
 const ForeignObjectSizePadding = 2;
 
 export function toSVG(options: ToSVGOptions): Promise<string> {
-    // if (isIE11()) {
-    //     return Promise.reject(new Error(
-    //         'Export to SVG is not supported in the Internet Explorer'));
-    // }
 
     const {contentBox: bbox} = options;
     const {svgClone, imageBounds} = clonePaperSvg(options, ForeignObjectSizePadding);
-    clearAttributes(svgClone)
+    if (isIE11()) { clearAttributes(svgClone); }
 
     if (options.preserveDimensions) {
         svgClone.setAttribute('width', bbox.width.toString());
@@ -128,10 +124,10 @@ function clearAttributes(svg: SVGElement) {
 
     function extractId(attributeValue: string) {
         if (attributeValue) {
-            if (!(isIE11())) {
-                return (attributeValue.match(/#(.*?)\)/) || [])[1];
-            } else {
+            if (isIE11()) {
                 return (attributeValue.match(/#(.*?)"/) || [])[1];
+            } else {
+                return (attributeValue.match(/#(.*?)\)/) || [])[1];
             }
         } else {
             return undefined;
@@ -203,11 +199,11 @@ function clonePaperSvg(options: ToSVGOptions, elementSizePadding: number): {
         elementRoot.setAttribute('class', 'ontodia-exported-element');
 
         let newRoot;
-        if (!isIE11()) {
+        if (isIE11()) {
+            newRoot = htmlToSvg(overlayedView, [], options.mockImages);
+        } else {
             newRoot = document.createElementNS(SVG_NAMESPACE, 'foreignObject');
             newRoot.appendChild(overlayedViewContent);
-        } else {
-            newRoot = htmlToSvg(overlayedView, [], options.mockImages);
         }
         const {x, y, width, height} = boundsOf(element);
         newRoot.setAttribute('transform', `translate(${x},${y})`);
@@ -308,12 +304,30 @@ export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<str
         const contentWidth = imageRect.width - 2 * padding;
         const contentHeight = imageRect.height - 2 * padding;
 
-        const svgOptions = {...options, convertImagesToDataUris: true, mockImages: isIE11() };
+        const svgOptions = {...options,
+            convertImagesToDataUris: true,
+            mockImages: isIE11(),
+            // preserveDimensions: true,
+            // contentBox: {
+            //     x: padding, y: padding,
+            //     width: contentWidth, height: contentHeight
+            // }
+        };
         svgOptions.convertImagesToDataUris = true;
 
         const { canvas, context } = createCanvas();
 
-        if (!isIE11()) {
+        if (isIE11()) {
+            toSVG(svgOptions).then(svgString => {
+                try {
+                    canvg(canvas, svgString);
+                    resolve(canvas.toDataURL(mimeType, options.quality));
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+            });
+        } else {
             const img = new Image();
             img.onload = function () {
                 try {
@@ -326,23 +340,7 @@ export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<str
             };
 
             toSVG(svgOptions).then(svgString => {
-                svgString = svgString
-                    .replace('width="100%"', 'width="' + contentWidth + '"')
-                    .replace('height="100%"', 'height="' + contentHeight + '"');
                 img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
-            });
-        } else {
-            toSVG(svgOptions).then(svgString => {
-                svgString = svgString
-                    .replace('width="100%"', 'width="' + contentWidth + '"')
-                    .replace('height="100%"', 'height="' + contentHeight + '"');
-                try {
-                    canvg(canvas, svgString);
-                    resolve(canvas.toDataURL(mimeType, options.quality));
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
             });
         }
 

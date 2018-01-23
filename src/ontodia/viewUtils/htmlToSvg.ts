@@ -1,29 +1,5 @@
 import { uniqueId } from 'lodash';
 
-export function isHTMLImageElement(e: Node): e is HTMLImageElement {
-    return (e instanceof HTMLImageElement);
-}
-
-export function isHTMLElement(e: Node): e is HTMLElement {
-    return (e instanceof HTMLElement);
-}
-
-export function isText(e: Node): e is Text {
-    return (e instanceof Text);
-}
-
-export function isElement(e: Node): e is Element {
-    return (e instanceof Element);
-}
-
-export function isSVGText(e: Node): e is SVGTextElement {
-    return (e instanceof SVGTextElement);
-}
-
-export function isSVGElement(e: Node): e is SVGGElement {
-    return (e instanceof SVGGElement);
-}
-
 export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boolean) {
     blackList = blackList || [];
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -49,17 +25,14 @@ export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boo
 
     return g;
 
-    // Definitions
-    // ==================================================
-
     function breakIntoPrimitives(domElement: Node): SVGGElement[] {
-        if (isElement(domElement)) {
-            if (isHTMLImageElement(domElement)) {
+        if (domElement instanceof Element) {
+            if (domElement instanceof HTMLImageElement) {
                 return !mockImages ? processImage(domElement) : processElement(domElement);
-            } else if (isHTMLElement(domElement)) {
+            } else if (domElement instanceof HTMLElement) {
                 return processElement(domElement);
             }
-        } else if (isText(domElement)) {
+        } else if (domElement instanceof Text) {
             return processText(domElement);
         }
         return [];
@@ -138,7 +111,7 @@ export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boo
             const rect = createRect(x, y, width, height);
             const id = rect.getAttribute('id');
             parts.forEach(p => {
-                if (!p.getAttribute('clip-path') && !p.getAttribute('id') && !isSVGText(p)) {
+                if (!p.getAttribute('clip-path') && !p.getAttribute('id') && !(p instanceof SVGTextElement)) {
                     p.setAttribute('clip-path', `url(${'#' + id})`);
                 }
             });
@@ -152,13 +125,13 @@ export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boo
     function processText(textElement: Text): SVGGElement[] {
         const parts: SVGGElement[] = [];
         const textContent = textElement.textContent.trim();
-        if (textContent.length === 0 || !isElement(textElement.parentNode)) {
+        if (textContent.length === 0 || !(textElement.parentNode instanceof Element)) {
             return [];
         }
-        const parent = textElement.parentNode as HTMLElement;
-        const style = window.getComputedStyle(parent);
-        const x = getOffsetLeft(parent);
-        const y = getOffsetTop(parent);
+        const parent = textElement.parentNode;
+        const style = window.getComputedStyle(parent as Element);
+        const x = getOffsetLeft(parent as HTMLElement);
+        const y = getOffsetTop(parent as HTMLElement);
         const fill = style.color;
         const textSize = getTextSize(textContent, style.font);
         const prefferedWidth = stringToNumber(style.width);
@@ -185,17 +158,6 @@ export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boo
         });
 
         return parts;
-    }
-
-    function testElement(element: Element) {
-        for (let i = 0; i < blackList.length; i++) {
-            // IE11 fix
-            const matches = element.matches ? element.matches : element.msMatchesSelector;
-            if (matches.apply(element, [blackList[i]])) {
-                return false;
-            }
-        }
-        return true;
     }
 }
 
@@ -245,7 +207,7 @@ function getOffsetTop(element: HTMLElement): number {
     if (element.className !== 'ontodia-overlayed-element') {
         return element.offsetTop +
             element.clientTop +
-            (element.offsetParent && isHTMLElement(element.offsetParent) ?
+            (element.offsetParent && element.offsetParent instanceof HTMLElement ?
                 getOffsetTop(element.offsetParent) : 0);
     } else {
         return 0;
@@ -256,7 +218,7 @@ function getOffsetLeft(element: HTMLElement): number {
     if (element.className !== 'ontodia-overlayed-element') {
         return element.offsetLeft +
             element.clientLeft +
-            (element.offsetParent && isHTMLElement(element.offsetParent) ?
+            (element.offsetParent && element.offsetParent instanceof HTMLElement ?
                 getOffsetLeft(element.offsetParent) : 0);
     } else {
         return 0;
@@ -292,8 +254,6 @@ function breakInLines(
                 line += text[i];
             }
         }
-        // const FIT_CORRECTION = 0.85;
-        // return Math.floor(text.length * (maxWidth / textWidth) * FIT_CORRECTION);
     }
     return lines;
 }
