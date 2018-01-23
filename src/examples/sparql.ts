@@ -1,7 +1,11 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod } from '../index';
+import {
+    Workspace, WorkspaceProps, SparqlDataProvider,
+    SparqlMultipleGetDataProvider, OWLStatsSettings,
+    SparqlQueryMethod,
+} from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -12,7 +16,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
-        dataProvider: new SparqlDataProvider({
+        dataProvider: new SparqlMultipleGetDataProvider({
             endpointUrl: '/sparql-endpoint',
             imagePropertyUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
