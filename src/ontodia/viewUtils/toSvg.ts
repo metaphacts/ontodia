@@ -307,13 +307,12 @@ export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<str
         const svgOptions = {...options,
             convertImagesToDataUris: true,
             mockImages: isIE11(),
-            // preserveDimensions: true,
-            // contentBox: {
-            //     x: padding, y: padding,
-            //     width: contentWidth, height: contentHeight
-            // }
+            preserveDimensions: true,
+            contentBox: {
+                x: padding, y: padding,
+                width: contentWidth, height: contentHeight
+            }
         };
-        svgOptions.convertImagesToDataUris = true;
 
         const { canvas, context } = createCanvas();
 

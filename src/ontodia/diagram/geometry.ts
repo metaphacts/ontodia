@@ -1,5 +1,4 @@
 import { Element as DiagramElement, Link as DiagramLink } from './elements';
-import { isIE11 } from '../viewUtils/detectBrowser';
 
 export interface Vector {
     readonly x: number;

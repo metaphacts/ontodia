@@ -13,8 +13,6 @@ import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 import { Paper, Cell, LinkVertex, isLinkVertex } from './paper';
 
-import { isIE11 } from '../viewUtils/detectBrowser';
-
 export interface Props {
     view: DiagramView;
     zoomOptions?: ZoomOptions;
@@ -274,12 +272,6 @@ export class PaperArea extends React.Component<Props, State> {
                 maxX = Math.max(maxX, x);
                 maxY = Math.max(maxY, y);
             }
-        }
-
-        if (isIE11()) {
-            Number.isFinite = function (n: number): boolean {
-                return n !== Infinity && n !== -Infinity && n !== NaN;
-            };
         }
 
         return {
