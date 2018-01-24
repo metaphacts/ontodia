@@ -14,7 +14,7 @@ import {
     getEnrichedElementsInfo,
     getLinkTypesInfo,
     getLinksTypesOf,
-    getLinkStatistic,
+    getLinkStatistics,
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
@@ -248,26 +248,17 @@ export class SparqlDataProvider implements DataProvider {
                 const requests: Promise<LinkCount>[] = [];
                 for (const id of linkTypeIds) {
                     const q = this.settings.defaultPrefix
-                    + resolveTemplate(this.settings.linkTypesOfStatsQuery, {
+                    + resolveTemplate(this.settings.linkTypesStatisticsQuery, {
                         linkId:  escapeIri(id),
                         elementIri,
                         linkConfigurations: this.formatLinkTypesOf(params.elementId)
                     });
                     requests.push(
-                        this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistic)
+                        this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistics)
                     );
                 }
                 return Promise.all(requests);
             });
-
-        // SparqlResponse<Binding> {
-        //     head: { vars: string[] };
-        //     results: { bindings: {
-        //         link: RdfIri | RdfBlank;
-        //         inCount: RdfLiteral;
-        //         outCount: RdfLiteral;
-        //     }[] };
-        // }
     };
 
     linkElements(params: {

@@ -268,7 +268,7 @@ export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): stri
     return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value);
 }
 
-export function getLinkStatistic(response: SparqlResponse<LinkCountBinding>): LinkCount {
+export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount {
     const sparqlLinkCount = response.results.bindings.filter(b => !isRdfBlank(b.link))[0];
     return  getLinkCount(sparqlLinkCount);
 }

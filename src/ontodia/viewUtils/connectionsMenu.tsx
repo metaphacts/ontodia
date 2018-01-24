@@ -193,7 +193,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
                 y: startY + (yi) * GRID_STEP,
             });
         });
-        const { link } = this.linkDataChunk;
+        const link = this.linkDataChunk ? this.linkDataChunk.link : undefined;
         const hasChosenLinkType = this.linkDataChunk && link !== ALL_RELATED_ELEMENTS_LINK;
         if (hasChosenLinkType && !link.visible) {
             // prevent loading here because of .requestLinksOfType() call
@@ -207,12 +207,13 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
     }
 
     private onExpandLink = (linkDataChunk: LinkDataChunk) => {
-        if (
-            !this.linkDataChunk ||
-            this.linkDataChunk.link !== linkDataChunk.link ||
-            !this.objects ||
-            this.linkDataChunk.direction !== linkDataChunk.direction
-        ) {
+        const alreadyLoaded = (
+            this.objects &&
+            this.linkDataChunk &&
+            this.linkDataChunk.link === linkDataChunk.link &&
+            this.linkDataChunk.direction === linkDataChunk.direction
+        );
+        if (!alreadyLoaded) {
             this.loadObjects(linkDataChunk);
         }
         this.updateAll();
@@ -802,10 +803,13 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
             `\u00A0(${wrongNodesString})` : `\u00A0(${wrongNodesString})`);
         const wrongNodesTitle = wrongNodes === 0 ? '' : (wrongNodes > 0 ? 'Unavailable nodes' : 'Extra nodes');
 
-        return <label className='ontodia-label ontodia-connections-menu_objects-panel_bottom-panel__count-label'>
+        return <div className='ontodia-label ontodia-connections-menu_objects-panel_bottom-panel__count-label'>
             <span>{countString}</span>
-            <span className='extra' title={wrongNodesTitle}>{wrongNodesCount}</span>
-        </label>;
+            <span className='ontodia-connections-menu_objects-panel_bottom-panel__extra-elements'
+                  title={wrongNodesTitle}>
+                {wrongNodesCount}
+            </span>
+        </div>;
     }
 
     render() {
@@ -830,7 +834,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
                     {objectViews}
                     {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ?
                         <div
-                            className='element-in-popup-menu'
+                            className='element-in-popup-menu move-to-filter-line'
                             onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}
                         >
                             The list was truncated, for more data click here to use the filter panel.

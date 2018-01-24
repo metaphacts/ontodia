@@ -57,7 +57,7 @@ export interface SparqlDataProviderSettings {
     /**
      * link types of stats returns statistics of a link type for specified resource
      */
-    linkTypesOfStatsQuery: string;
+    linkTypesStatisticsQuery: string;
 
     /**
      * when fetching all links from element, we could specify additional filter
@@ -146,7 +146,7 @@ export const RDFSettings: SparqlDataProviderSettings = {
     imageQueryPattern: ``,
 
     linkTypesOfQuery: ``,
-    linkTypesOfStatsQuery: ``,
+    linkTypesStatisticsQuery: ``,
     filterRefElementLinkPattern: '',
     filterTypePattern: ``,
     filterAdditionalRestriction: ``,
@@ -241,7 +241,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             FILTER regex(STR(?link), "direct")
         }
     `,
-    linkTypesOfStatsQuery: `
+    linkTypesStatisticsQuery: `
         SELECT ?link ?outCount ?inCount
         WHERE {
             { 
@@ -334,7 +334,7 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             { ?inObject ?link \${elementIri} }
         }
     `,
-    linkTypesOfStatsQuery: `
+    linkTypesStatisticsQuery: `
         SELECT ?link ?outCount ?inCount
         WHERE {
             { 
