@@ -165,7 +165,7 @@ export class SparqlMultipleGetDataProvider implements DataProvider {
         function _breakByLength(wholeData: string[], maxLength: number): string[][] {
             let curChunkLength = 0;
             let curChunk: string[] = [];
-            const chunks = [curChunk];
+            const chunks = [];
             for (const datum of data) {
                 if (curChunkLength >= maxLength) {
                     curChunkLength = 0;
@@ -175,6 +175,7 @@ export class SparqlMultipleGetDataProvider implements DataProvider {
                 curChunk.push(datum);
                 curChunkLength += datum.length;
             }
+            chunks.push(curChunk);
             return chunks;
         }
     }
