@@ -10,7 +10,7 @@ export interface Props {
     defaultWidth?: number;
     minWidth?: number;
     maxWidth?: number;
-    initiallyOpen?: boolean;
+    isOpen?: boolean;
     onOpenOrClose?: (open: boolean) => void;
     onStartResize: () => void;
     tutorialProps?: TutorialProps;
@@ -35,18 +35,23 @@ export class ResizableSidebar extends React.Component<Props, State> {
         minWidth: 0,
         maxWidth: 500,
         defaultWidth: 275,
-        initiallyOpen: true,
+        isOpen: true,
     };
 
     private originWidth: number;
 
     constructor(props: Props) {
         super(props);
-        const {initiallyOpen} = this.props;
         this.state = {
-            open: initiallyOpen,
+            open: this.props.isOpen,
             width: this.defaultWidth(),
         };
+    }
+
+    componentWillReceiveProps(nextProps: Props) {
+        if (this.state.open !== nextProps.isOpen) {
+            this.toggle({open: nextProps.isOpen});
+        }
     }
 
     private defaultWidth() {

@@ -37,7 +37,6 @@ export class DiagramModel {
     private readonly source = new EventSource<DiagramModelEvents>();
     readonly events: Events<DiagramModelEvents> = this.source;
 
-    private readonly _isViewOnly: boolean;
     private graph = new Graph();
     private graphListener = new EventObserver();
 
@@ -47,14 +46,11 @@ export class DiagramModel {
     private linkFetching: DataFetchingThread;
     private propertyLabelFetching: DataFetchingThread;
 
-    constructor(isViewOnly = false) {
-        this._isViewOnly = isViewOnly;
+    constructor() {
         this.classFetching = new DataFetchingThread();
         this.linkFetching = new DataFetchingThread();
         this.propertyLabelFetching = new DataFetchingThread();
     }
-
-    isViewOnly(): boolean { return this._isViewOnly; }
 
     get elements() { return this.graph.getElements(); }
     get links() { return this.graph.getLinks(); }

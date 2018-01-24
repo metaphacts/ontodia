@@ -145,7 +145,7 @@ export class DiagramView {
     }
 
     initializePaperComponents() {
-        if (!this.model.isViewOnly()) {
+        if (!this.options.disableDefaultHalo) {
             this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
             this.listener.listen(this.events, 'dispose', () => {
@@ -176,7 +176,7 @@ export class DiagramView {
     }
 
     onPaperPointerUp(event: MouseEvent, cell: Element | Link | undefined, isClick: boolean) {
-        if (this.model.isViewOnly()) { return; }
+        if (this.options.disableDefaultHalo) { return; }
         // We don't want a Halo for links.
         if (cell instanceof Link) { return; }
         if (event.ctrlKey || event.shiftKey || event.metaKey) { return; }
