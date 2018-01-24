@@ -200,19 +200,20 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             ?inst ?propType ?propValue.
         } WHERE {
             VALUES (?inst) {\${ids}}
-            OPTIONAL {
-                {
-                    ?inst wdt:P31 ?class .
-                } UNION {
-                    ?inst wdt:P31 ?realClass .
-                    ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class .
-                }
-            }
+            OPTIONAL {{
+                ?inst wdt:P31 ?class .
+            } UNION {
+                ?inst wdt:P31 ?realClass .
+                ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class .
+            }}
             OPTIONAL {?inst rdfs:label ?label}
-            OPTIONAL {
+            OPTIONAL {{
                 ?inst ?propType ?propValue .
                 FILTER (isLiteral(?propValue))
-            }
+            } UNION {
+                ?inst ?propType ?propValue .
+                VALUES (?propType) {\${propertyIds}}
+            }}
         }
     `,
     imageQueryPattern: ` { ?inst ?linkType ?fullImage } union { ?inst wdt:P163/wdt:P18 ?fullImage }
@@ -221,16 +222,17 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
         WHERE {
-            { \${elementIri} ?link ?outObject .
-              # this is to prevent some junk appear on diagram,
-              # but can really slow down execution on complex objects
-              FILTER ISIRI(?outObject)
-              FILTER EXISTS { ?outObject ?someprop ?someobj }
-            }
-            UNION
-            { ?inObject ?link \${elementIri} .
-              FILTER ISIRI(?inObject)
-              FILTER EXISTS { ?inObject ?someprop ?someobj }
+            {
+                \${filterIds}
+                \${elementIri} ?link ?outObject .
+                # this is to prevent some junk appear on diagram,
+                # but can really slow down execution on complex objects
+                FILTER ISIRI(?outObject)
+                FILTER EXISTS { ?outObject ?someprop ?someobj }
+            } UNION {
+                ?inObject ?link \${elementIri} .
+                FILTER ISIRI(?inObject)
+                FILTER EXISTS { ?inObject ?someprop ?someobj }
             }
             FILTER regex(STR(?link), "direct")
         } GROUP BY ?link
@@ -297,17 +299,25 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             VALUES (?inst) {\${ids}}
             OPTIONAL {?inst rdf:type ?class . }
             OPTIONAL {?inst \${dataLabelProperty} ?label}
-            OPTIONAL {?inst ?propType ?propValue.
-            FILTER (isLiteral(?propValue)) }
+            OPTIONAL {{
+                ?inst ?propType ?propValue.
+                FILTER (isLiteral(?propValue))
+            } UNION {
+                ?inst ?propType ?propValue .
+                VALUES (?propType) {\${propertyIds}}
+            }}
         }
     `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
         SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
         WHERE {
-            { \${elementIri} ?link ?outObject}
-            UNION 
-            { ?inObject ?link \${elementIri}}
+            {
+                \${filterIds} 
+                \${elementIri} ?link ?outObject FILTER ISIRI(?outObject)
+            } UNION {
+                ?inObject ?link \${elementIri}
+            }
         } GROUP BY ?link
     `,
     filterRefElementLinkPattern: '',
@@ -371,8 +381,13 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             ?inst rdf:type ?class . 
             ?inst rdfs:label ?label .
             FILTER (!contains(str(?class), 'http://dbpedia.org/class/yago'))
-            OPTIONAL {?inst ?propType ?propValue.
-            FILTER (isLiteral(?propValue)) }
+            OPTIONAL {{
+                ?inst ?propType ?propValue.
+                FILTER (isLiteral(?propValue))
+            } UNION {
+                ?inst ?propType ?propValue .
+                VALUES (?propType) {\${propertyIds}}
+            }}
         }
     `,
 

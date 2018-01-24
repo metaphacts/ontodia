@@ -4,6 +4,7 @@ import { Component } from 'react';
 import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 
 import { TemplateProps } from '../props';
+import { isIRI } from '../../diagram/model';
 
 const CLASS_NAME = 'ontodia-left-bar-template';
 
@@ -55,7 +56,7 @@ export class LeftBarTemplate extends Component<TemplateProps, {}> {
                                             {property.values.map(({text}, index) => (
                                                 <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                                                     key={index} title={text}>
-                                                    {text}
+                                                    { isIRI(text) ? <a href={text}>{text}</a> : text }
                                                 </div>
                                             ))}
                                         </div>

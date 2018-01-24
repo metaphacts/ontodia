@@ -47,6 +47,12 @@ export interface SparqlDataProviderOptions {
      */
     endpointUrl: string;
 
+    /**
+     * Predicate ids from this list will be excluded from the connection menu, and
+     * objects will be considered as properties for subjects.
+     */
+    forceProperty?: string[];
+
     // there are two options for fetching images: specify imagePropertyUris
     // to use as image properties or specify a function to fetch image URLs
 
@@ -151,8 +157,10 @@ export class SparqlDataProvider implements DataProvider {
         }
 
         const ids = elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
+        const propertyIds = this.options.forceProperty
+            ? this.options.forceProperty.map(escapeIri).map(id => ` (${id})`).join(' ') : '';
         const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
-        const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
+        const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty, propertyIds});
 
         return this.executeSparqlConstruct(query)
             .then(triplesToElementBinding)
@@ -235,10 +243,15 @@ export class SparqlDataProvider implements DataProvider {
             return Promise.resolve(getLinksTypesOf(BlankNodes.linkTypesOf(params)));
         }
         const elementIri = escapeIri(params.elementId);
+        const filterIds = (this.options.forceProperty || [])
+                                     .map(escapeIri).map(id => `?link != ${id}`).join(' && ');
         const query = this.settings.defaultPrefix
             + resolveTemplate(this.settings.linkTypesOfQuery,
-                {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
-                );
+                {
+                   elementIri,
+                   linkConfigurations: this.formatLinkTypesOf(params.elementId),
+                   filterIds: filterIds ? `FILTER (${filterIds})` : '',
+                });
         return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
     };
 

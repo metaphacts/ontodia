@@ -4,6 +4,7 @@ import { Component } from 'react';
 import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 
 import { TemplateProps } from '../props';
+import { isIRI } from '../../diagram/model';
 
 const CLASS_NAME = 'ontodia-big-icon-template';
 
@@ -59,7 +60,7 @@ export class BigIconTemplate extends Component<TemplateProps, {}> {
                                                 {property.values.map(({text}, index) => (
                                                     <div className='ontodia-big-icon-template_property_content_property-table_row_key_values__value'
                                                     key={index} title={text}>
-                                                        {text}
+                                                        { isIRI(text) ? <a href={text}>{text}</a> : text }
                                                     </div>
                                                 ))}
                                             </div>

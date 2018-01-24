@@ -20,6 +20,10 @@ function onWorkspaceMounted(workspace: Workspace) {
             ],
             queryMethod: SparqlQueryMethod.GET,
             acceptBlankNodes: true,
+            forceProperty: [
+                'http://www.w3.org/2000/01/rdf-schema#domain',
+                'http://www.w3.org/2000/01/rdf-schema#isDefinedBy',
+            ],
         }, OWLStatsSettings),
     });
 }
