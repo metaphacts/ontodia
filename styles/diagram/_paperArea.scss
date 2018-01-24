@@ -10,10 +10,10 @@
 
   background: #fff;
 
-  .paper {
-    margin: 0;
-    position: relative;
-    display: block;
+  &__widgets {
+    position: absolute;
+    left: 0;
+    top: 0;
   }
 }
 
