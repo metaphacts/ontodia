@@ -1,10 +1,10 @@
 import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Link, FatLinkType } from '../diagram/elements';
+import { Element, Link, FatLinkType } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
-import { ZoomOptions } from '../diagram/paperArea';
+import { ZoomOptions, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
@@ -25,7 +25,9 @@ export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
     onEditAtMainSite?: (workspace: Workspace) => void;
-    isViewOnly?: boolean;
+    hidePanels?: boolean;
+    hideToolbar?: boolean;
+    hideHalo?: boolean;
     isDiagramSaved?: boolean;
     hideTutorial?: boolean;
     viewOptions?: DiagramViewOptions;
@@ -59,6 +61,8 @@ export interface WorkspaceLanguage {
 
 export interface State {
     readonly criteria?: SearchCriteria;
+    readonly isLeftPanelOpen?: boolean;
+    readonly isRightPanelOpen?: boolean;
 }
 
 export class Workspace extends Component<WorkspaceProps, State> {
@@ -83,10 +87,14 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     constructor(props: WorkspaceProps) {
         super(props);
-        this.model = new DiagramModel(this.props.isViewOnly);
-        this.diagram = new DiagramView(this.model, this.props.viewOptions);
+        this.model = new DiagramModel();
+        const viewOptions = {...this.props.viewOptions, disableDefaultHalo: this.props.hideHalo};
+        this.diagram = new DiagramView(this.model, viewOptions);
         this.diagram.setLanguage(this.props.language);
-        this.state = {};
+        this.state = {
+            isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
+            isRightPanelOpen: this.props.rightPanelInitiallyOpen,
+        };
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
@@ -96,7 +104,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private getToolbar = () => {
-        const {languages, onSaveDiagram, isViewOnly, toolbar} = this.props;
+        const {languages, onSaveDiagram, hidePanels, toolbar} = this.props;
         return cloneElement(
             toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
@@ -114,16 +122,25 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 selectedLanguage: this.diagram.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
                 onShowTutorial: this.showTutorial,
-                isViewOnly,
+                hidePanels,
+                isLeftPanelOpen: this.state.isLeftPanelOpen,
+                onLeftPanelToggle: () => {
+                    this.setState(prevState => ({isLeftPanelOpen: !prevState.isLeftPanelOpen}));
+                },
+                isRightPanelOpen: this.state.isRightPanelOpen,
+                onRightPanelToggle: () => {
+                    this.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
+                },
             },
         );
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, isViewOnly, onSaveDiagram} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, onSaveDiagram} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
-            isViewOnly: this.props.isViewOnly,
+            hidePanels,
+            hideToolbar,
             view: this.diagram,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
@@ -131,14 +148,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
+            isLeftPanelOpen: this.state.isLeftPanelOpen,
+            onToggleLeftPanel: isLeftPanelOpen => this.setState({isLeftPanelOpen}),
+            isRightPanelOpen: this.state.isRightPanelOpen,
+            onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: this.getToolbar(),
         } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {
         this.diagram.initializePaperComponents();
-
-        if (this.props.isViewOnly) { return; }
 
         this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
             if (!data.requestedAddToFilter) { return; }
@@ -175,51 +194,78 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.showIndicator(promise);
     }
 
-    forceLayout = () => {
+    private forceLayoutElements = (elements: Element[], group?: Element) => {
+        elements.forEach(element => {
+            const nestedNodes = this.model.elements.filter(el => el.group === element.id);
+
+            if (!nestedNodes.length) {
+                return;
+            }
+
+            this.forceLayoutElements(nestedNodes, element);
+        });
+
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
-        for (const element of this.model.elements) {
+        for (const element of elements) {
             const {x, y, width, height} = boundsOf(element);
             const node: LayoutNode = {id: element.id, x, y, width, height};
             nodeById[element.id] = node;
             nodes.push(node);
         }
 
-        type LinkWithReference = LayoutLink & { link: Link };
-        const links: LinkWithReference[] = [];
+        const links: LayoutLink[] = [];
         for (const link of this.model.links) {
-            if (!this.model.isSourceAndTargetVisible(link)) { continue; }
+            if (!this.model.isSourceAndTargetVisible(link)) {
+                continue;
+            }
             const source = this.model.sourceOf(link);
             const target = this.model.targetOf(link);
-            links.push({
-                link,
-                source: nodeById[source.id],
-                target: nodeById[target.id],
-            });
+
+            const sourceNode = nodeById[source.id];
+            const targetNode = nodeById[target.id];
+
+            if (!sourceNode || !targetNode) {
+                continue;
+            }
+
+            links.push({source: sourceNode, target: targetNode});
         }
 
         forceLayout({nodes, links, preferredLinkLength: 200});
         padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
-        translateToPositiveQuadrant({nodes, padding: {x: 150, y: 150}});
+
+        const padding: { x: number; y: number; } = (
+            group ? getContentFittingBox(elements, []) : {x: 150, y: 150}
+        );
+
+        translateToPositiveQuadrant({nodes, padding});
 
         for (const node of nodes) {
             this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
         }
 
-        const adjustedBox = this.markup.paperArea.computeAdjustedBox();
-        translateToCenter({
-            nodes,
-            paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
-            contentBBox: this.markup.paperArea.getContentFittingBox(),
-        });
+        if (!group) {
+            const adjustedBox = this.markup.paperArea.computeAdjustedBox();
+            translateToCenter({
+                nodes,
+                paperSize: {width: adjustedBox.paperWidth, height: adjustedBox.paperHeight},
+                contentBBox: this.markup.paperArea.getContentFittingBox(),
+            });
 
-        for (const node of nodes) {
-            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
+            for (const node of nodes) {
+                this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
+            }
         }
+    }
 
-        for (const {link} of links) {
-            link.setVertices([]);
-        }
+    forceLayout = () => {
+        const elements = this.model.elements.filter(element => !element.group);
+        this.forceLayoutElements(elements);
+
+        this.model.links.forEach(link =>
+            link.setVertices([])
+        );
 
         this.diagram.performSyncUpdate();
     }

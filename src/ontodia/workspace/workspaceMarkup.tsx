@@ -14,13 +14,16 @@ import { AccordionItem } from './accordionItem';
 export interface Props {
     toolbar: React.ReactElement<any>;
     view: DiagramView;
-    isViewOnly?: boolean;
-    leftPanelInitiallyOpen?: boolean;
-    rightPanelInitiallyOpen?: boolean;
+    hidePanels?: boolean;
+    hideToolbar?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
     zoomOptions?: ZoomOptions;
     onZoom?: (scaleX: number, scaleY: number) => void;
+    isLeftPanelOpen?: boolean;
+    onToggleLeftPanel?: (toggle: boolean) => void;
+    isRightPanelOpen?: boolean;
+    onToggleRightPanel?: (toggle: boolean) => void;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -54,10 +57,21 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
     private untilMouseUpClasses: string[] = [];
 
-    render() {
-        let leftPanel = (
+    private renderToolbar = () => {
+        const {hideToolbar, toolbar} = this.props;
+
+        if (hideToolbar) { return null; }
+
+        return <div className='ontodia__header'>{toolbar}</div>;
+    }
+
+    private renderLeftPanel = () => {
+        if (this.props.hidePanels) { return null; }
+
+        return (
             <ResizableSidebar dockSide={DockSide.Left}
-                initiallyOpen={this.props.leftPanelInitiallyOpen}
+                isOpen={this.props.isLeftPanelOpen}
+                onOpenOrClose={this.props.onToggleLeftPanel}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -101,10 +115,15 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                 </Accordion>
             </ResizableSidebar>
         );
+    }
 
-        let rightPanel = (
+    private renderRightPanel = () => {
+        if (this.props.hidePanels) { return null; }
+
+        return (
             <ResizableSidebar dockSide={DockSide.Right}
-                initiallyOpen={this.props.rightPanelInitiallyOpen}
+                isOpen={this.props.isRightPanelOpen}
+                onOpenOrClose={this.props.onToggleRightPanel}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -121,17 +140,19 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                             'data-intro-id': 'link-types-toolbox',
                             'data-intro': INTRO_CONNECTIONS,
                         }}>
-                        <LinkTypesToolbox view={this.props.view} />
+                        <LinkTypesToolbox view={this.props.view}/>
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
         );
+    }
 
+    render() {
         return (
             <div ref={e => this.element = e} className='ontodia'>
-                <div className='ontodia__header'>{this.props.toolbar}</div>
+                {this.renderToolbar()}
                 <div className='ontodia__workspace'>
-                    {!this.props.isViewOnly ? leftPanel : null}
+                    {this.renderLeftPanel()}
                     <div className='ontodia__main-panel'
                          data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
                         <PaperArea ref={el => this.paperArea = el}
@@ -141,7 +162,7 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                             onZoom={this.props.onZoom}>
                         </PaperArea>
                     </div>
-                    {!this.props.isViewOnly ? rightPanel : null}
+                    {this.renderRightPanel()}
                 </div>
             </div>
         );

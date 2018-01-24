@@ -33,6 +33,7 @@ module.exports = {
             {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
             {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
+            {test: /\.svg$/, loader: 'url-loader?mimetype=image/svg+xml'},
         ],
     },
     plugins: [

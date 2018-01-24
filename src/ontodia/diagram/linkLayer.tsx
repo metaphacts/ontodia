@@ -20,6 +20,7 @@ import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
+    group?: string;
 }
 
 enum UpdateRequest {
@@ -125,11 +126,50 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         this.routings = this.router.route(this.props.view.model);
     }
 
+    private getNestedGroups = (group: string, groups: {[id: string]: string}): {[id: string]: string} => {
+        const {view} = this.props;
+        const elements = view.model.elements.filter(el => el.group === group);
+
+        if (elements.length) {
+            groups[group] = group;
+
+            elements.forEach(element =>
+                groups = this.getNestedGroups(element.id, groups)
+            );
+        }
+
+        return groups;
+    }
+
+    private getLinks = () => {
+        const {view, group} = this.props;
+        const {links} = view.model;
+
+        if (!group) { return links; }
+
+        const nestedGroups = this.getNestedGroups(group, {});
+
+        return links.filter(link => {
+            const {sourceId, targetId} = link;
+
+            const source = view.model.getElement(sourceId);
+            const target = view.model.getElement(targetId);
+
+            if (!source || !target) { return false; }
+
+            const sourceGroup = source.group;
+            const targetGroup = target.group;
+
+            return nestedGroups[sourceGroup] || nestedGroups[targetGroup];
+        });
+    }
+
     render() {
         const {view} = this.props;
         const shouldUpdate = this.popShouldUpdatePredicate();
+
         return <g className={CLASS_NAME}>
-            {view.model.links.map(model => (
+            {this.getLinks().map(model => (
                 <LinkView key={model.id}
                     view={view}
                     model={model}
@@ -412,6 +452,8 @@ class LinkMarker extends Component<LinkMarkerProps, {}> {
     }
 
     private onMarkerMount = (marker: SVGMarkerElement) => {
+        if (!marker) { return; }
+
         const {linkTypeIndex, isStartMarker, style} = this.props;
 
         marker.setAttribute('id', linkMarkerKey(linkTypeIndex, isStartMarker));
