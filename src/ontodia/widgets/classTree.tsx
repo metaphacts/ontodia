@@ -141,7 +141,7 @@ function mapClass(
         label,
         count,
         children,
-        a_attr: {href: '#' + id, draggable: true},
+        a_attr: {href: id, draggable: true},
         text,
         type,
     };

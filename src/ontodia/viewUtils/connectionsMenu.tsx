@@ -587,7 +587,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
             viewList = <label className='ontodia-label ontodia-connections-menu_links-list__empty'>List empty</label>;
         } else {
             viewList = views;
-            if (links.length > 1 || (isSmartMode && probableViews.length > 1)) {
+            if (views.length > 1 || (isSmartMode && probableViews.length > 1)) {
                 const countMap = this.props.data.countMap || {};
                 const allRelatedElements = countMap[ALL_RELATED_ELEMENTS_LINK.id];
                 viewList = [
