@@ -55,6 +55,11 @@ export interface SparqlDataProviderSettings {
     linkTypesOfQuery: string;
 
     /**
+     * link types of stats returns statistics of a link type for specified resource
+     */
+    linkTypesStatisticsQuery: string;
+
+    /**
      * when fetching all links from element, we could specify additional filter
      */
     filterRefElementLinkPattern: string;
@@ -141,6 +146,7 @@ export const RDFSettings: SparqlDataProviderSettings = {
     imageQueryPattern: ``,
 
     linkTypesOfQuery: ``,
+    linkTypesStatisticsQuery: ``,
     filterRefElementLinkPattern: '',
     filterTypePattern: ``,
     filterAdditionalRestriction: ``,
@@ -219,21 +225,39 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
                 BIND(CONCAT("https://commons.wikimedia.org/w/thumb.php?f=",
                     STRAFTER(STR(?fullImage), "Special:FilePath/"), "&w=200") AS ?image)`,
     linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
+        SELECT DISTINCT ?link
         WHERE {
-            { \${elementIri} ?link ?outObject .
-              # this is to prevent some junk appear on diagram,
-              # but can really slow down execution on complex objects
-              FILTER ISIRI(?outObject)
-              FILTER EXISTS { ?outObject ?someprop ?someobj }
-            }
-            UNION
-            { ?inObject ?link \${elementIri} .
-              FILTER ISIRI(?inObject)
-              FILTER EXISTS { ?inObject ?someprop ?someobj }
+            {
+                \${elementIri} ?link ?outObject
+                # this is to prevent some junk appear on diagram,
+                # but can really slow down execution on complex objects
+                #FILTER ISIRI(?outObject)
+                #FILTER EXISTS { ?outObject ?someprop ?someobj }
+            } UNION {
+                ?inObject ?link \${elementIri}
+                #FILTER ISIRI(?inObject)
+                #FILTER EXISTS { ?inObject ?someprop ?someobj }
             }
             FILTER regex(STR(?link), "direct")
-        } GROUP BY ?link
+        }
+    `,
+    linkTypesStatisticsQuery: `
+        SELECT ?link ?outCount ?inCount
+        WHERE {
+            { 
+                SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
+                    \${elementIri} \${linkId} ?outObject
+                    FILTER ISIRI(?outObject)
+                    FILTER EXISTS { ?outObject ?someprop ?someobj }
+                } LIMIT 101
+            } {
+                SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
+                    ?inObject \${linkId} \${elementIri}
+                    FILTER ISIRI(?inObject)
+                    FILTER EXISTS { ?inObject ?someprop ?someobj }
+                } LIMIT 101
+            } 
+        }
     `,
     filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
     filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* \${elementTypeIri} . ${'\n'}`,
@@ -303,12 +327,26 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
     `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount) 
+        SELECT DISTINCT ?link
         WHERE {
-            { \${elementIri} ?link ?outObject}
+            { \${elementIri} ?link ?outObject }
             UNION 
-            { ?inObject ?link \${elementIri}}
-        } GROUP BY ?link
+            { ?inObject ?link \${elementIri} }
+        }
+    `,
+    linkTypesStatisticsQuery: `
+        SELECT ?link ?outCount ?inCount
+        WHERE {
+            { 
+                SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
+                    \${elementIri} \${linkId} ?outObject
+                } LIMIT 101
+            } {
+                SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
+                ?inObject \${linkId} \${elementIri}
+                } LIMIT 101
+            } 
+        }
     `,
     filterRefElementLinkPattern: '',
     filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
