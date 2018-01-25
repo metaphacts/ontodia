@@ -27,7 +27,7 @@ export function forceLayout(params: {
         .convergenceThreshold(1e-9)
         .jaccardLinkLengths(params.preferredLinkLength)
         .handleDisconnected(true);
-    layout.start(params.iterations, 0, params.iterations/3, undefined, false);
+    layout.start(params.iterations, 0, params.iterations / 3, undefined, false);
 }
 
 export function flowLayout(params: {
@@ -43,7 +43,7 @@ export function flowLayout(params: {
         .convergenceThreshold(1e-9)
         .jaccardLinkLengths(params.preferredLinkLength)
         .handleDisconnected(true);
-    layout.start(params.iterations, 0, params.iterations/3, undefined, false);
+    layout.start(params.iterations, 0, params.iterations / 3, undefined, false);
 }
 
 export function removeOverlaps(nodes: LayoutNode[]) {

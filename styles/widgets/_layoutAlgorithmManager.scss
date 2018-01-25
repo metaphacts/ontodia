@@ -6,11 +6,10 @@
 
   &__button, &__arrow-button {
     height: 100%;
-    background-color: #f2f2f2;
+    background-color: #f9f9f9;
     border: 1px solid #d0d0d0;
     box-shadow: inset 0px -7px 19px -16px black;
     cursor: pointer;
-    border-bottom-width: 2px;
 
     &:hover {
       background-color: #d5d5da;
@@ -21,12 +20,15 @@
     border-top-left-radius: 3px;
     border-bottom-left-radius: 3px;
     border-right-width: 1px;
+    &:focus {
+      margin-right: 3px;
+    }
   }
 
   &__arrow-button {
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
-    border-left: 1px;
+    border-left: none;
   }
 }
 
@@ -37,8 +39,8 @@
   z-index: 999999;
   background-color: #f8f8f8;
   top: 100%;
-  width: 300px;
-  height: 300px;
+  width: 260px;
+  max-height: 500px;
   border-radius: 5px;
   border: 1px solid #dedede;
   box-shadow: 0px 0px 13px -3px black;
@@ -56,9 +58,13 @@
 
   &__algorithms {
     flex-grow: 1;
+    flex-wrap: wrap;
     display: flex;
     margin: 0px;
     padding: 0px;
+    max-height: 355px;
+    overflow-x: hidden; 
+    overflow-y: auto;
 
     li {
       margin: 10px;
@@ -68,6 +74,8 @@
       justify-content: center;
       width: 100px;
       height: 100px;
+      min-width: 100px;
+      min-height: 100px;
       background-color: #f0f0f0;
       border-radius: 3px;
       border: 1px solid darkgrey;
@@ -93,6 +101,87 @@
         font-size: 40px;
         text-overflow: ellipsis;
       }
+    }
+  }
+
+  &__parameters {
+    border-bottom: 1px solid #d0d0d0;
+    margin-bottom: 5px;
+
+    .layout-parameters-label {
+      padding: 0px 5px;
+      border-bottom: 1px solid #d0d0d0;
+      width: 100%;
+    }
+
+    .layout-parameters-list {
+      padding: 5px;
+      margin: 0px;
+
+      &_number-parameter {
+        width: 100%;
+        
+        &_value {
+          display: flex;
+          flex-wrap: nowrap;
+
+          &__slider {
+            flex-grow: 1;
+          }
+          &__input {
+            flex-grow: 0;
+            width: 45px;
+            border-radius: 3px;
+            border: 1px solid #c3c3c3;
+          }
+        }
+      }
+
+      &_string-parameter {
+        display: flex;
+        flex-direction: column;
+
+        &__label {
+          margin: 2px 0px;
+        }
+
+        &__input {
+          width: 100%;
+          border-radius: 3px;
+          border: 1px solid #c3c3c3;
+        }
+      }
+
+      &_boolean-parameter {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        &__label {
+          margin: 2px 0px;
+        }
+
+        &__input {
+          margin-left: 0px;
+        }
+      }
+
+    }
+  }
+
+  &__bottom-line {
+    display: flex;
+    padding: 5px;
+
+    span {
+      flex-grow: 1;
+    }
+
+    button {
+      height: 10px;
+      height: 25px;
+      font-size: 12px;
+      padding: 0px 10px;
     }
   }
 }

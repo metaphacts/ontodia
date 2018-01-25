@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { WorkspaceLanguage } from '../workspace/workspace';
-import { LayoutAlgorithmManagerProps } from './layoutAlgorithmManager/layoutAlgorithmManager';
+import { LayoutManagerProps } from './layoutManager/layoutManager';
 
 export interface ToolbarProps {
     onSaveDiagram?: () => void;
@@ -21,7 +21,7 @@ export interface ToolbarProps {
     onLeftPanelToggle?: () => void;
     isRightPanelOpen?: boolean;
     onRightPanelToggle?: () => void;
-    layoutAlgorithmManager: React.ReactElement<LayoutAlgorithmManagerProps>;
+    layoutAlgorithmManager?: React.ReactElement<LayoutManagerProps>;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
