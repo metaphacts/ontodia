@@ -1,19 +1,20 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, SparqlGraphBuilder, OWLStatsSettings, SparqlQueryMethod } from '../index';
+import {
+    Workspace, WorkspaceProps, SparqlDataProvider, SparqlGraphBuilder, OWLStatsSettings, SparqlQueryMethod
+} from '../index';
 
 import { onPageLoad } from './common';
-
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
     const model = workspace.getModel();
-    const endpointUrl = '/sparql-endpoint';
-    const sparqlDataProvider = new SparqlDataProvider({endpointUrl: endpointUrl, queryMethod: SparqlQueryMethod.GET}, OWLStatsSettings);
+    const sparqlDataProvider = new SparqlDataProvider({
+        endpointUrl: '/sparql-endpoint',
+        queryMethod: SparqlQueryMethod.GET
+    }, OWLStatsSettings);
     const graphBuilder = new SparqlGraphBuilder(sparqlDataProvider);
 
     const loadingGraph = graphBuilder.getGraphFromConstruct(

@@ -1,15 +1,15 @@
-import * as _ from 'lodash';
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import * as Backbone from 'backbone';
+import * as _ from 'lodash';
 
-import LinkTypesToolboxModel from './linksToolboxModel';
+import { LocalizedString, LinkCount } from '../data/model';
 import { Element, FatLinkType } from '../diagram/elements';
-import DiagramView from '../diagram/view';
+import { DiagramView } from '../diagram/view';
 import { chooseLocalizedText } from '../diagram/model';
 
-export { LinkTypesToolboxModel };
-export interface LinkInToolBoxProps {
+import { Debouncer } from '../viewUtils/async';
+import { EventObserver } from '../viewUtils/events';
+
+interface LinkInToolBoxProps {
     link: FatLinkType;
     count: number;
     language?: string;
@@ -17,25 +17,14 @@ export interface LinkInToolBoxProps {
     filterKey?: string;
 }
 
-import { LocalizedString } from '../data/model';
-type Label = { values: LocalizedString[] };
-
 type LinkTypeVisibility = 'invisible' | 'withoutLabels' | 'allVisible';
 
-/**
- * Events:
- *     filter-click(link: FatLinkType) - when filter button clicked
- */
-export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
-    constructor(props: LinkInToolBoxProps) {
-        super(props);
-    }
-
+class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     private onPressFilter = () => {
         if (this.props.onPressFilter) {
             this.props.onPressFilter(this.props.link);
         }
-    };
+    }
 
     private changeState = (state: LinkTypeVisibility) => {
         if (state === 'invisible') {
@@ -45,23 +34,23 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         } else if (state === 'allVisible') {
             this.props.link.setVisibility({visible: true, showLabel: true});
         }
-    };
+    }
 
     private isChecked = (stateName: LinkTypeVisibility): boolean => {
         let curState: LinkTypeVisibility;
-        if (!this.props.link.get('visible')) {
+        if (!this.props.link.visible) {
             curState = 'invisible';
-        } else if (!this.props.link.get('showLabel')) {
+        } else if (!this.props.link.showLabel) {
             curState = 'withoutLabels';
         } else {
             curState = 'allVisible';
         }
         return stateName === curState;
-    };
+    }
 
     private getText = () => {
-        const label: Label = this.props.link.get('label');
-        const fullText = chooseLocalizedText(label.values, this.props.language).text.toLowerCase();
+        const label = this.props.link.label;
+        const fullText = chooseLocalizedText(label, this.props.language).text.toLowerCase();
         if (this.props.filterKey) {
             const filterKey = this.props.filterKey.toLowerCase();
             const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
@@ -88,7 +77,7 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     render() {
-        const newIcon = (this.props.link.get('isNew') ? <span className='label label-warning'>new</span> : '');
+        const newIcon = (this.props.link.isNew ? <span className='linkInToolBox__new-tag'>new</span> : '');
         const countIcon = (this.props.count > 0 ? <span className='ontodia-badge'>{this.props.count}</span> : '');
         const badgeContainer = (newIcon || countIcon ? <div>{newIcon}{countIcon}</div> : '');
 
@@ -119,26 +108,26 @@ export class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 }
 
-export interface LinkTypesToolboxProps extends Backbone.ViewOptions<LinkTypesToolboxModel> {
-    links: FatLinkType[];
-    countMap?: { [linkTypeId: string]: number };
-    label?: { values: LocalizedString[] };
+interface LinkTypesToolboxViewProps {
+    links: ReadonlyArray<FatLinkType>;
+    countMap?: { readonly [linkTypeId: string]: number };
+    label?: ReadonlyArray<LocalizedString>;
     language?: string;
     dataState?: string;
     filterCallback?: (type: FatLinkType) => void;
 }
 
-export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { filterKey: string }> {
-    constructor(props: LinkTypesToolboxProps) {
+class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { filterKey: string }> {
+    constructor(props: LinkTypesToolboxViewProps) {
         super(props);
         this.state = {filterKey: ''};
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel: Label = a.get('label');
-        const bLabel: Label = b.get('label');
-        const aText = (aLabel ? chooseLocalizedText(aLabel.values, this.props.language).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel.values, this.props.language).text.toLowerCase() : null);
+        const aLabel = a.label;
+        const bLabel = b.label;
+        const aText = (aLabel ? chooseLocalizedText(aLabel, this.props.language).text.toLowerCase() : null);
+        const bText = (bLabel ? chooseLocalizedText(bLabel, this.props.language).text.toLowerCase() : null);
 
         if (aText < bText) {
             return -1;
@@ -173,12 +162,12 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
                 link.setVisibility({visible: true, showLabel: true});
             }
         }
-    };
+    }
 
     private getLinks = () => {
         return (this.props.links || []).filter(link => {
-            const label: Label = link.get('label');
-            const text = (label ? chooseLocalizedText(label.values, this.props.language).text.toLowerCase() : null);
+            const label = link.label;
+            const text = (label ? chooseLocalizedText(label, this.props.language).text.toLowerCase() : null);
             return (!this.state.filterKey) || (text && text.indexOf(this.state.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -212,7 +201,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
         let connectedTo: React.ReactElement<any> = null;
         if (this.props.label) {
             const selectedElementLabel = chooseLocalizedText(
-                this.props.label.values, this.props.language).text.toLowerCase();
+                this.props.label, this.props.language).text.toLowerCase();
             connectedTo = (
                 <h4 className='links-heading' style={{display: 'block'}}>
                     Connected to{'\u00A0'}
@@ -281,104 +270,124 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, { f
     }
 }
 
-export interface LinkTypesToolboxShellProps extends Backbone.ViewOptions<LinkTypesToolboxModel> {
+export interface LinkTypesToolboxProps {
     view: DiagramView;
 }
 
-export class LinkTypesToolboxShell extends Backbone.View<LinkTypesToolboxModel> {
-    private view: DiagramView;
-    private dataState: string;
-    private filterCallback: (type: FatLinkType) => void;
-    private linksOfElement: FatLinkType[] = [];
-    private countMap: { [linkTypeId: string]: number };
-
-    constructor(public props: LinkTypesToolboxShellProps) {
-        super(_.extend({ tagName: 'div' }, props));
-
-        this.view = props.view;
-
-        this.listenTo(this.view, 'change:language', this.render);
-        this.listenTo(this.view.model, 'state:dataLoaded', this.render);
-        this.listenTo(this.view, 'change:language', this.updateLinks);
-
-        this.listenTo(this.view.selection, 'add remove reset', _.debounce(() => {
-            const single = this.view.selection.length === 1
-                ? this.view.selection.first() : null;
-            if (single !== this.model.get('selectedElement')) {
-                this.model.set('selectedElement', single);
-            }
-            this.updateLinks();
-        }, 50));
-
-        this.listenTo(this.model, 'state:beginQuery', () => { this.setDataState('querying'); });
-        this.listenTo(this.model, 'state:queryError', () => this.setDataState('error'));
-        this.listenTo(this.model, 'state:endQuery', () => {
-            this.setDataState(this.model.connectionsOfSelectedElement ? 'finished' : null);
-            this.updateLinks();
-        });
-
-        this.filterCallback = (linkType: FatLinkType) => {
-            let selectedElement: Element = this.model.get('selectedElement');
-            selectedElement.addToFilter(linkType);
-        };
-    }
-
-    private setDataState(dataState: string) {
-        this.dataState = dataState;
-        this.render();
-    }
-
-    private updateLinks() {
-        this.unsubscribeOnLinksEevents();
-
-        if (this.model.connectionsOfSelectedElement) {
-            this.countMap = this.model.connectionsOfSelectedElement;
-            const linkTypeIds = _.keys(this.model.connectionsOfSelectedElement);
-            this.linksOfElement = linkTypeIds.map(id => {
-                return this.view.model.createLinkType(id);
-            });
-            this.subscribeOnLinksEevents(this.linksOfElement);
-        } else {
-           this.linksOfElement = null;
-           this.countMap = {};
-        }
-        this.render();
-    }
-
-    private subscribeOnLinksEevents(linksOfElement: FatLinkType[]) {
-        for (const link of linksOfElement) {
-            this.listenTo(link, 'change:label', this.render);
-            this.listenTo(link, 'change:visible', this.render);
-            this.listenTo(link, 'change:showLabel', this.render);
-        };
-    }
-
-    private unsubscribeOnLinksEevents() {
-        if (!this.linksOfElement) { return; }
-        for (const link of this.linksOfElement) {
-            this.stopListening(link);
-        }
-    }
-
-    public getReactComponent() {
-        let selectedElement: Element = this.model.get('selectedElement');
-
-        return (<LinkTypesToolbox links={this.linksOfElement} countMap={this.countMap}
-            filterCallback={this.filterCallback} dataState={this.dataState}
-            language={this.view.getLanguage()}
-            label={selectedElement ? selectedElement.template.label : null}
-        />);
-    }
-
-    render(): LinkTypesToolboxShell {
-        ReactDOM.render(this.getReactComponent(), this.el);
-        return this;
-    }
-
-    remove() {
-        this.unsubscribeOnLinksEevents();
-        return super.remove();
-    }
+export interface LinkTypesToolboxState {
+    readonly dataState?: 'querying' | 'error' | 'finished';
+    readonly selectedElement?: Element;
+    readonly linksOfElement?: ReadonlyArray<FatLinkType>;
+    readonly countMap?: { readonly [linkTypeId: string]: number };
 }
 
-export default LinkTypesToolboxShell;
+export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, LinkTypesToolboxState> {
+    private readonly listener = new EventObserver();
+    private readonly linkListener = new EventObserver();
+    private readonly debounceSelection = new Debouncer(50 /* ms */);
+
+    private currentRequest: { elementId: string } | undefined;
+
+    constructor(props: LinkTypesToolboxProps, context: any) {
+        super(props, context);
+
+        const {view} = this.props;
+
+        this.listener.listen(view.model.events, 'loadingSuccess', () => this.updateOnCurrentSelection());
+        this.listener.listen(view.events, 'changeLanguage', () => this.updateOnCurrentSelection());
+        this.listener.listen(view.events, 'changeSelection', () => {
+            this.debounceSelection.call(this.updateOnCurrentSelection);
+        });
+
+        this.state = {};
+    }
+
+    componentDidMount() {
+        this.updateOnCurrentSelection();
+    }
+
+    componentWillUnmount() {
+        this.listener.stopListening();
+        this.linkListener.stopListening();
+        this.debounceSelection.dispose();
+    }
+
+    private updateOnCurrentSelection = () => {
+        const {view} = this.props;
+        const single = view.selection.length === 1 ? view.selection[0] : null;
+        if (single !== this.state.selectedElement) {
+            this.requestLinksOf(single);
+        }
+    }
+
+    private requestLinksOf(selectedElement: Element) {
+        if (selectedElement) {
+            const request = {elementId: selectedElement.id};
+            this.currentRequest = request;
+            this.setState({dataState: 'querying', selectedElement});
+            this.props.view.model.dataProvider.linkTypesOf(request).then(linkTypes => {
+                if (this.currentRequest !== request) { return; }
+                const {linksOfElement, countMap} = this.computeStateFromRequestResult(linkTypes);
+                this.subscribeOnLinksEvents(linksOfElement);
+                this.setState({dataState: 'finished', linksOfElement, countMap});
+            }).catch(error => {
+                if (this.currentRequest !== request) { return; }
+                console.error(error);
+                this.setState({dataState: 'error', linksOfElement: undefined, countMap: {}});
+            });
+        } else {
+            this.currentRequest = null;
+            this.setState({
+                dataState: 'finished',
+                selectedElement,
+                linksOfElement: undefined,
+                countMap: {},
+            });
+        }
+    }
+
+    private computeStateFromRequestResult(linkTypes: ReadonlyArray<LinkCount>) {
+        const linksOfElement: FatLinkType[] = [];
+        const countMap: { [linkTypeId: string]: number } = {};
+
+        const model = this.props.view.model;
+        for (const linkType of linkTypes) {
+            const type = model.createLinkType(linkType.id);
+            linksOfElement.push(type);
+            countMap[linkType.id] = linkType.inCount + linkType.outCount;
+        }
+
+        return {linksOfElement, countMap};
+    }
+
+    private subscribeOnLinksEvents(linksOfElement: FatLinkType[]) {
+        this.linkListener.stopListening();
+
+        const listener = this.linkListener;
+        for (const link of linksOfElement) {
+            listener.listen(link.events, 'changeLabel', this.onLinkChanged);
+            listener.listen(link.events, 'changeVisibility', this.onLinkChanged);
+        }
+    }
+
+    private onLinkChanged = () => {
+        this.forceUpdate();
+    }
+
+    render() {
+        const {view} = this.props;
+        const {selectedElement, dataState, linksOfElement, countMap} = this.state;
+        return <LinkTypesToolboxView dataState={dataState}
+            links={linksOfElement}
+            countMap={countMap}
+            filterCallback={this.onAddToFilter}
+            language={view.getLanguage()}
+            label={selectedElement ? selectedElement.data.label.values : null}
+        />;
+    }
+
+    private onAddToFilter = (linkType: FatLinkType) => {
+        const {selectedElement} = this.state;
+        selectedElement.addToFilter(linkType);
+    }
+}

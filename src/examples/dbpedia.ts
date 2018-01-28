@@ -4,23 +4,14 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import { SparqlQueryMethod } from "../ontodia/data/sparql/sparqlDataProvider";
-import { DBPediaSettings } from "../ontodia/data/sparql/sparqlDataProviderSettings";
-
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
+import { SparqlQueryMethod } from '../ontodia/data/sparql/sparqlDataProvider';
+import { DBPediaSettings } from '../ontodia/data/sparql/sparqlDataProviderSettings';
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        window.open(iri);
-        console.log(iri);
-    });
-
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({
+    workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
@@ -40,6 +31,9 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         const {layoutData} = workspace.getModel().exportLayout();
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
+    },
+    viewOptions: {
+        onIriClick: iri => window.open(iri),
     },
 };
 

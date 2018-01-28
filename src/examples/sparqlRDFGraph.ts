@@ -5,9 +5,6 @@ import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, GraphB
 
 import { onPageLoad } from './common';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 const GRAPH: Triple[] = [
     {
         subject: {

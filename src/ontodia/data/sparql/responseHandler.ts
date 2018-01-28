@@ -1,6 +1,9 @@
 import {
-    RdfLiteral, SparqlResponse, ClassBinding, ElementBinding, LinkBinding, isRdfIri, isRdfBlank, RdfIri,
-    ElementImageBinding, LinkCountBinding, LinkTypeBinding, PropertyBinding,
+    RdfLiteral, isRdfLiteral,
+    SparqlResponse, ClassBinding, ElementBinding,
+    LinkBinding, isRdfIri, isRdfBlank, RdfIri,
+    ElementImageBinding, LinkCountBinding, LinkTypeBinding,
+    PropertyBinding, Triple, RdfNode,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
@@ -8,6 +11,7 @@ import {
 import * as _ from 'lodash';
 
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
+const RDF_TYPE_URI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const tree: ClassModel[] = [];
@@ -149,24 +153,67 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
     return linkTypes;
 }
 
+export function triplesToElementBinding(
+    tripples: Triple[],
+): SparqlResponse<ElementBinding> {
+    const map: Dictionary<ElementBinding> = {};
+    const convertedResponse: SparqlResponse<ElementBinding> = {
+        head: {
+            vars: [ 'inst', 'class', 'label', 'blankType', 'propType', 'propValue' ],
+        },
+        results: {
+            bindings: [],
+        },
+    };
+    for (const tripple of tripples) {
+        const trippleId = tripple.subject.value;
+        if (!map[trippleId]) {
+            map[trippleId] = createAndPushBinding(tripple);
+        }
+
+        if (tripple.predicate.value === LABEL_URI && isRdfLiteral(tripple.object)) { // Label
+            if (map[trippleId].label) {
+                map[trippleId] = createAndPushBinding(tripple);
+            }
+            map[trippleId].label = tripple.object;
+        } else if (isRdfLiteral(tripple.object) && isRdfIri(tripple.predicate)) { // Property
+            if (map[trippleId].propType) {
+                map[trippleId] = createAndPushBinding(tripple);
+            }
+            map[trippleId].propType = tripple.predicate;
+            map[trippleId].propValue = tripple.object;
+        } else if ( // Class
+            tripple.predicate.value === RDF_TYPE_URI &&
+            isRdfIri(tripple.object) && isRdfIri(tripple.predicate)
+        ) {
+            if (map[trippleId].class) {
+                map[trippleId] = createAndPushBinding(tripple);
+            }
+            map[trippleId].class = tripple.object;
+        }
+    }
+
+    function createAndPushBinding(tripple: Triple): ElementBinding {
+        const binding: ElementBinding = {
+            inst: (tripple.subject as RdfIri),
+        };
+        convertedResponse.results.bindings.push(binding);
+        return binding;
+    }
+
+    return convertedResponse;
+}
+
 export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: string[]): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {
-        let sInstTypeId: string = sInst.inst.value;
-
-        if (areThereAnyData(sInst)) {
-            if (instancesMap[sInstTypeId]) {
-                enrichElement(instancesMap[sInst.inst.value], sInst);
-            } else {
-                instancesMap[sInstTypeId] = getElementInfo(sInst);
-            }
+        let sInstTypeId = sInst.inst.value;
+        if (!instancesMap[sInstTypeId]) {
+            instancesMap[sInstTypeId] = emptyElementInfo(sInstTypeId);
         }
-    }
-
-    function areThereAnyData(sInst: ElementBinding) {
-        return sInst.class || sInst.label ||  sInst.propType ||  sInst.propValue;
+        enrichElement(instancesMap[sInstTypeId], sInst);
     }
 
     return instancesMap;
@@ -216,6 +263,16 @@ export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): Lin
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
+export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): string[] {
+    const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
+    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value);
+}
+
+export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount {
+    const sparqlLinkCount = response.results.bindings.filter(b => !isRdfBlank(b.link))[0];
+    return  getLinkCount(sparqlLinkCount);
+}
+
 export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
@@ -225,10 +282,9 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
             continue;
         }
         if (!instancesMap[sInst.inst.value]) {
-            instancesMap[sInst.inst.value] = getElementInfo(sInst);
-        } else {
-            enrichElement(instancesMap[sInst.inst.value], sInst);
+            instancesMap[sInst.inst.value] = emptyElementInfo(sInst.inst.value);
         }
+        enrichElement(instancesMap[sInst.inst.value], sInst);
     }
     return instancesMap;
 }
@@ -350,21 +406,16 @@ export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
     };
 }
 
-export function getElementInfo(sInfo: ElementBinding): ElementModel {
+export function emptyElementInfo(id: string): ElementModel {
     const elementInfo: ElementModel = {
-        id: sInfo.inst.value,
-        label: { values: [getLocalizedString(sInfo.label, sInfo.inst.value)] },
-        types: (sInfo.class ? [ sInfo.class.value ] : []),
+        id: id,
+        label: { values: [{
+            text: getNameFromId(id),
+            lang: '',
+        }] },
+        types: [],
         properties: {},
     };
-
-    if (sInfo.propType && sInfo.propType.value !== LABEL_URI) {
-        elementInfo.properties[sInfo.propType.value] = {
-            type: 'string', // sInst.propType.value,
-            values: [getPropertyValue(sInfo.propValue)],
-        };
-    }
-
     return elementInfo;
 }
 

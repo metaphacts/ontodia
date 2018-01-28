@@ -1,9 +1,16 @@
 import * as _ from 'lodash';
-import * as joint from 'jointjs';
 
+import { DiagramModel } from '../diagram/model';
+import { Rect, boundsOf } from '../diagram/geometry';
 import { isIE11 } from './detectBrowser';
 
+const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
+
 export interface ToSVGOptions {
+    model: DiagramModel;
+    paper: SVGSVGElement;
+    contentBox: Rect;
+    getOverlayedElement: (id: string) => HTMLElement;
     preserveDimensions?: boolean;
     convertImagesToDataUris?: boolean;
     blacklistedCssAttributes?: string[];
@@ -19,22 +26,16 @@ type Bounds = { width: number; height: number; };
  */
 const ForeignObjectSizePadding = 2;
 
-export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<string> {
+export function toSVG(options: ToSVGOptions): Promise<string> {
     if (isIE11()) {
         return Promise.reject(new Error(
             'Export to SVG is not supported in the Internet Explorer'));
     }
 
-    const viewportTransform = paper.viewport.getAttribute('transform');
-    paper.viewport.setAttribute('transform', '');
+    const {contentBox: bbox} = options;
+    const {svgClone, imageBounds} = clonePaperSvg(options, ForeignObjectSizePadding);
 
-    const bbox = paper.getContentBBox();
-    const {svgClone, imageBounds} = clonePaperSvg(paper, ForeignObjectSizePadding);
-
-    paper.viewport.setAttribute('transform', viewportTransform || '');
-
-    svgClone.removeAttribute('style');
-    if (opt.preserveDimensions) {
+    if (options.preserveDimensions) {
         svgClone.setAttribute('width', bbox.width.toString());
         svgClone.setAttribute('height', bbox.height.toString());
     } else {
@@ -51,7 +52,7 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
         const {width, height} = imageBounds[nodeRelativePath(svgClone, img)];
         img.setAttribute('width', width.toString());
         img.setAttribute('height', height.toString());
-        if (!opt.convertImagesToDataUris) {
+        if (!options.convertImagesToDataUris) {
             return Promise.resolve();
         }
         return exportAsDataUri(img).then(dataUri => {
@@ -73,8 +74,8 @@ export function toSVG(paper: joint.dia.Paper, opt: ToSVGOptions = {}): Promise<s
         defs.innerHTML = `<style>${cssTexts.join('\n')}</style>`;
         svgClone.insertBefore(defs, svgClone.firstChild);
 
-        if (opt.elementsToRemoveSelector) {
-            foreachNode(svgClone.querySelectorAll(opt.elementsToRemoveSelector),
+        if (options.elementsToRemoveSelector) {
+            foreachNode(svgClone.querySelectorAll(options.elementsToRemoveSelector),
                 node => node.remove());
         }
 
@@ -113,37 +114,50 @@ function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): st
     return cssTexts;
 }
 
-function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
+function clonePaperSvg(options: ToSVGOptions, elementSizePadding: number): {
     svgClone: SVGElement;
     imageBounds: { [path: string]: Bounds };
 } {
-    const svgClone = paper.svg.cloneNode(true) as SVGElement;
+    const {model, paper, getOverlayedElement} = options;
+    const svgClone = paper.cloneNode(true) as SVGSVGElement;
+    svgClone.removeAttribute('class');
+    svgClone.removeAttribute('style');
+
+    function findViewport() {
+        let child = svgClone.firstChild;
+        while (child) {
+            child = child.nextSibling;
+            if (child instanceof SVGGElement) { return child; }
+        }
+        return undefined;
+    }
+
+    const viewport = findViewport();
+    viewport.removeAttribute('transform');
+
     const imageBounds: { [path: string]: Bounds } = {};
 
-    const cells: Backbone.Collection<joint.dia.Cell> = paper.model.get('cells');
-    foreachNode(svgClone.querySelectorAll('g.element'), separatedView => {
-        const modelId = separatedView.getAttribute('model-id');
-        const overlayedView = (paper.el as HTMLElement).querySelector(
-            `.ontodia-overlayed-element[model-id='${modelId}']`);
-        if (!overlayedView) { return; }
+    for (const element of model.elements) {
+        const modelId = element.id;
+        const overlayedView = getOverlayedElement(modelId);
+        if (!overlayedView) { continue; }
 
-        const newRoot = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-        const model = cells.get(modelId);
-        const modelSize = model.get('size');
-        newRoot.setAttribute('width', modelSize.width + elementSizePadding);
-        newRoot.setAttribute('height', modelSize.height + elementSizePadding);
+        const elementRoot = document.createElementNS(SVG_NAMESPACE, 'g');
+        elementRoot.setAttribute('class', 'ontodia-exported-element');
+
+        const newRoot = document.createElementNS(SVG_NAMESPACE, 'foreignObject');
+        const {x, y, width, height} = boundsOf(element);
+        newRoot.setAttribute('transform', `translate(${x},${y})`);
+        newRoot.setAttribute('width', (width + elementSizePadding).toString());
+        newRoot.setAttribute('height', (height + elementSizePadding).toString());
         const overlayedViewContent = overlayedView.firstChild as HTMLElement;
         newRoot.appendChild(overlayedViewContent.cloneNode(true));
 
-        separatedView.setAttribute('class',
-            `${separatedView.getAttribute('class')} ontodia-exported-element`);
-        const oldRoot = separatedView.querySelector('.rootOfUI');
-        const rootParent = oldRoot.parentElement;
-        rootParent.removeChild(oldRoot);
-        rootParent.appendChild(newRoot);
+        elementRoot.appendChild(newRoot);
+        viewport.appendChild(elementRoot);
 
         foreachNode(overlayedViewContent.querySelectorAll('img'), img => {
-            const rootPath = nodeRelativePath(svgClone, rootParent);
+            const rootPath = nodeRelativePath(svgClone, elementRoot);
             const imgPath = nodeRelativePath(overlayedViewContent, img);
             // combine path "from SVG to root" and "from root to image"
             // with additional separator to consider newly added nodes
@@ -152,7 +166,7 @@ function clonePaperSvg(paper: joint.dia.Paper, elementSizePadding: number): {
                 height: img.clientHeight,
             };
         });
-    });
+    }
 
     return {svgClone, imageBounds};
 }
@@ -210,7 +224,7 @@ function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T
 /**
  * Returns colon-separeted path from `parent` to `child` where each part
  * corresponds to child index at each tree level.
- * 
+ *
  * @example
  * <div id='root'>
  *   <span></span>
@@ -219,7 +233,7 @@ function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node: T
  *     <li></li>
  *   </ul>
  * </div>
- * 
+ *
  * nodeRelativePath(root, target) === '1:0'
  */
 function nodeRelativePath(parent: Node, child: Node) {
@@ -228,7 +242,9 @@ function nodeRelativePath(parent: Node, child: Node) {
     while (current && current !== parent) {
         let sibling = current;
         let indexAtLevel = 0;
-        while (sibling = sibling.previousSibling) {
+        while (true) {
+            sibling = sibling.previousSibling;
+            if (!sibling) { break; }
             indexAtLevel++;
         }
         path.unshift(indexAtLevel);
@@ -239,33 +255,28 @@ function nodeRelativePath(parent: Node, child: Node) {
 
 export interface ToDataURLOptions {
     /** 'image/png' | 'image/jpeg' | ... */
-    type?: string;
+    mimeType?: string;
     width?: number;
     height?: number;
     padding?: number;
     backgroundColor?: string;
     quality?: number;
-    svgOptions?: ToSVGOptions;
 }
 
-export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): Promise<string> {
+export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<string> {
     return new Promise((resolve, reject) => {
-        options = options || {};
-        options.type = options.type || 'image/png';
+        const {paper, contentBox, mimeType = 'image/png'} = options;
 
-        let imageRect: Bounds;
-        let contentHeight: number;
-        let contentWidth: number;
+        const imageRect: Bounds = fitRectKeepingAspectRatio(
+            contentBox.width, contentBox.height,
+            options.width, options.height,
+        );
+
         let padding = options.padding || 0;
-
-        const clientRect = paper.viewport.getBoundingClientRect();
-        imageRect = fitRectKeepingAspectRatio(
-            clientRect.width || 1, clientRect.height || 1,
-            options.width, options.height);
-
         padding = Math.min(padding, imageRect.width / 2 - 1, imageRect.height / 2 - 1);
-        contentWidth = imageRect.width - 2 * padding;
-        contentHeight = imageRect.height - 2 * padding;
+
+        const contentWidth = imageRect.width - 2 * padding;
+        const contentHeight = imageRect.height - 2 * padding;
 
         const img = new Image();
         img.onload = function () {
@@ -285,16 +296,15 @@ export function toDataURL(paper: joint.dia.Paper, options?: ToDataURLOptions): P
             createCanvas();
             try {
                 context.drawImage(img, padding, padding, contentWidth, contentHeight);
-                dataURL = canvas.toDataURL(options.type, options.quality);
+                dataURL = canvas.toDataURL(mimeType, options.quality);
                 resolve(dataURL);
             } catch (e) {
                 reject(e);
                 return;
             }
         };
-        const svgOptions = _.clone(options.svgOptions || {convertImagesToDataUris: true});
-        svgOptions.convertImagesToDataUris = true;
-        toSVG(paper, svgOptions).then(svgString => {
+        const svgOptions = {...options, convertImagesToDataUris: true};
+        toSVG(svgOptions).then(svgString => {
             svgString = svgString
                 .replace('width="100%"', 'width="' + contentWidth + '"')
                 .replace('height="100%"', 'height="' + contentHeight + '"');
@@ -321,11 +331,11 @@ export function fitRectKeepingAspectRatio(
 }
 
 /**
-  * Creates and returns a blob from a data URL (either base64 encoded or not).
-  *
-  * @param {string} dataURL The data URL to convert.
-  * @return {Blob} A blob representing the array buffer data.
-  */
+ * Creates and returns a blob from a data URL (either base64 encoded or not).
+ *
+ * @param {string} dataURL The data URL to convert.
+ * @return {Blob} A blob representing the array buffer data.
+ */
 export function dataURLToBlob(dataURL: string): Blob {
     const BASE64_MARKER = ';base64,';
     if (dataURL.indexOf(BASE64_MARKER) === -1) {

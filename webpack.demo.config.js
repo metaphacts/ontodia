@@ -21,14 +21,10 @@ module.exports = {
         wikidata: path.join(__dirname, 'src', 'examples', 'wikidata.ts'),
         composite: path.join(__dirname, 'src', 'examples', 'composite.ts'),
         wikidataGraph: path.join(__dirname, 'src', 'examples', 'wikidataGraph.ts'),
+        toolbarCustomization: path.join(__dirname, 'src', 'examples', 'toolbarCustomization.tsx'),
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
-        alias: {
-            // Backbone provided by joint.js, to prevent module duplication which
-            // causes errors when Ontodia uses Backbone models from joint.js
-            'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
-        },
     },
     module: {
         loaders: [
@@ -38,6 +34,7 @@ module.exports = {
             {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
             {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
+            {test: /\.svg$/, loader: 'url-loader?mimetype=image/svg+xml'},
         ],
     },
     plugins: [
@@ -116,6 +113,12 @@ module.exports = {
             filename: 'composite.html',
             title: 'Ontodia composite DP Demo',
             chunks: ['commons', 'composite'],
+            template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
+        }),
+        new HtmlWebpackPlugin({
+            filename: 'toolbarCustomization.html',
+            title: 'Ontodia Toolbar Customization Demo',
+            chunks: ['commons', 'toolbarCustomization'],
             template: path.join(__dirname, 'src', 'examples', 'template.ejs'),
         }),
         new CommonsChunkPlugin('commons', 'commons.chunk.js'),

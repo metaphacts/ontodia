@@ -35,11 +35,12 @@ const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => console.log(iri));
-
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({ layoutData, dataProvider: new DemoDataProvider(), validateLinks: true });
+    workspace.getModel().importLayout({
+        layoutData,
+        dataProvider: new DemoDataProvider(),
+        validateLinks: true,
+    });
 }
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {

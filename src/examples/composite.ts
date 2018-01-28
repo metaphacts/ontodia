@@ -27,9 +27,6 @@ import {getLinksInfo} from '../ontodia/data/sparql/responseHandler';
 
 const data = require<string>('raw-loader!./resources/testData.ttl');
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 class TransformingDataProvider extends SparqlDataProvider {
 
     createRefQueryPart(params: { elementId: string; linkId?: string; direction?: 'in' | 'out'}): string {
@@ -131,11 +128,6 @@ function onWorkspaceMounted(workspace: Workspace) {
         }
     });
 
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        window.open(iri);
-    });
-
     const rdfDataProvider = new RDFDataProvider({
         data: [
             {
@@ -188,7 +180,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     }});
 
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({
+    workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
         dataProvider: new CompositeDataProvider([
@@ -206,6 +198,9 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         const {layoutData} = workspace.getModel().exportLayout();
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
+    },
+    viewOptions: {
+        onIriClick: iri => window.open(iri),
     },
 };
 

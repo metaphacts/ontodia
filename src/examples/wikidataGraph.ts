@@ -8,9 +8,6 @@ import {
 
 import { onPageLoad } from './common';
 
-require('jointjs/css/layout.css');
-require('jointjs/css/themes/default.css');
-
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
@@ -32,12 +29,6 @@ function onWorkspaceMounted(workspace: Workspace) {
         } else {
             return undefined;
         }
-    });
-
-    const model = workspace.getModel();
-    model.graph.on('action:iriClick', (iri: string) => {
-        window.open(iri);
-        console.log(iri);
     });
 
     const dataProvider = new SparqlDataProvider({
@@ -67,7 +58,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     workspace.showWaitIndicatorWhile(loadingGraph);
 
     loadingGraph.then(({layoutData, preloadedElements}) =>
-        model.importLayout({layoutData, preloadedElements, dataProvider}),
+        workspace.getModel().importLayout({layoutData, preloadedElements, dataProvider}),
     ).then(() => {
         workspace.forceLayout();
         workspace.zoomToFit();
@@ -76,6 +67,9 @@ function onWorkspaceMounted(workspace: Workspace) {
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
+    viewOptions: {
+        onIriClick: iri => window.open(iri),
+    },
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

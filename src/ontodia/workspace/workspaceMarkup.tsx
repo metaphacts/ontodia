@@ -1,13 +1,11 @@
 import * as React from 'react';
-import * as Backbone from 'backbone';
 
 import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
-import { ElementLayer } from '../diagram/elementLayer';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
-import { LinkTypesToolboxShell, LinkTypesToolboxModel } from '../widgets/linksToolbox';
+import { LinkTypesToolbox } from '../widgets/linksToolbox';
 
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
@@ -16,13 +14,16 @@ import { AccordionItem } from './accordionItem';
 export interface Props {
     toolbar: React.ReactElement<any>;
     view: DiagramView;
-    isViewOnly?: boolean;
-    leftPanelInitiallyOpen?: boolean;
-    rightPanelInitiallyOpen?: boolean;
+    hidePanels?: boolean;
+    hideToolbar?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
     zoomOptions?: ZoomOptions;
     onZoom?: (scaleX: number, scaleY: number) => void;
+    isLeftPanelOpen?: boolean;
+    onToggleLeftPanel?: (toggle: boolean) => void;
+    isRightPanelOpen?: boolean;
+    onToggleRightPanel?: (toggle: boolean) => void;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -53,14 +54,24 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
-    private tree: ClassTree;
-    private linksToolbox: LinkTypesToolboxShell;
+
     private untilMouseUpClasses: string[] = [];
 
-    render() {
-        let leftPanel = (
+    private renderToolbar = () => {
+        const {hideToolbar, toolbar} = this.props;
+
+        if (hideToolbar) { return null; }
+
+        return <div className='ontodia__header'>{toolbar}</div>;
+    }
+
+    private renderLeftPanel = () => {
+        if (this.props.hidePanels) { return null; }
+
+        return (
             <ResizableSidebar dockSide={DockSide.Left}
-                initiallyOpen={this.props.leftPanelInitiallyOpen}
+                isOpen={this.props.isLeftPanelOpen}
+                onOpenOrClose={this.props.onToggleLeftPanel}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -75,13 +86,19 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Classes' bodyRef={this.intializeClassTree}
+                    <AccordionItem heading='Classes'
                         tutorialProps={{
                             'data-position': 'right',
                             'data-step': '1',
                             'data-intro-id': 'tree-view',
                             'data-intro': INTRO_CLASSES,
                         }}>
+                        <ClassTree view={this.props.view}
+                            onClassSelected={classId => {
+                                const elementType = this.props.view.model.getClassesById(classId);
+                                this.props.onSearchCriteriaChanged({elementType});
+                            }}
+                        />
                     </AccordionItem>
                     <AccordionItem heading='Instances'
                         tutorialProps={{
@@ -92,15 +109,21 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                         }}>
                         <InstancesSearch view={this.props.view}
                             criteria={this.props.searchCriteria || {}}
-                            onCriteriaChanged={this.props.onSearchCriteriaChanged} />
+                            onCriteriaChanged={this.props.onSearchCriteriaChanged}
+                        />
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
         );
+    }
 
-        let rightPanel = (
+    private renderRightPanel = () => {
+        if (this.props.hidePanels) { return null; }
+
+        return (
             <ResizableSidebar dockSide={DockSide.Right}
-                initiallyOpen={this.props.rightPanelInitiallyOpen}
+                isOpen={this.props.isRightPanelOpen}
+                onOpenOrClose={this.props.onToggleRightPanel}
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
@@ -110,36 +133,36 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
                     verticalResizing: true,
                 })}>
                     <AccordionItem heading='Connections'
-                        bodyClassName='link-types-toolbox' bodyRef={this.initializeLinksToolbox}
+                        bodyClassName='link-types-toolbox'
                         tutorialProps={{
                             'data-position': 'left',
                             'data-step': '4',
                             'data-intro-id': 'link-types-toolbox',
                             'data-intro': INTRO_CONNECTIONS,
                         }}>
+                        <LinkTypesToolbox view={this.props.view}/>
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
         );
+    }
 
+    render() {
         return (
             <div ref={e => this.element = e} className='ontodia'>
-                <div className='ontodia__header'>{this.props.toolbar}</div>
+                {this.renderToolbar()}
                 <div className='ontodia__workspace'>
-                    {!this.props.isViewOnly ? leftPanel : null}
+                    {this.renderLeftPanel()}
                     <div className='ontodia__main-panel'
                          data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
                         <PaperArea ref={el => this.paperArea = el}
-                            model={this.props.view.model}
-                            paper={this.props.view.paper}
+                            view={this.props.view}
                             zoomOptions={this.props.zoomOptions}
-                            preventTextSelection={() => this.preventTextSelection()}
                             onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
-                            <ElementLayer view={this.props.view} paper={this.props.view.paper} />
                         </PaperArea>
                     </div>
-                    {!this.props.isViewOnly ? rightPanel : null}
+                    {this.renderRightPanel()}
                 </div>
             </div>
         );
@@ -151,34 +174,6 @@ export class WorkspaceMarkup extends React.Component<Props, void> {
 
     componentWillUnmount() {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
-    }
-
-    initializeLinksToolbox = (element: HTMLDivElement) => {
-        if (element) {
-            this.linksToolbox = new LinkTypesToolboxShell({
-                model: new LinkTypesToolboxModel(this.props.view.model),
-                view: this.props.view,
-                el: element,
-            }).render();
-        } else {
-            this.linksToolbox.remove();
-        }
-    }
-
-    intializeClassTree = (element: HTMLDivElement) => {
-        if (element) {
-            this.tree = new ClassTree({
-                model: new Backbone.Model(this.props.view.model),
-                view: this.props.view,
-                el: element,
-            }).render();
-
-            this.tree.on('action:classSelected', (classId: string) => {
-                this.props.onSearchCriteriaChanged({elementTypeId: classId});
-            });
-        } else {
-            this.tree.remove();
-        }
     }
 
     preventTextSelection() {

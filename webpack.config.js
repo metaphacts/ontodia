@@ -20,11 +20,6 @@ module.exports = {
     },
     resolve: {
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
-        alias: {
-            // Backbone provided by joint.js, to prevent module duplication which
-            // causes errors when Ontodia uses Backbone models from joint.js
-            'backbone': path.join(npmDir, 'backbone', 'backbone.js'),
-        },
     },
     module: {
         loaders: [
@@ -34,6 +29,7 @@ module.exports = {
             {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
             {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
             {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
+            {test: /\.svg$/, loader: 'url-loader?mimetype=image/svg+xml'},
         ],
     },
     plugins: plugins,
@@ -46,13 +42,10 @@ module.exports = {
     externals: !bundlePeers ? {
         'd3-color': true,
         'intro.js': true,
-        'jointjs': true,
-        'jquery': true,
         'lodash': true,
         'n3': true,
         'react': true,
         'react-dom': true,
-        'backbone': true,
         'webcola': true,
         'whatwg-fetch': true,
     } : {},

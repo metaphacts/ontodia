@@ -337,7 +337,7 @@ export class RDFDataProvider implements DataProvider {
         }
 
         return Promise.all(statementPromises).then(statements => {
-            return this.rdfStorage.matchAll(statements);
+            return this.rdfStorage.matchAll(statements.filter(statement => statement));
         }).then(result => {
             return result.toArray().map(lt => ({
                 sourceId: lt.subject.nominalValue,

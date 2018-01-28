@@ -75,9 +75,9 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                 </div>
                 {image}
                 <div className='ontodia-default-template_body' style={{borderColor: props.color}}>
-                    <label className='ontodia-default-template_body__label' title={props.label}>
+                    <span className='ontodia-default-template_body__label' title={props.label}>
                         {props.label}
-                    </label>
+                    </span>
                     {expander}
                 </div>
             </div>

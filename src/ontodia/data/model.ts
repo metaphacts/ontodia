@@ -26,7 +26,7 @@ export interface LinkModel {
 export interface ClassModel {
     id: string;
     label: { values: LocalizedString[] };
-    count: number;
+    count?: number;
     children: ClassModel[];
 }
 

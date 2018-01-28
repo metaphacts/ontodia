@@ -2,16 +2,19 @@ import * as N3 from 'n3';
 import { DataProvider, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
+    triplesToElementBinding,
     getClassTree,
     getClassInfo,
     getPropertyInfo,
     getLinkTypes,
     getElementsInfo,
     getLinksInfo,
-    getLinksTypesOf,
+    getLinksTypeIds,
     getFilteredData,
     getEnrichedElementsInfo,
     getLinkTypesInfo,
+    getLinksTypesOf,
+    getLinkStatistics,
 } from './responseHandler';
 import {
     ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
@@ -153,7 +156,8 @@ export class SparqlDataProvider implements DataProvider {
         const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
         const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
 
-        return this.executeSparqlQuery<ElementBinding>(query)
+        return this.executeSparqlConstruct(query)
+            .then(triplesToElementBinding)
             .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
             .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
             .then(elementModels => {
@@ -233,11 +237,28 @@ export class SparqlDataProvider implements DataProvider {
             return Promise.resolve(getLinksTypesOf(BlankNodes.linkTypesOf(params)));
         }
         const elementIri = escapeIri(params.elementId);
+        // Ask for linkTypes
         const query = this.settings.defaultPrefix
             + resolveTemplate(this.settings.linkTypesOfQuery,
                 {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
-                );
-        return this.executeSparqlQuery<LinkCountBinding>(query).then(getLinksTypesOf);
+            );
+        return this.executeSparqlQuery<LinkTypeBinding>(query)
+            .then(linkTypeBinding => {
+                const linkTypeIds = getLinksTypeIds(linkTypeBinding);
+                const requests: Promise<LinkCount>[] = [];
+                for (const id of linkTypeIds) {
+                    const q = this.settings.defaultPrefix
+                    + resolveTemplate(this.settings.linkTypesStatisticsQuery, {
+                        linkId:  escapeIri(id),
+                        elementIri,
+                        linkConfigurations: this.formatLinkTypesOf(params.elementId)
+                    });
+                    requests.push(
+                        this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistics)
+                    );
+                }
+                return Promise.all(requests);
+            });
     };
 
     linkElements(params: {

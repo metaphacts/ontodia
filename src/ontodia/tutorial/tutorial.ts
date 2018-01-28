@@ -1,4 +1,3 @@
-import * as $ from 'jquery';
 import { introJs } from 'intro.js';
 
 export interface TutorialProps {
