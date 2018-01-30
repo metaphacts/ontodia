@@ -160,7 +160,7 @@ export class DiagramView {
         }
     }
 
-    private removeSelectedElements() {
+    removeSelectedElements() {
         const elementsToRemove = this.selection;
         if (elementsToRemove.length === 0) { return; }
 
@@ -169,6 +169,7 @@ export class DiagramView {
         for (const element of elementsToRemove) {
             this.model.removeElement(element.id);
         }
+        this.setSelection([]);
         this.model.storeBatchCommand();
     }
 
@@ -232,6 +233,12 @@ export class DiagramView {
         });
 
         renderDefaultHalo();
+    }
+
+    setCustomWidget(customWidget: {id: string, widget: ReactElement<any>}) {
+        const widgets: any = {};
+        widgets[customWidget.id] = customWidget.widget;
+        this.source.trigger('updateWidgets', {widgets: widgets});
     }
 
     showNavigationMenu(target: Element) {
