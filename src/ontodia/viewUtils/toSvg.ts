@@ -1,11 +1,21 @@
-import * as _ from 'lodash';
+import { uniqueId } from 'lodash';
 
 import { DiagramModel } from '../diagram/model';
 import { Rect, boundsOf } from '../diagram/geometry';
-import { isIE11 } from './detectBrowser';
+import { isIE11 } from './polyfills';
 import { htmlToSvg } from './htmlToSvg';
 
-const canvg = require<(canvas: HTMLCanvasElement, svg: string) => void>('canvg-fixed');
+type CanvgRender = (canvas: HTMLCanvasElement, svg: string, options?: CanvgOptions) => void;
+interface CanvgOptions {
+    offsetX?: number;
+    offsetY?: number;
+    scaleWidth?: number;
+    scaleHeight?: number;
+    ignoreDimensions?: boolean;
+    ignoreClear?: boolean;
+}
+const canvg = require<CanvgRender>('canvg-fixed');
+
 const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
 
 export interface ToSVGOptions {
@@ -30,7 +40,10 @@ type Bounds = { width: number; height: number; };
 const ForeignObjectSizePadding = 2;
 
 export function toSVG(options: ToSVGOptions): Promise<string> {
+    return exportSVG(options).then(svg => new XMLSerializer().serializeToString(svg));
+}
 
+function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
     const {contentBox: bbox} = options;
     const {svgClone, imageBounds} = clonePaperSvg(options, ForeignObjectSizePadding);
     if (isIE11()) { clearAttributes(svgClone); }
@@ -87,7 +100,7 @@ export function toSVG(options: ToSVGOptions): Promise<string> {
                 node => node.remove());
         }
 
-        return new XMLSerializer().serializeToString(svgClone);
+        return svgClone;
     });
 }
 
@@ -217,7 +230,7 @@ function clonePaperSvg(options: ToSVGOptions, elementSizePadding: number): {
         const clonedNodes = overlayedViewContent.querySelectorAll('img');
 
         foreachNode(overlayedView.querySelectorAll('img'), (img, index) => {
-            const exportKey = _.uniqueId('export-key-');
+            const exportKey = uniqueId('export-key-');
             clonedNodes[index].setAttribute('export-key', exportKey);
             imageBounds[exportKey] = {
                 width: img.clientWidth,
@@ -284,87 +297,143 @@ export interface ToDataURLOptions {
     mimeType?: string;
     width?: number;
     height?: number;
-    padding?: number;
+    /** Background color, transparent by default. */
     backgroundColor?: string;
     quality?: number;
 }
 
+const MAX_CANVAS_LENGTH = 4096;
+
 export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return Promise.resolve().then(() => {
         const {paper, contentBox, mimeType = 'image/png'} = options;
 
-        const imageRect: Bounds = fitRectKeepingAspectRatio(
-            contentBox.width, contentBox.height,
-            options.width, options.height,
-        );
+        const containerSize = (typeof options.width === 'number' || typeof options.height === 'number')
+            ? {width: options.width, height: options.height}
+            : fallbackContainerSize(contentBox);
 
-        let padding = options.padding || 0;
-        padding = Math.min(padding, imageRect.width / 2 - 1, imageRect.height / 2 - 1);
+        const {innerSize, outerSize, offset} = computeAutofit(contentBox, containerSize);
 
-        const contentWidth = imageRect.width - 2 * padding;
-        const contentHeight = imageRect.height - 2 * padding;
-
-        const svgOptions = {...options,
+        const svgOptions = {
+            ...options,
             convertImagesToDataUris: true,
             mockImages: isIE11(),
             preserveDimensions: true,
-            contentBox: {
-                x: padding, y: padding,
-                width: contentWidth, height: contentHeight
-            }
         };
 
-        const { canvas, context } = createCanvas();
+        const exportedTask = exportSVG(svgOptions).then(svg => {
+            // make image centered when rendering using Canvg
+            svg.setAttribute('width', innerSize.width.toString());
+            svg.setAttribute('height', innerSize.height.toString());
+            return new XMLSerializer().serializeToString(svg);
+        });
+
+        const {canvas, context} = createCanvas(
+            outerSize.width,
+            outerSize.height,
+            options.backgroundColor,
+        );
 
         if (isIE11()) {
-            toSVG(svgOptions).then(svgString => {
-                try {
-                    canvg(canvas, svgString);
-                    resolve(canvas.toDataURL(mimeType, options.quality));
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
+            if (!canvg) {
+                const error = new Error('"canvg-fixed" dependency required to support exporting in the IE.');
+                console.error(error);
+                throw error;
+            }
+            return exportedTask.then(svgString => {
+                canvg(canvas, svgString, {
+                    offsetX: offset.x,
+                    offsetY: offset.y,
+                    scaleWidth: innerSize.width,
+                    scaleHeight: innerSize.height,
+                    ignoreDimensions: true,
+                    ignoreClear: true,
+                });
+                return canvas.toDataURL(mimeType, options.quality);
             });
         } else {
-            const img = new Image();
-            img.onload = function () {
-                try {
-                    context.drawImage(img, padding, padding, contentWidth, contentHeight);
-                    resolve(canvas.toDataURL(mimeType, options.quality));
-                } catch (e) {
-                    reject(e);
-                    return;
-                }
-            };
-
-            toSVG(svgOptions).then(svgString => {
-                img.src = 'data:image/svg+xml,' + encodeURIComponent(svgString);
-            });
+            return exportedTask
+                .then(svgString => {
+                    return loadImage('data:image/svg+xml,' + encodeURIComponent(svgString));
+                })
+                .then(image => {
+                    context.drawImage(image, offset.x, offset.y, innerSize.width, innerSize.height);
+                    return canvas.toDataURL(mimeType, options.quality);
+                });
         }
 
-        function createCanvas() {
+        function createCanvas(canvasWidth: number, canvasHeight: number, backgroundColor?: string) {
             const cnv = document.createElement('canvas');
-            cnv.width = imageRect.width;
-            cnv.height = imageRect.height;
+            cnv.width = canvasWidth;
+            cnv.height = canvasHeight;
             const cnt = cnv.getContext('2d');
-            cnt.fillStyle = options.backgroundColor || 'white';
-            cnt.fillRect(0, 0, imageRect.width, imageRect.height);
-            return { canvas: cnv, context: cnt };
+            if (backgroundColor) {
+                cnt.fillStyle = backgroundColor;
+                cnt.fillRect(0, 0, canvasWidth, canvasHeight);
+            }
+            return {canvas: cnv, context: cnt};
         }
     });
 }
 
+export function loadImage(source: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = function () {
+            resolve(image);
+        };
+        image.onerror = function (ev: ErrorEvent) {
+            reject(ev);
+        };
+        image.src = source;
+    });
+}
+
+function computeAutofit(itemSize: Bounds, containerSize: Bounds) {
+    const fit = fitRectKeepingAspectRatio(
+        itemSize.width,
+        itemSize.height,
+        containerSize.width,
+        containerSize.height,
+    );
+    const innerSize: Bounds = {
+        width: Math.floor(fit.width),
+        height: Math.floor(fit.height),
+    };
+    const outerSize: Bounds = {
+        width: typeof containerSize.width === 'number' ? containerSize.width : innerSize.width,
+        height: typeof containerSize.height === 'number' ? containerSize.height : innerSize.height,
+    };
+    const offset = {
+        x: Math.round((outerSize.width - innerSize.width) / 2),
+        y: Math.round((outerSize.height - innerSize.height) / 2),
+    };
+    return {innerSize, outerSize, offset};
+}
+
+function fallbackContainerSize(itemSize: Bounds): Bounds {
+    const maxResolutionScale = Math.min(
+        MAX_CANVAS_LENGTH / itemSize.width,
+        MAX_CANVAS_LENGTH / itemSize.height,
+    );
+    const resolutionScale = Math.min(2.0, maxResolutionScale);
+    const width = Math.floor(itemSize.width * resolutionScale);
+    const height = Math.floor(itemSize.height * resolutionScale);
+    return {width, height};
+}
+
 export function fitRectKeepingAspectRatio(
-    sourceWidth: number, sourceHeight: number,
-    targetWidth: number, targetHeight: number,
+    sourceWidth: number,
+    sourceHeight: number,
+    targetWidth: number | undefined,
+    targetHeight: number | undefined,
 ): { width: number; height: number; } {
-    if (!targetWidth && !targetHeight) {
+    if (!(typeof targetWidth === 'number' || typeof targetHeight === 'number')) {
         return {width: sourceWidth, height: sourceHeight};
     }
     const sourceAspectRatio = sourceWidth / sourceHeight;
-    targetWidth = targetWidth || targetHeight * sourceAspectRatio;
-    targetHeight = targetHeight || targetWidth / sourceAspectRatio;
+    targetWidth = typeof targetWidth === 'number' ? targetWidth : targetHeight * sourceAspectRatio;
+    targetHeight = typeof targetHeight === 'number' ? targetHeight : targetWidth / sourceAspectRatio;
     if (targetHeight * sourceAspectRatio <= targetWidth) {
         return {width: targetHeight * sourceAspectRatio, height: targetHeight};
     } else {
