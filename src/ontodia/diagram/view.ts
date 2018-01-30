@@ -237,6 +237,12 @@ export class DiagramView {
         renderDefaultHalo();
     }
 
+    setCustomWidget(customWidget: {id: string, widget: ReactElement<any>}) {
+        const widgets: any = {};
+        widgets[customWidget.id] = customWidget.widget;
+        this.source.trigger('updateWidgets', {widgets: widgets});
+    }
+
     showNavigationMenu(target: Element) {
         const connectionsMenu = createElement(ConnectionsMenu, {
             view: this,

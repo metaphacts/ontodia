@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ReactElement } from 'react';
 
 import { Debouncer } from '../viewUtils/async';
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
@@ -34,6 +34,12 @@ export interface ScaleOptions {
     pivot?: { x: number; y: number; };
 }
 
+export interface PaperAreaEvents {
+    onDragElementStart: Element;
+    onDragElement: PropertyChange<Element, Vector>;
+    onDragElementEnd: Element;
+}
+
 export interface PaperWidgetProps {
     paperArea?: PaperArea;
 }
@@ -53,6 +59,8 @@ const CLASS_NAME = 'ontodia-paper-area';
 
 export class PaperArea extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
+    private readonly source = new EventSource<PaperAreaEvents>();
+    readonly events: Events<PaperAreaEvents> = this.source;
 
     private area: HTMLDivElement;
     private widgets: { [key: string]: ReactElement<any> } = {};
@@ -397,6 +405,7 @@ export class PaperArea extends React.Component<Props, State> {
         const {x: elementX, y: elementY} = element.position;
         this.movingPaperOrigin = {pointerX, pointerY, elementX, elementY};
         this.movingElement = element;
+        this.source.trigger('onDragElementStart', element);
     }
 
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -468,10 +477,12 @@ export class PaperArea extends React.Component<Props, State> {
         } else if (this.movingElement) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
             const {pointerX, pointerY, elementX, elementY} = this.movingPaperOrigin;
+            const previous = this.movingElement.position;
             this.movingElement.setPosition({
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
+            this.source.trigger('onDragElement', {source: this.movingElement, previous});
             this.props.view.performSyncUpdate();
         } else if (this.movingVertex) {
             const {link, vertexIndex} = this.movingVertex;
@@ -491,6 +502,9 @@ export class PaperArea extends React.Component<Props, State> {
         if (this.listeningToPointerMove) {
             document.removeEventListener('mousemove', this.onPointerMove);
             document.removeEventListener('mouseup', this.stopListeningToPointerMove);
+        }
+        if (this.movingElement) {
+            this.source.trigger('onDragElementEnd', this.movingElement);
         }
 
         this.listeningToPointerMove = false;
