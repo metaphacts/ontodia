@@ -49,7 +49,7 @@ export class RDFLoader {
                             throw Error(`Unable to parse response. Response: ${body}`);
                         }
                     });
-                });
+                })
             } else {
                 throw Error(`Unable to fetch data using this id (${elementId})`);
             }
@@ -82,10 +82,7 @@ function fetchFile(params: {
         if (response.ok) {
             return response.text();
         } else {
-            const error = new Error(response.statusText);
-            (<any> error).response = response;
-            console.error(error);
-            return undefined;
+            throw new Error(response.statusText);
         }
     });
 }
