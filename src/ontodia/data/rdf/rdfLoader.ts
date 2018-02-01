@@ -84,8 +84,7 @@ function fetchFile(params: {
         } else {
             const error = new Error(response.statusText);
             (<any> error).response = response;
-            console.error(error);
-            return undefined;
+            throw error;
         }
     });
 }
