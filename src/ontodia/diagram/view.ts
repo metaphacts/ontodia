@@ -163,7 +163,7 @@ export class DiagramView {
         }
     }
 
-    private removeSelectedElements() {
+    removeSelectedElements() {
         const elementsToRemove = this.selection;
         if (elementsToRemove.length === 0) { return; }
 
