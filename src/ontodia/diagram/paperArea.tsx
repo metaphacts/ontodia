@@ -35,6 +35,7 @@ export interface ScaleOptions {
 }
 
 export interface PaperAreaEvents {
+    onPointerDown: React.MouseEvent<HTMLElement>;
     onDragElementStart: Element;
     onDragElement: PropertyChange<Element, Vector>;
     onDragElementEnd: Element;
@@ -223,7 +224,7 @@ export class PaperArea extends React.Component<Props, State> {
         e.stopPropagation();
     }
 
-    private pageToPaperCoords(pageX: number, pageY: number) {
+    pageToPaperCoords(pageX: number, pageY: number) {
         const {left, top} = this.area.getBoundingClientRect();
         return this.clientToPaperCoords(
             pageX - (left + window.pageXOffset),
@@ -396,6 +397,7 @@ export class PaperArea extends React.Component<Props, State> {
             e.preventDefault();
             this.startPanning(e);
         }
+        this.source.trigger('onPointerDown', e);
 
         this.listenToPointerMove(e, cell);
     }
