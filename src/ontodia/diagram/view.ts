@@ -172,6 +172,7 @@ export class DiagramView {
         for (const element of elementsToRemove) {
             this.model.removeElement(element.id);
         }
+        this.setSelection([]);
         this.model.storeBatchCommand();
     }
 
