@@ -3,7 +3,7 @@ import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString } from '../data/model';
 import {
-    LinkTemplate, LinkStyle, LinkLabel, LinkMarkerStyle,
+    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle,
     LinkRouter, RoutedLinks, RoutedLink,
 } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
@@ -20,6 +20,7 @@ import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
+    scale: number;
 }
 
 enum UpdateRequest {
@@ -126,7 +127,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     render() {
-        const {view} = this.props;
+        const {view, scale} = this.props;
         const shouldUpdate = this.popShouldUpdatePredicate();
         return <g className={CLASS_NAME}>
             {view.model.links.map(model => (
@@ -135,6 +136,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
                     model={model}
                     shouldUpdate={shouldUpdate(model)}
                     route={this.routings[model.id]}
+                    scale={scale}
                 />
             ))}
         </g>;
@@ -146,6 +148,7 @@ interface LinkViewProps {
     model: DiagramLink;
     shouldUpdate: boolean;
     route?: RoutedLink;
+    scale: number;
 }
 
 const LINK_CLASS = 'ontodia-link';
@@ -245,17 +248,31 @@ class LinkView extends Component<LinkViewProps, {}> {
         return {fill, stroke, strokeWidth, strokeDasharray};
     }
 
-    private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
-        const {view, model, route} = this.props;
-        const polylineLength = computePolylineLength(polyline);
+    private getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
+        const {
+            fill = 'black',
+            stroke = 'none',
+            'stroke-width': strokeWidth = 0,
+            'font-size': fontSize = 'inherit',
+            'font-weight': fontWeight = 'bold',
+        } = label.attrs ? label.attrs.text : {};
 
-        interface LabelAttributes {
-            offset: number;
-            text: LocalizedString;
-            stroke?: string;
-            strokeWidth?: number;
-            fill?: string;
-        }
+        return {fill, stroke, strokeWidth, fontSize, fontWeight};
+    }
+
+    private getLabelRectAttributes(label: LinkLabelProperties): RectAttributes {
+        const {
+            fill = 'white',
+            stroke = 'none',
+            'stroke-width': strokeWidth = 0,
+        } = label.attrs ? label.attrs.rect : {};
+
+        return {fill, stroke, strokeWidth};
+    }
+
+    private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
+        const {view, model, route, scale} = this.props;
+        const polylineLength = computePolylineLength(polyline);
 
         const labels: LabelAttributes[] = [];
 
@@ -265,6 +282,10 @@ class LinkView extends Component<LinkViewProps, {}> {
         labels.push({
             offset: labelStyle.position || 0.5,
             text: labelText,
+            attributes: {
+                text: this.getLabelTextAttributes(labelStyle),
+                rect: this.getLabelRectAttributes(labelStyle),
+            },
         });
 
         if (style.properties) {
@@ -276,11 +297,15 @@ class LinkView extends Component<LinkViewProps, {}> {
                 labels.push({
                     offset: property.position || 0.5,
                     text,
+                    attributes: {
+                        text: this.getLabelTextAttributes(property),
+                        rect: this.getLabelRectAttributes(property),
+                    },
                 });
             }
         }
 
-        let textAnchor = 'middle';
+        let textAnchor: 'start' | 'middle' | 'end' | 'inherit' = 'middle';
         if (route && route.labelTextAnchor) {
             textAnchor = route.labelTextAnchor;
         }
@@ -289,17 +314,102 @@ class LinkView extends Component<LinkViewProps, {}> {
             <g className={`${LINK_CLASS}__labels`}>
                 {labels.map((label, index) => {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
-                    // missing from typings
-                    const otherAttributes: object = {alignmentBaseline: 'middle'};
+
                     return (
-                        <text key={index} x={x} y={y} textAnchor={textAnchor}
-                            filter='url(#solid-fill)' style={{fontWeight: 'bold'}} {...otherAttributes}
-                            stroke={label.stroke} strokeWidth={label.strokeWidth} fill={label.fill}>
-                            {label.text.text}
-                        </text>
+                        <g key={index}>
+                            <LinkLabel x={x} y={y} label={label} textAnchor={textAnchor} scale={scale} />
+                        </g>
                     );
                 })}
             </g>
+        );
+    }
+}
+
+interface LabelAttributes {
+    offset: number;
+    text: LocalizedString;
+    attributes: {
+        text: TextAttributes;
+        rect: RectAttributes;
+    };
+}
+
+interface TextAttributes {
+    stroke?: string;
+    strokeWidth?: number;
+    fill?: string;
+    fontSize?: string | number;
+    fontWeight?: 'normal' | 'bold' | 'lighter' | 'bolder' | number;
+}
+
+interface RectAttributes {
+    fill?: string;
+    stroke?: string;
+    strokeWidth?: number;
+}
+
+interface LinkLabelProps {
+    x: number;
+    y: number;
+    label: LabelAttributes;
+    textAnchor: 'start' | 'middle' | 'end' | 'inherit';
+    scale: number;
+}
+
+interface LinkLabelState {
+    rect?: { width: number; height: number; };
+}
+
+class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
+    constructor(props: LinkLabelProps) {
+        super(props);
+        this.state = {
+            rect: {width: 0, height: 0},
+        }
+    }
+
+    private onRender = (label: SVGElement) => {
+        if (!label) { return; }
+
+        const {scale} = this.props;
+        const {width, height} = label.getBoundingClientRect();
+
+        this.setState({
+            rect: {
+                width: width / scale,
+                height: height / scale,
+            },
+        });
+    }
+
+    render() {
+        const {x, y, label, textAnchor} = this.props;
+        const {width, height} = this.state.rect;
+
+        const rectPosition = {x, y: y - height / 2};
+
+        if (textAnchor === 'middle') {
+            rectPosition.x -= width / 2;
+        } else if (textAnchor === 'end') {
+            rectPosition.x -= width;
+        }
+
+        const dy = '0.6ex'; // hack: 'alignment-baseline' and 'dominant-baseline' are not supported in Edge and IE
+
+        return (
+          <g>
+              <rect
+                  x={rectPosition.x}
+                  y={rectPosition.y}
+                  width={width}
+                  height={height}
+                  style={label.attributes.rect}
+              />
+              <text ref={this.onRender} x={x} y={y} dy={dy} textAnchor={textAnchor} style={label.attributes.text}>
+                  {label.text.text}
+              </text>
+          </g>
         );
     }
 }
