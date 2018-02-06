@@ -19,9 +19,6 @@ import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/
 import { Halo } from '../viewUtils/halo';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
-import {
-    toSVG, ToSVGOptions, toDataURL, ToDataURLOptions,
-} from '../viewUtils/toSvg';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 

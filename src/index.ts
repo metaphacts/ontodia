@@ -1,7 +1,9 @@
 require('intro.js/introjs.css');
 require('../styles/main.scss');
 
-require('whatwg-fetch');
+import 'whatwg-fetch';
+import 'es6-promise/auto';
+import './ontodia/viewUtils/polyfills';
 
 export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';

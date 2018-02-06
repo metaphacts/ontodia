@@ -4,7 +4,16 @@ var path = require('path');
 var CommonsChunkPlugin = require("webpack/lib/optimize/CommonsChunkPlugin");
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
+var SUPPORT_IE = Boolean(process.env.SUPPORT_IE);
+
 var npmDir = path.join(__dirname, 'node_modules');
+
+var aliases = {};
+if (!SUPPORT_IE) {
+    const emptyModule = path.resolve(__dirname, 'src', 'emptyModule.ts');
+    aliases['canvg-fixed'] = emptyModule;
+    aliases['es6-promise/auto'] = emptyModule;
+}
 
 module.exports = {
     entry: {
@@ -23,6 +32,7 @@ module.exports = {
         toolbarCustomization: path.join(__dirname, 'src', 'examples', 'toolbarCustomization.tsx'),
     },
     resolve: {
+        alias: aliases,
         extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
     },
     module: {
@@ -143,6 +153,5 @@ module.exports = {
                 secure: false,
             },
         },
-
     },
 };
