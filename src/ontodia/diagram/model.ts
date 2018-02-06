@@ -71,6 +71,10 @@ export class DiagramModel {
         return this.graph.getLinks().filter(link => link.typeId === linkTypeId);
     }
 
+    findLink(link: LinkModel): Link | undefined {
+        return this.graph.findLink(link);
+    }
+
     sourceOf(link: Link) { return this.getElement(link.sourceId); }
     targetOf(link: Link) { return this.getElement(link.targetId); }
     isSourceAndTargetVisible(link: Link): boolean {

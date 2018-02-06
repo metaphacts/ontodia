@@ -26,7 +26,7 @@ import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elem
 import { Size, boundsOf } from './geometry';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
 import { isLinkVertex } from './paper';
-import { PaperArea, PointerUpEvent } from './paperArea';
+import { PaperArea, PointerEvent, PointerUpEvent } from './paperArea';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -36,6 +36,9 @@ export interface DiagramViewOptions {
     linkRouter?: LinkRouter;
     suggestProperties?: PropertySuggestionHandler;
     onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
+    onPointerDown?: (e: PointerEvent) => void;
+    onPointerMove?: (e: PointerEvent) => void;
+    onPointerUp?: (e: PointerUpEvent) => void;
 }
 
 export interface TypeStyle {
@@ -138,7 +141,22 @@ export class DiagramView {
     }
 
     internal_initializePaperComponents(paperArea: PaperArea) {
-        this.listener.listen(paperArea.events, 'pointerUp', e => this.onPaperPointerUp(e));
+        this.listener.listen(paperArea.events, 'pointerUp', e => {
+            this.onPaperPointerUp(e);
+            if (this.options.onPointerUp) {
+                this.options.onPointerUp(e);
+            }
+        });
+        this.listener.listen(paperArea.events, 'pointerMove', e => {
+            if (this.options.onPointerMove) {
+                this.options.onPointerMove(e);
+            }
+        });
+        this.listener.listen(paperArea.events, 'pointerDown', e => {
+            if (this.options.onPointerDown) {
+                this.options.onPointerDown(e);
+            }
+        });
 
         if (!this.options.disableDefaultHalo) {
             this.configureHalo();

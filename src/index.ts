@@ -1,9 +1,11 @@
+import {PaperArea, PointerEvent} from "./ontodia/diagram/paperArea";
+
 require('intro.js/introjs.css');
 require('../styles/main.scss');
 
 import 'whatwg-fetch';
 import 'es6-promise/auto';
-import './ontodia/viewUtils/polyfills';
+require('./ontodia/viewUtils/polyfills');
 
 export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';
@@ -23,6 +25,8 @@ export { Element, ElementEvents, Link, LinkEvents } from './ontodia/diagram/elem
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
+export { Cell } from './ontodia/diagram/paper';
+export { PaperArea, PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/viewUtils/crossOriginImage';
 export { PropertySuggestionParams, PropertyScore } from './ontodia/viewUtils/connectionsMenu';
