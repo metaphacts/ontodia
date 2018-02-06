@@ -251,7 +251,7 @@ export class SparqlDataProvider implements DataProvider {
                     + resolveTemplate(this.settings.linkTypesStatisticsQuery, {
                         linkId:  escapeIri(id),
                         elementIri,
-                        linkConfigurations: this.formatLinkTypesOf(params.elementId)
+                        linkConfigurations: this.formatLinkTypesStatistics(params.elementId, id)
                     });
                     requests.push(
                         this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistics)
@@ -402,7 +402,7 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     formatLinkTypesOf(elementIri: string): string {
-        const elementIriConst = `<${elementIri}>`;
+        const elementIriConst = escapeIri(elementIri);
         return this.settings.linkConfigurations.map(linkConfig => {
             let links: string[] = [];
             links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?outObject')} 
@@ -423,6 +423,33 @@ export class SparqlDataProvider implements DataProvider {
         }).map(links => links.join(`
             UNION 
             `)).join(`
+            UNION 
+            `);
+    }
+
+    formatLinkTypesStatistics(elementIri: string, linkIri: string): string {
+        const elementIriConst = escapeIri(elementIri);
+        const linkConfig = this.settings.linkConfigurations.find(link => link.id === linkIri);
+        const linkConfigInverse = this.settings.linkConfigurations.find(link => link.inverseId === linkIri);
+
+        let links: string[] = [];
+        if (linkConfig) {
+            links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?outObject')} 
+                BIND(<${linkIri}> as ?link )
+            }`);
+            links.push(`{ ${this.formatLinkPath(linkConfig.path, '?inObject', elementIriConst)} 
+                BIND(<${linkIri}> as ?link )
+            }`);
+        }
+        if (linkConfigInverse) {
+            links.push(`{ ${this.formatLinkPath(linkConfigInverse.path, elementIriConst, '?inObject')} 
+                BIND(<${linkIri}> as ?link )
+            }`);
+            links.push(`{ ${this.formatLinkPath(linkConfigInverse.path, '?outObject', elementIriConst)} 
+                BIND(<${linkIri}> as ?link )
+            }`);
+        }
+        return links.join(`
             UNION 
             `);
     }
