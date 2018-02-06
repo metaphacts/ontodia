@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ReactElement } from 'react';
 
 import { Debouncer } from '../viewUtils/async';
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
@@ -34,6 +34,22 @@ export interface ScaleOptions {
     pivot?: { x: number; y: number; };
 }
 
+export interface PaperAreaEvents {
+    pointerDown: PointerEvent;
+    pointerMove: PointerEvent;
+    pointerUp: PointerUpEvent;
+}
+
+export interface PointerEvent {
+    source: PaperArea;
+    sourceEvent: React.MouseEvent<Element> | MouseEvent;
+    target: Cell | undefined;
+}
+
+export interface PointerUpEvent extends PointerEvent {
+    triggerAsClick: boolean;
+}
+
 export interface PaperWidgetProps {
     paperArea?: PaperArea;
 }
@@ -49,36 +65,35 @@ export interface State {
     readonly renderedWidgets?: ReadonlyArray<ReactElement<any>>;
 }
 
+interface PointerMoveState {
+    pointerMoved: boolean;
+    target: Cell | undefined;
+    origin: {
+        readonly pageX: number;
+        readonly pageY: number;
+    };
+}
+
 const CLASS_NAME = 'ontodia-paper-area';
 
 export class PaperArea extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
+    private readonly source = new EventSource<PaperAreaEvents>();
+    readonly events: Events<PaperAreaEvents> = this.source;
 
     private area: HTMLDivElement;
     private widgets: { [key: string]: ReactElement<any> } = {};
 
     private readonly pageSize = {x: 1500, y: 800};
 
-    private center: { x: number; y: number; };
-    private previousOrigin: { x: number; y: number; };
-
-    private listeningToPointerMove = false;
-    private pointerMovedWhileListening = false;
-    private pointerDownTarget: Cell | undefined;
-    private pointerMoveOrigin: { pageX: number; pageY: number; };
-
-    private isPanning = false;
+    private movingState: PointerMoveState | undefined;
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
-
-    private movingElement: Element | undefined;
-    private movingPaperOrigin: {
+    private movingElementOrigin: {
         pointerX: number;
         pointerY: number;
         elementX: number;
         elementY: number;
     };
-
-    private movingVertex: LinkVertex | undefined;
 
     private delayedPaperAdjust = new Debouncer();
     private scrollBeforeUpdate: undefined | {
@@ -215,7 +230,7 @@ export class PaperArea extends React.Component<Props, State> {
         e.stopPropagation();
     }
 
-    private pageToPaperCoords(pageX: number, pageY: number) {
+    pageToPaperCoords(pageX: number, pageY: number) {
         const {left, top} = this.area.getBoundingClientRect();
         return this.clientToPaperCoords(
             pageX - (left + window.pageXOffset),
@@ -341,32 +356,13 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    private onPaperResize = () => {
-        if (this.center) {
-            this.centerTo(this.center);
-        }
-    }
-
-    private onPaperTranslate = (originX: number, originY: number) => {
-        if (this.previousOrigin) {
-            const {x, y} = this.previousOrigin;
-            const translatedX = originX - x;
-            const translatedY = originY - y;
-            // update visible area when paper change origin without resizing
-            // e.g. paper shrinks from left side and grows from right
-            this.area.scrollLeft += translatedX;
-            this.area.scrollTop += translatedY;
-        }
-        this.previousOrigin = {x: originX, y: originY};
-    }
-
     private shouldStartPanning(e: MouseEvent | React.MouseEvent<any>) {
         const modifierPressed = e.ctrlKey || e.shiftKey;
         return Boolean(modifierPressed) === Boolean(this.props.panningRequireModifiers);
     }
 
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
-        if (this.listeningToPointerMove || e.button !== 0 /* left mouse button */) {
+        if (this.movingState || e.button !== 0 /* left mouse button */) {
             return;
         }
 
@@ -374,29 +370,30 @@ export class PaperArea extends React.Component<Props, State> {
             if (cell instanceof Element) {
                 e.preventDefault();
                 this.startMoving(e, cell);
+                this.listenToPointerMove(e, cell);
             } else if (cell instanceof Link) {
                 e.preventDefault();
                 const location = this.pageToPaperCoords(e.pageX, e.pageY);
                 const vertexIndex = this.createLinkVertex(cell, location);
-                this.movingVertex = {link: cell, vertexIndex};
+                const targetCell = {link: cell, vertexIndex};
+                this.listenToPointerMove(e, targetCell);
                 // prevent click on newly created vertex
-                this.pointerMovedWhileListening = true;
+                this.movingState.pointerMoved = true;
             } else if (isLinkVertex(cell)) {
-                this.movingVertex = cell;
+                e.preventDefault();
+                this.listenToPointerMove(e, cell);
             }
         } else if (this.shouldStartPanning(e)) {
             e.preventDefault();
             this.startPanning(e);
+            this.listenToPointerMove(e, undefined);
         }
-
-        this.listenToPointerMove(e, cell);
     }
 
     private startMoving(e: React.MouseEvent<HTMLElement>, element: Element) {
         const {x: pointerX, y: pointerY} = this.pageToPaperCoords(e.pageX, e.pageY);
         const {x: elementX, y: elementY} = element.position;
-        this.movingPaperOrigin = {pointerX, pointerY, elementX, elementY};
-        this.movingElement = element;
+        this.movingElementOrigin = {pointerX, pointerY, elementX, elementY};
     }
 
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -412,7 +409,6 @@ export class PaperArea extends React.Component<Props, State> {
     private startPanning(event: React.MouseEvent<any>) {
         const {scrollLeft, scrollTop} = this.area;
         this.panningScrollOrigin = {scrollLeft, scrollTop};
-        this.isPanning = true;
         this.clearTextSelectionInArea();
     }
 
@@ -443,65 +439,69 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private listenToPointerMove(event: React.MouseEvent<any>, cell: Cell | undefined) {
-        if (this.listeningToPointerMove) { return; }
+        if (this.movingState) { return; }
         const {pageX, pageY} = event;
-        this.pointerMoveOrigin = {pageX, pageY};
-        this.pointerDownTarget = cell;
-        this.listeningToPointerMove = true;
-        this.pointerMovedWhileListening = false;
+        this.movingState = {
+            origin: {pageX, pageY},
+            target: cell,
+            pointerMoved: false,
+        };
         document.addEventListener('mousemove', this.onPointerMove);
         document.addEventListener('mouseup', this.stopListeningToPointerMove);
+        this.source.trigger('pointerDown', {source: this, sourceEvent: event, target: cell});
     }
 
     private onPointerMove = (e: MouseEvent) => {
-        if (this.scrollBeforeUpdate) { return; }
+        if (!this.movingState || this.scrollBeforeUpdate) { return; }
 
-        const pageOffsetX = e.pageX - this.pointerMoveOrigin.pageX;
-        const pageOffsetY = e.pageY - this.pointerMoveOrigin.pageY;
+        const {origin, target} = this.movingState;
+        const pageOffsetX = e.pageX - origin.pageX;
+        const pageOffsetY = e.pageY - origin.pageY;
         if (Math.abs(pageOffsetX) >= 1 && Math.abs(pageOffsetY) >= 1) {
-            this.pointerMovedWhileListening = true;
+            this.movingState.pointerMoved = true;
         }
 
-        if (this.isPanning) {
+        if (typeof target === 'undefined') {
             this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - pageOffsetX;
             this.area.scrollTop = this.panningScrollOrigin.scrollTop - pageOffsetY;
-        } else if (this.movingElement) {
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
+        } else if (target instanceof Element) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
-            const {pointerX, pointerY, elementX, elementY} = this.movingPaperOrigin;
-            this.movingElement.setPosition({
+            const {pointerX, pointerY, elementX, elementY} = this.movingElementOrigin;
+            const previous = target.position;
+            target.setPosition({
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
             this.props.view.performSyncUpdate();
-        } else if (this.movingVertex) {
-            const {link, vertexIndex} = this.movingVertex;
+        } else if (isLinkVertex(target)) {
+            const {link, vertexIndex} = target;
             const location = this.pageToPaperCoords(e.pageX, e.pageY);
             const vertices = [...link.vertices];
             vertices.splice(vertexIndex, 1, location);
             link.setVertices(vertices);
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
             this.props.view.performSyncUpdate();
         }
     }
 
     private stopListeningToPointerMove = (e?: MouseEvent) => {
-        const targetCell = this.pointerDownTarget;
-        const triggerPointerUp = e && this.listeningToPointerMove;
-        const triggerAsClick = !this.pointerMovedWhileListening;
+        const movingState = this.movingState;
+        this.movingState = undefined;
 
-        if (this.listeningToPointerMove) {
+        if (movingState) {
             document.removeEventListener('mousemove', this.onPointerMove);
             document.removeEventListener('mouseup', this.stopListeningToPointerMove);
         }
 
-        this.listeningToPointerMove = false;
-        this.pointerMovedWhileListening = false;
-        this.pointerDownTarget = undefined;
-        this.isPanning = false;
-        this.movingElement = undefined;
-        this.movingVertex = undefined;
-
-        if (triggerPointerUp && !isLinkVertex(targetCell)) {
-            this.props.view.onPaperPointerUp(e, targetCell, triggerAsClick);
+        if (e && movingState) {
+            this.source.trigger('pointerUp', {
+                source: this,
+                sourceEvent: e,
+                target: movingState.target,
+                triggerAsClick: !movingState.pointerMoved,
+            });
         }
     }
 

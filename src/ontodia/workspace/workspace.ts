@@ -158,7 +158,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentDidMount() {
-        this.diagram.initializePaperComponents();
+        this.diagram.internal_initializePaperComponents(this.markup.paperArea);
 
         this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
             if (!data.requestedAddToFilter) { return; }
