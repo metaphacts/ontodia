@@ -25,6 +25,8 @@ import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
 import { Size, boundsOf } from './geometry';
 import { DiagramModel, chooseLocalizedText, uri2name } from './model';
+import { isLinkVertex } from './paper';
+import { PaperArea, PointerUpEvent } from './paperArea';
 
 export interface DiagramViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -131,17 +133,13 @@ export class DiagramView {
         }
     }
 
-    _onRenderDone() {
+    internal_onRenderDone() {
         this.source.trigger('renderDone', {source: this});
     }
 
-    waitUntilRenderDone(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.listener.listenOnce(this.events, 'renderDone', () => resolve());
-        });
-    }
+    internal_initializePaperComponents(paperArea: PaperArea) {
+        this.listener.listen(paperArea.events, 'pointerUp', e => this.onPaperPointerUp(e));
 
-    initializePaperComponents() {
         if (!this.options.disableDefaultHalo) {
             this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
@@ -173,15 +171,16 @@ export class DiagramView {
         this.model.storeBatchCommand();
     }
 
-    onPaperPointerUp(event: MouseEvent, cell: Element | Link | undefined, isClick: boolean) {
+    private onPaperPointerUp(event: PointerUpEvent) {
         if (this.options.disableDefaultHalo) { return; }
-        // We don't want a Halo for links.
-        if (cell instanceof Link) { return; }
-        if (event.ctrlKey || event.shiftKey || event.metaKey) { return; }
-        if (cell) {
-            this.setSelection([cell]);
-            cell.focus();
-        } else if (isClick) {
+        const {sourceEvent, target, triggerAsClick} = event;
+        
+        if (sourceEvent.ctrlKey || sourceEvent.shiftKey || sourceEvent.metaKey) { return; }
+        
+        if (target instanceof Element) {
+            this.setSelection([target]);
+            target.focus();
+        } else if (!target && triggerAsClick) {
             this.setSelection([]);
             this.hideNavigationMenu();
             if (document.activeElement) {
@@ -235,10 +234,9 @@ export class DiagramView {
         renderDefaultHalo();
     }
 
-    setCustomWidget(customWidget: {id: string, widget: ReactElement<any>}) {
-        const widgets: any = {};
-        widgets[customWidget.id] = customWidget.widget;
-        this.source.trigger('updateWidgets', {widgets: widgets});
+    setPaperWidget(widget: { key: string; widget: ReactElement<any>; }) {
+        const widgets = {[widget.key]: widget.widget};
+        this.source.trigger('updateWidgets', {widgets});
     }
 
     showNavigationMenu(target: Element) {

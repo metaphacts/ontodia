@@ -32,6 +32,5 @@ export * from './ontodia/widgets/toolbar';
 
 export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
 
-// internal API
 import * as InternalApi from './internalApi';
 export { InternalApi };
