@@ -20,7 +20,6 @@ import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
-    scale: number;
 }
 
 enum UpdateRequest {
@@ -127,7 +126,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     render() {
-        const {view, scale} = this.props;
+        const {view} = this.props;
         const shouldUpdate = this.popShouldUpdatePredicate();
         return <g className={CLASS_NAME}>
             {view.model.links.map(model => (
@@ -136,7 +135,6 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
                     model={model}
                     shouldUpdate={shouldUpdate(model)}
                     route={this.routings[model.id]}
-                    scale={scale}
                 />
             ))}
         </g>;
@@ -148,7 +146,6 @@ interface LinkViewProps {
     model: DiagramLink;
     shouldUpdate: boolean;
     route?: RoutedLink;
-    scale: number;
 }
 
 const LINK_CLASS = 'ontodia-link';
@@ -194,7 +191,7 @@ class LinkView extends Component<LinkViewProps, {}> {
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
         const style = this.template.renderLink(model.data);
-        const pathAttributes = this.getPathAttributes(style);
+        const pathAttributes = getPathAttributes(model, style);
 
         return (
             <g className={LINK_CLASS} data-link-id={model.id} data-source-id={source.id} data-target-id={target.id}>
@@ -233,97 +230,96 @@ class LinkView extends Component<LinkViewProps, {}> {
         return <g className={`${LINK_CLASS}__vertices`}>{elements}</g>;
     }
 
-    private getPathAttributes(style: LinkStyle): SVGAttributes<SVGPathElement> {
-        const {model} = this.props;
-
-        const connectionAttributes: LinkStyle['connection'] = style.connection || {};
-        const defaultStrokeDasharray = model.layoutOnly ? '5,5' : undefined;
-        const {
-            fill = 'none',
-            stroke = 'black',
-            'stroke-width': strokeWidth,
-            'stroke-dasharray': strokeDasharray = defaultStrokeDasharray,
-        } = connectionAttributes;
-
-        return {fill, stroke, strokeWidth, strokeDasharray};
-    }
-
-    private getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
-        const {
-            fill = 'black',
-            stroke = 'none',
-            'stroke-width': strokeWidth = 0,
-            'font-size': fontSize = 'inherit',
-            'font-weight': fontWeight = 'bold',
-        } = label.attrs ? label.attrs.text : {};
-
-        return {fill, stroke, strokeWidth, fontSize, fontWeight};
-    }
-
-    private getLabelRectAttributes(label: LinkLabelProperties): RectAttributes {
-        const {
-            fill = 'white',
-            stroke = 'none',
-            'stroke-width': strokeWidth = 0,
-        } = label.attrs ? label.attrs.rect : {};
-
-        return {fill, stroke, strokeWidth};
-    }
-
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
-        const {view, model, route, scale} = this.props;
-        const polylineLength = computePolylineLength(polyline);
+        const {view, model, route} = this.props;
 
-        const labels: LabelAttributes[] = [];
+        const labels = computeLinkLabels(model, style, view);
 
-        const labelStyle = style.label || {};
-        const labelTexts = labelStyle.attrs && labelStyle.attrs.text ? labelStyle.attrs.text.text : undefined;
-        const labelText = labelTexts ? view.getLocalizedText(labelTexts) : view.getLinkLabel(model.typeId);
-        labels.push({
-            offset: labelStyle.position || 0.5,
-            text: labelText,
-            attributes: {
-                text: this.getLabelTextAttributes(labelStyle),
-                rect: this.getLabelRectAttributes(labelStyle),
-            },
-        });
-
-        if (style.properties) {
-            for (const property of style.properties) {
-                if (!(property.attrs && property.attrs.text && property.attrs.text.text)) {
-                    continue;
-                }
-                const text = view.getLocalizedText(property.attrs.text.text);
-                labels.push({
-                    offset: property.position || 0.5,
-                    text,
-                    attributes: {
-                        text: this.getLabelTextAttributes(property),
-                        rect: this.getLabelRectAttributes(property),
-                    },
-                });
-            }
-        }
-
-        let textAnchor: 'start' | 'middle' | 'end' | 'inherit' = 'middle';
+        let textAnchor: 'start' | 'middle' | 'end' = 'middle';
         if (route && route.labelTextAnchor) {
             textAnchor = route.labelTextAnchor;
         }
 
+        const polylineLength = computePolylineLength(polyline);
         return (
             <g className={`${LINK_CLASS}__labels`}>
                 {labels.map((label, index) => {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
-
                     return (
-                        <g key={index}>
-                            <LinkLabel x={x} y={y} label={label} textAnchor={textAnchor} scale={scale} />
-                        </g>
+                        <LinkLabel key={index} x={x} y={y}
+                            label={label} textAnchor={textAnchor} />
                     );
                 })}
             </g>
         );
     }
+}
+
+function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramView) {
+    const labels: LabelAttributes[] = [];
+
+    const labelStyle = style.label || {};
+    const labelTexts = labelStyle.attrs && labelStyle.attrs.text ? labelStyle.attrs.text.text : undefined;
+    const labelText = labelTexts ? view.getLocalizedText(labelTexts) : view.getLinkLabel(model.typeId);
+    labels.push({
+        offset: labelStyle.position || 0.5,
+        text: labelText,
+        attributes: {
+            text: getLabelTextAttributes(labelStyle),
+            rect: getLabelRectAttributes(labelStyle),
+        },
+    });
+
+    if (style.properties) {
+        for (const property of style.properties) {
+            if (!(property.attrs && property.attrs.text && property.attrs.text.text)) {
+                continue;
+            }
+            const text = view.getLocalizedText(property.attrs.text.text);
+            labels.push({
+                offset: property.position || 0.5,
+                text,
+                attributes: {
+                    text: getLabelTextAttributes(property),
+                    rect: getLabelRectAttributes(property),
+                },
+            });
+        }
+    }
+
+    return labels;
+}
+
+function getPathAttributes(model: DiagramLink, style: LinkStyle): SVGAttributes<SVGPathElement> {
+    const connectionAttributes: LinkStyle['connection'] = style.connection || {};
+    const defaultStrokeDasharray = model.layoutOnly ? '5,5' : undefined;
+    const {
+        fill = 'none',
+        stroke = 'black',
+        'stroke-width': strokeWidth,
+        'stroke-dasharray': strokeDasharray = defaultStrokeDasharray,
+    } = connectionAttributes;
+    return {fill, stroke, strokeWidth, strokeDasharray};
+}
+
+function getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
+    const {
+        fill = 'black',
+        stroke = 'none',
+        'stroke-width': strokeWidth = 0,
+        'font-size': fontSize = 'inherit',
+        'font-weight': fontWeight = 'bold',
+    } = label.attrs ? label.attrs.text : {};
+    return {fill, stroke, strokeWidth, fontSize, fontWeight};
+}
+
+function getLabelRectAttributes(label: LinkLabelProperties): RectAttributes {
+    const {
+        fill = 'white',
+        stroke = 'none',
+        'stroke-width': strokeWidth = 0,
+    } = label.attrs ? label.attrs.rect : {};
+    return {fill, stroke, strokeWidth};
 }
 
 interface LabelAttributes {
@@ -353,64 +349,78 @@ interface LinkLabelProps {
     x: number;
     y: number;
     label: LabelAttributes;
-    textAnchor: 'start' | 'middle' | 'end' | 'inherit';
-    scale: number;
+    textAnchor: 'start' | 'middle' | 'end';
 }
 
 interface LinkLabelState {
-    rect?: { width: number; height: number; };
+    readonly width?: number;
+    readonly height?: number;
 }
 
 class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
+    private text: SVGTextElement | undefined;
+    private shouldUpdateBounds = true;
+
     constructor(props: LinkLabelProps) {
         super(props);
-        this.state = {
-            rect: {width: 0, height: 0},
-        }
-    }
-
-    private onRender = (label: SVGElement) => {
-        if (!label) { return; }
-
-        const {scale} = this.props;
-        const {width, height} = label.getBoundingClientRect();
-
-        this.setState({
-            rect: {
-                width: width / scale,
-                height: height / scale,
-            },
-        });
+        this.state = {width: 0, height: 0};
     }
 
     render() {
         const {x, y, label, textAnchor} = this.props;
-        const {width, height} = this.state.rect;
+        const {width, height} = this.state;
 
         const rectPosition = {x, y: y - height / 2};
-
         if (textAnchor === 'middle') {
             rectPosition.x -= width / 2;
         } else if (textAnchor === 'end') {
             rectPosition.x -= width;
         }
 
-        const dy = '0.6ex'; // hack: 'alignment-baseline' and 'dominant-baseline' are not supported in Edge and IE
+        // HACK: 'alignment-baseline' and 'dominant-baseline' are not supported in Edge and IE
+        const dy = '0.6ex';
 
         return (
           <g>
-              <rect
-                  x={rectPosition.x}
-                  y={rectPosition.y}
-                  width={width}
-                  height={height}
+              <rect x={rectPosition.x} y={rectPosition.y}
+                  width={width} height={height}
                   style={label.attributes.rect}
               />
-              <text ref={this.onRender} x={x} y={y} dy={dy} textAnchor={textAnchor} style={label.attributes.text}>
+              <text ref={this.onTextMount}
+                x={x} y={y} dy={dy}
+                textAnchor={textAnchor}
+                style={label.attributes.text}>
                   {label.text.text}
               </text>
           </g>
         );
+    }
+
+    private onTextMount = (text: SVGTextElement | undefined) => {
+        this.text = text;
+    }
+
+    componentDidMount() {
+        this.recomputeBounds(this.props);
+    }
+
+    componentWillReceiveProps(nextProps: LinkLabelProps) {
+        this.shouldUpdateBounds = true;
+    }
+
+    componentDidUpdate() {
+        this.recomputeBounds(this.props);
+    }
+
+    private recomputeBounds(props: LinkLabelProps) {
+        if (this.shouldUpdateBounds) {
+            this.shouldUpdateBounds = false;
+            const bounds = this.text.getBBox();
+            this.setState({
+                width: bounds.width,
+                height: bounds.height,
+            });
+        }
     }
 }
 

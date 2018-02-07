@@ -45,7 +45,7 @@ export class Paper extends Component<PaperProps, void> {
                     style={{overflow: 'visible'}}>
                     <LinkMarkers view={this.props.view} />
                     <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                        <LinkLayer view={this.props.view} scale={scale} />
+                        <LinkLayer view={this.props.view} />
                     </g>
                 </svg>
                 {this.props.children}

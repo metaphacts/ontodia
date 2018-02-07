@@ -61,7 +61,7 @@ export interface RoutedLinks {
 export interface RoutedLink {
     linkId: string;
     vertices: ReadonlyArray<Vertex>;
-    labelTextAnchor?: 'start' | 'middle' | 'end' | 'inherit';
+    labelTextAnchor?: 'start' | 'middle' | 'end';
 }
 
 export interface Vertex {
