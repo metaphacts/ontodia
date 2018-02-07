@@ -353,6 +353,8 @@ export class PaperArea extends React.Component<Props, State> {
                 top: this.area.scrollTop,
             };
             this.setState(adjusted, callback);
+        } else if (callback) {
+            callback();
         }
     }
 
@@ -628,6 +630,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     showIndicator(operation?: Promise<any>) {
+        this.centerTo();
         this.renderSpinner();
 
         if (operation) {
