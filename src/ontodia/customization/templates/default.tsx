@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { ReactElement } from 'react';
 
 import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 
@@ -15,33 +16,6 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                 imageProps={{src: props.imgUrl}} />
         ) : undefined;
 
-        let propertyTable: React.ReactElement<any>;
-        if (props.propsAsList && props.propsAsList.length > 0) {
-            propertyTable = <div className='ontodia-default-template_body_expander_property-table'>
-                {props.propsAsList.map(prop => {
-                    const values = prop.property.values.map(({text}, index) => (
-                        <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
-                            key={index} title={text}>
-                            {text}
-                        </div>
-                    ));
-                    return (
-                        <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
-                            <div title={prop.name + ' (' + prop.id + ')'}
-                                className='ontodia-default-template_body_expander_property-table_row__key'>
-                                {prop.name}
-                            </div>
-                            <div className='ontodia-default-template_body_expander_property-table_row_key_values'>
-                                {values}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>;
-        } else {
-            propertyTable = <div>no properties</div>;
-        }
-
         const expander = props.isExpanded ? (
             <div>
                 <div className='ontodia-default-template_body_expander'>
@@ -55,9 +29,9 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                     </div>
                 </div>
                 <hr className='ontodia-default-template_body_expander__hr'/>
-                {propertyTable}
+                {this.renderPropertyTable()}
             </div>
-        ) : undefined;
+        ) : null;
 
         return (
             <div className='ontodia-default-template' style={{
@@ -82,5 +56,34 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                 </div>
             </div>
         );
+    }
+
+    renderPropertyTable() {
+        const {propsAsList} = this.props;
+        if (propsAsList && propsAsList.length > 0) {
+            return <div className='ontodia-default-template_body_expander_property-table'>
+                {propsAsList.map(prop => {
+                    const values = prop.property.values.map(({text}, index) => (
+                        <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
+                            key={index} title={text}>
+                            {text}
+                        </div>
+                    ));
+                    return (
+                        <div key={prop.id} className='ontodia-default-template_body_expander_property-table_row'>
+                            <div title={prop.name + ' (' + prop.id + ')'}
+                                className='ontodia-default-template_body_expander_property-table_row__key'>
+                                {prop.name}
+                            </div>
+                            <div className='ontodia-default-template_body_expander_property-table_row_key_values'>
+                                {values}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>;
+        } else {
+            return <div>no properties</div>;
+        }
     }
 }
