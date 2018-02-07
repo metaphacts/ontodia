@@ -1,9 +1,9 @@
 require('intro.js/introjs.css');
 require('../styles/main.scss');
 
-import 'whatwg-fetch';
-import 'es6-promise/auto';
-import './ontodia/viewUtils/polyfills';
+require('whatwg-fetch');
+require('es6-promise/auto');
+require('./ontodia/viewUtils/polyfills');
 
 export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';
@@ -23,6 +23,8 @@ export { Element, ElementEvents, Link, LinkEvents } from './ontodia/diagram/elem
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
+export { Cell, isLinkVertex } from './ontodia/diagram/paper';
+export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/viewUtils/crossOriginImage';
 export { PropertySuggestionParams, PropertyScore } from './ontodia/viewUtils/connectionsMenu';

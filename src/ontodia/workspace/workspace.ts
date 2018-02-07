@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Link, FatLinkType } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
-import { ZoomOptions } from '../diagram/paperArea';
+import { ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
@@ -26,6 +26,9 @@ export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
     onShareDiagram?: (workspace: Workspace) => void;
     onEditAtMainSite?: (workspace: Workspace) => void;
+    onPointerDown?: (e: PointerEvent) => void;
+    onPointerMove?: (e: PointerEvent) => void;
+    onPointerUp?: (e: PointerUpEvent) => void;
     hidePanels?: boolean;
     hideToolbar?: boolean;
     hideHalo?: boolean;
@@ -170,6 +173,22 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     linkDirection: direction,
                 },
             });
+        });
+
+        this.listener.listen(this.markup.paperArea.events, 'pointerUp', e => {
+            if (this.props.onPointerUp) {
+                this.props.onPointerUp(e);
+            }
+        });
+        this.listener.listen(this.markup.paperArea.events, 'pointerMove', e => {
+            if (this.props.onPointerMove) {
+                this.props.onPointerMove(e);
+            }
+        });
+        this.listener.listen(this.markup.paperArea.events, 'pointerDown', e => {
+            if (this.props.onPointerDown) {
+                this.props.onPointerDown(e);
+            }
         });
 
         if (!this.props.hideTutorial) {
