@@ -156,7 +156,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     componentDidMount() {
-        this.centerTo();
+        this.adjustPaper(() => this.centerTo());
 
         const {view} = this.props;
         const delayedAdjust = () => this.delayedPaperAdjust.call(this.adjustPaper);
@@ -189,7 +189,7 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.listen(view.model.events, 'loadingSuccess', () => {
             this.updateWidgets({[LoadingWidget.Key]: undefined});
             view.performSyncUpdate();
-            this.zoomToFit();
+            this.centerContent();
         });
     }
 
@@ -331,7 +331,7 @@ export class PaperArea extends React.Component<Props, State> {
         return {paperWidth, paperHeight, originX, originY};
     }
 
-    adjustPaper = () => {
+    adjustPaper = (callback?: () => void) => {
         const {clientWidth, clientHeight} = this.area;
         const adjusted: Partial<State> = {
             ...this.computeAdjustedBox(),
@@ -352,7 +352,7 @@ export class PaperArea extends React.Component<Props, State> {
                 left: this.area.scrollLeft,
                 top: this.area.scrollTop,
             };
-            this.setState(adjusted);
+            this.setState(adjusted, callback);
         }
     }
 
@@ -628,7 +628,6 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     showIndicator(operation?: Promise<any>) {
-        this.centerTo();
         this.renderSpinner();
 
         if (operation) {
