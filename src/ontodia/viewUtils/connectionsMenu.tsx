@@ -327,7 +327,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     private getBreadCrumbs = () => {
         return (this.props.objectsData && this.state.panel === 'objects' ?
             <span className='ontodia-connections-menu_bread-crumbs'>
-                <a className='ontodia-link' onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
+                <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
                 {
                     chooseLocalizedText(
                         this.props.objectsData.linkDataChunk.link.label,

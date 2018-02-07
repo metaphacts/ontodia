@@ -322,3 +322,13 @@
   overflow-y: scroll;
   margin-bottom: 5px;
 }
+
+.ontodia-connections-menu__link {
+  color: #337ab7;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

@@ -43,12 +43,6 @@ export class Paper extends Component<PaperProps, void> {
                 <svg className={`${CLASS_NAME}__canvas`}
                     width={scaledWidth} height={scaledHeight}
                     style={{overflow: 'visible'}}>
-                    <defs>
-                        <filter id='solid-fill' x='0' y='0' width='1' height='1' dangerouslySetInnerHTML={{__html: `
-                            <feFlood flood-color='white' />
-                            <feComposite in='SourceGraphic' operator='atop' />
-                        `}} />
-                    </defs>
                     <LinkMarkers view={this.props.view} />
                     <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
                         <LinkLayer view={this.props.view} />
