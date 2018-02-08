@@ -532,6 +532,8 @@ class LinkMarker extends Component<LinkMarkerProps, {}> {
     }
 
     private onMarkerMount = (marker: SVGMarkerElement) => {
+        if (!marker) { return; }
+
         const {linkTypeIndex, isStartMarker, style} = this.props;
 
         marker.setAttribute('id', linkMarkerKey(linkTypeIndex, isStartMarker));
