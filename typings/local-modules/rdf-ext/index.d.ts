@@ -40,7 +40,12 @@ declare module "rdf-ext" {
         subject: Node;
     }
 
-    export type Node = NamedNode | Literal;
+    export type Node = NamedNode | Literal | BlankNode;
+
+    export class BlankNode {
+        interfaceName: 'BlankNode';
+        nominalValue: string;
+    }
 
     export class NamedNode {
         interfaceName: 'NamedNode';

@@ -14,24 +14,28 @@ const data = require<string>('raw-loader!./resources/testData.ttl');
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
+    const dataProvider = new RDFDataProvider({
+        data: [
+            {
+                content: data,
+                type: 'text/turtle',
+                fileName: 'testData.ttl'
+            },
+        ],
+        acceptBlankNodes: false,
+        dataFetching: false,
+        parsers: {
+            'application/rdf+xml': new RdfXmlParser(),
+            'application/ld+json': new JsonLdParser(),
+            'text/turtle': new N3Parser(),
+        },
+    });
+
     const layoutData = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
-        dataProvider: new RDFDataProvider({
-            data: [
-                {
-                    content: data,
-                    type: 'text/turtle',
-                },
-            ],
-            dataFetching: false,
-            parsers: {
-                'text/turtle': new N3Parser(),
-                'application/rdf+xml': new RdfXmlParser(),
-                'application/ld+json': new JsonLdParser(),
-            },
-        }),
+        dataProvider,
     });
 }
 
