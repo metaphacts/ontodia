@@ -227,7 +227,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         const types = model.data.types.length > 0
             ? view.getElementTypeString(model.data) : 'Thing';
-        const label = view.getLocalizedText(model.data.label.values).text;
+        const label = model.data.label.values.length > 0 ?
+            view.getLocalizedText(model.data.label.values).text : uri2name(model.iri);
         const {color, icon} = this.styleFor(model);
         const propsAsList = this.getPropertyTable();
 
@@ -251,7 +252,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         const propTable = Object.keys(model.data.properties).map(key => {
             const property = view ? view.model.getPropertyById(key) : undefined;
-            const name = view ? view.getLocalizedText(property.label).text : uri2name(key);
+            const name = view && property.label.length > 0 ?
+                view.getLocalizedText(property.label).text : uri2name(key);
             return {
                 id: key,
                 name: name,

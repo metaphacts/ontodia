@@ -5,7 +5,7 @@ import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { chooseLocalizedText } from '../diagram/model';
+import { chooseLocalizedText, uri2name } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
 import { EventObserver } from './events';
@@ -327,18 +327,18 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     };
 
     private getBreadCrumbs = () => {
-        return (this.props.objectsData && this.state.panel === 'objects' ?
-            <span className='ontodia-connections-menu_bread-crumbs'>
-                <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>{'\u00A0' + '/' + '\u00A0'}
-                {
-                    chooseLocalizedText(
-                        this.props.objectsData.linkDataChunk.link.label,
-                        this.props.lang
-                    ).text.toLowerCase() + ` (${this.props.objectsData.linkDataChunk.direction})`
-                }
-            </span>
-            : ''
-        );
+        if (this.props.objectsData && this.state.panel === 'objects') {
+            const link = this.props.objectsData.linkDataChunk.link;
+            const localizedText = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
+
+            return <span className='ontodia-connections-menu_bread-crumbs'>
+                <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>
+                {'\u00A0' + '/' + '\u00A0'}
+                {`${localizedText} (${this.props.objectsData.linkDataChunk.direction})`}
+            </span>;
+        } else {
+            return null;
+        }
     };
 
     private getBody = () => {
@@ -498,8 +498,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
-        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
+        const aText = getLocalizedText(a.id, a.label, this.props.lang).toLowerCase();
+        const bText = getLocalizedText(b.id, b.label, this.props.lang).toLowerCase();
         return (
             aText < bText ? -1 :
             aText > bText ? 1 :
@@ -508,8 +508,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const aText = chooseLocalizedText(a.label, this.props.lang).text.toLowerCase();
-        const bText = chooseLocalizedText(b.label, this.props.lang).text.toLowerCase();
+        const aText = getLocalizedText(a.id, a.label, this.props.lang).toLowerCase();
+        const bText = getLocalizedText(b.id, b.label, this.props.lang).toLowerCase();
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
@@ -523,7 +523,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
-            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
+            const text = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
             return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -532,7 +532,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private getProbableLinks = () => {
         const isSmartMode = this.isSmartMode();
         return (this.props.data.links || []).filter(link => {
-            const text = chooseLocalizedText(link.label, this.props.lang).text.toLowerCase();
+            const text = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
             return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
@@ -653,7 +653,8 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
     }
 
     render() {
-        const fullText = chooseLocalizedText(this.props.link.label, this.props.lang).text;
+        const link = this.props.link;
+        const fullText = getLocalizedText(this.props.link.id, this.props.link.label, this.props.lang);
         const probability = Math.round(this.props.probability * 100);
         const textLine = getColoredText(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
@@ -762,7 +763,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
         return this.props.data.objects
         .filter(element => {
             const label: Label = element.model.label;
-            const text = (label ? chooseLocalizedText(label.values, this.props.lang).text.toLowerCase() : null);
+            const text  = getLocalizedText(element.model.id, element.model.label.values, this.props.lang);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         });
     };
@@ -879,17 +880,18 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { chec
         this.state.checked = !this.state.checked;
         this.setState(this.state);
         this.props.onCheckboxChanged(this.props.element, this.state.checked);
-    };
+    }
 
     componentWillReceiveProps(props: ElementInPopupMenuProps) {
         this.setState({ checked: props.checked });
     }
 
     render() {
-        const fullText = chooseLocalizedText(this.props.element.model.label.values, this.props.lang).text;
+        const model = this.props.element.model;
+        const fullText = getLocalizedText(model.id, model.label.values, this.props.lang);
         const textLine = getColoredText(fullText, this.props.filterKey);
         return (
-            <li data-linkTypeId={this.props.element.model.id}
+            <li data-linkTypeId={model.id}
                 className={
                     'element-in-popup-menu'
                     + (!this.state.checked ? ' unchecked' : '')
@@ -909,6 +911,13 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { chec
             </li>
         );
     }
+}
+
+function getLocalizedText(
+    id: string, labels: ReadonlyArray<LocalizedString>, lang: string,
+): string {
+    return labels.length > 0 ?
+        chooseLocalizedText(labels, lang).text : uri2name(id);
 }
 
 function getColoredText(fullText: string, filterKey: string) {
