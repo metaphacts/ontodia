@@ -386,9 +386,10 @@ export class DiagramModel {
             ? elementIdOrModel : elementIdOrModel.id;
         let element = this.graph.getElement(elementId);
         if (!element) {
-            const data = typeof elementIdOrModel === 'string'
+            let data = typeof elementIdOrModel === 'string'
                 ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
-            element = new Element({id: elementId, data});
+            data = {...data, id: rewriteHttpsInIri(data.id)};
+            element = new Element({id: data.id, data});
             this.graph.addElement(element);
         }
         return element;
@@ -491,4 +492,8 @@ export function chooseLocalizedText(texts: ReadonlyArray<LocalizedString>, langu
         }
     }
     return typeof defaultLanguageValue === 'undefined' ? texts[0] : defaultLanguageValue;
+}
+
+export function rewriteHttpsInIri(iri: string): string {
+    return iri.replace(/^https:\/\//ig, 'http://');
 }
