@@ -183,8 +183,9 @@ export class PaperArea extends React.Component<Props, State> {
         this.area.addEventListener('drop', this.onDragDrop);
 
         this.listener.listen(view.model.events, 'loadingStart', () => this.showIndicator());
-        this.listener.listen(view.model.events, 'loadingError', () => {
+        this.listener.listen(view.model.events, 'loadingError', ({error}) => {
             this.updateWidgets({[LoadingWidget.Key]: undefined});
+            this.renderSpinner({statusText: error.message, errorOccured: true});
         });
         this.listener.listen(view.model.events, 'loadingSuccess', () => {
             this.updateWidgets({[LoadingWidget.Key]: undefined});
