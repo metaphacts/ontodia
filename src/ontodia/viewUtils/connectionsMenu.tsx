@@ -149,9 +149,11 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
             direction,
         }).then(elements => {
             this.loadingState = 'completed';
-            this.objects = Object.keys(elements).map(key => ({
-                model: elements[key],
-                presentOnDiagram: Boolean(view.model.getElement(key)),
+            this.objects = Object.keys(elements).map(iri => ({
+                model: elements[iri],
+                presentOnDiagram: view.model.elements.findIndex(
+                    element => element.data.id === iri && element.group === undefined
+                ) >= 0,
             }));
             this.updateAll();
         }).catch(err => {

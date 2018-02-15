@@ -393,12 +393,10 @@ export class FatLinkType {
             this._showLabel === params.showLabel
         );
         if (same) { return; }
+        const preventLoading = Boolean(params.preventLoading) || this._visible === params.visible;
         this._visible = params.visible;
         this._showLabel = params.showLabel;
-        this.source.trigger('changeVisibility', {
-            source: this,
-            preventLoading: Boolean(params.preventLoading),
-        });
+        this.source.trigger('changeVisibility', {source: this, preventLoading});
     }
 
     get isNew() { return this._isNew; }

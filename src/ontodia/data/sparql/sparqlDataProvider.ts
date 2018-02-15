@@ -22,7 +22,7 @@ import {
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
-import { parseTurtleText } from '../utils';
+import { parseTurtleText } from './turtle';
 
 export enum SparqlQueryMethod { GET = 1, POST }
 

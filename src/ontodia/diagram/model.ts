@@ -4,6 +4,7 @@ import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
+import { generate64BitID } from '../data/utils';
 
 import { DataFetchingThread } from '../viewUtils/async';
 import { EventSource, Events, EventObserver, AnyEvent, AnyListener, Listener } from '../viewUtils/events';
@@ -14,7 +15,7 @@ import {
     FatClassModel, FatClassModelEvents, RichProperty,
 } from './elements';
 import { Vector } from './geometry';
-import { Graph, generateRandomID } from './graph';
+import { Graph } from './graph';
 
 export interface DiagramModelEvents {
     loadingStart: { source: DiagramModel };
@@ -46,7 +47,7 @@ export class DiagramModel {
     private linkFetching: DataFetchingThread;
     private propertyLabelFetching: DataFetchingThread;
 
-    private linkSettings: LinkTypeOptions[];
+    private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
     constructor() {
         this.classFetching = new DataFetchingThread();
@@ -169,7 +170,6 @@ export class DiagramModel {
     }): Promise<void> {
         this.resetGraph();
         this.dataProvider = params.dataProvider;
-        this.linkSettings = params.linkSettings;
         this.source.trigger('loadingStart', {source: this});
 
         return Promise.all<ClassModel[], LinkType[]>([
@@ -178,7 +178,7 @@ export class DiagramModel {
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
             const allLinkTypes = this.initLinkTypes(linkTypes);
-            this.initLinkSettings(params.linkSettings);
+            this.setLinkSettings(params.linkSettings || []);
             return this.loadAndRenderLayout({
                 layoutData: params.layoutData,
                 preloadedElements: params.preloadedElements || {},
@@ -220,12 +220,15 @@ export class DiagramModel {
         }
     }
 
-    private initLinkSettings(linkSettings: LinkTypeOptions[]) {
-        linkSettings.forEach(settings => {
-            const {id, visible = true, showLabel = true} = settings;
-            const linkType = this.createLinkType(id);
-            linkType.setVisibility({visible, showLabel, preventLoading: true});
-        });
+    private setLinkSettings(settings: LinkTypeOptions[]) {
+        for (const setting of settings) {
+            const {id: linkTypeId, visible = true, showLabel = true} = setting;
+            this.linkSettings[linkTypeId] = {id: linkTypeId, visible, showLabel};
+            const linkType = this.getLinkType(linkTypeId);
+            if (linkType) {
+                linkType.setVisibility({visible, showLabel});
+            }
+        }
     }
 
     private loadAndRenderLayout(params: {
@@ -303,9 +306,9 @@ export class DiagramModel {
         }
     }
 
-    requestElementData(elements: Element[]) {
+    requestElementData(elements: Element[]): Promise<void> {
         if (elements.length === 0) {
-            return Promise.resolve([]);
+            return Promise.resolve();
         }
         return this.dataProvider.elementInfo({elementIds: elements.map(e => e.data.id)})
             .then(models => this.onElementInfoLoaded(models))
@@ -315,7 +318,7 @@ export class DiagramModel {
             });
     }
 
-    requestLinksOfType(linkTypeIds?: string[]) {
+    requestLinksOfType(linkTypeIds?: string[]): Promise<void> {
         const linkTypes = linkTypeIds || this.graph.getLinkTypes()
             .filter(type => type.visible)
             .map(type => type.id);
@@ -385,17 +388,22 @@ export class DiagramModel {
         return classModel;
     }
 
-    createElement(elementIdOrModel: string | ElementModel, group?: string): Element {
-        const elementId = typeof elementIdOrModel === 'string'
-            ? elementIdOrModel : elementIdOrModel.id;
-        let element = this.graph.getElement(elementId);
-        if (!element) {
-            let data = typeof elementIdOrModel === 'string'
-                ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
-            data = {...data, id: rewriteHttpsInIri(data.id)};
-            element = new Element({id: `element_${generateRandomID()}`, data, group});
-            this.graph.addElement(element);
+    createElement(elementIriOrModel: string | ElementModel, group?: string): Element {
+        const elementIri = rewriteHttpsInIri(
+            typeof elementIriOrModel === 'string'
+                ? elementIriOrModel : elementIriOrModel.id
+        );
+
+        const elements = this.getElementsByIri(elementIri).filter(element => element.group === group);
+        if (elements.length > 0) {
+            return elements[0];
         }
+        
+        let data = typeof elementIriOrModel === 'string'
+            ? placeholderTemplateFromIri(elementIri) : elementIriOrModel;
+        data = {...data, id: rewriteHttpsInIri(data.id)};
+        const element = new Element({id: `element_${generate64BitID()}`, data, group});
+        this.graph.addElement(element);
         return element;
     }
 
@@ -412,6 +420,12 @@ export class DiagramModel {
             id: linkTypeId,
             label: [{text: uri2name(linkTypeId), lang: ''}],
         });
+
+        const setting = this.linkSettings[linkType.id];
+        if (setting) {
+            const {visible, showLabel} = setting;
+            linkType.setVisibility({visible, showLabel, preventLoading: true});
+        }
 
         this.graph.addLinkType(linkType);
         this.linkFetching.push(linkTypeId).then(linkTypeIds => {
@@ -440,10 +454,10 @@ export class DiagramModel {
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        for (const id of Object.keys(elements)) {
-            this.getElementsByIri(id).forEach(element =>
-                element.setData(elements[id])
-            );
+        for (const iri of Object.keys(elements)) {
+            for (const element of this.getElementsByIri(iri)) {
+                element.setData(elements[iri]);
+            }
         }
     }
 
@@ -461,12 +475,12 @@ export class DiagramModel {
         const sources = this.getElementsByIri(sourceId);
         const targets = this.getElementsByIri(targetId);
 
-        sources.forEach(source =>
-            targets.forEach(target => {
+        for (const source of sources) {
+            for (const target of targets) {
                 const data = {...linkModel, sourceId: source.id, targetId: target.id};
                 this.graph.createLink({data, linkType});
-            })
-        );
+            }
+        }
     }
 }
 

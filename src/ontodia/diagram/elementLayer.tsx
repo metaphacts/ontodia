@@ -100,21 +100,26 @@ interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
 }
 
-export const ElementContext = {
+export const ElementContextTypes = {
     ontodiaElementContext: PropTypes.anything,
 };
 
+export interface ElementContext {
+    view: DiagramView;
+    element: Element;
+    scale: number;
+}
+
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
-    static childContextTypes = ElementContext;
+    static childContextTypes = ElementContextTypes;
 
     getChildContext() {
-        return {
-            ontodiaElementContext: {
-                view: this.props.view,
-                element: this.props.model,
-                scale: this.props.scale,
-            }
+        const ontodiaElementContext: ElementContext = {
+            view: this.props.view,
+            element: this.props.model,
+            scale: this.props.scale,
         };
+        return {ontodiaElementContext};
     }
 
     private readonly listener = new EventObserver();

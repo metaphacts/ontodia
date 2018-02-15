@@ -215,15 +215,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private forceLayoutElements = (elements: Element[], group?: Element) => {
-        elements.forEach(element => {
+        for (const element of elements) {
             const nestedNodes = this.model.elements.filter(el => el.group === element.id);
-
-            if (!nestedNodes.length) {
-                return;
+            if (nestedNodes.length > 0) {
+                this.forceLayoutElements(nestedNodes, element);
             }
-
-            this.forceLayoutElements(nestedNodes, element);
-        });
+        }
 
         const nodes: LayoutNode[] = [];
         const nodeById: { [id: string]: LayoutNode } = {};
@@ -265,12 +262,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     forceLayout = () => {
-        const elements = this.model.elements.filter(element => !element.group);
+        const elements = this.model.elements.filter(element => element.group === undefined);
         this.forceLayoutElements(elements);
-
-        this.model.links.forEach(link =>
-            link.setVertices([])
-        );
+        for (const link of this.model.links) {
+            link.setVertices([]);
+        }
 
         this.diagram.performSyncUpdate();
     }

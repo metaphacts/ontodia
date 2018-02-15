@@ -3,10 +3,11 @@ import { keyBy } from 'lodash';
 import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
 import { Dictionary, ElementModel, LinkModel } from '../model';
+import { generate64BitID } from '../utils';
 
 import { DataProvider } from '../provider';
 import { Triple } from './sparqlModels';
-import { parseTurtleText } from '../utils';
+import { parseTurtleText } from './turtle';
 
 const GREED_STEP = 150;
 
@@ -70,7 +71,7 @@ export class GraphBuilder {
 
         const layoutElements: LayoutCell[] = elementsIds.map<LayoutElement>((id, index) => {
             const {x, y} = grid(index);
-            return {type: 'element', id: 'element_' + index, iri: id, position: {x, y}};
+            return {type: 'element', id: `element_${generate64BitID()}`, iri: id, position: {x, y}};
         });
 
         const layoutElementsMap: {[iri: string]: LayoutCell} = keyBy(layoutElements, 'iri');
@@ -84,7 +85,7 @@ export class GraphBuilder {
 
             layoutLinks.push({
                 type: 'link',
-                id: 'link_' + index,
+                id: `link_${generate64BitID()}`,
                 typeId: link.linkTypeId,
                 source: {id: source.id},
                 target: {id: target.id},
