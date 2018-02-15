@@ -34,7 +34,7 @@ export class DefaultLinkRouter implements LinkRouter {
 
         let index = 0;
         for (const sibling of element.links) {
-            if (routings[sibling.id]) {
+            if (routings[sibling.id] || hasUserPlacedVertices(sibling)) {
                 continue;
             }
             const {sourceId, targetId} = sibling;

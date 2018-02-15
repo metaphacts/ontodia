@@ -63,6 +63,7 @@ export interface DiagramViewEvents {
     changeLanguage: PropertyChange<DiagramView, string>;
     changeSelection: PropertyChange<DiagramView, ReadonlyArray<Element>>;
     changeLinkTemplates: { source: DiagramView };
+    toggleNavigationMenu: { isOpened: boolean };
     syncUpdate: { layer: RenderingLayer };
     updateWidgets: UpdateWidgetsEvent;
     renderDone: { source: DiagramView };
@@ -207,7 +208,8 @@ export class DiagramView {
     private configureHalo() {
         if (this.options.disableDefaultHalo) { return; }
 
-        const renderDefaultHalo = (selectedElement?: Element) => {
+        const renderDefaultHalo = () => {
+            const selectedElement = this.selection.length === 1 ? this.selection[0] : undefined;
             const halo = createElement(Halo, {
                 diagramView: this,
                 target: selectedElement,
@@ -222,7 +224,7 @@ export class DiagramView {
                     } else {
                         this.showNavigationMenu(selectedElement);
                     }
-                    renderDefaultHalo(selectedElement);
+                    renderDefaultHalo();
                 },
                 onAddToFilter: () => selectedElement.addToFilter(),
             });
@@ -234,7 +236,11 @@ export class DiagramView {
             if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
                 this.hideNavigationMenu();
             }
-            renderDefaultHalo(selected);
+            renderDefaultHalo();
+        });
+
+        this.listener.listen(this.events, 'toggleNavigationMenu', ({isOpened}) => {
+            renderDefaultHalo();
         });
 
         renderDefaultHalo();
@@ -254,12 +260,14 @@ export class DiagramView {
         });
         this.connectionsMenuTarget = target;
         this.source.trigger('updateWidgets', {widgets: {connectionsMenu}});
+        this.source.trigger('toggleNavigationMenu', {isOpened: false});
     }
 
     hideNavigationMenu() {
         if (this.connectionsMenuTarget) {
             this.connectionsMenuTarget = undefined;
             this.source.trigger('updateWidgets', {widgets: {connectionsMenu: undefined}});
+            this.source.trigger('toggleNavigationMenu', {isOpened: false});
         }
     }
 
