@@ -40,10 +40,12 @@ export interface PaperAreaEvents {
     pointerUp: PointerUpEvent;
 }
 
+export type PointerEventTarget = Cell | undefined;
+
 export interface PointerEvent {
     source: PaperArea;
     sourceEvent: React.MouseEvent<Element> | MouseEvent;
-    target: Cell | undefined;
+    target: PointerEventTarget;
 }
 
 export interface PointerUpEvent extends PointerEvent {
@@ -67,7 +69,7 @@ export interface State {
 
 interface PointerMoveState {
     pointerMoved: boolean;
-    target: Cell | undefined;
+    target: PointerEventTarget;
     origin: {
         readonly pageX: number;
         readonly pageY: number;
@@ -390,6 +392,8 @@ export class PaperArea extends React.Component<Props, State> {
             e.preventDefault();
             this.startPanning(e);
             this.listenToPointerMove(e, undefined);
+        } else {
+            this.listenToPointerMove(e, undefined);
         }
     }
 
@@ -404,8 +408,8 @@ export class PaperArea extends React.Component<Props, State> {
             if (this.shouldStartPanning(e)) {
                 e.preventDefault();
                 this.startPanning(e);
-                this.listenToPointerMove(e, undefined);
             }
+            this.listenToPointerMove(e, undefined);
         }
     }
 
@@ -441,7 +445,7 @@ export class PaperArea extends React.Component<Props, State> {
         return segmentIndex;
     }
 
-    private listenToPointerMove(event: React.MouseEvent<any>, cell: Cell | undefined) {
+    private listenToPointerMove(event: React.MouseEvent<any>, cell: PointerEventTarget) {
         if (this.movingState) { return; }
         const {pageX, pageY} = event;
         this.movingState = {
