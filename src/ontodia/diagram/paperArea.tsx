@@ -46,6 +46,7 @@ export interface PointerEvent {
     source: PaperArea;
     sourceEvent: React.MouseEvent<Element> | MouseEvent;
     target: PointerEventTarget;
+    panning: boolean;
 }
 
 export interface PointerUpEvent extends PointerEvent {
@@ -455,7 +456,10 @@ export class PaperArea extends React.Component<Props, State> {
         };
         document.addEventListener('mousemove', this.onPointerMove);
         document.addEventListener('mouseup', this.stopListeningToPointerMove);
-        this.source.trigger('pointerDown', {source: this, sourceEvent: event, target: cell});
+        const panning = typeof cell === 'undefined' && this.shouldStartPanning(event);
+        this.source.trigger('pointerDown', {
+            source: this, sourceEvent: event, target: cell, panning,
+        });
     }
 
     private onPointerMove = (e: MouseEvent) => {
@@ -469,9 +473,12 @@ export class PaperArea extends React.Component<Props, State> {
         }
 
         if (typeof target === 'undefined') {
-            this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - pageOffsetX;
-            this.area.scrollTop = this.panningScrollOrigin.scrollTop - pageOffsetY;
-            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
+            const panning = this.shouldStartPanning(e);
+            if (panning) {
+                this.area.scrollLeft = this.panningScrollOrigin.scrollLeft - pageOffsetX;
+                this.area.scrollTop = this.panningScrollOrigin.scrollTop - pageOffsetY;
+            }
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning});
         } else if (target instanceof Element) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
             const {pointerX, pointerY, elementX, elementY} = this.movingElementOrigin;
@@ -480,7 +487,7 @@ export class PaperArea extends React.Component<Props, State> {
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
-            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning: false});
             this.props.view.performSyncUpdate();
         } else if (isLinkVertex(target)) {
             const {link, vertexIndex} = target;
@@ -488,7 +495,7 @@ export class PaperArea extends React.Component<Props, State> {
             const vertices = [...link.vertices];
             vertices.splice(vertexIndex, 1, location);
             link.setVertices(vertices);
-            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target});
+            this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning: false});
             this.props.view.performSyncUpdate();
         }
     }
@@ -508,6 +515,7 @@ export class PaperArea extends React.Component<Props, State> {
                 sourceEvent: e,
                 target: movingState.target,
                 triggerAsClick: !movingState.pointerMoved,
+                panning: typeof movingState.target === 'undefined' && this.shouldStartPanning(e),
             });
         }
     }
