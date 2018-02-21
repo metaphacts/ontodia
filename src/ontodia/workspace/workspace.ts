@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Element, Link, FatLinkType } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
-import { ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
+import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
@@ -107,6 +107,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
     }
 
+    _getPaperArea(): PaperArea | undefined {
+        return this.markup ? this.markup.paperArea : undefined;
+    }
+
     private getToolbar = () => {
         const {languages, onSaveDiagram, hidePanels, toolbar} = this.props;
         return cloneElement(
@@ -161,7 +165,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentDidMount() {
-        this.diagram.internal_initializePaperComponents(this.markup.paperArea);
+        this.diagram._initializePaperComponents(this.markup.paperArea);
 
         this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
             if (!data.requestedAddToFilter) { return; }
