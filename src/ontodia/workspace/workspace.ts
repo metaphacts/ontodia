@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom';
 import { Link, FatLinkType } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
-import { ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
+import { ZoomOptions, PointerEvent, PointerUpEvent, PaperArea } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 
 import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
@@ -104,6 +104,14 @@ export class Workspace extends Component<WorkspaceProps, State> {
     componentWillReceiveProps(nextProps: WorkspaceProps) {
         if (nextProps.language !== this.diagram.getLanguage()) {
             this.diagram.setLanguage(nextProps.language);
+        }
+    }
+
+    _getPaperArea(): PaperArea {
+        if (this.markup) {
+            return this.markup.paperArea;
+        } else {
+            return undefined;
         }
     }
 
