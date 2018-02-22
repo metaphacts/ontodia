@@ -4,6 +4,7 @@ import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
+import { generate64BitID } from '../data/utils';
 
 import { DataFetchingThread } from '../viewUtils/async';
 import { EventSource, Events, EventObserver, AnyEvent, AnyListener, Listener } from '../viewUtils/events';
@@ -45,6 +46,8 @@ export class DiagramModel {
     private classFetching: DataFetchingThread;
     private linkFetching: DataFetchingThread;
     private propertyLabelFetching: DataFetchingThread;
+
+    private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
     constructor() {
         this.classFetching = new DataFetchingThread();
@@ -171,7 +174,7 @@ export class DiagramModel {
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
             const allLinkTypes = this.initLinkTypes(linkTypes);
-            this.initLinkSettings(allLinkTypes, params.linkSettings);
+            this.setLinkSettings(params.linkSettings || []);
             return this.loadAndRenderLayout({
                 layoutData: params.layoutData,
                 preloadedElements: params.preloadedElements || {},
@@ -213,15 +216,13 @@ export class DiagramModel {
         }
     }
 
-    private initLinkSettings(linkTypes: ReadonlyArray<FatLinkType>, linkSettings: LinkTypeOptions[]) {
-        const indexedSettings = keyBy(linkSettings, 'id');
-        for (const type of linkTypes) {
-            const settings = indexedSettings[type.id];
-            if (settings) {
-                const {visible = true, showLabel = true} = settings;
-                type.setVisibility({visible, showLabel, preventLoading: true});
-            } else {
-                type.setIsNew(true);
+    private setLinkSettings(settings: LinkTypeOptions[]) {
+        for (const setting of settings) {
+            const {id: linkTypeId, visible = true, showLabel = true} = setting;
+            this.linkSettings[linkTypeId] = {id: linkTypeId, visible, showLabel};
+            const linkType = this.getLinkType(linkTypeId);
+            if (linkType) {
+                linkType.setVisibility({visible, showLabel});
             }
         }
     }
@@ -246,10 +247,10 @@ export class DiagramModel {
         const normalizedCells = layoutData.cells.map(normalizeImportedCell);
         for (const cell of normalizedCells) {
             if (cell.type === 'element') {
-                const {id, position, size, isExpanded} = cell;
-                const template = preloadedElements[cell.id];
-                const data = template || placeholderTemplateFromIri(id);
-                const element = new Element({id, data, position, size, expanded: isExpanded});
+                const {id, iri, position, size, isExpanded, group} = cell;
+                const template = preloadedElements[iri];
+                const data = template || placeholderTemplateFromIri(iri);
+                const element = new Element({id, data, position, size, expanded: isExpanded, group});
                 this.graph.addElement(element);
                 if (!template) {
                     elementToRequestData.push(element);
@@ -271,7 +272,9 @@ export class DiagramModel {
                     linkType,
                     vertices,
                 });
-                link.setLayoutOnly(markLinksAsLayoutOnly);
+                if (link) {
+                    link.setLayoutOnly(markLinksAsLayoutOnly);
+                }
             }
         }
 
@@ -299,11 +302,11 @@ export class DiagramModel {
         }
     }
 
-    requestElementData(elements: Element[]) {
+    requestElementData(elements: Element[]): Promise<void> {
         if (elements.length === 0) {
-            return Promise.resolve([]);
+            return Promise.resolve();
         }
-        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.id)})
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.iri)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
                 console.error(err);
@@ -311,12 +314,12 @@ export class DiagramModel {
             });
     }
 
-    requestLinksOfType(linkTypeIds?: string[]) {
+    requestLinksOfType(linkTypeIds?: string[]): Promise<void> {
         const linkTypes = linkTypeIds || this.graph.getLinkTypes()
             .filter(type => type.visible)
             .map(type => type.id);
         return this.dataProvider.linksInfo({
-            elementIds: this.elements.map(element => element.id),
+            elementIds: this.elements.map(element => element.iri),
             linkTypeIds: linkTypes,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
@@ -381,17 +384,23 @@ export class DiagramModel {
         return classModel;
     }
 
-    createElement(elementIdOrModel: string | ElementModel): Element {
-        const elementId = typeof elementIdOrModel === 'string'
-            ? elementIdOrModel : elementIdOrModel.id;
-        let element = this.graph.getElement(elementId);
-        if (!element) {
-            let data = typeof elementIdOrModel === 'string'
-                ? placeholderTemplateFromIri(elementId) : elementIdOrModel;
-            data = {...data, id: rewriteHttpsInIri(data.id)};
-            element = new Element({id: data.id, data});
-            this.graph.addElement(element);
+    createElement(elementIriOrModel: string | ElementModel, group?: string): Element {
+        const elementIri = rewriteHttpsInIri(
+            typeof elementIriOrModel === 'string'
+                ? elementIriOrModel : elementIriOrModel.id
+        );
+
+        const elements = this.elements.filter(el => el.iri === elementIri && el.group === group);
+        if (elements.length > 0) {
+            // usually there should be only one element
+            return elements[0];
         }
+        
+        let data = typeof elementIriOrModel === 'string'
+            ? placeholderTemplateFromIri(elementIri) : elementIriOrModel;
+        data = {...data, id: rewriteHttpsInIri(data.id)};
+        const element = new Element({id: `element_${generate64BitID()}`, data, group});
+        this.graph.addElement(element);
         return element;
     }
 
@@ -408,6 +417,13 @@ export class DiagramModel {
             id: linkTypeId,
             label: [{text: uri2name(linkTypeId), lang: ''}],
         });
+
+        const setting = this.linkSettings[linkType.id];
+        if (setting) {
+            const {visible, showLabel} = setting;
+            linkType.setVisibility({visible, showLabel, preventLoading: true});
+        }
+
         this.graph.addLinkType(linkType);
         this.linkFetching.push(linkTypeId).then(linkTypeIds => {
             if (linkTypeIds.length === 0) { return; }
@@ -435,10 +451,10 @@ export class DiagramModel {
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        for (const id of Object.keys(elements)) {
-            const element = this.getElement(id);
-            if (element) {
-                element.setData(elements[id]);
+        for (const element of this.elements) {
+            const loadedModel = elements[element.iri];
+            if (loadedModel) {
+                element.setData(loadedModel);
             }
         }
     }
@@ -447,9 +463,22 @@ export class DiagramModel {
         this.initBatchCommand();
         for (const linkModel of links) {
             const linkType = this.createLinkType(linkModel.linkTypeId);
-            this.graph.createLink({data: linkModel, linkType});
+            this.createLinks(linkModel, linkType);
         }
         this.storeBatchCommand();
+    }
+
+    private createLinks(linkModel: LinkModel, linkType: FatLinkType) {
+        const {sourceId, targetId} = linkModel;
+        const sources = this.elements.filter(el => el.iri === sourceId);
+        const targets = this.elements.filter(el => el.iri === targetId);
+
+        for (const source of sources) {
+            for (const target of targets) {
+                const data = {...linkModel, sourceId: source.id, targetId: target.id};
+                this.graph.createLink({data, linkType});
+            }
+        }
     }
 }
 

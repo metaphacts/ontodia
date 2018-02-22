@@ -1,4 +1,5 @@
 import { Dictionary, ElementModel, LinkModel } from '../data/model';
+import { generate64BitID } from '../data/utils';
 import { OrderedMap, createStringMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
 
@@ -105,7 +106,7 @@ export class Graph {
         }
 
         const suggestedIdAvailable = Boolean(suggestedId && !this.links.get(suggestedId));
-        const newLinkId = suggestedIdAvailable ? suggestedId : `link_${generateRandomID()}`;
+        const newLinkId = suggestedIdAvailable ? suggestedId : `link_${generate64BitID()}`;
 
         const link = new DiagramLink({id: newLinkId, data, vertices});
         this.registerLink(link, linkType);
@@ -236,14 +237,4 @@ function findLinkIndex(haystack: DiagramLink[], needle: LinkModel) {
         }
     }
     return -1;
-}
-
-/** Generates random 16-digit hexadecimal string. */
-function generateRandomID() {
-    function randomHalfDigits() {
-        return Math.floor((1 + Math.random()) * 0x100000000)
-            .toString(16).substring(1);
-    }
-    // generate by half because of restricted numerical precision
-    return randomHalfDigits() + randomHalfDigits();
 }

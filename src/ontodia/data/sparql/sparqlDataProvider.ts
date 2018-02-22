@@ -1,5 +1,5 @@
 import * as N3 from 'n3';
-import { DataProvider, FilterParams } from '../provider';
+import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel } from '../model';
 import {
     triplesToElementBinding,
@@ -22,7 +22,7 @@ import {
 } from './sparqlModels';
 import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
-import { parseTurtleText } from '../utils';
+import { parseTurtleText } from './turtle';
 
 export enum SparqlQueryMethod { GET = 1, POST }
 
@@ -261,13 +261,7 @@ export class SparqlDataProvider implements DataProvider {
             });
     };
 
-    linkElements(params: {
-        elementId: string;
-        linkId: string;
-        limit: number;
-        offset: number;
-        direction?: 'in' | 'out';
-    }): Promise<Dictionary<ElementModel>> {
+    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         // for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
@@ -279,7 +273,7 @@ export class SparqlDataProvider implements DataProvider {
     }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
-        if (params.limit === 0) { params.limit = 100; }
+        if (params.limit === undefined) { params.limit = 100; }
         const blankFiltration = this.options.acceptBlankNodes
             ? BlankNodes.filter(params) : undefined;
 

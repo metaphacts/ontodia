@@ -127,7 +127,8 @@ function mapClass(
     const children = derived.map(child => mapClass(child, view, iconMap));
     const {icon} = view.getTypeStyle([id]);
 
-    const text = view.getLocalizedText(label).text + (Number.isNaN(count) ? '' : ` (${count})`);
+    const text = view.getLocalizedText(label).text +
+        (typeof count === 'number' ? ` (${count})` : '');
 
     let iconId: string | undefined;
     if (icon) {

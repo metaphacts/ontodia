@@ -1,0 +1,41 @@
+.ontodia-group-template {
+  overflow: hidden;
+
+  &__wrap {
+    @extend .ontodia-default-template;
+    max-width: none;
+  }
+
+  &__type-line {
+    @extend .ontodia-default-template_type-line;
+  }
+
+  &__type-line-icon {
+    @extend .ontodia-default-template_type-line__icon;
+  }
+
+  &__type-line-text-container {
+    @extend .ontodia-default-template_type-line_text-container;
+  }
+
+  &__type-line-text {
+    @extend .ontodia-default-template_type-line_text-container__text;
+  }
+
+  &__body {
+    @extend .ontodia-default-template_body;
+    overflow: visible;
+  }
+
+  &__label {
+    @extend .ontodia-default-template_body__label;
+  }
+
+  &__embedded-layer {
+    margin-top: 7px;
+  }
+
+  .ontodia-paper__canvas {
+    border-color: #fff;
+  }
+}

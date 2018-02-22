@@ -132,7 +132,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
                     {...this.props.criteria, refElement: undefined, refElementLink: undefined}))}
                 Connected to <span className={`${CLASS_NAME}__criterion-element`}
-                    title={element && element.id}>{elementLabel}</span>
+                    title={element ? element.iri : undefined}>{elementLabel}</span>
                 {linkType && <span>
                     {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
@@ -161,12 +161,22 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     private renderSearchResults(): React.ReactElement<any> {
         const items = this.state.items || [];
         return <ul className={`${CLASS_NAME}__results`}>
-            {items.map((model, index) => <ListElementView key={index}
+            {items.map(model => this.renderResultItem(model))}
+        </ul>;
+    }
+
+    private renderResultItem(model: ElementModel) {
+        const alreadyOnDiagram = this.props.view.model.elements.findIndex(
+            element => element.iri === model.id && element.group === undefined
+        ) >= 0;
+
+        return (
+            <ListElementView key={model.id}
                 model={model}
                 view={this.props.view}
-                disabled={Boolean(this.props.view.model.getElement(model.id))}
+                disabled={alreadyOnDiagram}
                 selected={this.state.selectedItems[model.id] || false}
-                onClick={() => this.toggleSelectedItem(model.id)}
+                onClick={alreadyOnDiagram ? undefined : () => this.toggleSelectedItem(model.id)}
                 onDragStart={e => {
                     const elementIds = Object.keys({...this.state.selectedItems, [model.id]: true});
                     try {
@@ -175,9 +185,9 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                         e.dataTransfer.setData('text', JSON.stringify(elementIds));
                     }
                     return false;
-                }} />,
-            )}
-        </ul>;
+                }}
+            />
+        );
     }
 
     private toggleSelectedItem(itemId: string) {
@@ -202,9 +212,9 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
         this.listener.listen(this.props.view.model.events, 'changeCells', () => {
             const selectedItems: Dictionary<true> = {...this.state.selectedItems};
-            for (const id of Object.keys(selectedItems)) {
-                if (selectedItems[id] && this.props.view.model.getElement(id)) {
-                    delete selectedItems[id];
+            for (const element of this.props.view.model.elements) {
+                if (element.group === undefined && selectedItems[element.iri]) {
+                    delete selectedItems[element.iri];
                 }
             }
             this.setState({selectedItems});
@@ -267,33 +277,35 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     }
 
     private processFilterData(elements: Dictionary<ElementModel>) {
-        const selectedItems: Dictionary<true> = {...this.state.selectedItems};
+        const requestedAdditionalItems = this.currentRequest.offset > 0;
 
-        const newItems: ElementModel[] = [];
-        for (const elementId in elements) {
-            if (!elements.hasOwnProperty(elementId)) { continue; }
-
-            let element = elements[elementId];
-            newItems.push(element);
-
-            delete selectedItems[element.id];
+        const existingIris: { [iri: string]: true } = {};
+        
+        if (requestedAdditionalItems) {
+            this.state.items.forEach(item => existingIris[item.id] = true);
         }
 
-        const requestedAdditionalItems = this.currentRequest.offset > 0;
-        const items = requestedAdditionalItems
-            ? this.state.items.concat(newItems) : newItems;
+        const items = requestedAdditionalItems ? [...this.state.items] : [];
+        for (const iri in elements) {
+            if (!elements.hasOwnProperty(iri)) { continue; }
+            if (existingIris[iri]) { continue; }
+            items.push(elements[iri]);
+        }
 
-        let resultId = this.state.resultId;
-        if (!requestedAdditionalItems) { resultId += 1; }
+        const moreItemsAvailable = Object.keys(elements).length >= this.currentRequest.limit;
 
-        this.setState({
-            quering: false,
-            resultId,
-            items,
-            error: undefined,
-            moreItemsAvailable: newItems.length >= this.currentRequest.limit,
-            selectedItems,
-        });
+        if (requestedAdditionalItems) {
+            this.setState({quering: false, items, error: undefined, moreItemsAvailable});
+        } else {
+            this.setState({
+                quering: false,
+                resultId: this.state.resultId + 1,
+                items,
+                error: undefined,
+                moreItemsAvailable,
+                selectedItems: {},
+            });
+        }
     }
 }
 
@@ -302,7 +314,7 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
     return {
         text,
         elementTypeId: elementType ? elementType.id : undefined,
-        refElementId: refElement ? refElement.id : undefined,
+        refElementId: refElement ? refElement.iri : undefined,
         refElementLinkId: refElementLink ? refElementLink.id : undefined,
         linkDirection,
         offset: 0,

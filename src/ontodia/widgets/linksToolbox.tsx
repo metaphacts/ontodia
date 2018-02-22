@@ -322,7 +322,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
 
     private requestLinksOf(selectedElement: Element) {
         if (selectedElement) {
-            const request = {elementId: selectedElement.id};
+            const request = {elementId: selectedElement.iri};
             this.currentRequest = request;
             this.setState({dataState: 'querying', selectedElement});
             this.props.view.model.dataProvider.linkTypesOf(request).then(linkTypes => {
