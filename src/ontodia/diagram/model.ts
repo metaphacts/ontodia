@@ -62,10 +62,6 @@ export class DiagramModel {
         return this.graph.getElement(elementId);
     }
 
-    getElementsByIri(iri: string): Element[] {
-        return this.elements.filter(element => element.data.id === iri);
-    }
-
     getLinkById(linkId: string): Link | undefined {
         return this.graph.getLink(linkId);
     }
@@ -310,7 +306,7 @@ export class DiagramModel {
         if (elements.length === 0) {
             return Promise.resolve();
         }
-        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.data.id)})
+        return this.dataProvider.elementInfo({elementIds: elements.map(e => e.iri)})
             .then(models => this.onElementInfoLoaded(models))
             .catch(err => {
                 console.error(err);
@@ -323,7 +319,7 @@ export class DiagramModel {
             .filter(type => type.visible)
             .map(type => type.id);
         return this.dataProvider.linksInfo({
-            elementIds: this.elements.map(element => element.data.id),
+            elementIds: this.elements.map(element => element.iri),
             linkTypeIds: linkTypes,
         }).then(links => this.onLinkInfoLoaded(links))
         .catch(err => {
@@ -394,8 +390,9 @@ export class DiagramModel {
                 ? elementIriOrModel : elementIriOrModel.id
         );
 
-        const elements = this.getElementsByIri(elementIri).filter(element => element.group === group);
+        const elements = this.elements.filter(el => el.iri === elementIri && el.group === group);
         if (elements.length > 0) {
+            // usually there should be only one element
             return elements[0];
         }
         
@@ -454,9 +451,10 @@ export class DiagramModel {
     }
 
     private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        for (const iri of Object.keys(elements)) {
-            for (const element of this.getElementsByIri(iri)) {
-                element.setData(elements[iri]);
+        for (const element of this.elements) {
+            const loadedModel = elements[element.iri];
+            if (loadedModel) {
+                element.setData(loadedModel);
             }
         }
     }
@@ -472,8 +470,8 @@ export class DiagramModel {
 
     private createLinks(linkModel: LinkModel, linkType: FatLinkType) {
         const {sourceId, targetId} = linkModel;
-        const sources = this.getElementsByIri(sourceId);
-        const targets = this.getElementsByIri(targetId);
+        const sources = this.elements.filter(el => el.iri === sourceId);
+        const targets = this.elements.filter(el => el.iri === targetId);
 
         for (const source of sources) {
             for (const target of targets) {

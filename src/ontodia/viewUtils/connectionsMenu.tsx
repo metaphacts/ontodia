@@ -101,7 +101,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
         this.loadingState = 'loading';
         this.links = [];
         this.countMap = {};
-        view.model.dataProvider.linkTypesOf({elementId: target.data.id})
+        view.model.dataProvider.linkTypesOf({elementId: target.iri})
             .then(linkTypes => {
                 this.loadingState = 'completed';
 
@@ -142,7 +142,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
         this.objects = [];
 
         view.model.dataProvider.linkElements({
-            elementId: target.data.id,
+            elementId: target.iri,
             linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : link.id),
             limit: offset + MAX_LINK_COUNT,
             offset: offset,
@@ -152,7 +152,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
             this.objects = Object.keys(elements).map(iri => ({
                 model: elements[iri],
                 presentOnDiagram: view.model.elements.findIndex(
-                    element => element.data.id === iri && element.group === undefined
+                    element => element.iri === iri && element.group === undefined
                 ) >= 0,
             }));
             this.updateAll();

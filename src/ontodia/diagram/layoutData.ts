@@ -53,7 +53,7 @@ export function exportLayoutData(
     const elementData = elements.map((element): LayoutElement => ({
         type: 'element',
         id: element.id,
-        iri: element.data.id,
+        iri: element.iri,
         position: element.position,
         size: element.size,
         isExpanded: element.isExpanded,

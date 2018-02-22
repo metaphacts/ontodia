@@ -107,10 +107,10 @@ export class EmbeddedLayer extends React.Component<{}, State> {
 
     private loadEmbeddedElements = () => {
         const {view, element} = this.context.ontodiaElementContext;
-        const {data} = element;
 
-        view.loadEmbeddedElements(data.id).then((res: Dictionary<ElementModel>) => {
-            const elements = Object.keys(res).map(key => view.model.createElement(res[key], element.id));
+        view.loadEmbeddedElements(element.iri).then(models => {
+            const elements = Object.keys(models)
+                .map(key => view.model.createElement(models[key], element.id));
 
             elements.forEach(this.listenNestedElement);
 

@@ -58,6 +58,8 @@ export class Element {
         this._group = group;
     }
 
+    get iri() { return this._data.id; }
+
     get data() { return this._data; }
     setData(value: ElementModel) {
         const previous = this._data;

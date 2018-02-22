@@ -238,7 +238,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             label,
             color,
             icon,
-            iri: model.data.id,
+            iri: model.iri,
             imgUrl: model.data.image,
             isExpanded: model.isExpanded,
             props: model.data.properties,

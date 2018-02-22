@@ -132,7 +132,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
                     {...this.props.criteria, refElement: undefined, refElementLink: undefined}))}
                 Connected to <span className={`${CLASS_NAME}__criterion-element`}
-                    title={element && element.data.id}>{elementLabel}</span>
+                    title={element ? element.iri : undefined}>{elementLabel}</span>
                 {linkType && <span>
                     {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
@@ -167,7 +167,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
     private renderResultItem(model: ElementModel) {
         const alreadyOnDiagram = this.props.view.model.elements.findIndex(
-            element => element.data.id === model.id && element.group === undefined
+            element => element.iri === model.id && element.group === undefined
         ) >= 0;
 
         return (
@@ -213,9 +213,8 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.listener.listen(this.props.view.model.events, 'changeCells', () => {
             const selectedItems: Dictionary<true> = {...this.state.selectedItems};
             for (const element of this.props.view.model.elements) {
-                const iri = element.data.id;
-                if (element.group === undefined && selectedItems[iri]) {
-                    delete selectedItems[iri];
+                if (element.group === undefined && selectedItems[element.iri]) {
+                    delete selectedItems[element.iri];
                 }
             }
             this.setState({selectedItems});
@@ -315,7 +314,7 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
     return {
         text,
         elementTypeId: elementType ? elementType.id : undefined,
-        refElementId: refElement ? refElement.data.id : undefined,
+        refElementId: refElement ? refElement.iri : undefined,
         refElementLinkId: refElementLink ? refElementLink.id : undefined,
         linkDirection,
         offset: 0,
