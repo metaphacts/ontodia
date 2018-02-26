@@ -66,7 +66,6 @@ export interface DiagramViewEvents {
     toggleNavigationMenu: { isOpened: boolean };
     syncUpdate: { layer: RenderingLayer };
     updateWidgets: UpdateWidgetsEvent;
-    renderDone: { source: DiagramView };
     dispose: { source: DiagramView };
 }
 
@@ -140,11 +139,7 @@ export class DiagramView {
         }
     }
 
-    internal_onRenderDone() {
-        this.source.trigger('renderDone', {source: this});
-    }
-
-    internal_initializePaperComponents(paperArea: PaperArea) {
+    _initializePaperComponents(paperArea: PaperArea) {
         this.listener.listen(paperArea.events, 'pointerUp', e => this.onPaperPointerUp(e));
 
         if (!this.options.disableDefaultHalo) {

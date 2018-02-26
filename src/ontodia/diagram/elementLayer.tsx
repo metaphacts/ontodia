@@ -83,8 +83,6 @@ export class ElementLayer extends React.Component<Props, void> {
             const {clientWidth, clientHeight} = node;
             element.setSize({width: clientWidth, height: clientHeight});
         }
-
-        this.props.view.internal_onRenderDone();
     }
 }
 
