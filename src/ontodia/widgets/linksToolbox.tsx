@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import { LocalizedString, LinkCount } from '../data/model';
 import { Element, FatLinkType } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
-import { chooseLocalizedText } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
@@ -49,8 +49,8 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private getText = () => {
-        const label = this.props.link.label;
-        const fullText = chooseLocalizedText(label, this.props.language).text.toLowerCase();
+        const {link: linkType, language} = this.props;
+        const fullText = formatLocalizedLabel(linkType.id, linkType.label, language).toLowerCase();
         if (this.props.filterKey) {
             const filterKey = this.props.filterKey.toLowerCase();
             const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
@@ -110,11 +110,11 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 
 interface LinkTypesToolboxViewProps {
     links: ReadonlyArray<FatLinkType>;
-    countMap?: { readonly [linkTypeId: string]: number };
-    label?: ReadonlyArray<LocalizedString>;
-    language?: string;
-    dataState?: string;
-    filterCallback?: (type: FatLinkType) => void;
+    countMap: { readonly [linkTypeId: string]: number };
+    selectedElement: Element;
+    language: string;
+    dataState: string;
+    filterCallback: (type: FatLinkType) => void;
 }
 
 class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { filterKey: string }> {
@@ -124,20 +124,9 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aLabel = a.label;
-        const bLabel = b.label;
-        const aText = (aLabel ? chooseLocalizedText(aLabel, this.props.language).text.toLowerCase() : null);
-        const bText = (bLabel ? chooseLocalizedText(bLabel, this.props.language).text.toLowerCase() : null);
-
-        if (aText < bText) {
-            return -1;
-        }
-
-        if (aText > bText) {
-            return 1;
-        }
-
-        return 0;
+        const aText = formatLocalizedLabel(a.id, a.label, this.props.language).toLowerCase();
+        const bText = formatLocalizedLabel(b.id, b.label, this.props.language).toLowerCase();
+        return aText < bText ? -1 : (aText > bText ? 1 : 0);
     }
 
     private onChangeInput = (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -165,9 +154,8 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
     }
 
     private getLinks = () => {
-        return (this.props.links || []).filter(link => {
-            const label = link.label;
-            const text = (label ? chooseLocalizedText(label, this.props.language).text.toLowerCase() : null);
+        return (this.props.links || []).filter(linkType => {
+            const text = formatLocalizedLabel(linkType.id, linkType.label, this.props.language).toLowerCase();
             return (!this.state.filterKey) || (text && text.indexOf(this.state.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -199,9 +187,12 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
         const views = this.getViews(links);
 
         let connectedTo: React.ReactElement<any> = null;
-        if (this.props.label) {
-            const selectedElementLabel = chooseLocalizedText(
-                this.props.label, this.props.language).text.toLowerCase();
+        if (this.props.selectedElement) {
+            const selectedElementLabel = formatLocalizedLabel(
+                this.props.selectedElement.iri,
+                this.props.selectedElement.data.label.values,
+                this.props.language
+            );
             connectedTo = (
                 <h4 className='links-heading' style={{display: 'block'}}>
                     Connected to{'\u00A0'}
@@ -382,7 +373,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
             countMap={countMap}
             filterCallback={this.onAddToFilter}
             language={view.getLanguage()}
-            label={selectedElement ? selectedElement.data.label.values : null}
+            selectedElement={selectedElement}
         />;
     }
 

@@ -176,14 +176,9 @@ export class RDFDataProvider implements DataProvider {
                         delete firstLevel[classElement.id];
                     }
                 }
-                const result = Object.keys(firstLevel)
-                    .map(k => {
-                        if (!firstLevel[k].label) {
-                            firstLevel[k].label = { values: this.createLabelFromId(firstLevel[k].id) };
-                        }
-                        return firstLevel[k];
-                    },
-                );
+                const result = Object.keys(firstLevel).map(k => {
+                    return firstLevel[k];
+                });
 
                 return Promise.all(labelQueries).then(responsec => {
                     return result;
@@ -560,28 +555,12 @@ export class RDFDataProvider implements DataProvider {
         });
     };
 
-    private createLabelFromId(id: string): LocalizedString[] {
-        let label;
-        if (id) {
-            const urlParts = id.split('/');
-            const sharpParts = urlParts[urlParts.length - 1].split('#');
-            label = sharpParts[sharpParts.length - 1];
-        } else {
-            label = '';
-        }
-        return [{
-                text: label,
-                lang: '',
-            }];
-    }
-
     private getLabels(id: string): Promise<LocalizedString[]> {
         return this.rdfStorage.getLabels(id).then(labelTriples => {
-            const tripleArray = labelTriples.toArray();
-            return tripleArray.length > 0 ? labelTriples.toArray().map(l => ({
+            return labelTriples.toArray().map(l => ({
                 text: l.object.nominalValue,
                 lang: isLiteral(l.object) ? l.object.language || '' : '',
-            })) : this.createLabelFromId(id);
+            }));
         });
     }
 

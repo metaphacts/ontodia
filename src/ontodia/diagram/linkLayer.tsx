@@ -306,7 +306,9 @@ function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramVi
 
     const labelStyle = style.label || {};
     const labelTexts = labelStyle.attrs && labelStyle.attrs.text ? labelStyle.attrs.text.text : undefined;
-    const labelText = labelTexts ? view.getLocalizedText(labelTexts) : view.getLinkLabel(model.typeId);
+    const labelText = (labelTexts && labelTexts.length > 0)
+        ? view.getLocalizedText(labelTexts)
+        : view.getLinkLabel(model.typeId);
     labels.push({
         offset: labelStyle.position || 0.5,
         text: labelText,

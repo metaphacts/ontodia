@@ -10,7 +10,7 @@ import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
 
 import { Element } from './elements';
-import { uri2name } from './model';
+import { formatLocalizedLabel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
 export interface Props {
@@ -227,7 +227,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         const types = model.data.types.length > 0
             ? view.getElementTypeString(model.data) : 'Thing';
-        const label = view.getLocalizedText(model.data.label.values).text;
+        const label = formatLocalizedLabel(model.iri, model.data.label.values, view.getLanguage());
         const {color, icon} = this.styleFor(model);
         const propsAsList = this.getPropertyTable();
 
@@ -250,8 +250,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         if (!model.data.properties) { return []; }
 
         const propTable = Object.keys(model.data.properties).map(key => {
-            const property = view ? view.model.getPropertyById(key) : undefined;
-            const name = view ? view.getLocalizedText(property.label).text : uri2name(key);
+            const property = view.model.getPropertyById(key);
+            const name = formatLocalizedLabel(key, property.label, view.getLanguage());
             return {
                 id: key,
                 name: name,

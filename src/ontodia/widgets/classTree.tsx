@@ -5,6 +5,7 @@ import { Dictionary, LocalizedString } from '../data/model';
 import { FatClassModel } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
+import { formatLocalizedLabel } from '../diagram/model';
 
 // bundling jstree to solve issues with multiple jquery packages,
 // when jstree sets itself as plugin to wrong version of jquery
@@ -127,8 +128,8 @@ function mapClass(
     const children = derived.map(child => mapClass(child, view, iconMap));
     const {icon} = view.getTypeStyle([id]);
 
-    const text = view.getLocalizedText(label).text +
-        (typeof count === 'number' ? ` (${count})` : '');
+    const classLabel = formatLocalizedLabel(id, label, view.getLanguage());
+    const text = classLabel + (typeof count === 'number' ? ` (${count})` : '');
 
     let iconId: string | undefined;
     if (icon) {

@@ -502,6 +502,11 @@ export function uri2name(uri: string): string {
     if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
         return uri.substring(hashIndex + 1);
     }
+    const endsWithSlash = uri[uri.length - 1] === '/';
+    if (endsWithSlash) {
+        uri = uri.substring(0, uri.length - 1);
+    }
+
     const lastPartStart = uri.lastIndexOf('/');
     if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
         return uri.substring(lastPartStart + 1);
@@ -509,18 +514,37 @@ export function uri2name(uri: string): string {
     return uri;
 }
 
-export function chooseLocalizedText(texts: ReadonlyArray<LocalizedString>, language: string): LocalizedString {
-    if (texts.length === 0) { return null; }
-    // undefined if default language string isn't present
-    let defaultLanguageValue: LocalizedString;
+export function chooseLocalizedText(
+    texts: ReadonlyArray<LocalizedString>,
+    language: string
+): LocalizedString | undefined {
+    if (texts.length === 0) { return undefined; }
+    let defaultValue: LocalizedString;
+    let englishValue: LocalizedString;
     for (const text of texts) {
         if (text.lang === language) {
             return text;
         } else if (text.lang === '') {
-            defaultLanguageValue = text;
+            defaultValue = text;
+        } else if (text.lang === 'en') {
+            englishValue = text;
         }
     }
-    return typeof defaultLanguageValue === 'undefined' ? texts[0] : defaultLanguageValue;
+    return (
+        defaultValue !== undefined ? defaultValue :
+        englishValue !== undefined ? englishValue :
+        texts[0]
+    );
+}
+
+export function formatLocalizedLabel(
+    fallbackIri: string,
+    labels: ReadonlyArray<LocalizedString>,
+    language: string
+): string {
+    return labels.length > 0
+        ? chooseLocalizedText(labels, language).text
+        : uri2name(fallbackIri);
 }
 
 export function rewriteHttpsInIri(iri: string): string {

@@ -3,6 +3,7 @@ import { hcl } from 'd3-color';
 
 import { ElementModel } from '../data/model';
 import { DiagramView } from '../diagram/view';
+import { formatLocalizedLabel } from '../diagram/model';
 
 export interface ListElementViewProps extends React.HTMLProps<HTMLLIElement> {
     view: DiagramView;
@@ -13,7 +14,7 @@ export interface ListElementViewProps extends React.HTMLProps<HTMLLIElement> {
 
 const CLASS_NAME = 'ontodia-list-element-view';
 
-export class ListElementView extends React.Component<ListElementViewProps, void> {
+export class ListElementView extends React.Component<ListElementViewProps, {}> {
     render() {
         const {view, model, selected, disabled, ...otherProps} = this.props;
 
@@ -22,12 +23,13 @@ export class ListElementView extends React.Component<ListElementViewProps, void>
 
         const disabledClass = disabled ? `${CLASS_NAME}--disabled` : '';
         const className = `${CLASS_NAME} ${disabledClass} ${otherProps.className || ''}`;
+        const localizedText = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
 
         return <li {...otherProps} className={className} draggable={!disabled}
             title={`Classes: ${view.getElementTypeString(model)}`}
             style={{background: hcl(h, c, l)}}>
             <div className={`${CLASS_NAME}__label`} style={{background: frontColor}}>
-                {view.getLocalizedText(model.label.values).text}
+                {localizedText}
             </div>
         </li>;
     }

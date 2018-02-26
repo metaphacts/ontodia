@@ -1,4 +1,4 @@
-import { getNameFromId } from './responseHandler';
+import { uri2name } from '../../diagram/model';
 import { Dictionary } from '../model';
 import { FilterParams } from '../provider';
 
@@ -197,7 +197,7 @@ export function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
     } else {
         return {
             type: 'literal',
-            value: getNameFromId(bn.class ? bn.class.value : 'anonymous'),
+            value: bn.class ? uri2name(bn.class.value) : 'anonymous',
             'xml:lang': '',
         };
     }
