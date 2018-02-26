@@ -5,6 +5,44 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+## [0.8.0]
+### Added
+- Nesting (grouping) elements on diagram using `groupBy` option and `<EmbeddedLayer />`
+element in custom templates.
+- Buttons to toggle visiblility of left and right panels.
+- `renderTo` function to create Workspace using compiled in bundled mode library.
+- Separate library bundle for IE11 compatibility (when compile with SUPPORT_IE flag).
+
+### Changed
+- **[Breaking]** Replaced JointJS rendering engine with our own React-based
+implementation.
+- **[Breaking]** Replaced Backbone property and event system with native class
+properties and composition-based event emitter implementation.
+- **[Breaking]** Generate placeholder data only when rendering, e.g. `Element.data.label`
+will be empty until element info will load.
+- **[Breaking]** Split up `isViewOnly` option into `hideToolbar`, `hidePanels`
+and `hideHalo`.
+- Removed default "checkboard" background in the diagram area.
+- Limit maximum number of connected elements in Connection menu to 100.
+
+### Fixed
+- Drag and drop from class tree in Safari.
+- Missing "All" entry in Connections menu when there are two connections with
+the same ID in the list.
+- Rewrite `https://` IRIs to `http://` when adding an element to diagram.
+
+## [0.7.0]
+### Changed
+- **[Breaking]** Optimize `SparqlDataProvider`: change `elementInfoQuery` from SELECT to
+CONSTRUCT query, extract `linkTypesOf` statistics into separate `linkTypesOfStatsQuery`.
+- **[Breaking]** Throw exception instead of returning null or undefined when fetching
+error happens in `RdfDataProvider`.
+- Simplify overriding default toolbar with a custom one by providing default
+callbacks in props.
+
+### Fixed
+- `stroke-dasharray` style override for link labels.
+- Error when RDF data storage returns `undefined` statements.
 
 ## [0.6.1] - 2017-10-17
 ### Added
@@ -241,6 +279,8 @@ info loaded from `DataProvider`.
 - Ontodia published on GitHub as OSS project.
 
 [Latest]: https://github.com/ontodia-org/ontodia/compare/v0.6.1...HEAD
+[0.8.0]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.6.1
+[0.7.0]: https://github.com/ontodia-org/ontodia/compare/v0.7.0...v0.6.1
 [0.6.1]: https://github.com/ontodia-org/ontodia/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/ontodia-org/ontodia/compare/v0.5.2...v0.5.3
