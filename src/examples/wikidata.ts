@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
-    WikidataSettings, SparqlQueryMethod, PropertySuggestionParams, PropertyScore,
+    WikidataSettings, SparqlQueryMethod, PropertySuggestionParams, PropertyScore, formatLocalizedLabel
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -16,7 +16,9 @@ function getElementLabel(id: string): string {
     const model = workspace.getModel();
     const diagram = workspace.getDiagram();
     const element = model.getElement(id);
-    return element ? diagram.getLocalizedText(element.data.label.values).text : '';
+    return element ? formatLocalizedLabel(
+        element.iri, element.data.label.values, diagram.getLanguage()
+    ) : '';
 }
 
 function wikidataSuggestProperties(params: PropertySuggestionParams) {

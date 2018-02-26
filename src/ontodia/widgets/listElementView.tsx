@@ -3,7 +3,7 @@ import { hcl } from 'd3-color';
 
 import { ElementModel } from '../data/model';
 import { DiagramView } from '../diagram/view';
-import { uri2name } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
 export interface ListElementViewProps extends React.HTMLProps<HTMLLIElement> {
     view: DiagramView;
@@ -23,8 +23,7 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
 
         const disabledClass = disabled ? `${CLASS_NAME}--disabled` : '';
         const className = `${CLASS_NAME} ${disabledClass} ${otherProps.className || ''}`;
-        const localizedText = model.label.values.length > 0 ?
-            view.getLocalizedText(model.label.values).text : uri2name(model.id);
+        const localizedText = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
 
         return <li {...otherProps} className={className} draggable={!disabled}
             title={`Classes: ${view.getElementTypeString(model)}`}

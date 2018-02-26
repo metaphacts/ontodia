@@ -328,7 +328,11 @@ export class DiagramView {
         return {element, size: {width, height}};
     }
 
-    public getLocalizedText(texts: ReadonlyArray<LocalizedString>): LocalizedString {
+    /**
+     * Obsolete. Use `chooseLocalizedText()` or `formatLocalizedLabel()` instead.
+     * @deprecated
+     */
+    public getLocalizedText(texts: ReadonlyArray<LocalizedString>): LocalizedString | undefined {
         return chooseLocalizedText(texts, this.getLanguage());
     }
 

@@ -4,7 +4,7 @@ import { Dictionary, ElementModel, LocalizedString } from '../data/model';
 import { FilterParams } from '../data/provider';
 
 import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
-import { uri2name } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 
@@ -113,7 +113,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
         if (criteria.elementType) {
             const classInfo = criteria.elementType;
-            const classLabel = view.getLocalizedText(classInfo.label).text;
+            const classLabel = formatLocalizedLabel(classInfo.id, classInfo.label, view.getLanguage());
             criterions.push(<div key='hasType' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
                     {...this.props.criteria, elementType: undefined}))}
@@ -122,11 +122,11 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             </div>);
         } else if (criteria.refElement) {
             const element = criteria.refElement;
-            const template = element.data;
-            const elementLabel = formatLabel(view, element.id, template.label);
+            const elementLabel = formatLocalizedLabel(element.iri, element.data.label.values, view.getLanguage());
 
             const linkType = criteria.refElementLink;
-            const linkTypeLabel = linkType ? view.getLocalizedText(linkType.label).text : undefined;
+            const linkTypeLabel = linkType
+                ? formatLocalizedLabel(linkType.id, linkType.label, view.getLanguage()) : undefined;
 
             criterions.push(<div key='hasLinkedElement' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
@@ -321,8 +321,4 @@ function createRequest(criteria: SearchCriteria, language: string): FilterParams
         limit: 100,
         languageCode: language || 'en',
     };
-}
-
-function formatLabel(view: DiagramView, uri: string, label?: { values: LocalizedString[] }) {
-    return label ? view.getLocalizedText(label.values).text : uri2name(uri);
 }

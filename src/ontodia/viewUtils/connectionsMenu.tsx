@@ -5,7 +5,7 @@ import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { chooseLocalizedText, uri2name } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
 import { EventObserver } from './events';
@@ -329,7 +329,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     private getBreadCrumbs = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
             const link = this.props.objectsData.linkDataChunk.link;
-            const localizedText = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
+            const localizedText = formatLocalizedLabel(link.id, link.label, this.props.lang).toLowerCase();
 
             return <span className='ontodia-connections-menu_bread-crumbs'>
                 <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>
@@ -498,8 +498,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aText = getLocalizedText(a.id, a.label, this.props.lang).toLowerCase();
-        const bText = getLocalizedText(b.id, b.label, this.props.lang).toLowerCase();
+        const aText = formatLocalizedLabel(a.id, a.label, this.props.lang).toLowerCase();
+        const bText = formatLocalizedLabel(b.id, b.label, this.props.lang).toLowerCase();
         return (
             aText < bText ? -1 :
             aText > bText ? 1 :
@@ -508,8 +508,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const aText = getLocalizedText(a.id, a.label, this.props.lang).toLowerCase();
-        const bText = getLocalizedText(b.id, b.label, this.props.lang).toLowerCase();
+        const aText = formatLocalizedLabel(a.id, a.label, this.props.lang).toLowerCase();
+        const bText = formatLocalizedLabel(b.id, b.label, this.props.lang).toLowerCase();
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
@@ -523,7 +523,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
 
     private getLinks = () => {
         return (this.props.data.links || []).filter(link => {
-            const text = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
+            const text = formatLocalizedLabel(link.id, link.label, this.props.lang).toLowerCase();
             return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -532,7 +532,6 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private getProbableLinks = () => {
         const isSmartMode = this.isSmartMode();
         return (this.props.data.links || []).filter(link => {
-            const text = getLocalizedText(link.id, link.label, this.props.lang).toLowerCase();
             return this.state.scores[link.id] && (this.state.scores[link.id].score > 0 || isSmartMode);
         }).sort(this.compareLinksByWeight);
     }
@@ -654,7 +653,7 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     render() {
         const link = this.props.link;
-        const fullText = getLocalizedText(this.props.link.id, this.props.link.label, this.props.lang);
+        const fullText = formatLocalizedLabel(this.props.link.id, this.props.link.label, this.props.lang);
         const probability = Math.round(this.props.probability * 100);
         const textLine = getColoredText(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
@@ -763,7 +762,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
         return this.props.data.objects
         .filter(element => {
             const label: Label = element.model.label;
-            const text  = getLocalizedText(element.model.id, element.model.label.values, this.props.lang);
+            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, this.props.lang);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         });
     };
@@ -888,7 +887,7 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { chec
 
     render() {
         const model = this.props.element.model;
-        const fullText = getLocalizedText(model.id, model.label.values, this.props.lang);
+        const fullText = formatLocalizedLabel(model.id, model.label.values, this.props.lang);
         const textLine = getColoredText(fullText, this.props.filterKey);
         return (
             <li data-linkTypeId={model.id}
@@ -911,13 +910,6 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { chec
             </li>
         );
     }
-}
-
-function getLocalizedText(
-    id: string, labels: ReadonlyArray<LocalizedString>, lang: string,
-): string {
-    return labels.length > 0 ?
-        chooseLocalizedText(labels, lang).text : uri2name(id);
 }
 
 function getColoredText(fullText: string, filterKey: string) {
