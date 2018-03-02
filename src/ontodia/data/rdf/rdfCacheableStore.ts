@@ -62,16 +62,27 @@ export const LABEL_POSTFIXES = [
     'title',
 ];
 
+export interface RDFStoreOptions {
+    parser: RDFCompositeParser;
+    acceptBlankNodes?: boolean;
+}
+
 export class RDFCacheableStore {
-    private rdfStorage: RDFStore;
+    private readonly parser: RDFCompositeParser;
+    private readonly acceptBlankNodes: boolean;
+
+    private readonly rdfStorage: RDFStore;
+    private readonly prefs: { [id: string]: (id: string) => string };
+
     private checkingElementMap: Dictionary<Promise<boolean>> = {};
     private labelsMap: Dictionary<Triple[]> = {};
     private countMap: Dictionary<number> = {};
     private elementTypes: Dictionary<Triple[]> = {};
-    private prefs: { [id: string]: (id: string) => string };
-    constructor(
-        private parser: RDFCompositeParser,
-    ) {
+
+    constructor(options: RDFStoreOptions) {
+        this.parser = options.parser;
+        this.acceptBlankNodes = Boolean(options.acceptBlankNodes);
+
         this.rdfStorage = createStore();
         this.prefs = {
             RDF: prefixFactory('http://www.w3.org/1999/02/22-rdf-syntax-ns#'),
@@ -156,20 +167,18 @@ export class RDFCacheableStore {
     private enrichMaps(newGraph: RDFGraph): boolean {
         const triples = newGraph.toArray();
 
+        // Deal with labels
         for (const triple of triples) {
             const element = triple.subject.nominalValue;
             const predicate = triple.predicate.nominalValue;
-            if (
-                LABEL_URIS.indexOf(predicate) !== -1 ||
-                (
-                    !this.labelsMap[element] &&
-                    LABEL_POSTFIXES.find((value, index, array) => {
-                        const type = predicate.toLocaleLowerCase();
-                        const postfix = value.toLocaleLowerCase();
-                        return type.indexOf(postfix) !== -1;
-                    })
-                )
-            ) {
+
+            const type = predicate.toLocaleLowerCase();
+            const isLabel = LABEL_URIS.indexOf(predicate) !== -1;
+            const looksLikeLabel = LABEL_POSTFIXES.find((value, index, array) => {
+                const postfix = value.toLocaleLowerCase();
+                return type.indexOf(postfix) !== -1;
+            });
+            if (isLabel || looksLikeLabel) {
                 if (!this.labelsMap[element]) {
                     this.labelsMap[element] = [];
                 }
@@ -190,11 +199,8 @@ export class RDFCacheableStore {
             }
         }
 
-        const typeInstances = newGraph.match(
-            null,
-            this.prefs.RDF('type'),
-            null,
-        ).toArray();
+        // Deal with counts
+        const typeInstances = newGraph.match(null, this.prefs.RDF('type'), null).toArray();
         const typeInstMap: Dictionary<string[]> = {};
         for (const instTriple of typeInstances) {
             const type = instTriple.object.nominalValue;
@@ -202,13 +208,15 @@ export class RDFCacheableStore {
             if (!typeInstMap[type]) {
                 typeInstMap[type] = [];
             }
-            if (!this.elementTypes[inst]) {
-                this.elementTypes[inst] = [];
+            if (this.acceptBlankNodes || isNamedNode(instTriple.subject)) {
+                if (!this.elementTypes[inst]) {
+                    this.elementTypes[inst] = [];
+                }
+                if (typeInstMap[type].indexOf(inst) === -1) {
+                    typeInstMap[type].push(inst);
+                }
+                this.elementTypes[inst].push(instTriple);
             }
-            if (typeInstMap[type].indexOf(inst) === -1) {
-                typeInstMap[type].push(inst);
-            }
-            this.elementTypes[inst].push(instTriple);
         }
         Object.keys(typeInstMap).forEach(key => this.countMap[key] = typeInstMap[key].length);
 

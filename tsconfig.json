@@ -9,7 +9,8 @@
         ],
         "noImplicitAny": true,
         "noImplicitThis": true,
-        "noImplicitReturns": true
+        "noImplicitReturns": true,
+        "importHelpers": true
     },
     "include": [
         "./index.ts",

@@ -16,308 +16,304 @@ const PREFIX_FACTORIES = {
     OWL: prefixFactory('http://www.w3.org/2002/07/owl#'),
 };
 
+export interface RDFFile {
+    content: string;
+    fileName?: string;
+    type?: string;
+    uri?: string;
+}
+
+export interface RDFDataProviderOptions {
+    data: RDFFile[];
+    parsers: { [id: string]: any };
+    acceptBlankNodes?: boolean;
+    dataFetching?: boolean;
+    proxy?: string;
+}
+
 export class RDFDataProvider implements DataProvider {
     public  dataFetching: boolean;
-    private initStatement: Promise<boolean> | boolean;
+    private initStatement: Promise<any> | undefined;
     private rdfStorage: RDFCacheableStore;
     private rdfLoader: RDFLoader;
 
-    constructor(params: {
-        data: {
-            content: string,
-            type?: string,
-            uri?: string,
-        } [],
-        dataFetching?: boolean,
-        proxy?: string,
-        parsers: { [id: string]: any },
-    }) {
-        const parser = new RDFCompositeParser(params.parsers);
+    readonly options: RDFDataProviderOptions;
 
-        this.rdfStorage = new RDFCacheableStore(parser);
+    constructor(options: RDFDataProviderOptions) {
+        const parser = new RDFCompositeParser(options.parsers);
+
+        this.rdfStorage = new RDFCacheableStore({
+            parser,
+            acceptBlankNodes: options.acceptBlankNodes,
+        });
         this.rdfLoader = new RDFLoader({
             parser: parser,
-            proxy: params.proxy,
+            proxy: options.proxy,
         });
-        this.dataFetching = params.dataFetching;
+        this.dataFetching = options.dataFetching;
 
-        let parsePromises;
-
-        parsePromises = (params.data || []).map(datum => {
-            return parser.parse(datum.content, datum.type)
+        const parsePromises = (options.data || []).map(datum => {
+            return parser.parse(datum.content, datum.type, datum.fileName)
                 .then(rdfGraph => {
                     this.rdfStorage.add(rdfGraph);
                     return true;
-                }).catch(error => console.error(error));
+                });
         });
 
-        this.initStatement = Promise.all(parsePromises).then(parseResults => {
-            return parseResults.filter(pr => pr).length > 0 || params.data.length === 0;
+        this.initStatement = Promise.all(parsePromises).catch((error: Error) => {
+            error.message = 'Initialization failed! Cause: ' + error.message;
+            throw error;
         });
+        this.options = options;
     }
 
     addGraph(graph: RDFGraph) {
         this.rdfStorage.add(graph);
     }
 
-    isInitialized(): Promise<boolean> {
-        if (this.initStatement instanceof Object) {
-            return (<Promise<boolean>> this.initStatement).then(state => {
-                this.initStatement = state;
-                return this.initStatement;
+    private waitInitCompleted(): Promise<void> {
+        if (this.initStatement) {
+            return this.initStatement.then(() => {
+                delete this.initStatement;
             });
         } else {
-            return Promise.resolve(this.initStatement);
+            return Promise.resolve();
         }
     }
 
-    classTree(): Promise<ClassModel[]> {
-        return this.isInitialized().then(state => {
-            const rdfClassesQuery =
-                this.rdfStorage.match(
-                    null,
-                    PREFIX_FACTORIES.RDF('type'),
-                    PREFIX_FACTORIES.RDFS('Class'),
-                    null,
-                );
-            const owlClassesQuery =
-                this.rdfStorage.match(
-                    null,
-                    PREFIX_FACTORIES.RDF('type'),
-                    PREFIX_FACTORIES.OWL('Class'),
-                );
-            const fromRDFTypesQuery =
-                this.rdfStorage.match(
-                    null,
-                    PREFIX_FACTORIES.RDF('type'),
-                    null,
-                );
+    async classTree(): Promise<ClassModel[]> {
+        await this.waitInitCompleted();
+        const rdfClassesQuery = this.rdfStorage.match(
+            null,
+            PREFIX_FACTORIES.RDF('type'),
+            PREFIX_FACTORIES.RDFS('Class'),
+            null,
+        );
+        const owlClassesQuery = this.rdfStorage.match(
+            null,
+            PREFIX_FACTORIES.RDF('type'),
+            PREFIX_FACTORIES.OWL('Class'),
+        );
+        const fromRDFTypesQuery = this.rdfStorage.match(
+            null,
+            PREFIX_FACTORIES.RDF('type'),
+            null,
+        );
 
-            const subClassesQuery =
-                this.rdfStorage.match(
-                    null,
-                    PREFIX_FACTORIES.RDFS('subClassOf'),
-                    null,
-                );
+        const subClassesQuery = this.rdfStorage.match(
+            null,
+            PREFIX_FACTORIES.RDFS('subClassOf'),
+            null,
+        );
 
-            return Promise.all([
-                rdfClassesQuery,
-                owlClassesQuery,
-                fromRDFTypesQuery,
-                subClassesQuery,
-            ]).then(classesMatrix => {
-                const arrays: Triple[][] = classesMatrix.map(cm => cm.toArray());
-                const classes = arrays[0].map(cl => cl.subject.nominalValue)
-                    .concat(arrays[1].map(cl => cl.subject.nominalValue))
-                    .concat(arrays[2].map(cl => cl.object.nominalValue));
+        const [
+            rdfClassesGraph,
+            owlClassesGraph,
+            rdfTypesGraph,
+            subClassesGraph,
+        ] = await Promise.all([
+            rdfClassesQuery,
+            owlClassesQuery,
+            fromRDFTypesQuery,
+            subClassesQuery,
+        ]);
+        const rdfClasses = rdfClassesGraph.toArray().map(cl => cl.subject);
+        const owlClasses = owlClassesGraph.toArray().map(cl => cl.subject);
+        const rdfTypes = rdfTypesGraph.toArray().map(cl => cl.object);
+        const subClasses = subClassesGraph.toArray();
 
-                const parentsList = arrays[3];
-                const parentMap: Dictionary<string[]> = {};
-                for (const triple of parentsList) {
-                    const subClass = triple.subject.nominalValue;
-                    const clazz = triple.object.nominalValue;
-                    if (!parentMap[subClass]) {
-                        parentMap[subClass] = [];
-                    }
-                    if (parentMap[subClass].indexOf(clazz) === -1) {
-                        parentMap[subClass].push(clazz);
-                    }
-                }
+        const classes = rdfClasses.concat(owlClasses).concat(rdfTypes);
+        const classIris = classes
+            .filter(clazz => clazz.interfaceName !== 'BlankNode')
+            .map(clazz => clazz.nominalValue);
 
-                const dictionary: Dictionary<ClassModel> = {};
-                const firstLevel: Dictionary<ClassModel> = {};
+        const parents: Dictionary<string[]> = {};
+        for (const triple of subClasses) {
+            const subClassIRI = triple.subject.nominalValue;
+            const classIRI = triple.object.nominalValue;
+            if (isNamedNode(triple.subject) && !parents[subClassIRI]) {
+                parents[subClassIRI] = [];
+            }
+            if (isNamedNode(triple.object) && parents[subClassIRI].indexOf(classIRI) === -1) {
+                parents[subClassIRI].push(classIRI);
+            }
+        }
 
-                const labelQueries: Promise<boolean>[] = [];
+        const dictionary: Dictionary<ClassModel> = {};
+        const firstLevel: Dictionary<ClassModel> = {};
+        const labelQueries: Promise<any>[] = [];
 
-                for (const cl of classes) {
-                    const parents = parentMap[cl] || [];
+        for (const classIri of classIris) {
+            let classElement: ClassModel;
+            if (!dictionary[classIri]) {
+                classElement = this.createEmptyClass(classIri);
+                dictionary[classIri] = classElement;
+                firstLevel[classIri] = classElement;
+                labelQueries.push(this.getLabels(classIri).then(labels => {
+                    classElement.label = { values: labels };
+                }));
+            } else {
+                classElement = dictionary[classIri];
+            }
 
-                    let classElement: ClassModel;
-                    let classAlreadyExists = dictionary[cl];
-                    if (!classAlreadyExists) {
-                        classElement = {
-                            id: cl,
-                            label: {
-                                values: [],
-                            },
-                            count: this.rdfStorage.getTypeCount(cl),
-                            children: [],
-                        };
-                        labelQueries.push(this.getLabels(cl).then(labels => {
-                            classElement.label = { values: labels };
-                            return true;
+            if (parents[classIri]) {
+                for (const parentIri of parents[classIri]) {
+                    if (!dictionary[parentIri]) {
+                        const parentElement = this.createEmptyClass(parentIri);
+                        dictionary[parentIri] = parentElement;
+                        firstLevel[parentIri] = parentElement;
+                        labelQueries.push(this.getLabels(parentIri).then(labels => {
+                            parentElement.label = { values: labels };
                         }));
-                        dictionary[cl] = classElement;
-                        firstLevel[cl] = classElement;
-                    } else if (!dictionary[cl].label) {
-                        classElement = dictionary[cl];
-                        labelQueries.push(this.getLabels(cl).then(labels => {
-                            classElement.label = { values: labels };
-                            return true;
-                        }));
-                    } else {
-                        classElement = dictionary[cl];
                     }
-
-                    for (const p of parents) {
-                        if (!dictionary[p]) {
-                            const parentClassElement: ClassModel = {
-                                id: p,
-                                label: undefined,
-                                count: this.rdfStorage.getTypeCount(p) + 1 + classElement.count,
-                                children: [classElement],
-                            };
-                            dictionary[p] = parentClassElement;
-                            firstLevel[p] = parentClassElement;
-                        } else if (!classAlreadyExists) {
-                            dictionary[p].children.push(classElement);
-                            dictionary[p].count += (1 + classElement.count);
-                        }
-                        delete firstLevel[classElement.id];
+                    if (dictionary[parentIri].children.indexOf(classElement) === -1) {
+                        dictionary[parentIri].children.push(classElement);
+                        dictionary[parentIri].count += classElement.count;
                     }
+                    delete firstLevel[classElement.id];
                 }
-                const result = Object.keys(firstLevel).map(k => {
-                    return firstLevel[k];
-                });
+            }
+        }
 
-                return Promise.all(labelQueries).then(responsec => {
-                    return result;
-                });
-            });
-        });
+        await Promise.all(labelQueries);
+
+        const result = Object.keys(firstLevel).map(k => firstLevel[k]);
+        return result;
     }
 
-    propertyInfo(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>> {
+    async propertyInfo(params: {propertyIds: string[]}): Promise<Dictionary<PropertyModel>> {
+        await this.waitInitCompleted();
         const propertyInfoResult: Dictionary<PropertyModel> = {};
 
         const queries = params.propertyIds.map(
-            propId => {
-                return this.checkElement(propId).then(exists => {
-                    return this.fetchIfNecessary(propId, exists).then(() => {
-                        return this.getLabels(propId).then(labels => ({
-                            id: propId,
-                            label: { values: labels },
-                        }));
-                    });
-                }).catch(error => {
+            async propId => {
+                try {
+                    const isExists = await this.checkElement(propId);
+                    await this.fetchIfNecessary(propId, isExists);
+                    const labels = await this.getLabels(propId);
+                    return {
+                        id: propId,
+                        label: { values: labels },
+                    };
+                } catch (error) {
                     console.warn(error);
                     return null;
-                });
+                }
             },
         );
 
-        return Promise.all(queries).then((fetchedModels) => {
-            for (const model of fetchedModels) {
-                if (model) {
-                    propertyInfoResult[model.id] = model;
-                }
+        const fetchedModels = await Promise.all(queries);
+        for (const model of fetchedModels) {
+            if (model) {
+                propertyInfoResult[model.id] = model;
             }
-            return propertyInfoResult;
-        });
+        }
+        return propertyInfoResult;
     }
 
-    classInfo(params: { classIds: string[] }): Promise<ClassModel[]> {
+    async classInfo(params: { classIds: string[] }): Promise<ClassModel[]> {
+        await this.waitInitCompleted();
         const queries = params.classIds.map(
-            classId => this.checkElement(classId).then(exists => {
-                return this.fetchIfNecessary(classId, exists).then(() => {
-                    return this.getLabels(classId).then(labels => ({
-                            id: classId,
-                            label: { values: labels },
-                            count: this.rdfStorage.getTypeCount(classId),
-                            children: [],
-                        }),
-                    );
-                });
-            }).catch(error => {
-                console.warn(error);
-                return null;
-            }),
-        );
-
-        return Promise.all(queries).then(fetchedModels => {
-            return fetchedModels.filter(cm => cm);
+            async classId => {
+                try {
+                    const isExists = await this.checkElement(classId);
+                    await this.fetchIfNecessary(classId, isExists);
+                    const labels = await this.getLabels(classId);
+                    return {
+                        id: classId,
+                        label: { values: labels },
+                        count: this.rdfStorage.getTypeCount(classId),
+                        children: [],
+                    };
+                } catch (error) {
+                    console.warn(error);
+                    return null;
+                }
         });
+
+        const fetchedModels = await Promise.all(queries);
+        return fetchedModels.filter(cm => cm);
     }
 
-    linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
-        const queries = params.linkTypeIds.map(
-            typeId => this.rdfStorage.checkElement(typeId).then(exists => {
-                return this.fetchIfNecessary(typeId, exists).then(() => {
-                    return this.getLabels(typeId).then(labels => ({
-                            id: typeId,
-                            label: { values: labels },
-                            count: this.rdfStorage.getTypeCount(typeId),
-                        }),
-                    );
-                });
-            }).catch(error => {
-                console.warn(error);
-                return null;
-            }),
-        );
-
-        return Promise.all(queries).then((fetchedModels) => {
-            return fetchedModels.filter(lt => lt);
+    async linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+        await this.waitInitCompleted();
+        const queries: Promise<LinkType>[]  = params.linkTypeIds.map(
+            async typeId => {
+                try {
+                    const isExists = await this.rdfStorage.checkElement(typeId);
+                    await this.fetchIfNecessary(typeId, isExists);
+                    const labels = await this.getLabels(typeId);
+                    return {
+                        id: typeId,
+                        label: { values: labels },
+                        count: this.rdfStorage.getTypeCount(typeId),
+                    };
+                } catch (error) {
+                    console.warn(error);
+                    return null;
+                }
         });
+
+        const fetchedModels = await Promise.all(queries);
+        return fetchedModels.filter(lt => lt);
     }
 
-    linkTypes(): Promise<LinkType[]> {
+    async linkTypes(): Promise<LinkType[]> {
+        await this.waitInitCompleted();
         const linkTypes: LinkType[] = [];
-        const rdfLinks = this.rdfStorage.match(
+        const rdfLinksQueries = this.rdfStorage.match(
             undefined,
             PREFIX_FACTORIES.RDF('type'),
             PREFIX_FACTORIES.RDF('Property'),
         );
-        const owlLinks = this.rdfStorage.match(
+        const owlLinksQueries = this.rdfStorage.match(
             undefined,
             PREFIX_FACTORIES.RDF('type'),
             PREFIX_FACTORIES.OWL('ObjectProperty'),
         );
-        return Promise.all([rdfLinks, owlLinks]).then(props => {
-            const links = props[0].toArray().concat(props[0].toArray());
-            return Promise.all(
-                links.map(l =>
-                    this.getLabels(l.subject.nominalValue).then(labels => {
-                        return {
-                            id: l.subject.nominalValue,
-                            label: { values: labels },
-                            count: this.rdfStorage.getTypeCount(l.subject.nominalValue),
-                        };
-                    }),
-                ),
-            );
-        });
-    }
-
-    elementInfo(params: { elementIds: string[] }): Promise<Dictionary<ElementModel>> {
-        const elementInfoResult: Dictionary<ElementModel> = {};
-
-        const queries = params.elementIds.map(
-            elementId => this.rdfStorage.checkElement(elementId).then(exists => {
-                return this.fetchIfNecessary(elementId, exists).then(() => {
-                    return this.getElementInfo(elementId);
-                });
-            }).catch(error => {
-                console.warn(error);
-                return null;
+        const [rdfLinks, owlLinks] = await Promise.all([rdfLinksQueries, owlLinksQueries]);
+        const links = rdfLinks.toArray().concat(owlLinks.toArray());
+        return Promise.all(
+            links.map(async l => {
+                const labels = await this.getLabels(l.subject.nominalValue);
+                return {
+                    id: l.subject.nominalValue,
+                    label: { values: labels },
+                    count: this.rdfStorage.getTypeCount(l.subject.nominalValue),
+                };
             }),
         );
-
-        return Promise.all(queries).then((fetchedModels) => {
-            for (const model of fetchedModels) {
-                if (model) {
-                    elementInfoResult[model.id] = model;
-                }
-            }
-            return elementInfoResult;
-        });
     }
 
-    linksInfo(params: {
+    async elementInfo(params: { elementIds: string[] }): Promise<Dictionary<ElementModel>> {
+        await this.waitInitCompleted();
+        const elementInfoResult: Dictionary<ElementModel> = {};
+
+        const queries = params.elementIds.map(async elementId => {
+            try {
+                const isExists = await this.rdfStorage.checkElement(elementId);
+                await this.fetchIfNecessary(elementId, isExists);
+                return this.getElementInfo(elementId);
+            } catch (error) {
+                console.warn(error);
+                return null;
+            }
+        });
+
+        const fetchedModels = await Promise.all(queries);
+        for (const model of fetchedModels) {
+            if (model) {
+                elementInfoResult[model.id] = model;
+            }
+        }
+        return elementInfoResult;
+    }
+
+    async linksInfo(params: {
         elementIds: string[];
         linkTypeIds: string[];
     }): Promise<LinkModel[]> {
-
+        await this.waitInitCompleted();
         const statementPromises: Promise<MatchStatement>[] = [];
         for (const source of params.elementIds) {
             for (const target of params.elementIds) {
@@ -335,190 +331,210 @@ export class RDFDataProvider implements DataProvider {
             }
         }
 
-        return Promise.all(statementPromises).then(statements => {
-            return this.rdfStorage.matchAll(statements.filter(statement => statement));
-        }).then(result => {
-            return result.toArray().map(lt => ({
-                sourceId: lt.subject.nominalValue,
-                linkTypeId: lt.predicate.nominalValue,
-                targetId: lt.object.nominalValue,
-            }));
-        }).then((fetchedModels) => {
-            return fetchedModels.filter(model => model);
-        });
+        const statements = await Promise.all(statementPromises);
+        const graph = await this.rdfStorage.matchAll(statements.filter(statement => statement));
+        let triples;
+        if (this.options.acceptBlankNodes) {
+            triples = graph.toArray();
+        } else {
+            triples = graph.toArray().filter(tripple =>
+                isNamedNode(tripple.subject) && isNamedNode(tripple.object));
+        }
+        const fetchedModels = triples.map(tripple => ({
+            sourceId: tripple.subject.nominalValue,
+            linkTypeId: tripple.predicate.nominalValue,
+            targetId: tripple.object.nominalValue,
+        })).filter(model => model);
+
+        return fetchedModels;
     }
 
-    linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
+    async linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
+        await this.waitInitCompleted();
         const links: LinkCount[] = [];
         const element = params.elementId;
         const linkMap: Dictionary<LinkCount> = {};
 
-        const inElementsQuery =
-            this.rdfStorage.match(null, null, element).then(inElementsTriples => {
+        const incomingElementsTriples =
+            await this.rdfStorage.match(null, null, element);
 
-                const inElements = inElementsTriples.toArray()
-                    .filter(t => isNamedNode(t.subject))
-                    .map(triple => triple.predicate);
+        const incomingElements = incomingElementsTriples.toArray()
+            .filter(t => isNamedNode(t.subject))
+            .map(triple => triple.predicate);
+        for (const el of incomingElements) {
+            if (!linkMap[el.nominalValue]) {
+                linkMap[el.nominalValue] = {
+                    id: el.nominalValue,
+                    inCount: 1,
+                    outCount: 0,
+                };
+                links.push(linkMap[el.nominalValue]);
+            } else {
+                linkMap[el.nominalValue].inCount++;
+            }
+        }
 
-                for (const el of inElements) {
-                    if (!linkMap[el.nominalValue]) {
-                        linkMap[el.nominalValue] = {
-                            id: el.nominalValue,
-                            inCount: 1,
-                            outCount: 0,
-                        };
-                        links.push(linkMap[el.nominalValue]);
-                    } else {
-                        linkMap[el.nominalValue].inCount++;
-                    }
-                }
-            });
+        const outgoingElementsTriples =
+            await this.rdfStorage.match(element, null, null);
 
-        const outElementsQuery =
-            this.rdfStorage.match(element, null, null).then(outElementsTriples => {
-                const outElements = outElementsTriples.toArray()
-                    .filter(t => isNamedNode(t.object))
-                    .map(triple => triple.predicate);
-
-                for (const el of outElements) {
-                    if (!linkMap[el.nominalValue]) {
-                        linkMap[el.nominalValue] = {
-                            id: el.nominalValue,
-                            inCount: 0,
-                            outCount: 1,
-                        };
-                        links.push(linkMap[el.nominalValue]);
-                    } else {
-                        linkMap[el.nominalValue].outCount++;
-                    }
-                }
-            });
-
-        return Promise.all([inElementsQuery, outElementsQuery]).then(() => {
-            return links;
-        });
+        const outElements = outgoingElementsTriples.toArray()
+            .filter(t => isNamedNode(t.object))
+            .map(triple => triple.predicate);
+        for (const el of outElements) {
+            if (!linkMap[el.nominalValue]) {
+                linkMap[el.nominalValue] = {
+                    id: el.nominalValue,
+                    inCount: 0,
+                    outCount: 1,
+                };
+                links.push(linkMap[el.nominalValue]);
+            } else {
+                linkMap[el.nominalValue].outCount++;
+            }
+        }
+        return links;
     };
 
-    linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
-        return this.filter({
+    async linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
+        await this.waitInitCompleted();
+        return await this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
             linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
-            languageCode: ''});
+            languageCode: '',
+        });
     }
 
-    filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
-        if (params.limit === undefined) { params.limit = 100; }
+    async filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
+        await this.waitInitCompleted();
+
+        if (params.limit === undefined) {
+            params.limit = 100;
+        }
+        const limit = (node: Node, index: number) => {
+            return (blankNodes || isNamedNode(node))
+                && offsetIndex <= index
+                && index < limitIndex;
+        };
 
         const offsetIndex = params.offset;
         const limitIndex = params.offset + params.limit;
+        const blankNodes = this.options.acceptBlankNodes;
 
-        let elementsPromise;
+        let elementsPromise: Promise<ElementModel[]>;
         if (params.elementTypeId) {
-            elementsPromise =
-                this.rdfStorage.match(
-                    undefined,
-                    PREFIX_FACTORIES.RDF('type'),
-                    params.elementTypeId,
-                ).then(elementTriples => {
-                    return Promise.all(
-                        elementTriples.toArray()
-                            .filter((t, index) => filter(t.subject, index))
-                            .map(
-                                el => this.getElementInfo(el.subject.nominalValue, true),
-                            ),
-                    );
-                });
+            elementsPromise = this.filterByTypeId(params.elementTypeId, limit);
         } else if (params.refElementId && params.refElementLinkId) {
-            const refEl = params.refElementId;
-            const refLink = params.refElementLinkId;
-            if (params.linkDirection === 'in') {
-                elementsPromise =
-                    this.rdfStorage.match(null, refLink, refEl).then(elementTriples => {
-                        return Promise.all(
-                            elementTriples.toArray()
-                                .filter((t, index) => filter(t.subject, index))
-                                .map(el => this.getElementInfo(el.subject.nominalValue, true)),
-                        );
-                    });
-            } else {
-                elementsPromise =
-                    this.rdfStorage.match(refEl, refLink, null).then(elementTriples => {
-                        return Promise.all(
-                            elementTriples.toArray()
-                                .filter((t, index) => filter(t.object, index))
-                                .map(el => this.getElementInfo(el.object.nominalValue, true)),
-                        );
-                    });
-            }
+            elementsPromise = this.filterByRefAndLink(
+                params.refElementId,
+                params.refElementLinkId,
+                params.linkDirection,
+                limit,
+            );
         } else if (params.refElementId) {
-            const refEl = params.refElementId;
-
-            elementsPromise = Promise.all([
-                this.getElementInfo(refEl, true),
-                this.rdfStorage.match(null, null, refEl).then(elementTriples => {
-                    return Promise.all(
-                        elementTriples.toArray()
-                            .filter((t, index) => filter(t.subject, index))
-                            .map(el => this.getElementInfo(el.subject.nominalValue, true)),
-                    );
-                }),
-                this.rdfStorage.match(refEl, null, null).then(elementTriples => {
-                    return Promise.all(
-                        elementTriples.toArray()
-                            .filter((t, index) => filter(t.object, index))
-                            .map(el => this.getElementInfo(el.object.nominalValue, true)),
-                    );
-                }),
-            ]).then(([refElement, inRelations, outRelations]) => {
-                return [refElement].concat(inRelations).concat(outRelations);
-            });
-
+            elementsPromise = this.filterByRef(params.refElementId, limit);
         } else if (params.text) {
-            elementsPromise =
-                this.rdfStorage.match(null, null, null).then(elementTriples => {
-                    const triples = elementTriples.toArray();
-                    const objectPromises = triples.filter((t, index) => filter(t.object, index))
-                            .map(el => this.getElementInfo(el.object.nominalValue, true));
-                    const subjectPromises = triples.filter((t, index) => filter(t.subject, index))
-                            .map(el => this.getElementInfo(el.subject.nominalValue, true));
-                    return Promise.all(objectPromises.concat(subjectPromises));
-                });
+            elementsPromise = this.getAllElements(params.text, limit);
         } else {
-            return Promise.resolve({});
+            return {};
         }
 
-        function filter(node: Node, index: number) {
-            return isNamedNode(node) &&
-                offsetIndex <= index &&
-                index < limitIndex;
-        }
-
-        return elementsPromise.then(elements => {
-            const result: Dictionary<ElementModel> = {};
-            const key = (params.text ? params.text.toLowerCase() : null);
-
-            for (const el of elements) {
-                if (key) {
-                    let acceptableKey = false;
-                    for (const label of el.label.values) {
-                        acceptableKey = acceptableKey || label.text.toLowerCase().indexOf(key) !== -1;
-                        if (acceptableKey) {
-                            break;
-                        }
-                    }
-                    if (acceptableKey) {
-                        result[el.id] = el;
-                    }
-                } else {
-                    result[el.id] = el;
-                }
-            }
-            return result;
-        });
+        const elements = await elementsPromise;
+        return this.filterByKey(params.text, elements);
     };
+
+    private async filterByTypeId(
+        elementTypeId: string, filter: (node: Node, index: number) => boolean,
+    ): Promise<ElementModel[]> {
+        const elementTriples = await this.rdfStorage.match(
+            undefined,
+            PREFIX_FACTORIES.RDF('type'),
+            elementTypeId,
+        );
+
+        return Promise.all(elementTriples.toArray()
+            .filter((t, index) => filter(t.subject, index))
+            .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+        );
+    }
+
+    private async filterByRefAndLink(
+        refEl: string,
+        refLink: string,
+        linkDirection: 'in' | 'out',
+        filter: (node: Node, index: number) => boolean,
+    ): Promise<ElementModel[]> {
+        if (linkDirection === 'in') {
+            const elementTriples = await this.rdfStorage.match(null, refLink, refEl);
+            return Promise.all(
+                elementTriples.toArray().filter((t, index) => filter(t.subject, index))
+                    .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+            );
+        } else {
+            const elementTriples = await this.rdfStorage.match(refEl, refLink, null);
+            return Promise.all(
+                elementTriples.toArray().filter((t, index) => filter(t.object, index))
+                    .map(el => this.getElementInfo(el.object.nominalValue, true)),
+            );
+        }
+    }
+
+    private async filterByRef(
+        refEl: string,
+        filter: (node: Node, index: number) => boolean,
+    ): Promise<ElementModel[]> {
+        const incomingTriples = await this.rdfStorage.match(null, null, refEl);
+        const inRelations = await Promise.all(
+            incomingTriples.toArray().filter((t, index) => filter(t.subject, index))
+                .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+        );
+        const outgoingTriples = await this.rdfStorage.match(refEl, null, null);
+        const outRelations = await Promise.all(
+            outgoingTriples.toArray().filter((t, index) => filter(t.object, index))
+                .map(el => this.getElementInfo(el.object.nominalValue, true)),
+        );
+
+        return inRelations.concat(outRelations);
+    }
+
+    private async getAllElements(
+        text: string,
+        filter: (node: Node, index: number) => boolean,
+    ): Promise<ElementModel[]> {
+        const elementTriples = await this.rdfStorage.match(null, null, null);
+        const promices: Promise<ElementModel>[] = [];
+        for (const tripple of elementTriples.toArray()) {
+            if (filter(tripple.object, promices.length)) {
+                promices.push(this.getElementInfo(tripple.object.nominalValue, true));
+            }
+            if (filter(tripple.subject, promices.length)) {
+                promices.push(this.getElementInfo(tripple.subject.nominalValue, true));
+            }
+        }
+        return Promise.all(promices);
+    }
+
+    private filterByKey(text: string, elements: ElementModel[]): Dictionary<ElementModel> {
+        const result: Dictionary<ElementModel> = {};
+        const key = (text ? text.toLowerCase() : null);
+        if (key) {
+            for (const el of elements) {
+                let acceptableKey = false;
+                for (const label of el.label.values) {
+                    acceptableKey = acceptableKey || label.text.toLowerCase().indexOf(key) !== -1;
+                    if (acceptableKey) { break; }
+                }
+                if (acceptableKey) { result[el.id] = el; }
+            }
+        } else {
+            for (const el of elements) {
+                result[el.id] = el;
+            }
+        }
+        return result;
+    }
 
     private checkElement(id: string): Promise<boolean> {
         return this.dataFetching ?
@@ -588,12 +604,20 @@ export class RDFDataProvider implements DataProvider {
     }
 
     private getTypes(el: string): Promise<string[]> {
-        return this.rdfStorage.match(
-            el,
-            PREFIX_FACTORIES.RDF('type'),
-            undefined,
-        ).then(typeTriples => {
-            return typeTriples.toArray().map(t => t.object.nominalValue);
-        });
+        return this.rdfStorage.match(el, PREFIX_FACTORIES.RDF('type'), null)
+            .then(typeTriples => {
+                return typeTriples.toArray().map(t => t.object.nominalValue);
+            });
+    }
+
+    private createEmptyClass(classIri: string): ClassModel {
+        return {
+            id: classIri,
+            label: {
+                values: [],
+            },
+            count: this.rdfStorage.getTypeCount(classIri),
+            children: [],
+        };
     }
 }
