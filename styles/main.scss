@@ -1,5 +1,3 @@
-@import "misc";
-
 @import "viewUtils/spinner";
 @import "viewUtils/clearfix";
 @import "viewUtils/label";
@@ -11,21 +9,22 @@
 @import "viewUtils/badge";
 @import "viewUtils/progress";
 
-@import "diagram/connectionsMenu";
 @import "diagram/elementLayer";
-@import "diagram/halo";
 @import "diagram/linkLayer";
 @import "diagram/paperArea";
 
 @import "widgets/classTree";
+@import "widgets/connectionsMenu";
+@import "widgets/halo";
 @import "widgets/instancesSearch";
 @import "widgets/linksToolbox";
 @import "widgets/listElementView";
 @import "widgets/progress";
-@import "widgets/toolbar";
 
 @import "workspace/accordion";
 @import "workspace/resizableSidebar";
+@import "workspace/tutorial";
+@import "workspace/toolbar";
 @import "workspace/workspace";
 
 @import "templates/icons";
@@ -35,5 +34,3 @@
 @import "templates/organization";
 @import "templates/person";
 @import "templates/group";
-
-@import "tutorial/tutorial";

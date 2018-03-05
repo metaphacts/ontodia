@@ -7,7 +7,6 @@ import { DiagramModel } from '../diagram/model';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
 
-import { showTutorial, showTutorialIfNotSeen } from '../tutorial/tutorial';
 import { EventObserver } from '../viewUtils/events';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
@@ -17,8 +16,9 @@ import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';
 import { SearchCriteria } from '../widgets/instancesSearch';
-import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from '../widgets/toolbar';
 
+import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from './toolbar';
+import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
 const saveAs = require<(file: Blob, fileName: string) => void>('file-saverjs');

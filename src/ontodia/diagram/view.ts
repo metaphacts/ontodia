@@ -16,11 +16,12 @@ import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/templates';
 
-import { Halo } from '../viewUtils/halo';
-import { ConnectionsMenu, PropertySuggestionHandler } from '../viewUtils/connectionsMenu';
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
+import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
+import { Halo } from '../widgets/halo';
 
 import { Dictionary, ElementModel, LocalizedString } from '../data/model';
+import { hashFnv32a } from '../data/utils';
 
 import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
 import { Size, boundsOf } from './geometry';
@@ -485,27 +486,6 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
     if (!template.renderLink) {
         template.renderLink = () => ({});
     }
-}
-
-/**
- * Calculate a 32 bit FNV-1a hash
- * Found here: https://gist.github.com/vaiorabbit/5657561
- * Ref.: http://isthe.com/chongo/tech/comp/fnv/
- *
- * @param {string} str the input value
- * @param {integer} [seed] optionally pass the hash of the previous chunk
- * @returns {integer}
- */
-function hashFnv32a(str: string, seed = 0x811c9dc5): number {
-    /* tslint:disable:no-bitwise */
-    let i: number, l: number, hval = seed & 0x7fffffff;
-
-    for (i = 0, l = str.length; i < l; i++) {
-        hval ^= str.charCodeAt(i);
-        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
-    }
-    return hval >>> 0;
-    /* tslint:enable:no-bitwise */
 }
 
 export default DiagramView;

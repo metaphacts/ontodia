@@ -1,8 +1,7 @@
 import * as React from 'react';
 
-import { TutorialProps } from '../tutorial/tutorial';
-
 import { DraggableHandle } from './draggableHandle';
+import { TutorialProps } from './tutorial';
 
 export interface Props {
     heading: string;

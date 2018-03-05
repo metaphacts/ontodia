@@ -27,12 +27,11 @@ export * from './ontodia/diagram/view';
 export { Cell, isLinkVertex } from './ontodia/diagram/paper';
 export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
-export * from './ontodia/viewUtils/crossOriginImage';
-export { PropertySuggestionParams, PropertyScore } from './ontodia/viewUtils/connectionsMenu';
 export * from './ontodia/viewUtils/events';
 
-export * from './ontodia/widgets/toolbar';
+export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/connectionsMenu';
 
+export * from './ontodia/workspace/toolbar';
 export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
 
 import * as InternalApi from './internalApi';

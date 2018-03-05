@@ -8,7 +8,7 @@ import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
-import { EventObserver } from './events';
+import { EventObserver } from '../viewUtils/events';
 
 type Label = { values: LocalizedString[] };
 type ConnectionCount = { inCount: number; outCount: number };

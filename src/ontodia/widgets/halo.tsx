@@ -5,7 +5,7 @@ import { boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
-import { AnyListener, Unsubscribe } from './events';
+import { AnyListener, Unsubscribe } from '../viewUtils/events';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
