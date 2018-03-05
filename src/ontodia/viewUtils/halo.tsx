@@ -73,20 +73,24 @@ export class Halo extends React.Component<Props, void> {
         return (
             <div className={CLASS_NAME} style={style}>
                 <div className={`${CLASS_NAME}__delete`}
+                    role='button'
                     title='Remove an element from the diagram'
                     onClick={this.props.onDelete} />
 
                 <div className={`${CLASS_NAME}__navigate ` +
                     `${CLASS_NAME}__navigate--${navigationMenuOpened ? 'closed' : 'open'}`}
+                    role='button'
                     title='Open a dialog to navigate to connected elements'
                     onClick={this.props.onToggleNavigationMenu} />
 
                 <div className={`${CLASS_NAME}__add-to-filter`}
+                    role='button'
                     title='Search for connected elements'
                     onClick={this.props.onAddToFilter} />
 
                 <div className={`${CLASS_NAME}__expand ` +
                     `${CLASS_NAME}__expand--${cellExpanded ? 'closed' : 'open'}`}
+                    role='button'
                     title={`Expand an element to reveal additional properties`}
                     onClick={this.props.onExpand} />
             </div>
