@@ -72,45 +72,30 @@ export class Graph {
     }
 
     removeElement(elementId: string): void {
-        const element = this.elements.delete(elementId);
+        const element = this.elements.get(elementId);
         if (element) {
             const options = {silent: true};
-            for (const link of element.links) {
+            // clone links to prevent modifications during iteration
+            for (const link of [...element.links]) {
                 this.removeLink(link.id, options);
             }
+            this.elements.delete(elementId);
             element.events.offAny(this.onElementEvent);
             this.source.trigger('changeCells', {source: this});
         }
     }
 
-    createLink(params: {
-        data: LinkModel;
-        linkType: FatLinkType;
-        suggestedId?: string;
-        vertices?: Array<{ x: number; y: number; }>;
-    }): DiagramLink | undefined {
-        const {data, linkType, suggestedId, vertices} = params;
-
-        const existingLink = this.findLink(data);
-        if (existingLink) {
-            existingLink.setLayoutOnly(false);
-            return existingLink;
+    addLink(link: DiagramLink): void {
+        if (this.getLink(link.id)) {
+            throw new Error(`Link '${link.id}' already exists.`);
         }
-
-        const shouldBeVisible = linkType.visible
-            && this.getElement(data.sourceId)
-            && this.getElement(data.targetId);
-
-        if (!shouldBeVisible) {
-            return undefined;
+        const existing = this.findLink(link.data);
+        if (existing) { return; }
+        const linkType = this.getLinkType(link.typeId);
+        if (!linkType) {
+            throw new Error(`Link type '${link.typeId}' not found.`);
         }
-
-        const suggestedIdAvailable = Boolean(suggestedId && !this.links.get(suggestedId));
-        const newLinkId = suggestedIdAvailable ? suggestedId : `link_${generate64BitID()}`;
-
-        const link = new DiagramLink({id: newLinkId, data, vertices});
         this.registerLink(link, linkType);
-        return link;
     }
 
     private registerLink(link: DiagramLink, linkType: FatLinkType) {
@@ -219,8 +204,9 @@ export class Graph {
 
 function removeLinkFrom(links: DiagramLink[], model: LinkModel) {
     if (!links) { return; }
-    const index = findLinkIndex(links, model);
-    if (index >= 0) {
+    while (true) {
+        const index = findLinkIndex(links, model);
+        if (index < 0) { break; }
         links.splice(index, 1);
     }
 }

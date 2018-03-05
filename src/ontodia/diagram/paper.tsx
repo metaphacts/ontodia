@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { Component, SVGAttributes, CSSProperties } from 'react';
 
-import { Element as DiagramElement, Link as DiagramLink } from './elements';
+import { Cell, Element as DiagramElement, Link as DiagramLink, LinkVertex } from './elements';
+import { Vector } from './geometry';
 import { LinkLayer, LinkMarkers } from './linkLayer';
 import { DiagramModel } from './model';
 import { DiagramView } from './view';
@@ -18,8 +19,6 @@ export interface PaperProps {
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
     group?: string;
 }
-
-export type Cell = DiagramElement | DiagramLink | LinkVertex;
 
 const CLASS_NAME = 'ontodia-paper';
 
@@ -64,17 +63,6 @@ export class Paper extends Component<PaperProps, void> {
     }
 }
 
-export interface LinkVertex {
-    link: DiagramLink;
-    vertexIndex: number;
-}
-
-export function isLinkVertex(cell: Cell | undefined): cell is LinkVertex {
-    return cell && typeof cell === 'object'
-        && 'link' in cell
-        && 'vertexIndex' in cell;
-}
-
 function findCell(bottom: Element, top: Element, model: DiagramModel): Cell | undefined {
     let target: Node = bottom;
     let vertexIndex: number | undefined = undefined;
@@ -84,7 +72,7 @@ function findCell(bottom: Element, top: Element, model: DiagramModel): Cell | un
                 return model.getElement(target.getAttribute('data-element-id'));
             } else if (target.hasAttribute('data-link-id')) {
                 const link = model.getLinkById(target.getAttribute('data-link-id'));
-                return typeof vertexIndex === 'number' ? {link, vertexIndex} : link;
+                return typeof vertexIndex === 'number' ? new LinkVertex(link, vertexIndex) : link;
             } else if (target.hasAttribute('data-vertex')) {
                 vertexIndex = Number(target.getAttribute('data-vertex'));
             }

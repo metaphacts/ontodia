@@ -1,8 +1,11 @@
 import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
+import * as saveAs from 'file-saverjs';
 
+import { RestoreGeometry } from '../diagram/commands';
 import { Element, Link, FatLinkType } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
+import { Batch, Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView, DiagramViewOptions } from '../diagram/view';
@@ -21,21 +24,20 @@ import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
 
-const saveAs = require<(file: Blob, fileName: string) => void>('file-saverjs');
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
-    onShareDiagram?: (workspace: Workspace) => void;
-    onEditAtMainSite?: (workspace: Workspace) => void;
     onPointerDown?: (e: PointerEvent) => void;
     onPointerMove?: (e: PointerEvent) => void;
     onPointerUp?: (e: PointerUpEvent) => void;
+
     hidePanels?: boolean;
     hideToolbar?: boolean;
     hideHalo?: boolean;
-    isDiagramSaved?: boolean;
+    /** @default true */
     hideTutorial?: boolean;
-    viewOptions?: DiagramViewOptions;
+    /** @default true */
     leftPanelInitiallyOpen?: boolean;
+    /** @default false */
     rightPanelInitiallyOpen?: boolean;
 
     /**
@@ -53,9 +55,13 @@ export interface WorkspaceProps {
      * otherwise language selection will function in uncontrolled mode.
      */
     onLanguageChange?: (language: string) => void;
+
     zoomOptions?: ZoomOptions;
     onZoom?: (scaleX: number, scaleY: number) => void;
+
+    history?: CommandHistory;
     toolbar?: ReactElement<any>;
+    viewOptions?: DiagramViewOptions;
 }
 
 export interface WorkspaceLanguage {
@@ -91,9 +97,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     constructor(props: WorkspaceProps) {
         super(props);
-        this.model = new DiagramModel();
-        const viewOptions = {...this.props.viewOptions, disableDefaultHalo: this.props.hideHalo};
-        this.diagram = new DiagramView(this.model, viewOptions);
+        const {hideHalo, language, history, viewOptions} = this.props;
+        this.model = new DiagramModel(history || new NonRememberingHistory());
+        this.diagram = new DiagramView(this.model, {
+            ...viewOptions,
+            disableDefaultHalo: this.props.hideHalo,
+        });
         this.diagram.setLanguage(this.props.language);
         this.state = {
             isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
@@ -144,7 +153,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, onSaveDiagram} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -219,8 +228,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private forceLayoutElements = (elements: Element[], group?: Element) => {
+        const model = this.model;
+
         for (const element of elements) {
-            const nestedNodes = this.model.elements.filter(el => el.group === element.id);
+            const nestedNodes = model.elements.filter(el => el.group === element.id);
             if (nestedNodes.length > 0) {
                 this.forceLayoutElements(nestedNodes, element);
             }
@@ -237,11 +248,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
         const links: LayoutLink[] = [];
         for (const link of this.model.links) {
-            if (!this.model.isSourceAndTargetVisible(link)) {
+            if (!model.isSourceAndTargetVisible(link)) {
                 continue;
             }
-            const source = this.model.sourceOf(link);
-            const target = this.model.targetOf(link);
+            const source = model.sourceOf(link);
+            const target = model.targetOf(link);
 
             const sourceNode = nodeById[source.id];
             const targetNode = nodeById[target.id];
@@ -261,18 +272,31 @@ export class Workspace extends Component<WorkspaceProps, State> {
         translateToPositiveQuadrant({nodes, padding});
 
         for (const node of nodes) {
-            this.model.getElement(node.id).setPosition({x: node.x, y: node.y});
+            const element = this.model.getElement(node.id);
+            element.setPosition({x: node.x, y: node.y});
         }
     }
 
     forceLayout = () => {
+        const batch = this.model.history.startBatch('Force layout');
+        batch.history.registerToUndo(this.makeSyncAndZoom());
+        batch.history.registerToUndo(RestoreGeometry.capture(this.model));
+
         const elements = this.model.elements.filter(element => element.group === undefined);
         this.forceLayoutElements(elements);
         for (const link of this.model.links) {
             link.setVertices([]);
         }
 
-        this.diagram.performSyncUpdate();
+        batch.history.execute(this.makeSyncAndZoom());
+        batch.store();
+    }
+
+    private makeSyncAndZoom(): Command {
+        return Command.effect('Sync and zoom to fit', () => {
+            this.diagram.performSyncUpdate();
+            this.zoomToFit();
+        });
     }
 
     exportSvg = (fileName?: string) => {
@@ -293,11 +317,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     undo = () => {
-        this.model.undo();
+        this.model.history.undo();
     }
 
     redo = () => {
-        this.model.redo();
+        this.model.history.redo();
     }
 
     zoomBy = (value: number) => {

@@ -10,7 +10,8 @@ import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
-import { Element as DiagramElement, Link as DiagramLink, linkMarkerKey } from './elements';
+import { restoreCapturedLinkGeometry } from './commands';
+import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey } from './elements';
 import {
     Vector, computePolyline, computePolylineLength, getPointAlongPolyline,
 } from './geometry';
@@ -126,34 +127,14 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         this.routings = this.router.route(this.props.view.model);
     }
 
-    private getNestedGroups = (group: string): {[id: string]: string} => {
-        const {view} = this.props;
-        const groups: {[id: string]: string} = {};
-
-        view.model.elements.forEach(element => {
-            if (element.group !== group) { return; }
-
-            if (!groups[group]) {
-                groups[group] = group;
-            }
-
-            const nestedGroups = this.getNestedGroups(element.id);
-
-            Object.keys(nestedGroups).forEach(nestedGroup =>
-                groups[nestedGroup] = nestedGroup
-            );
-        });
-
-        return groups;
-    }
-
     private getLinks = () => {
         const {view, group} = this.props;
         const {links} = view.model;
 
         if (!group) { return links; }
 
-        const nestedGroups = this.getNestedGroups(group);
+        const grouping = computeGrouping(view.model.elements);
+        const nestedElements = computeDeepNestedElements(grouping, group);
 
         return links.filter(link => {
             const {sourceId, targetId} = link;
@@ -166,7 +147,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             const sourceGroup = source.group;
             const targetGroup = target.group;
 
-            return nestedGroups[sourceGroup] || nestedGroups[targetGroup];
+            return nestedElements[sourceGroup] || nestedElements[targetGroup];
         });
     }
 
@@ -185,6 +166,45 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             ))}
         </g>;
     }
+}
+
+interface Grouping {
+    [group: string]: DiagramElement[];
+}
+
+function computeGrouping(elements: ReadonlyArray<DiagramElement>): Grouping {
+    const grouping: Grouping = {};
+
+    for (const element of elements) {
+        const group = element.group;
+        if (typeof group === 'string') {
+            let children = grouping[group];
+            if (!children) {
+                children = [];
+                grouping[group] = children;
+            }
+            children.push(element);
+        }
+    }
+
+    return grouping;
+}
+
+function computeDeepNestedElements(grouping: Grouping, groupId: string): { [id: string]: true } {
+    const deepChildren: { [elementId: string]: true } = {};
+
+    function collectNestedItems(parentId: string) {
+        deepChildren[parentId] = true;
+        const children = grouping[parentId];
+        if (!children) { return; }
+        for (const element of children) {
+            if (element.group !== parentId) { continue; }
+            collectNestedItems(element.id);
+        }
+    }
+
+    collectNestedItems(groupId);
+    return deepChildren;
 }
 
 interface LinkViewProps {
@@ -268,12 +288,22 @@ class LinkView extends Component<LinkViewProps, {}> {
                 <VertexTools key={index * 2 + 1}
                     className={`${LINK_CLASS}__vertex-tools`}
                     model={this.props.model} vertexIndex={index}
-                    vertexRadius={vertexRadius} x={x} y={y} />
+                    vertexRadius={vertexRadius} x={x} y={y}
+                    onRemove={this.onRemoveLinkVertex}
+                />
             );
             index++;
         }
 
         return <g className={`${LINK_CLASS}__vertices`}>{elements}</g>;
+    }
+
+    private onRemoveLinkVertex = (vertex: LinkVertex) => {
+        const model = this.props.view.model;
+        model.history.registerToUndo(
+            restoreCapturedLinkGeometry(vertex.link)
+        );
+        vertex.remove();
     }
 
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
@@ -481,6 +511,7 @@ class VertexTools extends Component<{
     vertexRadius: number;
     x: number;
     y: number;
+    onRemove: (vertex: LinkVertex) => void;
 }, {}> {
     render() {
         const {className, vertexIndex, vertexRadius, x, y} = this.props;
@@ -498,10 +529,8 @@ class VertexTools extends Component<{
         if (e.button !== 0 /* left button */) { return; }
         e.preventDefault();
         e.stopPropagation();
-        const {model, vertexIndex} = this.props;
-        const vertices = [...model.vertices];
-        vertices.splice(vertexIndex, 1);
-        model.setVertices(vertices);
+        const {onRemove, model, vertexIndex} = this.props;
+        onRemove(new LinkVertex(model, vertexIndex));
     }
 }
 

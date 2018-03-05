@@ -9,6 +9,7 @@ import { createStringMap } from '../viewUtils/collections';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
 
+import { setElementExpanded } from './commands';
 import { Element } from './elements';
 import { formatLocalizedLabel } from './model';
 import { DiagramView, RenderingLayer } from './view';
@@ -98,8 +99,9 @@ interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
 }
 
-export const ElementContextTypes = {
-    ontodiaElementContext: PropTypes.anything,
+export type ElementContextWrapper = { ontodiaElement: ElementContext };
+export const ElementContextTypes: { [K in keyof ElementContextWrapper]: any } = {
+    ontodiaElement: PropTypes.anything,
 };
 
 export interface ElementContext {
@@ -110,15 +112,6 @@ export interface ElementContext {
 
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
     static childContextTypes = ElementContextTypes;
-
-    getChildContext() {
-        const ontodiaElementContext: ElementContext = {
-            view: this.props.view,
-            element: this.props.model,
-            scale: this.props.scale,
-        };
-        return {ontodiaElementContext};
-    }
 
     private readonly listener = new EventObserver();
     private disposed = false;
@@ -146,6 +139,15 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         this.state = {
             templateProps: this.templateProps(),
         };
+    }
+
+    getChildContext(): ElementContextWrapper {
+        const ontodiaElement: ElementContext = {
+            view: this.props.view,
+            element: this.props.model,
+            scale: this.props.scale,
+        };
+        return {ontodiaElement};
     }
 
     private rerenderTemplate = () => {
@@ -184,7 +186,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             onDoubleClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
-                model.setExpanded(!model.isExpanded);
+                view.model.history.execute(
+                    setElementExpanded(model, !model.isExpanded)
+                );
             }}
             ref={node => {
                 if (!node) { return; }

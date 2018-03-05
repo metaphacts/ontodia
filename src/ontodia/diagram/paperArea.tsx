@@ -3,15 +3,18 @@ import { ReactElement } from 'react';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
+import { PropTypes } from '../viewUtils/react';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
-import { Element, Link } from './elements';
+import { RestoreGeometry } from './commands';
+import { Element, Link, Cell, LinkVertex } from './elements';
 import { ElementLayer } from './elementLayer';
 import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
+import { Batch } from './history';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
-import { Paper, Cell, LinkVertex, isLinkVertex } from './paper';
+import { Paper } from './paper';
 
 export interface Props {
     view: DiagramView;
@@ -66,6 +69,18 @@ export interface State {
     readonly renderedWidgets?: ReadonlyArray<ReactElement<any>>;
 }
 
+export interface PaperAreaContextWrapper {
+    ontodiaPaperArea: PaperAreaContext;
+}
+
+export interface PaperAreaContext {
+    paperArea: PaperArea;
+}
+
+export const PaperAreaContextTypes: { [K in keyof PaperAreaContextWrapper]: any } = {
+    ontodiaPaperArea: PropTypes.anything,
+};
+
 interface PointerMoveState {
     pointerMoved: boolean;
     target: Cell | undefined;
@@ -74,12 +89,16 @@ interface PointerMoveState {
         readonly pageX: number;
         readonly pageY: number;
     };
+    batch: Batch;
+    restoreGeometry: RestoreGeometry;
 }
 
 const CLASS_NAME = 'ontodia-paper-area';
 const LEFT_MOUSE_BUTTON = 0;
 
 export class PaperArea extends React.Component<Props, State> {
+    static childContextTypes = PaperAreaContextTypes;
+
     private readonly listener = new EventObserver();
     private readonly source = new EventSource<PaperAreaEvents>();
     readonly events: Events<PaperAreaEvents> = this.source;
@@ -123,6 +142,11 @@ export class PaperArea extends React.Component<Props, State> {
             paddingY: 0,
             renderedWidgets: [],
         };
+    }
+
+    getChildContext(): PaperAreaContextWrapper {
+        const ontodiaPaperArea: PaperAreaContext = {paperArea: this};
+        return {ontodiaPaperArea};
     }
 
     render() {
@@ -344,26 +368,29 @@ export class PaperArea extends React.Component<Props, State> {
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
         if (this.movingState) { return; }
 
+        const restore = RestoreGeometry.capture(this.props.view.model);
+        const batch = this.props.view.model.history.startBatch(restore.title);
+
         if (cell && e.button === LEFT_MOUSE_BUTTON) {
             if (cell instanceof Element) {
                 e.preventDefault();
                 this.startMoving(e, cell);
-                this.listenToPointerMove(e, cell);
+                this.listenToPointerMove(e, cell, batch, restore);
             } else if (cell instanceof Link) {
                 e.preventDefault();
                 const location = this.pageToPaperCoords(e.pageX, e.pageY);
-                const vertexIndex = this.createLinkVertex(cell, location);
-                const targetCell = {link: cell, vertexIndex};
-                this.listenToPointerMove(e, targetCell);
+                const linkVertex = this.generateLinkVertex(cell, location);
+                linkVertex.createAt(location);
+                this.listenToPointerMove(e, linkVertex, batch, restore);
                 // prevent click on newly created vertex
                 this.movingState.pointerMoved = true;
-            } else if (isLinkVertex(cell)) {
+            } else if (cell instanceof LinkVertex) {
                 e.preventDefault();
-                this.listenToPointerMove(e, cell);
+                this.listenToPointerMove(e, cell, batch, restore);
             }
         } else {
             e.preventDefault();
-            this.listenToPointerMove(e, undefined);
+            this.listenToPointerMove(e, undefined, batch, restore);
         }
     }
 
@@ -395,8 +422,7 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    /** @returns created vertex index */
-    private createLinkVertex(link: Link, location: Vector) {
+    private generateLinkVertex(link: Link, location: Vector): LinkVertex {
         const previous = link.vertices;
         const vertices = previous ? [...previous] : [];
         const model = this.props.view.model;
@@ -406,12 +432,15 @@ export class PaperArea extends React.Component<Props, State> {
             vertices,
         );
         const segmentIndex = findNearestSegmentIndex(polyline, location);
-        vertices.splice(segmentIndex, 0, location);
-        link.setVertices(vertices);
-        return segmentIndex;
+        return new LinkVertex(link, segmentIndex);
     }
 
-    private listenToPointerMove(event: React.MouseEvent<any>, cell: Cell | undefined) {
+    private listenToPointerMove(
+        event: React.MouseEvent<any>,
+        cell: Cell | undefined,
+        batch: Batch,
+        restoreGeometry: RestoreGeometry,
+    ) {
         if (this.movingState) { return; }
         const panning = cell === undefined && this.shouldStartPanning(event);
         if (panning) {
@@ -423,6 +452,8 @@ export class PaperArea extends React.Component<Props, State> {
             target: cell,
             panning,
             pointerMoved: false,
+            batch,
+            restoreGeometry,
         };
         document.addEventListener('mousemove', this.onPointerMove);
         document.addEventListener('mouseup', this.stopListeningToPointerMove);
@@ -450,19 +481,15 @@ export class PaperArea extends React.Component<Props, State> {
         } else if (target instanceof Element) {
             const {x, y} = this.pageToPaperCoords(e.pageX, e.pageY);
             const {pointerX, pointerY, elementX, elementY} = this.movingElementOrigin;
-            const previous = target.position;
             target.setPosition({
                 x: elementX + x - pointerX,
                 y: elementY + y - pointerY,
             });
             this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning});
             this.props.view.performSyncUpdate();
-        } else if (isLinkVertex(target)) {
-            const {link, vertexIndex} = target;
+        } else if (target instanceof LinkVertex) {
             const location = this.pageToPaperCoords(e.pageX, e.pageY);
-            const vertices = [...link.vertices];
-            vertices.splice(vertexIndex, 1, location);
-            link.setVertices(vertices);
+            target.moveTo(location);
             this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning});
             this.props.view.performSyncUpdate();
         }
@@ -478,13 +505,20 @@ export class PaperArea extends React.Component<Props, State> {
         }
 
         if (e && movingState) {
+            const {pointerMoved, target, batch, restoreGeometry} = movingState;
             this.source.trigger('pointerUp', {
                 source: this,
                 sourceEvent: e,
-                target: movingState.target,
+                target,
                 panning: movingState.panning,
-                triggerAsClick: !movingState.pointerMoved,
+                triggerAsClick: !pointerMoved,
             });
+
+            const restore = restoreGeometry.filterOutUnchanged();
+            if (restore.hasChanges()) {
+                batch.history.registerToUndo(restore);
+            }
+            batch.store();
         }
     }
 

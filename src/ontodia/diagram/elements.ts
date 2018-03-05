@@ -2,7 +2,9 @@ import { ClassModel, ElementModel, LinkModel, LocalizedString, Property } from '
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
-import { Vector, Size } from './geometry';
+import { Vector, Size, isPolylineEqual } from './geometry';
+
+export type Cell = Element | Link | LinkVertex;
 
 export interface ElementEvents {
     changeData: PropertyChange<Element, ElementModel>;
@@ -31,7 +33,7 @@ export class Element {
     private _position: Vector;
     private _size: Size;
     private _expanded: boolean;
-    private _group: string;
+    private _group: string | undefined;
 
     constructor(props: {
         id: string;
@@ -100,8 +102,8 @@ export class Element {
         this.source.trigger('changeExpanded', {source: this, previous});
     }
 
-    get group(): string { return this._group; }
-    setGroup(value: string) {
+    get group(): string | undefined { return this._group; }
+    setGroup(value: string | undefined) {
         const previous = this._group;
         if (previous === value) { return; }
         this._group = value;
@@ -303,23 +305,10 @@ export class Link {
     get vertices(): ReadonlyArray<Vector> { return this._vertices; }
     setVertices(value: ReadonlyArray<Vector>) {
         const previous = this._vertices;
-        if (isVerticesEqual(this._vertices, value)) { return; }
+        if (isPolylineEqual(this._vertices, value)) { return; }
         this._vertices = value;
         this.source.trigger('changeVertices', {source: this, previous});
     }
-}
-
-function isVerticesEqual(left: ReadonlyArray<Vector>, right: ReadonlyArray<Vector>) {
-    if (left === right) { return true; }
-    if (left.length !== right.length) { return false; }
-    for (let i = 0; i < left.length; i++) {
-        const a = left[i];
-        const b = right[i];
-        if (!(a.x === b.x && a.y === b.y)) {
-            return false;
-        }
-    }
-    return true;
 }
 
 export function linkMarkerKey(linkTypeIndex: number, startMarker: boolean) {
@@ -407,5 +396,30 @@ export class FatLinkType {
         if (previous === value) { return; }
         this._isNew = value;
         this.source.trigger('changeIsNew', {source: this, previous});
+    }
+}
+
+export class LinkVertex {
+    constructor(
+        readonly link: Link,
+        readonly vertexIndex: number,
+    ) {}
+
+    createAt(location: Vector) {
+        const vertices = [...this.link.vertices];
+        vertices.splice(this.vertexIndex, 0, location);
+        this.link.setVertices(vertices);
+    }
+
+    moveTo(location: Vector) {
+        const vertices = [...this.link.vertices];
+        vertices.splice(this.vertexIndex, 1, location);
+        this.link.setVertices(vertices);
+    }
+
+    remove() {
+        const vertices = [...this.link.vertices];
+        const [location] = vertices.splice(this.vertexIndex, 1);
+        this.link.setVertices(vertices);
     }
 }
