@@ -385,20 +385,18 @@ export class DiagramModel {
     }
 
     createElement(elementIriOrModel: string | ElementModel, group?: string): Element {
-        const elementIri = rewriteHttpsInIri(
-            typeof elementIriOrModel === 'string'
-                ? elementIriOrModel : elementIriOrModel.id
-        );
+        const elementIri = typeof elementIriOrModel === 'string'
+                ? elementIriOrModel : elementIriOrModel.id;
 
         const elements = this.elements.filter(el => el.iri === elementIri && el.group === group);
         if (elements.length > 0) {
             // usually there should be only one element
             return elements[0];
         }
-        
+
         let data = typeof elementIriOrModel === 'string'
             ? placeholderTemplateFromIri(elementIri) : elementIriOrModel;
-        data = {...data, id: rewriteHttpsInIri(data.id)};
+        data = {...data, id: data.id};
         const element = new Element({id: `element_${generate64BitID()}`, data, group});
         this.graph.addElement(element);
         return element;
@@ -545,8 +543,4 @@ export function formatLocalizedLabel(
     return labels.length > 0
         ? chooseLocalizedText(labels, language).text
         : uri2name(fallbackIri);
-}
-
-export function rewriteHttpsInIri(iri: string): string {
-    return iri.replace(/^https:\/\//ig, 'http://');
 }
