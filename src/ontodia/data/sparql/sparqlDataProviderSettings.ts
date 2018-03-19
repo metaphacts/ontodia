@@ -229,14 +229,8 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             {
                 \${elementIri} ?link ?outObject
-                # this is to prevent some junk appear on diagram,
-                # but can really slow down execution on complex objects
-                #FILTER ISIRI(?outObject)
-                #FILTER EXISTS { ?outObject ?someprop ?someobj }
             } UNION {
                 ?inObject ?link \${elementIri}
-                #FILTER ISIRI(?inObject)
-                #FILTER EXISTS { ?inObject ?someprop ?someobj }
             }
             FILTER regex(STR(?link), "direct")
         }
@@ -339,11 +333,13 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             { 
                 SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
-                    \${elementIri} \${linkId} ?outObject
+                    \${elementIri} \${linkId} ?outObject.
+                    FILTER ISIRI(?outObject)
                 } LIMIT 101
             } {
                 SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
-                ?inObject \${linkId} \${elementIri}
+                    ?inObject \${linkId} \${elementIri}.
+                    FILTER ISIRI(?inObject)
                 } LIMIT 101
             } 
         }
