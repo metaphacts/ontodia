@@ -246,12 +246,20 @@ export class SparqlDataProvider implements DataProvider {
             .then(linkTypeBinding => {
                 const linkTypeIds = getLinksTypeIds(linkTypeBinding);
                 const requests: Promise<LinkCount>[] = [];
+
+                const navigateElementFilterOut = this.options.acceptBlankNodes ?
+                    `FILTER (IsIri(?outObject) || IsBlank(?outObject))` : `FILTER IsIri(?outObject)`;
+                const navigateElementFilterIn = this.options.acceptBlankNodes ?
+                    `FILTER (IsIri(?inObject) || IsBlank(?inObject))` : `FILTER IsIri(?inObject)`;
+
                 for (const id of linkTypeIds) {
                     const q = this.settings.defaultPrefix
                     + resolveTemplate(this.settings.linkTypesStatisticsQuery, {
                         linkId:  escapeIri(id),
                         elementIri,
-                        linkConfigurations: this.formatLinkTypesStatistics(params.elementId, id)
+                        linkConfigurations: this.formatLinkTypesStatistics(params.elementId, id),
+                        navigateElementFilterOut,
+                        navigateElementFilterIn
                     });
                     requests.push(
                         this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistics)
