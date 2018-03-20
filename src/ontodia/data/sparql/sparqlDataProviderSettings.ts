@@ -55,7 +55,10 @@ export interface SparqlDataProviderSettings {
     linkTypesOfQuery: string;
 
     /**
-     * link types of stats returns statistics of a link type for specified resource
+     * link types of stats returns statistics of a link type for specified resource.
+     * To support blank nodes, query should use ?inObject and ?outObject variables for counting incoming and
+     * outgoing links, and provide ${navigateElementFilterOut} and ${navigateElementFilterIn} variables,
+     * see OWLRDFSSettings for example
      */
     linkTypesStatisticsQuery: string;
 
@@ -229,14 +232,8 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             {
                 \${elementIri} ?link ?outObject
-                # this is to prevent some junk appear on diagram,
-                # but can really slow down execution on complex objects
-                #FILTER ISIRI(?outObject)
-                #FILTER EXISTS { ?outObject ?someprop ?someobj }
             } UNION {
                 ?inObject ?link \${elementIri}
-                #FILTER ISIRI(?inObject)
-                #FILTER EXISTS { ?inObject ?someprop ?someobj }
             }
             FILTER regex(STR(?link), "direct")
         }
@@ -339,11 +336,13 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             { 
                 SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
-                    \${elementIri} \${linkId} ?outObject
+                    \${elementIri} \${linkId} ?outObject.
+                    \${navigateElementFilterOut}
                 } LIMIT 101
             } {
                 SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
-                ?inObject \${linkId} \${elementIri}
+                    ?inObject \${linkId} \${elementIri}.
+                    \${navigateElementFilterIn}
                 } LIMIT 101
             } 
         }
