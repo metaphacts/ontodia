@@ -102,3 +102,48 @@
   overflow: hidden;
   font-size: 15px;
 }
+
+.ontodia-standard-icon {
+  background-repeat: no-repeat;
+  background-size: contain;
+  content: '';
+  display: block;
+  height: 26px;
+  width: 26px;
+
+  &-default {
+    font-style: normal;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  &-person::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/person.svg");
+  }
+
+  &-country::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/country.svg");
+  }
+
+  &-organization::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/organization.svg");
+  }
+
+  &-location::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/location.svg");
+  }
+
+  &-object::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/object.svg");
+  }
+
+  &-event::after {
+    @extend .ontodia-standard-icon;
+    background-image: url("../images/icons/event.svg");
+  }
+}
