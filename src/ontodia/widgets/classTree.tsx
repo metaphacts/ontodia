@@ -6,10 +6,8 @@ import { FatClassModel } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { formatLocalizedLabel } from '../diagram/model';
+import { TreeNodes } from './treeNodes';
 
-// bundling jstree to solve issues with multiple jquery packages,
-// when jstree sets itself as plugin to wrong version of jquery
-const jstreeJQuery = require<JQueryStatic>('exports?require("jquery")!jstree');
 require('jstree/dist/themes/default/style.css');
 
 export interface ClassTreeProps {
@@ -17,50 +15,29 @@ export interface ClassTreeProps {
     onClassSelected: (classId: string) => void;
 }
 
-interface ClassTreeElement {
-    id: string;
-    label: ReadonlyArray<LocalizedString>;
-    count: number;
-    children: ClassTreeElement[];
-    a_attr?: {
-        href: string;
-        draggable: boolean;
-    };
-    text?: string;
-    type?: string;
+interface ClassTreeState {
+    roots?: ReadonlyArray<FatClassModel> | undefined;
+    resultIds?: Array<string> | undefined;
+    lang?: Readonly<string> | undefined;
+    searchString?: string | undefined;
 }
 
 const CLASS_NAME = 'ontodia-class-tree';
 
-export class ClassTree extends React.Component<ClassTreeProps, {}> {
+export class ClassTree extends React.Component<ClassTreeProps, ClassTreeState> {
     private readonly listener = new EventObserver();
 
-    private treeRoot: HTMLElement;
-    private jsTree: JQuery;
+    constructor(props: ClassTreeProps) {
+        super(props);
+        this.state = ({ roots: undefined });
+    }
 
     componentDidMount() {
-        this.jsTree.jstree({
-            'plugins': ['types', 'sort', 'search'],
-            'sort': function (this: any, firstClassId: string, secondClassId: string) {
-                const first: ClassTreeElement = this.get_node(firstClassId);
-                const second: ClassTreeElement = this.get_node(secondClassId);
-                return first.text.localeCompare(second.text);
-            },
-            'search': {
-                'case_insensitive': true,
-                'show_only_matches': true,
-            },
+        const { view } = this.props;
+        this.listener.listen(view.events, 'changeLanguage', () => {
+            this.refreshClassTree();
         });
 
-        this.refreshClassTree();
-
-        this.jsTree.on('select_node.jstree', (e, data) => {
-            const {onClassSelected} = this.props;
-            onClassSelected(data.selected[0]);
-        });
-
-        const {view} = this.props;
-        this.listener.listen(view.events, 'changeLanguage', () => this.refreshClassTree());
         this.listener.listen(view.model.events, 'loadingSuccess', () => {
             this.refreshClassTree();
         });
@@ -84,69 +61,77 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
                     </div>
                 </div>
                 <div className={`${CLASS_NAME}__rest`}>
-                    <div ref={this.onTreeRootMount}
-                        className={`${CLASS_NAME}__tree`}>
+                    <div className={`${CLASS_NAME}__tree`}>
+                        <TreeNodes roots={this.state.roots} searchString={this.state.searchString}
+                            resultIds={this.state.resultIds} lang={this.state.lang} />
                     </div>
                 </div>
             </div>
         );
     }
-
     private onSearchKeyup = (e: React.KeyboardEvent<HTMLInputElement>) => {
         const searchString = e.currentTarget.value;
-        this.jsTree.jstree('search', searchString);
+        this.search(searchString);
     }
-
-    private onTreeRootMount = (treeRoot: HTMLElement) => {
-        this.treeRoot = treeRoot;
-        this.jsTree = jstreeJQuery(this.treeRoot);
+    private search = (searchString: string): void => {
+        if (searchString.trim().length === 0) {
+            if (this.state.resultIds) {
+                this.setState({ resultIds: undefined });
+            }
+            return;
+        }
+        let roots: Array<FatClassModel> = this.props.view.model.getClasses().filter(model => !model.base);
+        let result: Array<FatClassModel> = [];
+        for (let i = 0; i < roots.length; i++) {
+            this.deepSearch(searchString, roots[i], result);
+        }
+        this.setState({ resultIds: this.printNodesIds(result), searchString: searchString });
     }
-
-    private refreshClassTree() {
-        const {view} = this.props;
-        const iconMap: Dictionary<{ icon: string }> = {
-            'default': {icon: 'default-tree-icon'},
-            'has-not-children': {icon: 'default-tree-icon'},
-            'has-children': {icon: 'parent-tree-icon'},
-        };
-        const roots = view.model.getClasses().filter(model => !model.base);
-        const mapped = roots.map(root => mapClass(root, view, iconMap));
-
-        const jsTree = this.jsTree.jstree(true);
-        (jsTree as any).settings.core.data = mapped;
-        (jsTree as any).settings.types = iconMap;
-        jsTree.refresh(/* do not show loading indicator */ true, undefined);
+    private deepSearch = (searchString: string, node: FatClassModel, result: Array<FatClassModel>): void => {
+        for (let i = 0; i < node.label.length; i++) {
+            if (node.label[i].text.toUpperCase().indexOf(searchString.toUpperCase()) !== -1) {
+                result.push(node);
+            }
+        }
+        if (node.count.toString().indexOf(searchString.toUpperCase()) !== -1) {
+            result.push(node);
+        }
+        for (let i = 0; i < node.derived.length; i++) {
+            this.deepSearch(searchString, node.derived[i], result);
+        }
     }
-}
-
-function mapClass(
-    classModel: FatClassModel,
-    view: DiagramView,
-    iconMap: Dictionary<{ icon: string }>,
-): ClassTreeElement {
-    const {id, label, count, derived} = classModel;
-    const children = derived.map(child => mapClass(child, view, iconMap));
-    const {icon} = view.getTypeStyle([id]);
-
-    const classLabel = formatLocalizedLabel(id, label, view.getLanguage());
-    const text = classLabel + (typeof count === 'number' ? ` (${count})` : '');
-
-    let iconId: string | undefined;
-    if (icon) {
-        iconId = _.uniqueId('iconId');
-        iconMap[iconId] = {icon: icon + ' ontodia-tree-icon'};
+    private printNodesIds(result: FatClassModel[]): Array<string> {
+        let printNodesIds: Array<string> = result.map(e => e.id);
+        for (let i = 0; i < result.length; i++) {
+            let tmp = result[i];
+            while (tmp.base !== undefined) {
+                printNodesIds.push(tmp.base.id);
+                tmp = tmp.base;
+            }
+        }
+        printNodesIds = this.getUnique(printNodesIds);
+        return printNodesIds;
     }
-    const type = iconId || (children.length > 0 ? 'has-children' : 'has-not-children');
-
-    return {
-        id,
-        label,
-        count,
-        children,
-        a_attr: {href: id, draggable: true},
-        text,
-        type,
+    private getUnique(nodesId: Array<string>) {
+        let unique = [];
+        for (let i = 0; i < nodesId.length; i++) {
+            if (unique.indexOf(nodesId[i]) === -1) {
+                unique.push(nodesId[i]);
+            }
+        }
+        return unique;
     };
+    private refreshClassTree(): void {
+        const { view } = this.props;
+        const roots = view.model.getClasses().filter(model => !model.base);
+        roots.sort((node1, node2) => {
+            if (node1.label[0].text < node2.label[0].text) {
+                return -1;
+            } else {
+                return 1;
+            }
+        });
+        this.setState({ roots: roots, lang: view.getLanguage() });
+    }
 }
-
 export default ClassTree;

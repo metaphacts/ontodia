@@ -14,7 +14,7 @@ import {
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
-import { DefaultElementTemplate, DefaultTemplateBundle } from '../customization/templates';
+import { DefaultOwlTemplate, DefaultTemplateBundle } from '../customization/templates';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
@@ -399,7 +399,7 @@ export class DiagramView {
                 return result;
             }
         }
-        return DefaultElementTemplate;
+        return DefaultOwlTemplate;
     }
 
     public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {

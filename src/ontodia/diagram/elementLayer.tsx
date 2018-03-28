@@ -154,7 +154,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     render(): React.ReactElement<any> {
-        const {model, view, onResize, onRender} = this.props;
+        const { model, view, onResize, onRender } = this.props;
 
         this.typesObserver.observe(model.data.types);
         this.propertyObserver.observe(Object.keys(model.data.properties));
@@ -166,11 +166,16 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         // const angle = model.get('angle') || 0;
         // if (angle) { transform += `rotate(${angle}deg)`; }
+        var divStyle;
+        if ( window.location.href === 'http://localhost:10444/vowl.html' ) {
+             divStyle = {position: 'absolute', transform, borderStyle: 'solid', borderWidth: '1px', borderRadius: '15px', borderColor: 'grey', padding: '5px'}; }
+        else {
+            divStyle = {position: 'absolute', transform}; }
 
         return <div className='ontodia-overlayed-element'
             // set `element-id` to translate mouse events to paper
             data-element-id={model.id}
-            style={{position: 'absolute', transform}}
+            style={divStyle}
             tabIndex={0}
             // resize element when child image loaded
             onLoad={() => onResize(model, findDOMNode(this) as HTMLDivElement)}
@@ -223,7 +228,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     private templateProps(): TemplateProps {
-        const {model, view} = this.props;
+        const { model, view } = this.props;
 
         const types = model.data.types.length > 0
             ? view.getElementTypeString(model.data) : 'Thing';
@@ -245,7 +250,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     private getPropertyTable(): Array<{ id: string; name: string; property: Property; }> {
-        const {model, view} = this.props;
+        const { model, view } = this.props;
 
         if (!model.data.properties) { return []; }
 
