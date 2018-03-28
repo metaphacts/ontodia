@@ -10,9 +10,6 @@ import {
     OWLStatsSettings,
     SparqlQueryMethod,
     DBPediaSettings,
-    OrganizationTemplate,
-    DefaultElementTemplate,
-    PersonTemplate,
     WikidataSettings,
     LinkModel,
  } from '../index';
@@ -102,31 +99,6 @@ class TransformingDataProvider extends SparqlDataProvider {
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
-
-    const diagram = workspace.getDiagram();
-    diagram.registerTemplateResolver(types => {
-        // using default template for country as a temporary solution
-        if (types.indexOf('http://www.wikidata.org/entity/Q6256') !== -1) {
-            return DefaultElementTemplate;
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
-            return OrganizationTemplate;
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
-            return PersonTemplate;
-        } else {
-            return undefined;
-        }
-    });
-    diagram.registerElementStyleResolver(types => {
-        if (types.indexOf('http://www.wikidata.org/entity/Q6256') !== -1) {
-            return {color: '#77ca98', icon: 'ontodia-country-icon'};
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
-            return {color: '#77ca98', icon: 'ontodia-organization-icon'};
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
-            return {color: '#eb7777', icon: 'ontodia-person-icon'};
-        } else {
-            return undefined;
-        }
-    });
 
     const rdfDataProvider = new RDFDataProvider({
         data: [

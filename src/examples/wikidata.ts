@@ -2,8 +2,8 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace, WorkspaceProps, SparqlDataProvider, OrganizationTemplate, DefaultElementTemplate, PersonTemplate,
-    WikidataSettings, SparqlQueryMethod, PropertySuggestionParams, PropertyScore, formatLocalizedLabel
+    Workspace, WorkspaceProps, SparqlDataProvider, WikidataSettings, SparqlQueryMethod, PropertySuggestionParams,
+    PropertyScore, formatLocalizedLabel
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';

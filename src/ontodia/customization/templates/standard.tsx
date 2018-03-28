@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { Component } from 'react';
 
-import { CrossOriginImage } from '../../../viewUtils/crossOriginImage';
-import { TemplateProps } from '../../props';
-import { getProperty } from '../utils';
+import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
+import { TemplateProps } from '../props';
+import { getProperty } from './utils';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
 const CLASS_NAME = 'ontodia-standard-template';
 
-export class DefaultElementTemplate extends Component<TemplateProps, {}> {
+export class StandardTemplate extends Component<TemplateProps, {}> {
     private renderProperties = () => {
         const {propsAsList} = this.props;
 
@@ -91,9 +91,8 @@ export class DefaultElementTemplate extends Component<TemplateProps, {}> {
         if (icon === 'ontodia-default-icon') {
             const label = this.getLabel();
             return (
-                <div className={`ontodia-standard-icon-default ${CLASS_NAME}__thumbnail`}
-                    aria-hidden='true' style={{color}}>
-                    {label.charAt(0)}
+                <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}}>
+                    {label.charAt(0).toUpperCase()}
                 </div>
             );
         }
