@@ -4,7 +4,7 @@ import { StandardTemplate } from './standard';
 
 // temporary solution to show beautiful types in wikidata
 export class OrganizationTemplate extends StandardTemplate {
-    protected getTypesLabel = (): string => {
+    protected getTypesLabel(): string {
         return 'Organization';
     }
 }

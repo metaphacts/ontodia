@@ -10,7 +10,7 @@ const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 const CLASS_NAME = 'ontodia-standard-template';
 
 export class StandardTemplate extends Component<TemplateProps, {}> {
-    private renderProperties = () => {
+    private renderProperties() {
         const {propsAsList} = this.props;
 
         if (!propsAsList.length) {
@@ -37,7 +37,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         );
     }
 
-    private renderPhoto = () => {
+    private renderPhoto() {
         const {color, imgUrl} = this.props;
 
         if (!imgUrl) { return null; }
@@ -54,7 +54,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         );
     }
 
-    private renderIri = () => {
+    private renderIri() {
         const {iri} = this.props;
 
         return (
@@ -72,7 +72,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         );
     }
 
-    private renderThumbnail = () => {
+    private renderThumbnail() {
         const {color, imgUrl, icon} = this.props;
 
         if (imgUrl) {
@@ -100,11 +100,11 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return <div className={`${icon} ${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}} />;
     }
 
-    protected getTypesLabel = (): string => {
+    protected getTypesLabel(): string {
         return this.props.types;
     }
 
-    private getLabel = () => {
+    private getLabel() {
         const {label, props} = this.props;
         return getProperty(props, FOAF_NAME) || label;
     }
