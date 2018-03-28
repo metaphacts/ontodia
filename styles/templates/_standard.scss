@@ -21,20 +21,18 @@
 
   &__body-content {
     flex-grow: 1;
+    min-width: 0;
   }
 
   &__label {
     font-size: 19px;
     white-space: nowrap;
     font-weight: 100;
-    margin-bottom: -7px;
-    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   &__thumbnail {
-    position: inherit !important;
     font-size: 26px;
     margin: 5px 10px;
     flex-grow: 0;

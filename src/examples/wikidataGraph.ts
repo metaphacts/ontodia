@@ -11,26 +11,6 @@ import { onPageLoad } from './common';
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const diagram = workspace.getDiagram();
-    diagram.registerTemplateResolver(types => {
-        if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
-            return OrganizationTemplate;
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
-            return PersonTemplate;
-        } else {
-            return undefined;
-        }
-    });
-    diagram.registerElementStyleResolver(types => {
-        if (types.indexOf('http://www.wikidata.org/entity/Q43229') !== -1) {
-            return {color: '#77ca98', icon: 'ontodia-organization-icon'};
-        } else if (types.indexOf('http://www.wikidata.org/entity/Q5') !== -1) {
-            return {color: '#eb7777', icon: 'ontodia-person-icon'};
-        } else {
-            return undefined;
-        }
-    });
-
     const dataProvider = new SparqlDataProvider({
         endpointUrl: '/sparql-endpoint',
         imagePropertyUris: [

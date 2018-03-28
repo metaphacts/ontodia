@@ -122,7 +122,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             <div title={types} className={`${CLASS_NAME}__type`}>
                                 <div className={`${CLASS_NAME}__type-value`}>{this.getTypesLabel()}</div>
                             </div>
-                            <span className={`${CLASS_NAME}__label`} title={label}>{label}</span>
+                            <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
                     </div>
                 </div>
