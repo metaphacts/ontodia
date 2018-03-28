@@ -20,7 +20,11 @@
     border-top: 1px solid rgb(221, 221, 221);
   }
 
-  .jstree-icon.default-tree-icon::after {
+  &__elements {
+    margin-left: -20px;
+  }
+
+  .default-tree-icon::before {
     content: url("../images/tree-leaf.png");
     max-width: 19px;
     max-height: 19px;
@@ -35,7 +39,7 @@
     vertical-align: middle;
   }
 
-  .jstree-icon.parent-tree-icon::after {
+  .parent-tree-icon::before {
     content: url("../images/tree-leaf-folder.png");
     max-width: 19px;
     max-height: 19px;
