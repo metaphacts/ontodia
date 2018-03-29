@@ -28,8 +28,9 @@
     "_typings-tsc": "./node_modules/.bin/tsc --declaration --outDir dist/dts",
     "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/dts/index.d.ts --name ontodia --out ../ontodia.d.ts",
     "_typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
-    "test": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings",
+    "test": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings && npm run _webpack-examples",
     "_webpack": "./node_modules/.bin/webpack",
+    "_webpack-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",
     "start": "./node_modules/.bin/webpack-dev-server --port 5000 --host 0.0.0.0 --config webpack.demo.config.js --content-base dist/",
     "lint": "./node_modules/.bin/tslint -c tslint.json 'src/**/*.ts' 'src/**/*.tsx' -t stylish"
   },

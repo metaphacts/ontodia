@@ -12,7 +12,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
     const sparqlDataProvider = new SparqlDataProvider({
-        endpointUrl: '/sparql-endpoint',
+        endpointUrl: '/sparql',
         queryMethod: SparqlQueryMethod.GET
     }, OWLStatsSettings);
     const graphBuilder = new SparqlGraphBuilder(sparqlDataProvider);

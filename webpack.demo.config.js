@@ -130,14 +130,20 @@ module.exports = {
         path: path.join(__dirname, 'dist', 'examples'),
         filename: '[name].bundle.js',
         chunkFilename: '[id].chunk.js',
-        publicPath: '/',
+        publicPath: '',
     },
     devtool: '#source-map',
     devServer: {
         proxy: {
-            '/sparql-endpoint**': {
+            '/sparql**': {
                 target: process.env.SPARQL_ENDPOINT,
-                pathRewrite: {'/sparql-endpoint' : ''},
+                pathRewrite: {'/sparql' : ''},
+                changeOrigin: true,
+                secure: false,
+            },
+            '/wikidata**': {
+                target: process.env.WIKIDATA_ENDPOINT || process.env.SPARQL_ENDPOINT,
+                pathRewrite: {'/wikidata' : ''},
                 changeOrigin: true,
                 secure: false,
             },

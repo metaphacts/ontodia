@@ -11,11 +11,10 @@ deploy:
     script: ./travis-dist-deploy.sh
     skip_cleanup: true
     on:
-      tags: true
-  - provider: npm
-    email: yury.emelyanov@gmail.com
-    api_key:
-      secure: IHDFjjurirQCASv7juLCn3fYggThRSoj4IW/PatA2EXb8b9aybivjAX5gZ+x4R/qlVC7YAJ4hNrllKy2OPcFX7EFIQ/2csvyi9jbaC3nIasVpgTO/wLZy6Q079Bd0iYX98wXGBKF6djsYpJbaKHBDLQ615xG4Pcv82vMwDbIXwye4siu6HQ7wbczqxL9xdya8GQuyJ+SfqVdq9EmJRD+3neLk+iw+QkFRwTELHFE/WchpDokidYu0fYIFhswHMP776ga2b76oZUwWzBdlZlXFgEMNnEC4/eyfvcnNXm2cDS0v1woLDJXJXNLLHhdEjc8TaZmP3j0yWGq8EHR9xJwg7YLae5FXtWXmPMq73RRzSzM/oIX+Yab8kH+6/yU5cTCyCIHf49Li0KnrcZVwvXJfj0gEVs+kk6I7oa1FW6khCePYY0Q3SQYoJ6Wx/JAJEUxyNGVWdr8SD3BgWTGZGY3t11wqvyRgWi8GLbZXRwneUBh+iAVKAdxDqwRUHpoxnswpwO3p6HUBMkIsxWZ1QkNmlUaSZzzEDfvo4jiFHmbaPDZHkonvB3qxCWo0hqSsHGNme25iXh1whahEQMT0Ae1HQaLLxmppq1mhtlQKHlCOgxX+mZ35mhCoLelmbV6ZaJ5jchrxML1Ph587Xpd69W30S0ZVsKAfu+40K8nrIz6/x8=
+      branch: ci-publish
+  - provider: script
+    script: ./travis-dist-deploy.sh
+    skip_cleanup: true
     on:
       tags: true
 sudo: false

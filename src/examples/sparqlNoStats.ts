@@ -13,7 +13,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         layoutData,
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
-            endpointUrl: '/sparql-endpoint',
+            endpointUrl: '/sparql',
             imagePropertyUris: [
                 'http://xmlns.com/foaf/0.1/img',
             ],

@@ -1,6 +1,10 @@
 #!/usr/bin/env sh
-#get latest heroku build
 
+# automatic exit from shell on unhandled error
+set -e
+set -o xtrace
+
+# get latest heroku build
 echo \
 'machine git.heroku.com
    login '$HEROKU_API_USER'
@@ -13,16 +17,16 @@ machine api.heroku.com
 git config --global user.email "travis-build@ontodia.org"
 git config --global user.name "Travis CI"
 
-git clone https://git.heroku.com/library-ontodia-org.git $TRAVIS_BUILD_DIR/heroku-app
-cd $TRAVIS_BUILD_DIR/heroku-app
+git clone https://git.heroku.com/library-ontodia-org.git "$TRAVIS_BUILD_DIR"/heroku-app
+cd "$TRAVIS_BUILD_DIR"/heroku-app
 
-#append/rewrite current build under assets. $TRAVIS_BRANCH will hold either branch name or tag name.
+# rewrite current build under assets. $TRAVIS_BRANCH will hold either branch name or tag name.
+[ -e assets/"$TRAVIS_BRANCH" ] && rm -r assets/"$TRAVIS_BRANCH"
+cp -r "$TRAVIS_BUILD_DIR"/dist assets/"$TRAVIS_BRANCH"
+# remove temporary files
+rm -r assets/"$TRAVIS_BRANCH"/dts
 
-mkdir -p assets/$TRAVIS_BRANCH
-cp $TRAVIS_BUILD_DIR/dist/* assets/$TRAVIS_BRANCH
-
-#push it back
-
+# push it back
 git add assets
 git commit -am "Travis update for $TRAVIS_BRANCH"
 git push origin master

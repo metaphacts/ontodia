@@ -39,7 +39,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     workspace.getModel().importLayout({
         layoutData,
         dataProvider: new SparqlDataProvider({
-            endpointUrl: '/sparql-endpoint',
+            endpointUrl: '/sparql',
             imagePropertyUris: [
                 'http://collection.britishmuseum.org/id/ontology/PX_has_main_representation',
                 'http://xmlns.com/foaf/0.1/img',
