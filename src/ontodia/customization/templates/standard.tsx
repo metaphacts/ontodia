@@ -83,6 +83,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                     imageProps={{
                         src: imgUrl,
                         className: `${CLASS_NAME}__thumbnail-image`,
+                        style: {color},
                     }}
                 />
             );

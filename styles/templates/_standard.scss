@@ -35,7 +35,7 @@
   &__thumbnail {
     font-size: 26px;
     margin: 5px 10px;
-    flex-grow: 0;
+    flex-shrink: 0;
     width: 37px;
     height: 44px;
     display: flex;
@@ -44,6 +44,7 @@
   }
 
   &__thumbnail-image {
+    border: 1px solid;
     max-height: 100%;
     max-width: 100%;
   }
