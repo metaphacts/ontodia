@@ -49,6 +49,8 @@ export class DiagramModel {
 
     private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
+    private classTree: FatClassModel[] = [];
+
     constructor() {
         this.classFetching = new DataFetchingThread();
         this.linkFetching = new DataFetchingThread();
@@ -214,6 +216,8 @@ export class DiagramModel {
         for (const root of rootClasses) {
             addClass(undefined, root);
         }
+
+        this.classTree = this.graph.getClasses();
     }
 
     private setLinkSettings(settings: LinkTypeOptions[]) {
@@ -344,7 +348,7 @@ export class DiagramModel {
             this.dataProvider.propertyInfo({propertyIds}).then(propertyModels => {
                 for (const propId in propertyModels) {
                     if (!Object.hasOwnProperty.call(propertyModels, propertyId)) { continue; }
-                    const {id, label} = propertyModels[propertyId];
+                    const {id, label} = propertyModels[propId];
                     const targetProperty = this.graph.getProperty(id);
                     if (targetProperty) {
                         targetProperty.setLabel(label.values);
@@ -356,7 +360,7 @@ export class DiagramModel {
     }
 
     getClasses() {
-        return this.graph.getClasses();
+        return this.classTree;
     }
 
     getClassesById(classId: string): FatClassModel {
@@ -368,6 +372,8 @@ export class DiagramModel {
             id: classId,
             label: [{lang: '', text: uri2name(classId)}],
         });
+        this.graph.addClass(classModel);
+
         this.classFetching.push(classId).then(classIds => {
             if (classIds.length === 0) { return; }
             this.dataProvider.classInfo({classIds}).then(classInfos => {
