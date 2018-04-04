@@ -90,6 +90,7 @@ export interface LinkLabel {
             fill?: string;
             stroke?: string;
             'stroke-width'?: number;
+            'font-family'?: string;
             'font-size'?: string | number;
             'font-weight'?: 'normal' | 'bold' | 'lighter' | 'bolder' | number;
             text?: LocalizedString[];
