@@ -316,6 +316,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.exportSVG().then(svg => {
             const printWindow = window.open('', undefined, 'width=1280,height=720');
             printWindow.document.write(svg);
+            printWindow.document.close();
             printWindow.print();
         });
     }

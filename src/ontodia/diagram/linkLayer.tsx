@@ -355,10 +355,11 @@ function getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
         fill = 'black',
         stroke = 'none',
         'stroke-width': strokeWidth = 0,
+        'font-family': fontFamily = '"Helvetica Neue", "Helvetica", "Arial", sans-serif',
         'font-size': fontSize = 'inherit',
         'font-weight': fontWeight = 'bold',
     } = label.attrs ? label.attrs.text : {};
-    return {fill, stroke, strokeWidth, fontSize, fontWeight};
+    return {fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight};
 }
 
 function getLabelRectAttributes(label: LinkLabelProperties): RectAttributes {
@@ -383,6 +384,7 @@ interface TextAttributes {
     stroke?: string;
     strokeWidth?: number;
     fill?: string;
+    fontFamily?: string;
     fontSize?: string | number;
     fontWeight?: 'normal' | 'bold' | 'lighter' | 'bolder' | number;
 }
