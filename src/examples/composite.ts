@@ -116,7 +116,7 @@ function onWorkspaceMounted(workspace: Workspace) {
     });
 
     const sparqlDataProvider = new TransformingDataProvider({
-        endpointUrl: '/sparql-endpoint',
+        endpointUrl: '/wikidata',
         imagePropertyUris: [
             'http://www.wikidata.org/prop/direct/P18',
             'http://www.wikidata.org/prop/direct/P154',

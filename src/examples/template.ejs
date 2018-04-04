@@ -22,22 +22,25 @@
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
     <body>
         <select class="demoSelector" onchange="window.location.href = this.value">
-            <option value="/">Local</option>
-            <option value="/rdf.html">RDF</option>
-            <option value="/sparql.html">SparQL</option>
-            <option value="/dbpedia.html">DBPedia demo</option>
-            <option value="/sparqlNoStats.html">SparQL with no stats</option>
-            <option value="/sparqlConstruct.html">SparQL Construct</option>
-            <option value="/sparqlRDFGraph.html">SparQL RDF Graph</option>
-            <option value="/sparqlTurtleGraph.html">SparQL Turtle Graph</option>
-            <option value="/styleCustomization.html">Style customization</option>
-            <option value="/wikidata.html">Wikidata</option>
-            <option value="/composite.html">Composite</option>
-            <option value="/wikidataGraph.html">WikidataGraph</option>
-            <option value="/toolbarCustomization.html">Toolbar customization</option>
+            <option value="index.html">Local</option>
+            <option value="rdf.html">RDF</option>
+            <option value="sparql.html">SparQL</option>
+            <option value="dbpedia.html">DBPedia demo</option>
+            <option value="sparqlNoStats.html">SparQL with no stats</option>
+            <option value="sparqlConstruct.html">SparQL Construct</option>
+            <option value="sparqlRDFGraph.html">SparQL RDF Graph</option>
+            <option value="sparqlTurtleGraph.html">SparQL Turtle Graph</option>
+            <option value="styleCustomization.html">Style customization</option>
+            <option value="wikidata.html">Wikidata</option>
+            <option value="composite.html">Composite</option>
+            <option value="wikidataGraph.html">WikidataGraph</option>
+            <option value="toolbarCustomization.html">Toolbar customization</option>
         </select>
         <script>
-            document.querySelector('.demoSelector').value = window.location.pathname;
+            var pathname = window.location.pathname;
+            var separatorIndex = pathname.lastIndexOf('/');
+            var page = separatorIndex >= 0 ? pathname.substring(separatorIndex + 1) : pathname;
+            document.querySelector('.demoSelector').value = page || 'index.html';
         </script>
     </body>
 </html>
