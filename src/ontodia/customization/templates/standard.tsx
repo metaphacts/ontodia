@@ -80,11 +80,9 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                 <CrossOriginImage
                     className={`${CLASS_NAME}__thumbnail`}
                     aria-hidden='true'
-                    style={{color}}
                     imageProps={{
                         src: imgUrl,
                         className: `${CLASS_NAME}__thumbnail-image`,
-                        style: {color},
                     }}
                 />
             );
