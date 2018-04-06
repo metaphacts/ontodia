@@ -235,25 +235,31 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             } UNION {
                 ?inObject ?link \${elementIri}
             }
-            FILTER regex(STR(?link), "direct")
+            ?claim <http://wikiba.se/ontology#directClaim> ?link . 
         }
     `,
     linkTypesStatisticsQuery: `
-        SELECT ?link ?outCount ?inCount
+        SELECT (\${linkId} as ?link) (COUNT(?outObject) AS ?outCount) (COUNT(?inObject) AS ?inCount)
         WHERE {
-            { 
-                SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
-                    \${elementIri} \${linkId} ?outObject
-                    FILTER ISIRI(?outObject)
-                    FILTER EXISTS { ?outObject ?someprop ?someobj }
-                } LIMIT 101
-            } {
-                SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
-                    ?inObject \${linkId} \${elementIri}
-                    FILTER ISIRI(?inObject)
-                    FILTER EXISTS { ?inObject ?someprop ?someobj }
-                } LIMIT 101
-            } 
+            {
+                {
+                    SELECT ?outObject WHERE {
+                        \${elementIri} \${linkId} ?outObject.
+                        FILTER(ISIRI(?outObject))
+                        ?outObject ?someprop ?someobj.
+                    }
+                    LIMIT 101
+                }
+            } UNION {
+                {
+                    SELECT ?inObject WHERE {
+                        ?inObject \${linkId} \${elementIri}.
+                        FILTER(ISIRI(?inObject))
+                        ?inObject ?someprop ?someobj.
+                    }
+                    LIMIT 101
+                }
+            }
         }
     `,
     filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
