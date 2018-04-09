@@ -12,6 +12,8 @@ element in custom templates.
 - Buttons to toggle visiblility of left and right panels.
 - `renderTo` function to create Workspace using compiled in bundled mode library.
 - Separate library bundle for IE11 compatibility (when compile with SUPPORT_IE flag).
+- Command history support with `CommandHistory` (commands should be explicitly
+batched into commands).
 
 ### Changed
 - **[Breaking]** Replaced JointJS rendering engine with our own React-based

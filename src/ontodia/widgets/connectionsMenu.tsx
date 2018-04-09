@@ -1,11 +1,13 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
+import { changeLinkTypeVisibility } from '../diagram/commands';
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
+import { Command } from '../diagram/history';
 import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { formatLocalizedLabel } from '../diagram/model';
+import { restoreLinksBetweenElements, formatLocalizedLabel } from '../diagram/model';
 
 import { Dictionary, LocalizedString, ElementModel } from '../data/model';
 import { EventObserver } from '../viewUtils/events';
@@ -165,6 +167,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
 
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
         const {view, target, onClose} = this.props;
+        const batch = view.model.history.startBatch();
 
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
         const GRID_STEP = 100;
@@ -174,11 +177,10 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
         let xi = 0;
         let yi = 0;
 
-        const addedElements: Element[] = [];
+        const addedElementIris: string[] = [];
         selectedObjects.forEach(el => {
-            let element = view.model.getElement(el.model.id);
-            if (!element) { element = view.model.createElement(el.model); }
-            addedElements.push(element);
+            const element = view.model.createElement(el.model);
+            addedElementIris.push(element.iri);
 
             if (xi > positionBoxSide) {
                 xi = 0;
@@ -195,16 +197,23 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void>
                 y: startY + (yi) * GRID_STEP,
             });
         });
-        const link = this.linkDataChunk ? this.linkDataChunk.link : undefined;
-        const hasChosenLinkType = this.linkDataChunk && link !== ALL_RELATED_ELEMENTS_LINK;
-        if (hasChosenLinkType && !link.visible) {
-            // prevent loading here because of .requestLinksOfType() call
-            link.setVisibility({visible: true, showLabel: true, preventLoading: true});
+
+        const linkType = this.linkDataChunk ? this.linkDataChunk.link : undefined;
+
+        const hasChosenLinkType = this.linkDataChunk && linkType !== ALL_RELATED_ELEMENTS_LINK;
+        if (hasChosenLinkType && !linkType.visible) {
+            batch.history.execute(changeLinkTypeVisibility({
+                linkType,
+                visible: true,
+                showLabel: true,
+                preventLoading: true,
+            }));
         }
 
-        view.model.requestElementData(addedElements);
-        view.model.requestLinksOfType();
-
+        batch.history.execute(
+            restoreLinksBetweenElements(view.model, addedElementIris)
+        );
+        batch.store();
         onClose();
     }
 

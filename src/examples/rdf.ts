@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, RDFDataProvider } from '../index';
+import { Workspace, WorkspaceProps, RDFDataProvider, GroupTemplate } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -48,6 +48,18 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     viewOptions: {
         onIriClick: iri => window.open(iri),
+        groupBy: [
+            {linkType: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', linkDirection: 'in'},
+        ],
+        templatesResolvers: [
+            types => {
+                if (types.length === 0) {
+                    // use group template only for classes
+                    return GroupTemplate;
+                }
+                return undefined;
+            }
+        ],
     }
 };
 

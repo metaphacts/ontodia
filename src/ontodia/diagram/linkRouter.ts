@@ -1,7 +1,7 @@
 import { LinkRouter, RoutedLinks, Vertex } from '../customization/props';
 import { DiagramModel } from './model';
 import { Link as DiagramLink, Element as DiagramElement } from './elements';
-import { Vector, normalize } from './geometry';
+import { Vector } from './geometry';
 
 export class DefaultLinkRouter implements LinkRouter {
     constructor(private gap = 20) {}
@@ -66,7 +66,7 @@ export class DefaultLinkRouter implements LinkRouter {
             x: (sourceCenter.x + targetCenter.x) / 2,
             y: (sourceCenter.y + targetCenter.y) / 2,
         };
-        const direction = normalize({
+        const direction = Vector.normalize({
             x: targetCenter.x - sourceCenter.x,
             y: targetCenter.y - sourceCenter.y,
         });

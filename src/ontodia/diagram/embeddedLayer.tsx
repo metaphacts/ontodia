@@ -1,9 +1,10 @@
 import * as React from 'react';
 
 import { Dictionary, ElementModel } from '../data/model';
-import { Paper, Cell } from './paper';
-import { Element } from './elements';
-import { ElementLayer, ElementContext, ElementContextTypes } from './elementLayer';
+import { Paper } from './paper';
+import { PaperAreaContextTypes, PaperAreaContextWrapper } from './paperArea';
+import { Element, Cell } from './elements';
+import { ElementLayer, ElementContextWrapper, ElementContextTypes } from './elementLayer';
 import { EventObserver } from '../viewUtils/events';
 import {
     LayoutNode,
@@ -13,6 +14,8 @@ import {
     removeOverlaps,
     translateToPositiveQuadrant,
 } from '../viewUtils/layout';
+
+import { Vector } from './geometry';
 import { getContentFittingBox } from './paperArea';
 import { DiagramView } from './view';
 
@@ -24,11 +27,9 @@ export interface State {
 }
 
 export class EmbeddedLayer extends React.Component<{}, State> {
-    static contextTypes = ElementContextTypes;
+    static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
 
-    context: {
-        ontodiaElementContext: ElementContext;
-    };
+    context: ElementContextWrapper & PaperAreaContextWrapper;
 
     private readonly listener = new EventObserver();
 
@@ -37,6 +38,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
 
     private isApplyingParentMove = false;
     private isNestedElementMoving = false;
+    private previousPositions: Array<{ id: string; position: Vector; }> = [];
 
     constructor(props: {}) {
         super(props);
@@ -44,9 +46,8 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     componentDidMount() {
-        const {element} = this.context.ontodiaElementContext;
-
-        document.addEventListener('mouseup', this.onMouseUp);
+        const {element} = this.context.ontodiaElement;
+        const {paperArea} = this.context.ontodiaPaperArea;
 
         this.listener.listen(element.events, 'changePosition', () => {
             if (this.isNestedElementMoving) { return; }
@@ -59,6 +60,10 @@ export class EmbeddedLayer extends React.Component<{}, State> {
             this.moveNestedElements(diffX, diffY);
 
             this.setState({offsetX, offsetY});
+        });
+
+        this.listener.listen(paperArea.events, 'pointerUp', e => {
+            this.isNestedElementMoving = false;
         });
 
         const nestedElements = this.getNestedElements();
@@ -78,18 +83,13 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     componentWillUnmount() {
-        document.removeEventListener('mouseup', this.onMouseUp);
         this.listener.stopListening();
         this.removeElements();
         this.setState({paperWidth: 0, paperHeight: 0, offsetX: 0, offsetY: 0});
     }
 
-    private onMouseUp = () => {
-        this.isNestedElementMoving = false;
-    }
-
     private getNestedElements = () => {
-        const {view, element} = this.context.ontodiaElementContext;
+        const {view, element} = this.context.ontodiaElement;
         return view.model.elements.filter(el => el.group === element.id);
     }
 
@@ -99,23 +99,29 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private removeElements = () => {
-        const {view} = this.context.ontodiaElementContext;
+        const {view} = this.context.ontodiaElement;
+        const batch = view.model.history.startBatch();
         for (const element of this.getNestedElements()) {
             view.model.removeElement(element.id);
         }
+        batch.discard();
     }
 
     private loadEmbeddedElements = () => {
-        const {view, element} = this.context.ontodiaElementContext;
+        const {view, element} = this.context.ontodiaElement;
 
         view.loadEmbeddedElements(element.iri).then(models => {
-            const elements = Object.keys(models)
-                .map(key => view.model.createElement(models[key], element.id));
+            const batch = view.model.history.startBatch();
+            const elementIris = Object.keys(models);
+            const elements = elementIris.map(
+                key => view.model.createElement(models[key], element.id)
+            );
+            batch.discard();
 
             elements.forEach(this.listenNestedElement);
 
             Promise.all([
-                view.model.requestElementData(elements),
+                view.model.requestElementData(elementIris),
                 view.model.requestLinksOfType(),
             ]).then(() => {
                 view.performSyncUpdate();
@@ -128,7 +134,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private getOffset = (): { offsetX: number; offsetY: number; } => {
-        const {element} = this.context.ontodiaElementContext;
+        const {element} = this.context.ontodiaElement;
         const {x: elementX, y: elementY} = element.position;
 
         const offsetX = elementX + this.layerOffsetLeft;
@@ -159,7 +165,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     private recomputeSelfBounds = () => {
         if (this.isApplyingParentMove) { return; }
 
-        const {element} = this.context.ontodiaElementContext;
+        const {element} = this.context.ontodiaElement;
         const {x: offsetX, y: offsetY, width: paperWidth, height: paperHeight} = this.getContentFittingBox();
 
         if (this.isNestedElementMoving) {
@@ -174,7 +180,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private forceLayout = () => {
-        const {view} = this.context.ontodiaElementContext;
+        const {view} = this.context.ontodiaElement;
         const elements = this.getNestedElements();
 
         const nodeById: { [id: string]: LayoutNode } = {};
@@ -241,7 +247,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private calculateOffset = (layer: HTMLElement): { left: number; top: number; } => {
-        const {scale} = this.context.ontodiaElementContext;
+        const {scale} = this.context.ontodiaElement;
         const parent = this.getParentElement(layer);
         const {left, top} = layer.getBoundingClientRect();
         const {left: parentLeft, top: parentTop} = parent.getBoundingClientRect();
@@ -259,7 +265,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     render() {
-        const {view, element, scale} = this.context.ontodiaElementContext;
+        const {view, element, scale} = this.context.ontodiaElement;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
         const style = {

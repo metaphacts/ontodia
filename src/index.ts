@@ -19,12 +19,13 @@ export * from './ontodia/data/sparql/sparqlDataProviderSettings';
 export * from './ontodia/data/sparql/graphBuilder';
 export * from './ontodia/data/sparql/sparqlGraphBuilder';
 
-export { Element, ElementEvents, Link, LinkEvents } from './ontodia/diagram/elements';
-export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
+export { RestoreGeometry } from './ontodia/diagram/commands';
+export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell } from './ontodia/diagram/elements';
 export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
+export * from './ontodia/diagram/history';
+export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
-export { Cell, isLinkVertex } from './ontodia/diagram/paper';
 export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/viewUtils/events';

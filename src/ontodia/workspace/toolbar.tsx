@@ -25,8 +25,6 @@ export interface ToolbarProps {
 const CLASS_NAME = 'ontodia-toolbar';
 
 export class DefaultToolbar extends React.Component<ToolbarProps, void> {
-    private downloadImageLink: HTMLAnchorElement;
-
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value;
         this.props.onChangeLanguage(value);
@@ -147,8 +145,6 @@ export class DefaultToolbar extends React.Component<ToolbarProps, void> {
                     {this.renderBtnHelp()}
                 </div>
                 {this.renderButtonsTogglePanels()}
-                <a href='#' ref={link => { this.downloadImageLink = link; }}
-                   style={{display: 'none', visibility: 'collapse'}}/>
             </div>
         );
     }
