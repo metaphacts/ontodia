@@ -13,7 +13,7 @@
     border-radius: 3px 10px 10px 3px;
     border-left: 1px solid;
     padding: 3px 12px 3px 0;
-    background: white;
+    background: #fafaf9;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -28,13 +28,11 @@
   &__label {
     font-size: 19px;
     white-space: nowrap;
-    font-weight: 100;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   &__thumbnail {
-    border: 1px solid;
     font-size: 26px;
     margin: 5px 10px;
     flex-shrink: 0;
@@ -66,7 +64,6 @@
     font-size: 11px;
     font-style: italic;
     color: #999;
-    font-weight: 100;
     display: flex;
   }
 
@@ -85,7 +82,6 @@
 
   &__iri-key {
     font-size: 12px;
-    font-weight: 100;
     margin-right: 4px;
     color: #b6b6b6;
   }
@@ -108,7 +104,6 @@
 
   &__properties {
     font-size: 15px;
-    font-weight: 100;
     max-height: 200px;
     overflow-y: scroll;
     overflow-x: hidden;
