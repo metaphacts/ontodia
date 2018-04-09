@@ -246,7 +246,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
                     SELECT ?outObject WHERE {
                         \${elementIri} \${linkId} ?outObject.
                         FILTER(ISIRI(?outObject))
-                        ?outObject ?someprop ?someobj.
+                        FILTER(EXISTS { ?outObject ?someprop ?someobj. })
                     }
                     LIMIT 101
                 }
@@ -255,14 +255,14 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
                     SELECT ?inObject WHERE {
                         ?inObject \${linkId} \${elementIri}.
                         FILTER(ISIRI(?inObject))
-                        ?inObject ?someprop ?someobj.
+                        FILTER(EXISTS { ?inObject ?someprop ?someobj. })
                     }
                     LIMIT 101
                 }
             }
         }
     `,
-    filterRefElementLinkPattern: 'FILTER regex(STR(?link), "direct")',
+    filterRefElementLinkPattern: '?claim <http://wikiba.se/ontology#directClaim> ?link .',
     filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* \${elementTypeIri} . ${'\n'}`,
     filterAdditionalRestriction: `FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
