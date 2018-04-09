@@ -393,6 +393,9 @@ export class SparqlDataProvider implements DataProvider {
             if (params.direction !== 'out') {
                 part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
             }
+            if (this.settings.filterRefElementLinkPattern.length) {
+                part += `\n${this.settings.filterRefElementLinkPattern}`;
+            }
             return part;
         } else {
             // use link configuration in filter. If you need more or somehow mix it with rdf predicates, override
