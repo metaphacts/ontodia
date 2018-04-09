@@ -393,7 +393,7 @@ export class SparqlDataProvider implements DataProvider {
             if (params.direction !== 'out') {
                 part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
             }
-            if (this.settings.filterRefElementLinkPattern.length) {
+            if (this.settings.filterRefElementLinkPattern.length && !linkId) {
                 part += `\n${this.settings.filterRefElementLinkPattern}`;
             }
             return part;
