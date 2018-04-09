@@ -30,6 +30,7 @@ export class ElementLayer extends React.Component<Props, void> {
     private readonly listener = new EventObserver();
 
     private batch = createStringMap<BatchUpdateItem>();
+    private renderElements = new Debouncer();
     private updateSizes = new Debouncer();
 
     private layer: HTMLDivElement;
@@ -52,10 +53,15 @@ export class ElementLayer extends React.Component<Props, void> {
 
     componentDidMount() {
         const {view} = this.props;
-        this.listener.listen(view.model.events, 'changeCells', () => this.forceUpdate());
+        this.listener.listen(view.model.events, 'changeCells', () => {
+            this.renderElements.call(this.performRendering);
+        });
         this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
-            if (layer !== RenderingLayer.ElementSize) { return; }
-            this.updateSizes.runSynchronously();
+            if (layer === RenderingLayer.Element) {
+                this.renderElements.runSynchronously();
+            } else if (layer === RenderingLayer.ElementSize) {
+                this.updateSizes.runSynchronously();
+            }
         });
     }
 
@@ -65,7 +71,12 @@ export class ElementLayer extends React.Component<Props, void> {
 
     componentWillUnmount() {
         this.listener.stopListening();
+        this.renderElements.dispose();
         this.updateSizes.dispose();
+    }
+
+    private performRendering = () => {
+        this.forceUpdate();
     }
 
     private updateElementSize = (element: Element, node: HTMLDivElement) => {
