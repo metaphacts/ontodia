@@ -243,19 +243,19 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             {
                 {
-                    SELECT ?outObject WHERE {
+                    SELECT DISTINCT ?outObject WHERE {
                         \${elementIri} \${linkId} ?outObject.
                         FILTER(ISIRI(?outObject))
-                        FILTER(EXISTS { ?outObject ?someprop ?someobj. })
+                        ?outObject ?someprop ?someobj.
                     }
                     LIMIT 101
                 }
             } UNION {
                 {
-                    SELECT ?inObject WHERE {
+                    SELECT DISTINCT ?inObject WHERE {
                         ?inObject \${linkId} \${elementIri}.
                         FILTER(ISIRI(?inObject))
-                        FILTER(EXISTS { ?inObject ?someprop ?someobj. })
+                        ?inObject ?someprop ?someobj.
                     }
                     LIMIT 101
                 }
