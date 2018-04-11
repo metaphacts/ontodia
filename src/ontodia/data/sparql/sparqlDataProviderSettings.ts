@@ -210,12 +210,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         } WHERE {
             VALUES (?inst) {\${ids}}
             OPTIONAL {
-                {
-                    ?inst wdt:P31 ?class .
-                } UNION {
-                    ?inst wdt:P31 ?realClass .
-                    ?realClass wdt:P279 | wdt:P279/wdt:P279 ?class .
-                }
+                ?inst wdt:P31 ?class .
             }
             OPTIONAL {?inst rdfs:label ?label}
             OPTIONAL {
