@@ -40,7 +40,7 @@ export class ElementLayer extends React.Component<Props, void> {
         const models = view.model.elements.filter(model => model.group === group);
 
         return <div className='ontodia-element-layer'
-            ref={layer => this.layer = layer}
+            ref={this.onMount}
             style={style}>
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
@@ -49,6 +49,10 @@ export class ElementLayer extends React.Component<Props, void> {
                 onResize={this.updateElementSize}
                 onRender={this.updateElementSize} />)}
         </div>;
+    }
+
+    private onMount = (layer: HTMLDivElement) => {
+        this.layer = layer;
     }
 
     componentDidMount() {
@@ -185,28 +189,42 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             data-element-id={model.id}
             style={{position: 'absolute', transform}}
             tabIndex={0}
+            ref={this.onMount}
             // resize element when child image loaded
-            onLoad={() => onResize(model, findDOMNode(this) as HTMLDivElement)}
-            onError={() => onResize(model, findDOMNode(this) as HTMLDivElement)}
-            onClick={e => {
-                if (e.target instanceof HTMLElement && e.target.localName === 'a') {
-                    const anchor = e.target as HTMLAnchorElement;
-                    view.onIriClick(anchor.href, model, e);
-                }
-            }}
-            onDoubleClick={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                view.model.history.execute(
-                    setElementExpanded(model, !model.isExpanded)
-                );
-            }}
-            ref={node => {
-                if (!node) { return; }
-                onRender(model, node);
-            }}>
+            onLoad={this.onLoadOrErrorEvent}
+            onError={this.onLoadOrErrorEvent}
+            onClick={this.onClick}
+            onDoubleClick={this.onDoubleClick}>
             {React.createElement(template, this.state.templateProps)}
         </div>;
+    }
+
+    private onMount = (node: HTMLDivElement | undefined) => {
+        if (!node) { return; }
+        const {onRender, model} = this.props;
+        onRender(model, node);
+    }
+
+    private onLoadOrErrorEvent = () => {
+        const {onResize, model} = this.props;
+        onResize(model, findDOMNode(this) as HTMLDivElement);
+    }
+
+    private onClick = (e: React.MouseEvent<EventTarget>) => {
+        if (e.target instanceof HTMLElement && e.target.localName === 'a') {
+            const anchor = e.target as HTMLAnchorElement;
+            const {view, model} = this.props;
+            view.onIriClick(anchor.href, model, e);
+        }
+    }
+
+    private onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const {view, model} = this.props;
+        view.model.history.execute(
+            setElementExpanded(model, !model.isExpanded)
+        );
     }
 
     componentDidMount() {
