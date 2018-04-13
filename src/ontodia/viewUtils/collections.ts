@@ -13,6 +13,13 @@ export function hasOwnProperty(collection: object, key: string | number) {
     return Object.prototype.hasOwnProperty.call(collection, key);
 }
 
+export function isEmptyMap(map: object) {
+    for (const key in map) {
+        if (hasOwnProperty(map, key)) { return false; }
+    }
+    return true;
+}
+
 export class OrderedMap<V> {
     private mapping: { [key: string]: V };
     private ordered: V[];
