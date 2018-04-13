@@ -6,6 +6,7 @@ import { FilterParams } from '../data/provider';
 import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
 import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
+import { isEmptyMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
 import { ListElementView } from './listElementView';
@@ -211,6 +212,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     componentDidMount() {
         this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
         this.listener.listen(this.props.view.model.events, 'changeCells', () => {
+            if (isEmptyMap(this.state.selectedItems)) { return; }
             const selectedItems: Dictionary<true> = {...this.state.selectedItems};
             for (const element of this.props.view.model.elements) {
                 if (element.group === undefined && selectedItems[element.iri]) {
