@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { Component, HTMLAttributes } from 'react';
+import { Component, HTMLProps, ImgHTMLAttributes } from 'react';
 
-export interface CrossOriginImageProps extends HTMLAttributes<HTMLDivElement> {
-    imageProps: HTMLAttributes<HTMLImageElement>;
+export interface CrossOriginImageProps extends HTMLProps<HTMLDivElement> {
+    imageProps: ImgHTMLAttributes<HTMLImageElement>;
 }
 
 export class CrossOriginImage extends Component<CrossOriginImageProps, {}> {

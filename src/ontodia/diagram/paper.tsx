@@ -22,7 +22,7 @@ export interface PaperProps {
 
 const CLASS_NAME = 'ontodia-paper';
 
-export class Paper extends Component<PaperProps, void> {
+export class Paper extends Component<PaperProps, {}> {
     render() {
         const {width, height, originX, originY, scale, paddingX, paddingY} = this.props;
         const scaledWidth = width * scale;

@@ -21,7 +21,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-accordion-item';
 
-export class AccordionItem extends React.Component<Props, void> {
+export class AccordionItem extends React.Component<Props, {}> {
     private _element: HTMLDivElement;
     private _header: HTMLDivElement;
 

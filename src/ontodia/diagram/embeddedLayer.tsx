@@ -268,7 +268,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
         const {view, element, scale} = this.context.ontodiaElement;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
-        const style = {
+        const style: React.CSSProperties = {
             position: 'absolute', left: -offsetX, top: -offsetY,
         };
 

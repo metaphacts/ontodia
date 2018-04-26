@@ -6,7 +6,7 @@ export interface Props extends React.HTMLAttributes<HTMLDivElement> {
     onEndDragHandle?: (e: MouseEvent) => void;
 }
 
-export class DraggableHandle extends React.Component<Props, void> {
+export class DraggableHandle extends React.Component<Props, {}> {
     private isHoldingMouse = false;
     private originPageX: number;
     private originPageY: number;

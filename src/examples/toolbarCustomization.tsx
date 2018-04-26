@@ -10,7 +10,7 @@ export interface Props extends ToolbarProps {
 
 const CLASS_NAME = 'ontodia-toolbar';
 
-export class Toolbar extends React.Component<Props, void> {
+export class Toolbar extends React.Component<Props, {}> {
     render() {
         return (
             <div className={CLASS_NAME}>

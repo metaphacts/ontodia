@@ -68,8 +68,9 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
         return <div className={className} data-state={progressState}>
             <div className='ontodia-progress'>
-                <div className='ontodia-progress-bar ontodia-progress-bar-striped active' role='progressbar'
-                    aria-valuemin='0' aria-valuemax='100' aria-valuenow='100'
+                <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
+                    role='progressbar'
+                    aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
                     style={{width: '100%'}}>
                 </div>
             </div>

@@ -857,7 +857,7 @@ declare module 'webcola' {
         kick(): void;
         drag: () => any;
         constructor();
-        on(eventType: EventType | string, listener: () => void): D3StyleLayoutAdaptor;
+        on(eventType: EventType | string, listener: (event: Event) => void): D3StyleLayoutAdaptor;
     }
     /**
      * provides an interface for use with d3:
