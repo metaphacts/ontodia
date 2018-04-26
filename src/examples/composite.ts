@@ -102,10 +102,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const rdfDataProvider = new RDFDataProvider({
         data: [
-            {
-                content: data,
-                type: 'text/turtle',
-            },
+            {content: data, type: 'text/turtle'}
         ],
         dataFetching: true,
         parsers: {
@@ -123,29 +120,45 @@ function onWorkspaceMounted(workspace: Workspace) {
         ],
         queryMethod: SparqlQueryMethod.POST,
     }, {...WikidataSettings, ...{
-        linkTypesOfQuery: `
-        SELECT ?link (count(distinct ?outObject) as ?outCount) (count(distinct ?inObject) as ?inCount)
+        linkTypesOfQuery: `SELECT DISTINCT ?link
         WHERE {
-            
-            { \${elementIri} ?link ?outObject .
-              # this is to prevent some junk appear on diagram,
-              # but can really slow down execution on complex objects
-              FILTER ISIRI(?outObject)
-              FILTER EXISTS { ?outObject ?someprop ?someobj }
-            }
-            UNION
-            { ?inObject ?link \${elementIri} .
-              FILTER ISIRI(?inObject)
-              FILTER EXISTS { ?inObject ?someprop ?someobj }
-            }
-            UNION 
             {
-              $\{elementIri} ?link ?outObject.
-              ?property <http://wikiba.se/ontology#directClaim> ?link.
+                \${elementIri} ?link ?outObject
+                # this is to prevent some junk appear on diagram,
+                # but can really slow down execution on complex objects
+                #FILTER ISIRI(?outObject)
+                #FILTER EXISTS { ?outObject ?someprop ?someobj }
+            } UNION {
+                ?inObject ?link \${elementIri}
+                #FILTER ISIRI(?inObject)
+                #FILTER EXISTS { ?inObject ?someprop ?someobj }
+            } UNION {
+                $\{elementIri} ?link ?outObject.
+                ?property <http://wikiba.se/ontology#directClaim> ?link.
             }
             FILTER regex(STR(?link), "direct")
-        } GROUP BY ?link
-    `,
+        }`,
+        linkTypesStatisticsQuery: `SELECT ?link ?outCount ?inCount
+        WHERE {
+            {{
+                SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
+                    \${elementIri} \${linkId} ?outObject
+                    FILTER ISIRI(?outObject)
+                    FILTER EXISTS { ?outObject ?someprop ?someobj }
+                } LIMIT 101
+            } {
+                SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
+                    ?inObject \${linkId} \${elementIri}
+                    FILTER ISIRI(?inObject)
+                    FILTER EXISTS { ?inObject ?someprop ?someobj }
+                } LIMIT 101
+            }} UNION {
+                SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) (0 as ?inCount) WHERE {
+                    $\{elementIri} \${linkId} ?outObject.
+                    ?property <http://wikiba.se/ontology#directClaim> \${linkId}.
+                } LIMIT 101
+            }
+        }`,
         filterAdditionalRestriction: `FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
 `,
@@ -155,12 +168,13 @@ function onWorkspaceMounted(workspace: Workspace) {
     workspace.getModel().importLayout({
         layoutData,
         validateLinks: true,
-        dataProvider: new CompositeDataProvider([
-            { name: 'SparQL Data Provider', dataProvider: sparqlDataProvider },
-            { name: 'RDF Data Provider', dataProvider: rdfDataProvider },
-        ], {
-            mergeMode: 'sequentialFetching',
-        }),
+        dataProvider: new CompositeDataProvider(
+            [
+                {name: 'SPARQL Provider', dataProvider: sparqlDataProvider},
+                {name: 'RDF Provider', dataProvider: rdfDataProvider},
+            ],
+            {mergeMode: 'sequentialFetching'}
+        ),
     });
 }
 
