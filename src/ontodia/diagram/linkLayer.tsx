@@ -3,8 +3,7 @@ import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString, LinkTypeIri } from '../data/model';
 import {
-    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle,
-    LinkRouter, RoutedLinks, RoutedLink,
+    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink,
 } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
@@ -15,12 +14,12 @@ import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerK
 import {
     Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
 } from './geometry';
-import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
+    links: ReadonlyArray<DiagramLink>;
     group?: string;
 }
 
@@ -41,13 +40,8 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     /** List of link IDs to update at the next flush event */
     private scheduledToUpdate = createStringMap<true>();
 
-    private router: LinkRouter;
-    private routings: RoutedLinks;
-
     constructor(props: LinkLayerProps, context: any) {
         super(props, context);
-        this.router = this.props.view.options.linkRouter || new DefaultLinkRouter();
-        this.updateRoutings();
     }
 
     componentDidMount() {
@@ -119,17 +113,11 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     private performUpdate = () => {
-        this.updateRoutings();
         this.forceUpdate();
     }
 
-    private updateRoutings() {
-        this.routings = this.router.route(this.props.view.model);
-    }
-
     private getLinks = () => {
-        const {view, group} = this.props;
-        const {links} = view.model;
+        const {view, links, group} = this.props;
 
         if (!group) { return links; }
 
@@ -161,7 +149,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
                     view={view}
                     model={model}
                     shouldUpdate={shouldUpdate(model)}
-                    route={this.routings[model.id]}
+                    route={view.getRouting(model.id)}
                 />
             ))}
         </g>;

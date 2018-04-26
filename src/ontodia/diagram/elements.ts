@@ -38,6 +38,7 @@ export class Element {
     private _size: Size;
     private _expanded: boolean;
     private _group: string | undefined;
+    private _temporary: boolean;
 
     constructor(props: {
         id: string;
@@ -46,6 +47,7 @@ export class Element {
         size?: Size;
         expanded?: boolean;
         group?: string;
+        temporary?: boolean;
     }) {
         const {
             id,
@@ -54,6 +56,7 @@ export class Element {
             size = {width: 0, height: 0},
             expanded = false,
             group,
+            temporary = false,
         } = props;
 
         this.id = id;
@@ -62,6 +65,7 @@ export class Element {
         this._size = size;
         this._expanded = expanded;
         this._group = group;
+        this._temporary = temporary;
     }
 
     get iri() { return this._data.id; }
@@ -113,6 +117,8 @@ export class Element {
         this._group = value;
         this.source.trigger('changeGroup', {source: this, previous});
     }
+
+    get temporary(): boolean { return this._temporary; }
 
     focus() {
         this.source.trigger('requestedFocus', {source: this});

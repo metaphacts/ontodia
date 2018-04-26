@@ -7,7 +7,6 @@ import { changeLinkTypeVisibility } from '../diagram/commands';
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
@@ -58,7 +57,7 @@ export interface ObjectsData {
     objects: ReactElementModel[];
 }
 
-export interface ConnectionsMenuProps extends PaperWidgetProps {
+export interface ConnectionsMenuProps {
     view: DiagramView;
     editor: EditorController;
     target: Element;
@@ -81,9 +80,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     private updateAll = () => this.forceUpdate();
 
     componentDidMount() {
-        const {view, target} = this.props;
-        this.handler.listen(target.events, 'changePosition', this.updateAll);
-        this.handler.listen(target.events, 'changeSize', this.updateAll);
+        const {view} = this.props;
         this.handler.listen(view.events, 'changeLanguage', this.updateAll);
 
         this.loadLinks();
@@ -262,11 +259,10 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             };
         }
 
-        const {paperArea, view, target, suggestProperties} = this.props;
+        const {view, target, suggestProperties} = this.props;
         return (
             <ConnectionsMenuMarkup
                 target={target}
-                paperArea={paperArea}
                 connectionsData={connectionsData}
                 objectsData={objectsData}
                 state={this.loadingState}
@@ -282,7 +278,6 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
 
 interface ConnectionsMenuMarkupProps {
     target: Element;
-    paperArea: PaperArea;
 
     connectionsData: {
         links: FatLinkType[];
@@ -425,22 +420,8 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     }
 
     render() {
-        const bbox = boundsOf(this.props.target);
-        const {x: x0, y: y0} = this.props.paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
-        const {x: x1, y: y1} = this.props.paperArea.paperToScrollablePaneCoords(
-            bbox.x + bbox.width,
-            bbox.y + bbox.height,
-        );
-
-        const style = {
-            top: (y0 + y1) / 2 - 150,
-            left: x1 + MENU_OFFSET,
-            backgroundColor: 'white',
-            border: '1px solid black',
-        };
-
         return (
-            <div className='ontodia-connections-menu' style={style}>
+            <div className='ontodia-connections-menu'>
                 <label className='ontodia-label ontodia-connections-menu__title-label'>{this.getTitle()}</label>
                 {this.getBreadCrumbs()}
                 <div className='ontodia-connections-menu_search-line'>

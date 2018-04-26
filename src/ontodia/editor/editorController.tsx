@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import { ElementIri } from '../data/model';
+import { ClassIri, ElementIri, ElementModel, LinkModel } from '../data/model';
 
 import { setElementExpanded } from '../diagram/commands';
-import { Element, Link } from '../diagram/elements';
+import { Element, Link, LinkVertex } from '../diagram/elements';
 import { Vector, Size, boundsOf, computeGrouping } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
@@ -11,8 +11,12 @@ import { DiagramView } from '../diagram/view';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
+import { Dialog } from '../widgets/dialog';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
+import { EditEntityForm } from '../widgets/editEntityForm';
+import { EditLinkForm } from '../widgets/editLinkForm';
 import { Halo } from '../widgets/halo';
+import { HaloLink } from '../widgets/haloLink';
 
 import {
     LayoutNode, LayoutLink, forceLayout, padded, removeOverlaps, translateToPositiveQuadrant,
@@ -21,14 +25,25 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 
+export enum DialogTypes {
+    ConnectionsMenu,
+    EditEntityForm,
+    EditLinkForm,
+}
+
+type SelectedElement = Element | Link;
+
 export interface EditorOptions {
     disableDefaultHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
 }
 
 export interface EditorEvents {
-    changeSelection: PropertyChange<EditorController, ReadonlyArray<Element>>;
-    toggleNavigationMenu: { isOpened: boolean };
+    changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectedElement>>;
+    toggleDialog: { isOpened: boolean };
+    establishLink: { sourceId: string; point: { x: number; y: number } };
+    moveLinkSource: { link: Link; point: { x: number; y: number } };
+    moveLinkTarget: { link: Link; point: { x: number; y: number } };
 }
 
 export class EditorController {
@@ -36,9 +51,10 @@ export class EditorController {
     private readonly source = new EventSource<EditorEvents>();
     readonly events: Events<EditorEvents> = this.source;
 
-    private _selection: ReadonlyArray<Element> = [];
+    private _selection: ReadonlyArray<SelectedElement> = [];
 
-    private connectionsMenuTarget: Element | undefined;
+    private dialogType: DialogTypes;
+    private dialogTarget: SelectedElement;
 
     constructor(
         readonly model: AsyncModel,
@@ -71,7 +87,7 @@ export class EditorController {
     }
 
     get selection() { return this._selection; }
-    setSelection(value: ReadonlyArray<Element>) {
+    setSelection(value: ReadonlyArray<SelectedElement>) {
         const previous = this._selection;
         if (previous === value) { return; }
         this._selection = value;
@@ -113,9 +129,13 @@ export class EditorController {
         if (target instanceof Element) {
             this.setSelection([target]);
             target.focus();
+        } else if (target instanceof Link) {
+            this.setSelection([target]);
+        } else if (target instanceof LinkVertex) {
+            this.setSelection([target.link]);
         } else if (!target && triggerAsClick) {
             this.setSelection([]);
-            this.hideNavigationMenu();
+            this.hideDialog();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
@@ -140,13 +160,13 @@ export class EditorController {
 
         this.listener.listen(this.events, 'changeSelection', () => {
             const selected = this.selection.length === 1 ? this.selection[0] : undefined;
-            if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
-                this.hideNavigationMenu();
+            if (this.dialogTarget && selected !== this.dialogTarget) {
+                this.hideDialog();
             }
             this.renderDefaultHalo();
         });
 
-        this.listener.listen(this.events, 'toggleNavigationMenu', ({isOpened}) => {
+        this.listener.listen(this.events, 'toggleDialog', ({isOpened}) => {
             this.renderDefaultHalo();
         });
 
@@ -155,49 +175,109 @@ export class EditorController {
 
     private renderDefaultHalo() {
         const selectedElement = this.selection.length === 1 ? this.selection[0] : undefined;
-        const halo = (
-            <Halo editor={this}
-                target={selectedElement}
-                onDelete={() => this.removeSelectedElements()}
-                onExpand={() => {
-                    this.model.history.execute(
-                        setElementExpanded(selectedElement, !selectedElement.isExpanded)
-                    );
-                }}
-                navigationMenuOpened={Boolean(this.connectionsMenuTarget)}
-                onToggleNavigationMenu={() => {
-                    if (this.connectionsMenuTarget) {
-                        this.hideNavigationMenu();
-                    } else {
-                        this.showNavigationMenu(selectedElement);
-                    }
-                    this.renderDefaultHalo();
-                }}
-                onAddToFilter={() => selectedElement.addToFilter()}
-            />
-        );
+
+        let halo: React.ReactElement<Halo | HaloLink>;
+
+        if (selectedElement instanceof Element) {
+            halo = (
+                <Halo editor={this}
+                    target={selectedElement}
+                    onDelete={() => this.removeSelectedElements()}
+                    onExpand={() => {
+                        this.model.history.execute(
+                            setElementExpanded(selectedElement, !selectedElement.isExpanded)
+                        );
+                    }}
+                    navigationMenuOpened={this.dialogType === DialogTypes.ConnectionsMenu}
+                    onToggleNavigationMenu={() => {
+                        if (this.dialogTarget && this.dialogType === DialogTypes.ConnectionsMenu) {
+                            this.hideDialog();
+                        } else {
+                            this.showDialog(selectedElement, DialogTypes.ConnectionsMenu);
+                        }
+                        this.renderDefaultHalo();
+                    }}
+                    onAddToFilter={() => selectedElement.addToFilter()}
+                    onEdit={() => this.showDialog(selectedElement, DialogTypes.EditEntityForm)}
+                    onEstablishNewLink={(point: { x: number; y: number }) => {
+                        this.source.trigger('establishLink', {sourceId: selectedElement.id, point});
+                    }}
+                />
+            );
+        } else if (selectedElement instanceof Link) {
+            halo = (
+                <HaloLink view={this.view}
+                    target={selectedElement}
+                    onEdit={() => this.showDialog(selectedElement, DialogTypes.EditLinkForm)}
+                    onRemove={() => this.model.removeLink(selectedElement.id)}
+                    onSourceMove={(point: { x: number; y: number }) => {
+                        this.source.trigger('moveLinkSource', {link: selectedElement, point});
+                    }}
+                    onTargetMove={(point: { x: number; y: number }) => {
+                        this.source.trigger('moveLinkTarget', {link: selectedElement, point});
+                    }}
+                />
+            );
+        }
+
         this.view.setPaperWidget({key: 'halo', widget: halo});
     }
 
-    showNavigationMenu(target: Element) {
-        const connectionsMenu = (
-            <ConnectionsMenu view={this.view}
-                editor={this}
-                target={target}
-                onClose={() => this.hideNavigationMenu()}
-                suggestProperties={this.options.suggestProperties}
-            />
+    showDialog(target: SelectedElement, dialogType: DialogTypes) {
+        if ((this.dialogTarget && this.dialogTarget.id !== target.id) ||
+            (this.dialogType && this.dialogType !== dialogType)) {
+            this.hideDialog();
+        }
+
+        let content: React.ReactElement<any>;
+
+        if (dialogType === DialogTypes.ConnectionsMenu && target instanceof Element) {
+            content = (
+                <ConnectionsMenu view={this.view}
+                    editor={this}
+                    target={target}
+                    onClose={() => this.hideDialog()}
+                    suggestProperties={this.options.suggestProperties}
+                />
+            );
+        } else if (dialogType === DialogTypes.EditEntityForm && target instanceof Element) {
+            content = React.createElement(EditEntityForm, {
+                view: this.view,
+                entity: target.data,
+                onApply: (entity: ElementModel) => {
+                    this.model.editEntity(entity);
+                    this.hideDialog();
+                },
+                onCancel: () => this.hideDialog(),
+            });
+        } else if (dialogType === DialogTypes.EditLinkForm && target instanceof Link) {
+            content = React.createElement(EditLinkForm, {
+                view: this.view,
+                link: target.data,
+                onApply: (link: LinkModel) => {
+                    this.hideDialog();
+                },
+                onCancel: () => this.hideDialog(),
+            });
+        } else {
+            throw new Error('Unknown dialog type');
+        }
+
+        const dialog = (
+            <Dialog view={this.view} target={target}>{content}</Dialog>
         );
-        this.connectionsMenuTarget = target;
-        this.view.setPaperWidget({key: 'connectionsMenu', widget: connectionsMenu});
-        this.source.trigger('toggleNavigationMenu', {isOpened: false});
+        this.dialogTarget = target;
+        this.dialogType = dialogType;
+        this.view.setPaperWidget({key: 'dialog', widget: dialog});
+        this.source.trigger('toggleDialog', {isOpened: false});
     }
 
-    hideNavigationMenu() {
-        if (this.connectionsMenuTarget) {
-            this.connectionsMenuTarget = undefined;
-            this.view.setPaperWidget({key: 'connectionsMenu', widget: undefined});
-            this.source.trigger('toggleNavigationMenu', {isOpened: false});
+    hideDialog() {
+        if (this.dialogTarget) {
+            this.dialogType = undefined;
+            this.dialogTarget = undefined;
+            this.view.setPaperWidget({key: 'dialog', widget: undefined});
+            this.source.trigger('toggleDialog', {isOpened: false});
         }
     }
 
@@ -254,6 +334,14 @@ export class EditorController {
                 this.model.triggerChangeGroupContent(element.id);
             });
         });
+    }
+
+    createNewEntity(classIri?: ClassIri): Element {
+        const element = this.model.createNewEntity(classIri);
+        this.setSelection([element]);
+        this.showDialog(element, DialogTypes.EditEntityForm);
+
+        return element;
     }
 }
 

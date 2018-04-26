@@ -4,7 +4,7 @@ import { ReactElement, createElement } from 'react';
 
 import {
     LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
-    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle,
+    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
@@ -19,6 +19,8 @@ import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elem
 import { Vector, Size, boundsOf } from './geometry';
 import { Batch, Command } from './history';
 import { DiagramModel, chooseLocalizedText } from './model';
+
+import { DefaultLinkRouter } from './linkRouter';
 
 export interface ViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -72,6 +74,9 @@ export class DiagramView {
 
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
 
+    private router: LinkRouter;
+    private routings: RoutedLinks;
+
     constructor(
         public readonly model: DiagramModel,
         public readonly options: ViewOptions = {},
@@ -84,6 +89,33 @@ export class DiagramView {
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
+
+        this.initRouting();
+    }
+
+    private initRouting() {
+        this.router = this.options.linkRouter || new DefaultLinkRouter();
+        this.updateRoutings();
+
+        this.listener.listen(this.model.events, 'changeCells', () =>  this.updateRoutings());
+        this.listener.listen(this.model.events, 'linkEvent', ({key, data}) => {
+            if (data.changeVertices) {
+                this.updateRoutings();
+            }
+        });
+        this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
+            if (data.changePosition || data.changeSize) {
+                this.updateRoutings();
+            }
+        });
+    }
+
+    private updateRoutings() {
+        this.routings = this.router.route(this.model);
+    }
+
+    getRouting(linkId: string): RoutedLink {
+        return this.routings[linkId];
     }
 
     getLanguage(): string { return this._language; }

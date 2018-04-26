@@ -1,0 +1,33 @@
+.ontodia-halo-link {
+
+  &__button {
+    cursor: pointer;
+    position: absolute;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  @mixin button {
+    background-color: #ccc;
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-size: 60%;
+    border-radius: 10px;
+    height: 20px;
+    width: 20px;
+  }
+
+  &__edit {
+    @include button;
+    background-image: url("../images/edit.svg");
+  }
+
+  &__remove {
+    @include button;
+    background-image: url("../images/remove.svg");
+  }
+}

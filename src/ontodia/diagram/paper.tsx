@@ -53,7 +53,7 @@ export class Paper extends Component<PaperProps, {}> {
                     style={{overflow: 'visible'}}>
                     <LinkMarkers view={view} />
                     <g transform={svgTransform}>
-                        <LinkLayer view={view} group={group} />
+                        <LinkLayer view={view} links={view.model.links} group={group} />
                     </g>
                 </svg>
                 <ElementLayer view={view} group={group} scale={scale} style={htmlTransformStyle} />

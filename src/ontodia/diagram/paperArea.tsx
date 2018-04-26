@@ -13,9 +13,12 @@ import { Batch } from './history';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 import { Paper } from './paper';
+import { EditorController } from '../editor/editorController';
+import { EditLayer } from './editLayer';
 
 export interface Props {
     view: DiagramView;
+    editor: EditorController;
     zoomOptions?: ZoomOptions;
     panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
@@ -170,6 +173,9 @@ export class PaperArea extends React.Component<Props, State> {
                             return React.cloneElement(widget, props);
                         })}
                     </div>
+                    <EditLayer view={view} editor={this.props.editor}
+                        paperProps={{width: paperWidth, height: paperHeight, originX, originY, scale}}
+                        pageToPaperCoords={(pageX, pageY) => this.pageToPaperCoords(pageX, pageY)} />
                 </Paper>
             </div>
         );
@@ -353,12 +359,15 @@ export class PaperArea extends React.Component<Props, State> {
         const restore = RestoreGeometry.capture(this.props.view.model);
         const batch = this.props.view.model.history.startBatch(restore.title);
 
+        const {editor} = this.props;
+        const selectedElement = editor.selection.length === 1 ? editor.selection[0] : undefined;
+
         if (cell && e.button === LEFT_MOUSE_BUTTON) {
             if (cell instanceof Element) {
                 e.preventDefault();
                 this.startMoving(e, cell);
                 this.listenToPointerMove(e, cell, batch, restore);
-            } else if (cell instanceof Link) {
+            } else if (cell instanceof Link && selectedElement && selectedElement.id === cell.id) {
                 e.preventDefault();
                 const location = this.pageToPaperCoords(e.pageX, e.pageY);
                 const linkVertex = this.generateLinkVertex(cell, location);
@@ -366,7 +375,7 @@ export class PaperArea extends React.Component<Props, State> {
                 this.listenToPointerMove(e, linkVertex, batch, restore);
                 // prevent click on newly created vertex
                 this.movingState.pointerMoved = true;
-            } else if (cell instanceof LinkVertex) {
+            } else {
                 e.preventDefault();
                 this.listenToPointerMove(e, cell, batch, restore);
             }

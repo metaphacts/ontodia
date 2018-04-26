@@ -6,6 +6,7 @@ import { FilterParams } from '../data/provider';
 import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
 import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
+import { EditorController } from '../editor/editorController';
 
 import { AsyncModel } from '../editor/asyncModel';
 
@@ -21,6 +22,7 @@ export interface InstancesSearchProps {
     className?: string;
     model: AsyncModel;
     view: DiagramView;
+    editor: EditorController;
     criteria: SearchCriteria;
     onCriteriaChanged: (criteria: SearchCriteria) => void;
 }
@@ -80,6 +82,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             </div>
             <div className={`${CLASS_NAME}__criteria`}>
                 {this.renderCriteria()}
+                {this.renderNewEntityButton()}
                 <div className={`${CLASS_NAME}__text-criteria ontodia-input-group`}>
                     <input type='text' className='ontodia-form-control' placeholder='Search for...'
                         value={searchTerm || ''}
@@ -111,6 +114,23 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 </div>
             </div>
         </div>;
+    }
+
+    private renderNewEntityButton() {
+        return (
+            <div className={`${CLASS_NAME}__new-entity-button-wrap`}>
+                <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__new-entity-button`}
+                        onClick={this.onCreateNewEntity}>
+                    + Create new entity
+                </button>
+            </div>
+        );
+    }
+
+    private onCreateNewEntity = () => {
+        const {criteria = {}, editor} = this.props;
+        const classIri = criteria.elementType ? criteria.elementType.id : undefined;
+        editor.createNewEntity(classIri);
     }
 
     private renderCriteria(): React.ReactElement<any> {

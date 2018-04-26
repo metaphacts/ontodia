@@ -16,6 +16,8 @@ export interface Props extends PaperWidgetProps {
     navigationMenuOpened?: boolean;
     onToggleNavigationMenu?: () => void;
     onAddToFilter?: () => void;
+    onEdit?: () => void;
+    onEstablishNewLink?: (point: { x: number; y: number; }) => void;
 }
 
 const CLASS_NAME = 'ontodia-halo';
@@ -52,7 +54,12 @@ export class Halo extends React.Component<Props, {}> {
 
     componentWillUnmount() {
         this.listenToElement(undefined);
-        this.props.editor.hideNavigationMenu();
+        this.props.editor.hideDialog();
+    }
+
+    private onEstablishNewLink = (e: React.MouseEvent<HTMLElement>) => {
+        const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
+        this.props.onEstablishNewLink(point);
     }
 
     render() {
@@ -94,6 +101,14 @@ export class Halo extends React.Component<Props, {}> {
                     role='button'
                     title={`Expand an element to reveal additional properties`}
                     onClick={this.props.onExpand} />
+                <div className={`${CLASS_NAME}__edit`}
+                     role='button'
+                     title={`Edit entity`}
+                     onClick={this.props.onEdit} />
+                <div className={`${CLASS_NAME}__establish-connection`}
+                     role='button'
+                     title={`Establish connection`}
+                     onMouseDown={this.onEstablishNewLink} />
             </div>
         );
     }

@@ -76,4 +76,26 @@
       opacity: 1;
     }
   }
+
+  &__edit {
+    @include halo-button;
+    background-image: url("../images/edit.svg");
+    bottom: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &__establish-connection {
+    @include halo-button;
+    background-image: url("../images/establish-connection.svg");
+    top: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }

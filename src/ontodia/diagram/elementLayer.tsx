@@ -173,6 +173,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     render(): React.ReactElement<any> {
         const {model, view, onResize, onRender} = this.props;
 
+        if (model.temporary) { return <div />; }
+
         this.typesObserver.observe(model.data.types);
         this.propertyObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
 

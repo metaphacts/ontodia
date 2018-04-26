@@ -113,6 +113,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             'data-intro': INTRO_INSTANCES,
                         }}>
                         <InstancesSearch view={this.props.view}
+                            editor={this.props.editor}
                             model={this.props.model}
                             criteria={this.props.searchCriteria || {}}
                             onCriteriaChanged={this.props.onSearchCriteriaChanged}
@@ -163,6 +164,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                          data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
                         <PaperArea ref={el => this.paperArea = el}
                             view={this.props.view}
+                            editor={this.props.editor}
                             zoomOptions={this.props.zoomOptions}
                             onDragDrop={(e, position) => this.props.editor.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
