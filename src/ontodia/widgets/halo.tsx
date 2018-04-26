@@ -1,46 +1,103 @@
 import * as React from 'react';
 
+import { MetadataApi } from '../data/metadataApi';
+
 import { Element as DiagramElement, ElementEvents } from '../diagram/elements';
-import { boundsOf } from '../diagram/geometry';
+import { Vector, boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 
 import { EditorController } from '../editor/editorController';
+import { AuthoringState, AuthoringKind } from '../editor/authoringState';
 
-import { AnyListener, Unsubscribe } from '../viewUtils/events';
+import { AnyListener, Unsubscribe, EventObserver } from '../viewUtils/events';
+import { Cancellation, Debouncer } from '../viewUtils/async';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
     editor: EditorController;
-    onDelete?: () => void;
+    metadataApi?: MetadataApi;
+    onRemove?: () => void;
     onExpand?: () => void;
     navigationMenuOpened?: boolean;
     onToggleNavigationMenu?: () => void;
     onAddToFilter?: () => void;
+    onEstablishNewLink?: (point: Vector) => void;
+}
+
+export interface State {
+    canLink?: boolean;
 }
 
 const CLASS_NAME = 'ontodia-halo';
 
-export class Halo extends React.Component<Props, {}> {
-    private unsubscribeFromElement: Unsubscribe | undefined = undefined;
+export class Halo extends React.Component<Props, State> {
+    private readonly listener = new EventObserver();
+    private targetListener = new EventObserver();
+    private queryDebouncer = new Debouncer();
+    private queryCancellation = new Cancellation();
 
-    componentDidMount() {
-        this.listenToElement(this.props.target);
+    constructor(props: Props) {
+        super(props);
+        this.state = {};
     }
 
-    componentWillReceiveProps(nextProps: Props) {
-        if (nextProps.target !== this.props.target) {
-            this.listenToElement(nextProps.target);
+    componentDidMount() {
+        const {editor, target} = this.props;
+        this.listener.listen(editor.events, 'changeAuthoringState', () => {
+            this.queryAllowedActions();
+        });
+        this.listenToElement(target);
+        this.queryAllowedActions();
+    }
+
+    componentDidUpdate(prevProps: Props) {
+        if (prevProps.target !== this.props.target) {
+            this.listenToElement(this.props.target);
+            this.queryAllowedActions();
         }
+    }
+
+    componentWillUnmount() {
+        this.listener.stopListening();
+        this.listenToElement(undefined);
+        this.queryDebouncer.dispose();
+        this.queryCancellation.abort();
     }
 
     listenToElement(element: DiagramElement | undefined) {
-        if (this.unsubscribeFromElement) {
-            this.unsubscribeFromElement();
-            this.unsubscribeFromElement = undefined;
-        }
+        this.targetListener.stopListening();
         if (element) {
-            element.events.onAny(this.onElementEvent);
-            this.unsubscribeFromElement = () => element.events.offAny(this.onElementEvent);
+            this.targetListener.listenAny(element.events, this.onElementEvent);
+        }
+    }
+
+    private queryAllowedActions() {
+        this.queryDebouncer.call(() => {
+            this.queryCancellation.abort();
+            this.queryCancellation = new Cancellation();
+            this.canLink(this.props.target);
+        });
+    }
+
+    private canLink(target: DiagramElement) {
+        const {metadataApi, editor} = this.props;
+        if (!metadataApi) {
+            this.setState({canLink: false});
+            return;
+        }
+        const event = editor.authoringState.index.elements.get(target.iri);
+        if (event && event.type === AuthoringKind.DeleteElement) {
+            this.setState({canLink: false});
+        } else {
+            this.setState({canLink: undefined});
+            const signal = this.queryCancellation.signal;
+            metadataApi.canLinkElement(target.data, signal).then(canLink => {
+                if (signal.aborted) { return; }
+                if (this.props.target.iri === target.iri) {
+                    this.setState({canLink});
+                }
+            });
         }
     }
 
@@ -48,20 +105,20 @@ export class Halo extends React.Component<Props, {}> {
         if (data.changePosition || data.changeSize || data.changeExpanded) {
             this.forceUpdate();
         }
-    }
-
-    componentWillUnmount() {
-        this.listenToElement(undefined);
-        this.props.editor.hideNavigationMenu();
+        if (data.changeData) {
+            this.queryAllowedActions();
+        }
     }
 
     render() {
-        if (!this.props.target) {
+        const {
+            paperArea, editor, target, navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
+            onExpand,
+        } = this.props;
+
+        if (!target) {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
         }
-
-        const {paperArea, target, navigationMenuOpened} = this.props;
-        const cellExpanded = target.isExpanded;
 
         const bbox = boundsOf(target);
         const {x: x0, y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
@@ -73,28 +130,64 @@ export class Halo extends React.Component<Props, {}> {
 
         return (
             <div className={CLASS_NAME} style={style}>
-                <div className={`${CLASS_NAME}__delete`}
-                    role='button'
-                    title='Remove an element from the diagram'
-                    onClick={this.props.onDelete} />
-
-                <div className={`${CLASS_NAME}__navigate ` +
+                {this.renderRemoveOrDeleteButton()}
+                {onToggleNavigationMenu && <div className={`${CLASS_NAME}__navigate ` +
                     `${CLASS_NAME}__navigate--${navigationMenuOpened ? 'closed' : 'open'}`}
                     role='button'
                     title='Open a dialog to navigate to connected elements'
-                    onClick={this.props.onToggleNavigationMenu} />
-
-                <div className={`${CLASS_NAME}__add-to-filter`}
+                    onClick={onToggleNavigationMenu} />}
+                {onAddToFilter && <div className={`${CLASS_NAME}__add-to-filter`}
                     role='button'
                     title='Search for connected elements'
-                    onClick={this.props.onAddToFilter} />
-
-                <div className={`${CLASS_NAME}__expand ` +
-                    `${CLASS_NAME}__expand--${cellExpanded ? 'closed' : 'open'}`}
+                    onClick={onAddToFilter} />}
+                {onExpand && <div className={`${CLASS_NAME}__expand ` +
+                    `${CLASS_NAME}__expand--${target.isExpanded ? 'closed' : 'open'}`}
                     role='button'
                     title={`Expand an element to reveal additional properties`}
-                    onClick={this.props.onExpand} />
+                    onClick={onExpand} />}
+                {editor.inAuthoringMode ? this.renderEstablishNewLinkButton() : null}
             </div>
         );
+    }
+
+    private renderRemoveOrDeleteButton() {
+        const {editor, target, onRemove} = this.props;
+        if (!onRemove) {
+            return null;
+        }
+
+        const isNewElement = AuthoringState.isNewElement(editor.authoringState, target.iri);
+        return (
+            <div className={isNewElement ? `${CLASS_NAME}__delete` : `${CLASS_NAME}__remove`}
+                role='button'
+                title={isNewElement ? 'Delete new element' : 'Remove an element from the diagram'}
+                onClick={onRemove}>
+            </div>
+        );
+    }
+
+    private renderEstablishNewLinkButton() {
+        const {onEstablishNewLink} = this.props;
+        const {canLink} = this.state;
+        if (!onEstablishNewLink) { return null; }
+        if (canLink === undefined) {
+            return (
+                <div className={`${CLASS_NAME}__establish-connection-spinner`}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+            );
+        }
+        const title = canLink
+            ? 'Establish connection'
+            : 'Establishing connection is unavailable for the selected element';
+        return (
+            <button className={`${CLASS_NAME}__establish-connection`} title={title}
+                onMouseDown={this.onEstablishNewLink} disabled={!canLink} />
+        );
+    }
+
+    private onEstablishNewLink = (e: React.MouseEvent<HTMLElement>) => {
+        const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
+        this.props.onEstablishNewLink(point);
     }
 }

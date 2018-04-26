@@ -290,7 +290,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
     private updateOnCurrentSelection = () => {
         const {editor} = this.props;
         const single = editor.selection.length === 1 ? editor.selection[0] : null;
-        if (single !== this.state.selectedElement) {
+        if (single !== this.state.selectedElement && single instanceof Element) {
             this.requestLinksOf(single);
         }
     }

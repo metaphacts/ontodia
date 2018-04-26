@@ -1,6 +1,6 @@
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 import { generate64BitID, uri2name } from '../data/utils';
@@ -122,47 +122,43 @@ export class DiagramModel {
         }
     }
 
-    createLink(params: {
-        linkType: FatLinkType;
-        sourceId: string;
-        targetId: string;
-        data?: LinkModel;
-        vertices?: ReadonlyArray<Vector>;
-    }): Link {
-        const {linkType, sourceId, targetId, data, vertices} = params;
-        if (data && data.linkTypeId !== linkType.id) {
+    addLink(link: Link): Link {
+        const {typeId, sourceId, targetId, data} = link;
+        if (data && data.linkTypeId !== typeId) {
             throw new Error('linkTypeId must match linkType.id');
         }
 
-        const existingLink = this.findLink(linkType.id, sourceId, targetId);
-        if (existingLink) {
+        const existingLink = this.findLink(typeId, sourceId, targetId);
+        if (existingLink && link.data) {
             existingLink.setLayoutOnly(false);
             existingLink.setData(data);
             return existingLink;
         }
 
-        const shouldBeVisible = linkType.visible && this.getElement(sourceId) && this.getElement(targetId);
+        const linkType = this.createLinkType(link.typeId);
+        const source = this.getElement(sourceId);
+        const target = this.getElement(targetId);
+        const shouldBeVisible = linkType.visible && source && target;
         if (!shouldBeVisible) {
             return undefined;
         }
 
-        const link = new Link({
-            id: `link_${generate64BitID()}`,
-            typeId: linkType.id,
-            sourceId,
-            targetId,
-            data,
-            vertices,
-        });
+        if (!link.data) {
+            link.setData({linkTypeId: typeId, sourceId: source.iri, targetId: target.iri});
+        }
         this.graph.addLink(link);
         return link;
     }
 
-    getClass(classIri: ClassIri): FatClassModel {
+    removeLink(linkId: string) {
+        this.graph.removeLink(linkId);
+    }
+
+    getClass(classIri: ElementTypeIri): FatClassModel {
         return this.graph.getClass(classIri);
     }
 
-    createClass(classIri: ClassIri): FatClassModel {
+    createClass(classIri: ElementTypeIri): FatClassModel {
         const existing = this.graph.getClass(classIri);
         if (existing) {
             return existing;
@@ -202,6 +198,18 @@ export class DiagramModel {
 
     triggerChangeGroupContent(group: string) {
         this.source.trigger('changeGroupContent', {group});
+    }
+
+    createTemporaryElement(): Element {
+        const target = new Element({
+            id: `element_${generate64BitID()}`,
+            data: placeholderDataFromIri('' as ElementIri),
+            temporary: true,
+        });
+
+        this.graph.addElement(target);
+
+        return target;
     }
 }
 

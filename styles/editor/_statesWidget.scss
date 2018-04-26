@@ -1,0 +1,13 @@
+.ontodia-states-widget {
+  &__action {
+    font-weight: bold;
+  }
+
+  &__cancel {
+    fill: #3f87a6;
+    cursor: pointer;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

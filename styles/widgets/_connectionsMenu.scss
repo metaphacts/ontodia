@@ -1,11 +1,7 @@
 .ontodia-connections-menu {
-  position: absolute;
-  width: 300px;
-  height: 300px;
-  border-radius: 3px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 4px 15px 0px rgba(0, 0, 0, 0.38);
 
   &__sort-switch {
     display: none;

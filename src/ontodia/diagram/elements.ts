@@ -1,7 +1,8 @@
 import {
     ClassModel, ElementModel, LinkModel, LocalizedString, Property,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
+import { generate64BitID } from '../data/utils';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
@@ -38,6 +39,7 @@ export class Element {
     private _size: Size;
     private _expanded: boolean;
     private _group: string | undefined;
+    private _temporary: boolean;
 
     constructor(props: {
         id: string;
@@ -46,6 +48,7 @@ export class Element {
         size?: Size;
         expanded?: boolean;
         group?: string;
+        temporary?: boolean;
     }) {
         const {
             id,
@@ -54,6 +57,7 @@ export class Element {
             size = {width: 0, height: 0},
             expanded = false,
             group,
+            temporary = false,
         } = props;
 
         this.id = id;
@@ -62,6 +66,7 @@ export class Element {
         this._size = size;
         this._expanded = expanded;
         this._group = group;
+        this._temporary = temporary;
     }
 
     get iri() { return this._data.id; }
@@ -114,6 +119,8 @@ export class Element {
         this.source.trigger('changeGroup', {source: this, previous});
     }
 
+    get temporary(): boolean { return this._temporary; }
+
     focus() {
         this.source.trigger('requestedFocus', {source: this});
     }
@@ -148,7 +155,7 @@ export class FatClassModel {
     private readonly source = new EventSource<FatClassModelEvents>();
     readonly events: Events<FatClassModelEvents> = this.source;
 
-    readonly id: ClassIri;
+    readonly id: ElementTypeIri;
 
     private _base: FatClassModel | undefined;
     private _derived: FatClassModel[] = [];
@@ -157,7 +164,7 @@ export class FatClassModel {
     private _count: number | undefined;
 
     constructor(props: {
-        id: ClassIri;
+        id: ElementTypeIri;
         label?: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {
@@ -245,25 +252,11 @@ export interface LinkEvents {
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
 }
 
-/**
- * Properties:
- *     typeId: string
- *     typeIndex: number
- *     source: { id: string }
- *     target: { id: string }
- *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
- *
- * Events:
- *     state:loaded
- *     updateRouting
- */
 export class Link {
     private readonly source = new EventSource<LinkEvents>();
     readonly events: Events<LinkEvents> = this.source;
 
     readonly id: string;
-
-    private _typeIndex: number;
 
     private _typeId: LinkTypeIri;
     private _sourceId: string;
@@ -274,14 +267,14 @@ export class Link {
     private _vertices: ReadonlyArray<Vector>;
 
     constructor(props: {
-        id: string;
+        id?: string;
         typeId: LinkTypeIri;
         sourceId: string;
         targetId: string;
         data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
     }) {
-        const {id, typeId, sourceId, targetId, data, vertices = []} = props;
+        const {id = `link_${generate64BitID()}`, typeId, sourceId, targetId, data, vertices = []} = props;
         this.id = id;
         this._typeId = typeId;
         this._sourceId = sourceId;
@@ -289,9 +282,6 @@ export class Link {
         this._data = data;
         this._vertices = vertices;
     }
-
-    get typeIndex(): number { return this._typeIndex; }
-    set typeIndex(value: number) { this._typeIndex = value; }
 
     get typeId() { return this._typeId; }
     get sourceId(): string { return this._sourceId; }
@@ -302,6 +292,7 @@ export class Link {
         const previous = this._data;
         if (previous === value) { return; }
         this._data = value;
+        this._typeId = value.linkTypeId;
         this.source.trigger('changeData', {source: this, previous});
     }
 

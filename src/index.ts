@@ -9,6 +9,8 @@ export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';
 
 export * from './ontodia/data/model';
+export { MetadataApi } from './ontodia/data/metadataApi';
+export { ValidationApi, ElementError, LinkError } from './ontodia/data/validationApi';
 export * from './ontodia/data/provider';
 export * from './ontodia/data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparqlModels';
@@ -28,9 +30,14 @@ export * from './ontodia/diagram/view';
 export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/editor/asyncModel';
-export { EditorOptions, EditorEvents, EditorController } from './ontodia/editor/editorController';
+export { AuthoredEntity, AuthoredEntityProps, AuthoredEntityContext } from './ontodia/editor/authoredEntity';
+export * from './ontodia/editor/authoringState';
+export {
+    EditorOptions, EditorEvents, EditorController, PropertyEditor, PropertyEditorOptions,
+} from './ontodia/editor/editorController';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/editor/layoutData';
 
+export { CancellationToken } from './ontodia/viewUtils/async';
 export * from './ontodia/viewUtils/events';
 
 export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/connectionsMenu';

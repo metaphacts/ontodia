@@ -2,6 +2,9 @@ import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 import * as saveAs from 'file-saverjs';
 
+import { MetadataApi } from '../data/metadataApi';
+import { ValidationApi } from '../data/validationApi';
+
 import { RestoreGeometry } from '../diagram/commands';
 import { Element, Link, FatLinkType } from '../diagram/elements';
 import { boundsOf, computeGrouping } from '../diagram/geometry';
@@ -10,7 +13,10 @@ import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFitting
 import { DiagramView, ViewOptions } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
-import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
+import {
+    EditorController, EditorOptions, PropertyEditor, recursiveForceLayout,
+} from '../editor/editorController';
+import { AuthoringState } from '../editor/authoringState';
 
 import { EventObserver } from '../viewUtils/events';
 import {
@@ -20,18 +26,21 @@ import {
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';
+import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
-import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
+import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
+    onPersistAuthoredChanges?: (workspace: Workspace) => void;
     onPointerDown?: (e: PointerEvent) => void;
     onPointerMove?: (e: PointerEvent) => void;
     onPointerUp?: (e: PointerUpEvent) => void;
 
+    toolbar?: ReactElement<any>;
     hidePanels?: boolean;
     hideToolbar?: boolean;
     hideHalo?: boolean;
@@ -62,12 +71,20 @@ export interface WorkspaceProps {
     onZoom?: (scaleX: number, scaleY: number) => void;
 
     history?: CommandHistory;
-    toolbar?: ReactElement<any>;
     viewOptions?: DiagramViewOptions;
+
+    /**
+     * If provided, switches editor into "authoring mode".
+     */
+    metadataApi?: MetadataApi;
+    validationApi?: ValidationApi;
+    propertyEditor?: PropertyEditor;
 }
 
-export interface DiagramViewOptions extends ViewOptions, EditorOptions {
+export interface DiagramViewOptions extends ViewOptions {
     groupBy?: GroupBy[];
+    disableDefaultHalo?: boolean;
+    suggestProperties?: PropertySuggestionHandler;
 }
 
 export interface WorkspaceLanguage {
@@ -105,7 +122,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
     constructor(props: WorkspaceProps) {
         super(props);
 
-        const {hideHalo, language, history, viewOptions = {}} = this.props;
+        const {
+            hideHalo, language, history, viewOptions = {},
+            metadataApi, validationApi, propertyEditor,
+        } = this.props;
         const {
             templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
             disableDefaultHalo, suggestProperties, groupBy,
@@ -122,10 +142,15 @@ export class Workspace extends Component<WorkspaceProps, State> {
             linkRouter,
             onIriClick,
         });
-        this.editor = new EditorController(this.model, this.view, {
-            disableDefaultHalo: hideHalo || disableDefaultHalo,
+        this.editor = new EditorController({
+            model: this.model,
+            view: this.view,
+            disableHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
+            validationApi,
+            propertyEditor,
         });
+        this.editor.setMetadataApi(metadataApi);
 
         this.view.setLanguage(this.props.language);
         this.state = {
@@ -134,18 +159,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
         };
     }
 
-    componentWillReceiveProps(nextProps: WorkspaceProps) {
-        if (nextProps.language !== this.view.getLanguage()) {
-            this.view.setLanguage(nextProps.language);
-        }
-    }
-
     _getPaperArea(): PaperArea | undefined {
         return this.markup ? this.markup.paperArea : undefined;
     }
 
     private getToolbar = () => {
-        const {languages, onSaveDiagram, hidePanels, toolbar} = this.props;
+        const {languages, onSaveDiagram, onPersistAuthoredChanges, hidePanels, toolbar, metadataApi} = this.props;
         return cloneElement(
             toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
@@ -155,6 +174,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onExportSVG: this.exportSvg,
                 onExportPNG: this.exportPng,
                 onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
+                onPersistAuthoredChanges: onPersistAuthoredChanges ? () => onPersistAuthoredChanges(this) : undefined,
                 onForceLayout: () => {
                     this.forceLayout();
                     this.zoomToFit();
@@ -177,7 +197,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -185,6 +205,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             model: this.model,
             view: this.view,
             editor: this.editor,
+            metadataApi,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
@@ -196,7 +217,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: this.getToolbar(),
-        } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
+        } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {
@@ -237,6 +258,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
+        }
+    }
+
+    componentWillReceiveProps(nextProps: WorkspaceProps) {
+        if (nextProps.language !== this.view.getLanguage()) {
+            this.view.setLanguage(nextProps.language);
+        }
+
+        if (nextProps.metadataApi !== this.editor.metadataApi) {
+            this.editor.setMetadataApi(nextProps.metadataApi);
         }
     }
 

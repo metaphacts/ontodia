@@ -13,13 +13,19 @@
 @import "diagram/linkLayer";
 @import "diagram/paperArea";
 
+@import "editor/statesWidget";
+
+@import "widgets/authoringTools";
 @import "widgets/classTree";
 @import "widgets/connectionsMenu";
 @import "widgets/halo";
+@import "widgets/haloLink";
 @import "widgets/instancesSearch";
 @import "widgets/linksToolbox";
 @import "widgets/listElementView";
 @import "widgets/progress";
+@import "widgets/dialog";
+@import "widgets/editForm";
 
 @import "workspace/accordion";
 @import "workspace/resizableSidebar";

@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Dictionary, ElementModel, ElementIri } from '../data/model';
-import { Paper } from './paper';
+import { Paper, PaperTransform } from './paper';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from './paperArea';
 import { Element, Cell } from './elements';
 import { ElementLayer, ElementContextWrapper, ElementContextTypes } from './elementLayer';
@@ -39,8 +39,8 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     componentDidMount() {
-        const {view, element} = this.context.ontodiaElement;
-        const {paperArea} = this.context.ontodiaPaperArea;
+        const {element} = this.context.ontodiaElement;
+        const {paperArea, view} = this.context.ontodiaPaperArea;
 
         this.listener.listen(view.model.events, 'changeGroupContent', ({group}) => {
             if (group === element.id) {
@@ -101,7 +101,8 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private getNestedElements() {
-        const {view, element} = this.context.ontodiaElement;
+        const {element} = this.context.ontodiaElement;
+        const {view} = this.context.ontodiaPaperArea;
         return view.model.elements.filter(el => el.group === element.id);
     }
 
@@ -111,7 +112,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private removeElements() {
-        const {view} = this.context.ontodiaElement;
+        const {view} = this.context.ontodiaPaperArea;
         const batch = view.model.history.startBatch();
         for (const element of this.getNestedElements()) {
             view.model.removeElement(element.id);
@@ -172,7 +173,8 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     private calculateOffset(layer: HTMLElement): { left: number; top: number; } {
-        const {scale} = this.context.ontodiaElement;
+        const {paperArea} = this.context.ontodiaPaperArea;
+        const scale = paperArea.getScale();
         const parent = findParentElement(layer);
         const {left, top} = layer.getBoundingClientRect();
         const {left: parentLeft, top: parentTop} = parent.getBoundingClientRect();
@@ -190,23 +192,24 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     render() {
-        const {view, element, scale} = this.context.ontodiaElement;
+        const {element} = this.context.ontodiaElement;
+        const {view} = this.context.ontodiaPaperArea;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
-        const style: React.CSSProperties = {
-            position: 'absolute', left: -offsetX, top: -offsetY,
+        const paperTransform: PaperTransform = {
+            width: paperWidth,
+            height: paperHeight,
+            originX: -offsetX,
+            originY: -offsetY,
+            scale: 1,
+            paddingX: 0,
+            paddingY: 0,
         };
 
         return (
             <div className='ontodia-embedded-layer' ref={this.onLayerInit}>
                 <Paper view={view}
-                    width={paperWidth}
-                    height={paperHeight}
-                    originX={-offsetX}
-                    originY={-offsetY}
-                    scale={1}
-                    paddingX={0}
-                    paddingY={0}
+                    paperTransform={paperTransform}
                     onPointerDown={this.onPaperPointerDown}
                     group={element.id}>
                 </Paper>

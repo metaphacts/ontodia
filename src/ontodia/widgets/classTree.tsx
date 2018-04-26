@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 
-import { Dictionary, LocalizedString, ClassIri } from '../data/model';
+import { Dictionary, LocalizedString, ElementTypeIri } from '../data/model';
 import { FatClassModel } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
@@ -17,7 +17,7 @@ require('jstree/dist/themes/default/style.css');
 export interface ClassTreeProps {
     view: DiagramView;
     editor: EditorController;
-    onClassSelected: (classId: ClassIri) => void;
+    onClassSelected: (classId: ElementTypeIri) => void;
 }
 
 interface ClassTreeElement {
@@ -28,6 +28,7 @@ interface ClassTreeElement {
     a_attr?: {
         href: string;
         draggable: boolean;
+        title: string;
     };
     text?: string;
     type?: string;
@@ -146,7 +147,11 @@ function mapClass(
         label,
         count,
         children,
-        a_attr: {href: id, draggable: true},
+        a_attr: {
+            href: id,
+            draggable: true,
+            title: `${classLabel} ${view.formatIri(id)}`,
+        },
         text,
         type,
     };

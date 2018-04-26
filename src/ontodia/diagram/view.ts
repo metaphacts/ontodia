@@ -4,13 +4,14 @@ import { ReactElement, createElement } from 'react';
 
 import {
     LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
-    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle,
+    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
 
-import { Dictionary, ElementModel, LocalizedString, ElementIri, ClassIri, LinkTypeIri } from '../data/model';
+import { Dictionary, ElementModel, LocalizedString, ElementIri, ElementTypeIri, LinkTypeIri } from '../data/model';
+import { isEncodedBlank } from '../data/sparql/blankNodes';
 import { hashFnv32a, uri2name } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
@@ -19,6 +20,8 @@ import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elem
 import { Vector, Size, boundsOf } from './geometry';
 import { Batch, Command } from './history';
 import { DiagramModel, chooseLocalizedText } from './model';
+
+import { DefaultLinkRouter } from './linkRouter';
 
 export interface ViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
@@ -52,7 +55,12 @@ export interface DiagramViewEvents {
 }
 
 export interface UpdateWidgetsEvent {
-    widgets: { [key: string]: ReactElement<any> };
+    widgets: { [key: string]: WidgetDescription };
+}
+
+export interface WidgetDescription {
+    element: ReactElement<any>;
+    pinnedToScreen: boolean;
 }
 
 export class DiagramView {
@@ -72,6 +80,9 @@ export class DiagramView {
 
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
 
+    private router: LinkRouter;
+    private routings: RoutedLinks;
+
     constructor(
         public readonly model: DiagramModel,
         public readonly options: ViewOptions = {},
@@ -84,6 +95,33 @@ export class DiagramView {
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
+
+        this.initRouting();
+    }
+
+    private initRouting() {
+        this.router = this.options.linkRouter || new DefaultLinkRouter();
+        this.updateRoutings();
+
+        this.listener.listen(this.model.events, 'changeCells', () =>  this.updateRoutings());
+        this.listener.listen(this.model.events, 'linkEvent', ({key, data}) => {
+            if (data.changeVertices) {
+                this.updateRoutings();
+            }
+        });
+        this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
+            if (data.changePosition || data.changeSize) {
+                this.updateRoutings();
+            }
+        });
+    }
+
+    private updateRoutings() {
+        this.routings = this.router.route(this.model);
+    }
+
+    getRouting(linkId: string): RoutedLink {
+        return this.routings[linkId];
     }
 
     getLanguage(): string { return this._language; }
@@ -116,8 +154,13 @@ export class DiagramView {
         }
     }
 
-    setPaperWidget(widget: { key: string; widget: ReactElement<any>; }) {
-        const widgets = {[widget.key]: widget.widget};
+    setPaperWidget(widget: {
+        key: string;
+        widget: ReactElement<any> | undefined;
+        pinnedToScreen?: boolean;
+    }) {
+        const {key, widget: element, pinnedToScreen} = widget;
+        const widgets = {[widget.key]: element ? {element, pinnedToScreen} : undefined};
         this.source.trigger('updateWidgets', {widgets});
     }
 
@@ -147,7 +190,7 @@ export class DiagramView {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getTypeStyle(types: ClassIri[]): TypeStyle {
+    public getTypeStyle(types: ElementTypeIri[]): TypeStyle {
         types.sort();
 
         let customStyle: CustomTypeStyle;
@@ -170,6 +213,13 @@ export class DiagramView {
         return {icon, color};
     }
 
+    formatIri(iri: string): string {
+        if (isEncodedBlank(iri)) {
+            return '(blank node)';
+        }
+        return `<${iri}>`;
+    }
+
     public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
         this.typeStyleResolvers.unshift(resolver);
         return resolver;
@@ -184,7 +234,7 @@ export class DiagramView {
         }
     }
 
-    public getElementTemplate(types: ClassIri[]): ElementTemplate {
+    public getElementTemplate(types: ElementTypeIri[]): ElementTemplate {
         for (const resolver of this.templatesResolvers) {
             const result = resolver(types);
             if (result) {
@@ -247,7 +297,7 @@ export class DiagramView {
     }
 }
 
-function getHueFromClasses(classes: ReadonlyArray<ClassIri>, seed?: number): number {
+function getHueFromClasses(classes: ReadonlyArray<ElementTypeIri>, seed?: number): number {
     let hash = seed;
     for (const name of classes) {
         hash = hashFnv32a(name, hash);

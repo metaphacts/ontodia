@@ -1,4 +1,4 @@
-import { Dictionary, ElementModel, LinkModel, ClassIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
+import { Dictionary, ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
 import { generate64BitID } from '../data/utils';
 import { OrderedMap, createStringMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
@@ -93,15 +93,11 @@ export class Graph {
         if (!linkType) {
             throw new Error(`Link type '${link.typeId}' not found.`);
         }
-        this.registerLink(link, linkType);
+        this.registerLink(link);
     }
 
-    private registerLink(link: DiagramLink, linkType: FatLinkType) {
+    private registerLink(link: DiagramLink) {
         const {typeId} = link;
-
-        if (link.typeIndex === undefined) {
-            link.typeIndex = linkType.index;
-        }
 
         this.sourceOf(link).links.push(link);
         if (link.sourceId !== link.targetId) {
@@ -177,7 +173,7 @@ export class Graph {
         this.propertiesById[property.id] = property;
     }
 
-    getClass(classId: ClassIri): FatClassModel | undefined {
+    getClass(classId: ElementTypeIri): FatClassModel | undefined {
         return this.classesById[classId];
     }
 

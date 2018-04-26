@@ -191,8 +191,8 @@ function clonePaperSvg(options: ToSVGOptions, elementSizePadding: number): {
     function findViewport() {
         let child = svgClone.firstChild;
         while (child) {
-            child = child.nextSibling;
             if (child instanceof SVGGElement) { return child; }
+            child = child.nextSibling;
         }
         return undefined;
     }

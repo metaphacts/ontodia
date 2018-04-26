@@ -8,24 +8,77 @@
 
   @mixin halo-button {
     position: absolute;
-    background-size: cover;
+    background-color: transparent;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border: 0 none;
     cursor: pointer;
+    outline: none;
+    padding: 0;
     pointer-events: auto;
+    width: $buttonWidth;
+    height: $buttonHeight;
+
     opacity: 0.5;
     transition: opacity 0.3s;
+    &:hover {
+      opacity: 1;
+    }
+
+    &[disabled] {
+      cursor: not-allowed;
+      opacity: 0.2;
+    }
+  }
+
+  @mixin spinner {
+    position: absolute;
     width: $buttonWidth;
     height: $buttonHeight;
   }
 
-  &__navigate {
-    @include halo-button;
+  @mixin n-docked {
+    top: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
+  }
+
+  @mixin nw-docked {
+    top: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin ne-docked {
+    top: -($buttonHeight + $buttonMargin);
+    right: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin e-docked {
     top: 50%;
     margin-top: -($buttonHeight / 2);
     right: -($buttonWidth + $buttonMargin);
+  }
 
-    &:hover {
-      opacity: 1;
-    }
+  @mixin s-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
+  }
+
+  @mixin sw-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin se-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    right: -($buttonWidth + $buttonMargin);
+  }
+
+  &__navigate {
+    @include halo-button;
+    @include e-docked;
 
     &--open {
       background-image: url("../images/connections.svg");
@@ -36,26 +89,21 @@
     }
   }
 
+  &__remove {
+    @include halo-button;
+    @include ne-docked;
+    background-image: url("../images/delete.svg");
+  }
+
   &__delete {
     @include halo-button;
-    background-image: url("../images/delete.svg");
-    top: -($buttonHeight + $buttonMargin);
-    right: -($buttonWidth + $buttonMargin);
-
-    &:hover {
-      opacity: 1;
-    }
+    @include ne-docked;
+    background-image: url("../images/font-awesome/trash-alt.svg");
   }
 
   &__expand {
     @include halo-button;
-    bottom: -($buttonHeight + $buttonMargin);
-    left: 50%;
-    margin-left: -($buttonWidth / 2);
-
-    &:hover {
-      opacity: 1;
-    }
+    @include s-docked;
 
     &--open {
       background-image: url("../images/expand-properties.png");
@@ -68,12 +116,24 @@
 
   &__add-to-filter {
     @include halo-button;
+    @include se-docked;
     background-image: url("../images/add-to-filter.png");
-    bottom: -($buttonHeight + $buttonMargin);
-    right: -($buttonWidth + $buttonMargin);
+  }
 
-    &:hover {
-      opacity: 1;
-    }
+  &__revert {
+    @include halo-button;
+    @include n-docked;
+    background-image: url("../images/font-awesome/undo-solid.svg");
+  }
+
+  &__establish-connection {
+    @include halo-button;
+    @include sw-docked;
+    background-image: url("../images/font-awesome/plug.svg");
+  }
+
+  &__establish-connection-spinner {
+    @include spinner;
+    @include sw-docked;
   }
 }

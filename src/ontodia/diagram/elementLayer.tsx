@@ -2,12 +2,13 @@ import * as React from 'react';
 import { findDOMNode } from 'react-dom';
 import { hcl } from 'd3-color';
 
-import { Property, ClassIri, PropertyTypeIri } from '../data/model';
+import { Property, ElementTypeIri, PropertyTypeIri } from '../data/model';
 import { TemplateProps } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
+import { KeyedObserver, observeElementTypes, observeProperties } from '../viewUtils/keyedObserver';
 
 import { setElementExpanded } from './commands';
 import { Element } from './elements';
@@ -17,7 +18,6 @@ import { DiagramView, RenderingLayer } from './view';
 export interface Props {
     view: DiagramView;
     group?: string;
-    scale: number;
     style: React.CSSProperties;
 }
 
@@ -36,7 +36,7 @@ export class ElementLayer extends React.Component<Props, {}> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, group, scale, style} = this.props;
+        const {view, group, style} = this.props;
         const models = view.model.elements.filter(model => model.group === group);
 
         return <div className='ontodia-element-layer'
@@ -45,7 +45,6 @@ export class ElementLayer extends React.Component<Props, {}> {
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
                 view={view}
-                scale={scale}
                 onResize={this.updateElementSize}
                 onRender={this.updateElementSize} />)}
         </div>;
@@ -103,9 +102,8 @@ export class ElementLayer extends React.Component<Props, {}> {
 }
 
 interface OverlayedElementProps {
-    model: Element;
     view: DiagramView;
-    scale: number;
+    model: Element;
     onResize: (model: Element, node: HTMLDivElement) => void;
     onRender: (model: Element, node: HTMLDivElement) => void;
 }
@@ -120,9 +118,7 @@ export const ElementContextTypes: { [K in keyof ElementContextWrapper]: any } = 
 };
 
 export interface ElementContext {
-    view: DiagramView;
     element: Element;
-    scale: number;
 }
 
 class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
@@ -131,23 +127,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private readonly listener = new EventObserver();
     private disposed = false;
 
-    private typesObserver = new KeyedObserver<ClassIri>(key => {
-        const type = this.props.view.model.getClass(key);
-        if (type) {
-            type.events.on('changeLabel', this.rerenderTemplate);
-            return () => type.events.off('changeLabel', this.rerenderTemplate);
-        }
-        return undefined;
-    });
-
-    private propertyObserver = new KeyedObserver<PropertyTypeIri>(key => {
-        const property = this.props.view.model.getProperty(key);
-        if (property) {
-            property.events.on('changeLabel', this.rerenderTemplate);
-            return () => property.events.off('changeLabel', this.rerenderTemplate);
-        }
-        return undefined;
-    });
+    private typesObserver: KeyedObserver<ElementTypeIri>;
+    private propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
     constructor(props: OverlayedElementProps) {
         super(props);
@@ -158,9 +139,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
     getChildContext(): ElementContextWrapper {
         const ontodiaElement: ElementContext = {
-            view: this.props.view,
             element: this.props.model,
-            scale: this.props.scale,
         };
         return {ontodiaElement};
     }
@@ -172,14 +151,14 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
     render(): React.ReactElement<any> {
         const {model, view, onResize, onRender} = this.props;
-
-        this.typesObserver.observe(model.data.types);
-        this.propertyObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
+        if (model.temporary) {
+            return <div />;
+        }
 
         const template = view.getElementTemplate(model.data.types);
 
         const {x = 0, y = 0} = model.position;
-        let transform = `translate(${x}px,${y}px)`;
+        const transform = `translate(${x}px,${y}px)`;
 
         // const angle = model.get('angle') || 0;
         // if (angle) { transform += `rotate(${angle}deg)`; }
@@ -238,12 +217,19 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             const element = findDOMNode(this) as HTMLElement;
             if (element) { element.focus(); }
         });
+        this.typesObserver = observeElementTypes(
+            this.props.view.model, 'changeLabel', this.rerenderTemplate
+        );
+        this.propertiesObserver = observeProperties(
+            this.props.view.model, 'changeLabel', this.rerenderTemplate
+        );
+        this.observeTypes();
     }
 
     componentWillUnmount() {
         this.listener.stopListening();
         this.typesObserver.stopListening();
-        this.propertyObserver.stopListening();
+        this.propertiesObserver.stopListening();
         this.disposed = true;
     }
 
@@ -252,7 +238,14 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     componentDidUpdate() {
+        this.observeTypes();
         this.props.onResize(this.props.model, findDOMNode(this) as HTMLDivElement);
+    }
+
+    private observeTypes() {
+        const {model} = this.props;
+        this.typesObserver.observe(model.data.types);
+        this.propertiesObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
     }
 
     private templateProps(): TemplateProps {
@@ -265,11 +258,12 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         const propsAsList = this.getPropertyTable();
 
         return {
+            elementId: model.id,
+            iri: model.iri,
             types,
             label,
             color,
             icon,
-            iri: model.iri,
             imgUrl: model.data.image,
             isExpanded: model.isExpanded,
             props: model.data.properties,
@@ -307,37 +301,5 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             icon: icon ? icon : 'ontodia-default-icon',
             color: hcl(h, c, l).toString(),
         };
-    }
-}
-
-class KeyedObserver<Key extends string> {
-    private observedKeys = createStringMap<Unsubscribe>();
-
-    constructor(readonly subscribe: (key: Key) => Unsubscribe | undefined) {}
-
-    observe(keys: ReadonlyArray<Key>) {
-        const newObservedKeys = createStringMap<Unsubscribe>();
-
-        for (const key of keys) {
-            if (newObservedKeys[key]) { continue; }
-            let token = this.observedKeys[key];
-            if (!token) {
-                token = this.subscribe(key);
-            }
-            newObservedKeys[key] = token;
-        }
-
-        for (const key in this.observedKeys) {
-            if (!newObservedKeys[key]) {
-                const unsubscribe = this.observedKeys[key];
-                unsubscribe();
-            }
-        }
-
-        this.observedKeys = newObservedKeys;
-    }
-
-    stopListening() {
-        this.observe([]);
     }
 }

@@ -1,7 +1,7 @@
 import { ComponentClass } from 'react';
 import { DiagramModel } from '../diagram/model';
 
-import { Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
+import { ElementIri, Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
 
 export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
 export type LinkTemplateResolver = (linkType: string) => LinkTemplate | undefined;
@@ -15,11 +15,12 @@ export interface CustomTypeStyle {
 export type ElementTemplate = ComponentClass<TemplateProps>;
 
 export interface TemplateProps {
+    elementId: string;
+    iri: ElementIri;
     types: string;
     label: string;
     color: any;
     icon: string;
-    iri: string;
     imgUrl?: string;
     isExpanded?: boolean;
     propsAsList?: PropArray;

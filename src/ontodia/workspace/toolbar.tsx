@@ -4,6 +4,7 @@ import { WorkspaceLanguage } from './workspace';
 
 export interface ToolbarProps {
     onSaveDiagram?: () => void;
+    onPersistAuthoredChanges?: () => void;
     onForceLayout?: () => void;
     onZoomIn?: () => void;
     onZoomOut?: () => void;
@@ -38,9 +39,8 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         this.props.onExportPNG();
     }
 
-    private renderBtnSaveDiagram = () => {
+    private renderSaveDiagramButton() {
         if (!this.props.onSaveDiagram) { return null; }
-
         return (
             <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-primary'
                     onClick={this.props.onSaveDiagram}>
@@ -49,7 +49,17 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         );
     }
 
-    private renderBtnHelp = () => {
+    private renderPersistAuthoredChangesButton() {
+        if (!this.props.onPersistAuthoredChanges) { return null; }
+        return (
+            <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-success'
+                    onClick={this.props.onPersistAuthoredChanges}>
+                <span className='fa fa-floppy-o' aria-hidden='true' /> Save data
+            </button>
+        );
+    }
+
+    private renderHelpButton() {
         if (this.props.hidePanels) { return null; }
 
         return (
@@ -60,9 +70,8 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         );
     }
 
-    private renderLanguages = () => {
+    private renderLanguages() {
         const {selectedLanguage, languages} = this.props;
-
         if (languages.length <= 1) { return null; }
 
         return (
@@ -75,19 +84,11 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         );
     }
 
-    private renderButtonsTogglePanels = () => {
-        const {
-            hidePanels,
-            isLeftPanelOpen,
-            onLeftPanelToggle,
-            isRightPanelOpen,
-            onRightPanelToggle
-        } = this.props;
-
+    private renderButtonsTogglePanels() {
+        const {hidePanels, isLeftPanelOpen, onLeftPanelToggle, isRightPanelOpen, onRightPanelToggle} = this.props;
         if (hidePanels) { return null; }
 
         const className = `ontodia-btn ontodia-btn-default ${CLASS_NAME}__toggle`;
-
         return (
             <div className='ontodia-btn-group ontodia-btn-group-sm'>
                 <button type='button'
@@ -111,8 +112,9 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         return (
             <div className={CLASS_NAME}>
                 <div className='ontodia-btn-group ontodia-btn-group-sm'
-                     data-position='bottom' data-step='6' data-intro={intro}>
-                    {this.renderBtnSaveDiagram()}
+                    data-position='bottom' data-step='6' data-intro={intro}>
+                    {this.renderSaveDiagramButton()}
+                    {this.renderPersistAuthoredChangesButton()}
                     <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Force layout' onClick={this.props.onForceLayout}>
                         <span className='fa fa-sitemap' aria-hidden='true'/> Layout
@@ -142,7 +144,7 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
                         <span className='fa fa-print' aria-hidden='true'/>
                     </button>
                     {this.renderLanguages()}
-                    {this.renderBtnHelp()}
+                    {this.renderHelpButton()}
                 </div>
                 {this.renderButtonsTogglePanels()}
             </div>

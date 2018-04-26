@@ -1,3 +1,5 @@
+import { Events, EventSource } from './events';
+
 export abstract class BatchingScheduler {
     private useAnimationFrame: boolean;
     private scheduled: number | undefined;
@@ -81,5 +83,54 @@ export class Debouncer extends BatchingScheduler {
     protected run() {
         const callback = this.callback;
         callback();
+    }
+}
+
+export class Cancellation {
+    private source: EventSource<{ abort: undefined }> | undefined = new EventSource();
+    private aborted = false;
+
+    readonly signal: CancellationToken;
+
+    constructor() {
+        this.signal = new (class {
+            constructor(private parent: Cancellation) {}
+            get aborted() { return this.parent.aborted; }
+            addEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.on('abort', handler);
+                } else {
+                    handler();
+                }
+            }
+            removeEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.off('abort', handler);
+                }
+            }
+        })(this);
+    }
+
+    abort() {
+        if (this.aborted) { return; }
+        this.aborted = true;
+        this.source.trigger('abort', undefined);
+        this.source = undefined;
+    }
+}
+
+export interface CancellationToken {
+    readonly aborted: boolean;
+    addEventListener(event: 'abort', handler: () => void): void;
+    removeEventListener(event: 'abort', handler: () => void): void;
+}
+
+export class CancelledError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = CancelledError.name;
+        Object.setPrototypeOf(this, CancelledError.prototype);
     }
 }
