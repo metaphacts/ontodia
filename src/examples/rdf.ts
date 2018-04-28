@@ -9,7 +9,7 @@ const N3Parser: any = require('rdf-parser-n3');
 const RdfXmlParser: any = require('rdf-parser-rdfxml');
 const JsonLdParser: any = require('rdf-parser-jsonld');
 
-const data = require<string>('raw-loader!./resources/testData.ttl');
+const data = require<string>('./resources/testData.ttl');
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }

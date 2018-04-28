@@ -9,7 +9,7 @@ import { formatLocalizedLabel } from '../diagram/model';
 
 // bundling jstree to solve issues with multiple jquery packages,
 // when jstree sets itself as plugin to wrong version of jquery
-const jstreeJQuery = require<JQueryStatic>('exports?require("jquery")!jstree');
+const jstreeJQuery = require<JQueryStatic>('exports-loader?require("jquery")!jstree');
 require('jstree/dist/themes/default/style.css');
 
 export interface ClassTreeProps {

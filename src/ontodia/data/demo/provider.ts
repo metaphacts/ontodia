@@ -2,10 +2,10 @@ import { cloneDeep, keyBy, map, each } from 'lodash';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
 
-const CLASSES = require<ClassModel[]>('json!./data/classes.json');
-const LINK_TYPES = require<LinkType[]>('json!./data/linkTypes.json');
-const ELEMENTS = require<Dictionary<ElementModel>>('json!./data/elements.json');
-const LINKS  = require<LinkModel[]>('json!./data/links.json');
+const CLASSES = require<ClassModel[]>('./data/classes.json');
+const LINK_TYPES = require<LinkType[]>('./data/linkTypes.json');
+const ELEMENTS = require<Dictionary<ElementModel>>('./data/elements.json');
+const LINKS  = require<LinkModel[]>('./data/links.json');
 
 export class DemoDataProvider implements DataProvider {
     private simulateNetwork<T>(result: T) {
