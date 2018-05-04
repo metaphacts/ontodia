@@ -1,5 +1,6 @@
 {
     "extends": "tslint:recommended",
+    "defaultSeverity": "warning",
     "rules": {
         "array-type": [false],
         "arrow-parens": [false, "ban-single-arg-parens"],

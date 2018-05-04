@@ -32,7 +32,7 @@
     "_webpack": "./node_modules/.bin/webpack",
     "_webpack-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",
     "start": "./node_modules/.bin/webpack-dev-server --port 5000 --host 0.0.0.0 --config webpack.demo.config.js",
-    "lint": "./node_modules/.bin/tslint -c tslint.json 'src/**/*.ts' 'src/**/*.tsx' -t stylish"
+    "lint": "./node_modules/.bin/tslint -c tslint.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish"
   },
   "dependencies": {
     "d3-color": "~1.0.2",
@@ -74,7 +74,7 @@
     "style-loader": "0.21.0",
     "ts-loader": "4.2.0",
     "tslib": "1.9.0",
-    "tslint": "4.5.1",
+    "tslint": "5.9.1",
     "typescript": "2.8.3",
     "url-loader": "1.0.1",
     "webpack": "4.6.0",
