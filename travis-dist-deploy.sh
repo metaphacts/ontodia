@@ -24,7 +24,7 @@ cd "$TRAVIS_BUILD_DIR"/heroku-app
 [ -e assets/"$TRAVIS_BRANCH" ] && rm -r assets/"$TRAVIS_BRANCH"
 cp -r "$TRAVIS_BUILD_DIR"/dist assets/"$TRAVIS_BRANCH"
 # remove temporary files
-rm -r assets/"$TRAVIS_BRANCH"/dts
+rm -r assets/"$TRAVIS_BRANCH"/temp
 
 # push it back
 git add assets
