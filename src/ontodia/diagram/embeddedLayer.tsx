@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Dictionary, ElementModel } from '../data/model';
+import { Dictionary, ElementModel, ElementIri } from '../data/model';
 import { Paper } from './paper';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from './paperArea';
 import { Element, Cell } from './elements';
@@ -112,7 +112,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
 
         view.loadEmbeddedElements(element.iri).then(models => {
             const batch = view.model.history.startBatch();
-            const elementIris = Object.keys(models);
+            const elementIris = Object.keys(models) as ElementIri[];
             const elements = elementIris.map(
                 key => view.model.createElement(models[key], element.id)
             );

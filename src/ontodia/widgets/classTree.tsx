@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 
-import { Dictionary, LocalizedString } from '../data/model';
+import { Dictionary, LocalizedString, ClassIri } from '../data/model';
 import { FatClassModel } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
@@ -14,7 +14,7 @@ require('jstree/dist/themes/default/style.css');
 
 export interface ClassTreeProps {
     view: DiagramView;
-    onClassSelected: (classId: string) => void;
+    onClassSelected: (classId: ClassIri) => void;
 }
 
 interface ClassTreeElement {

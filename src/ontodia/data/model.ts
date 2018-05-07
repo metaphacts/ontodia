@@ -7,9 +7,14 @@ export interface LocalizedString {
 
 export type Property = { type: 'string'; values: LocalizedString[]; };
 
+export type ElementIri = string & { readonly elementBrand: void };
+export type ClassIri = string & { readonly classBrand: void };
+export type LinkTypeIri = string & { readonly linkTypeBrand: void };
+export type PropertyTypeIri = string & { readonly propertyTypeBrand: void };
+
 export interface ElementModel {
-    id: string;
-    types: string[];
+    id: ElementIri;
+    types: ClassIri[];
     label: { values: LocalizedString[] };
     image?: string;
     properties: { [id: string]: Property };
@@ -17,32 +22,32 @@ export interface ElementModel {
 }
 
 export interface LinkModel {
-    linkTypeId: string;
-    sourceId: string;
-    targetId: string;
+    linkTypeId: LinkTypeIri;
+    sourceId: ElementIri;
+    targetId: ElementIri;
     properties?: { [id: string]: Property };
 }
 
 export interface ClassModel {
-    id: string;
+    id: ClassIri;
     label: { values: LocalizedString[] };
     count?: number;
     children: ClassModel[];
 }
 
 export interface LinkCount {
-    id: string;
+    id: LinkTypeIri;
     inCount: number;
     outCount: number;
 }
 
 export interface LinkType {
-    id: string;
+    id: LinkTypeIri;
     label: { values: LocalizedString[] };
     count: number;
 }
 
 export interface PropertyModel {
-    id: string;
+    id: PropertyTypeIri;
     label: { values: LocalizedString[] };
 }

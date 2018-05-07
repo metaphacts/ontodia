@@ -20,7 +20,7 @@ import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils
 import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { Halo } from '../widgets/halo';
 
-import { Dictionary, ElementModel, LocalizedString } from '../data/model';
+import { Dictionary, ElementModel, LocalizedString, ElementIri, ClassIri, LinkTypeIri } from '../data/model';
 import { hashFnv32a } from '../data/utils';
 
 import { setElementExpanded } from './commands';
@@ -92,7 +92,7 @@ export class DiagramView {
 
     private _language = 'en';
     private _selection: ReadonlyArray<Element> = [];
-    private linkTemplates: { [linkTypeId: string]: LinkTemplate } = {};
+    private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
 
     constructor(
         public readonly model: DiagramModel,
@@ -127,7 +127,7 @@ export class DiagramView {
         this.source.trigger('changeLanguage', {source: this, previous});
     }
 
-    getLinkTemplates(): { readonly [linkTypeId: string]: LinkTemplate } {
+    getLinkTemplates(): ReadonlyMap<LinkTypeIri, LinkTemplate> {
         return this.linkTemplates;
     }
 
@@ -168,7 +168,7 @@ export class DiagramView {
         if (elementsToRemove.length === 0) { return; }
 
         this.cancelSelection();
-        
+
         const batch = this.model.history.startBatch();
         for (const element of elementsToRemove) {
             this.model.removeElement(element.id);
@@ -179,9 +179,9 @@ export class DiagramView {
     private onPaperPointerUp(event: PointerUpEvent) {
         if (this.options.disableDefaultHalo) { return; }
         const {sourceEvent, target, triggerAsClick} = event;
-        
+
         if (sourceEvent.ctrlKey || sourceEvent.shiftKey || sourceEvent.metaKey) { return; }
-        
+
         if (target instanceof Element) {
             this.setSelection([target]);
             target.focus();
@@ -281,7 +281,7 @@ export class DiagramView {
 
     onDragDrop(e: DragEvent, paperPosition: Vector) {
         e.preventDefault();
-        let elementIris: string[];
+        let elementIris: ElementIri[];
         try {
             elementIris = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
         } catch (ex) {
@@ -294,7 +294,7 @@ export class DiagramView {
                 const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
                 const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
                     ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
-                elementIris = [uri];
+                elementIris = [uri as ElementIri];
             }
         }
         if (!elementIris || elementIris.length === 0) { return; }
@@ -322,7 +322,7 @@ export class DiagramView {
     }
 
     public getElementTypeString(elementModel: ElementModel): string {
-        return elementModel.types.map((typeId: string) => {
+        return elementModel.types.map(typeId => {
             const type = this.model.getClassesById(typeId);
             return this.getElementTypeLabel(type).text;
         }).sort().join(', ');
@@ -333,13 +333,13 @@ export class DiagramView {
         return label ? label : { text: uri2name(type.id), lang: '' };
     }
 
-    public getLinkLabel(linkTypeId: string): LocalizedString {
+    public getLinkLabel(linkTypeId: LinkTypeIri): LocalizedString {
         const type = this.model.getLinkType(linkTypeId);
         const label = type ? this.getLocalizedText(type.label) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getTypeStyle(types: string[]): TypeStyle {
+    public getTypeStyle(types: ClassIri[]): TypeStyle {
         types.sort();
 
         let customStyle: CustomTypeStyle;
@@ -376,7 +376,7 @@ export class DiagramView {
         }
     }
 
-    public getElementTemplate(types: string[]): ElementTemplate {
+    public getElementTemplate(types: ClassIri[]): ElementTemplate {
         for (const resolver of this.templatesResolvers) {
             const result = resolver(types);
             if (result) {
@@ -401,7 +401,7 @@ export class DiagramView {
     }
 
     createLinkTemplate(linkType: FatLinkType): LinkTemplate {
-        const existingTemplate = this.linkTemplates[linkType.id];
+        const existingTemplate = this.linkTemplates.get(linkType.id);
         if (existingTemplate) {
             return existingTemplate;
         }
@@ -416,7 +416,7 @@ export class DiagramView {
         }
 
         fillLinkTemplateDefaults(template, this.model);
-        this.linkTemplates[linkType.id] = template;
+        this.linkTemplates.set(linkType.id, template);
         this.source.trigger('changeLinkTemplates', {source: this});
         return template;
     }
@@ -438,11 +438,11 @@ export class DiagramView {
         this.disposed = true;
     }
 
-    loadEmbeddedElements = (elementId: string): Promise<Dictionary<ElementModel>> => {
+    loadEmbeddedElements = (elementIri: ElementIri): Promise<Dictionary<ElementModel>> => {
         const elements = this.options.groupBy.map(groupBy =>
             this.model.dataProvider.linkElements({
-                elementId,
-                linkId: groupBy.linkType,
+                elementId: elementIri,
+                linkId: groupBy.linkType as LinkTypeIri,
                 offset: 0,
                 direction: groupBy.linkDirection,
             })
@@ -453,7 +453,7 @@ export class DiagramView {
     }
 }
 
-function getHueFromClasses(classes: string[], seed?: number): number {
+function getHueFromClasses(classes: ReadonlyArray<ClassIri>, seed?: number): number {
     let hash = seed;
     for (const name of classes) {
         hash = hashFnv32a(name, hash);
@@ -473,7 +473,7 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
 }
 
 function placeElements(
-    model: DiagramModel, elementIris: ReadonlyArray<string>, position: Vector
+    model: DiagramModel, elementIris: ReadonlyArray<ElementIri>, position: Vector
 ): Element[] {
     const elements: Element[] = [];
     let totalXOffset = 0;
@@ -491,9 +491,8 @@ function placeElements(
 
 function createElementAt(
     model: DiagramModel,
-    elementIri: string,
+    elementIri: ElementIri,
     position: { x: number; y: number; center?: boolean; },
-    suggestedId?: string
 ) {
     const element = model.createElement(elementIri);
 

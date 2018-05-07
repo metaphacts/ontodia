@@ -1,7 +1,6 @@
-import { each, size, values, keyBy, defaults } from 'lodash';
-
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 import { generate64BitID } from '../data/utils';
@@ -44,9 +43,9 @@ export class DiagramModel {
 
     dataProvider: DataProvider;
 
-    private classFetching: DataFetchingThread;
-    private linkFetching: DataFetchingThread;
-    private propertyLabelFetching: DataFetchingThread;
+    private classFetching: DataFetchingThread<ClassIri>;
+    private linkFetching: DataFetchingThread<LinkTypeIri>;
+    private propertyLabelFetching: DataFetchingThread<PropertyTypeIri>;
 
     private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
@@ -69,16 +68,16 @@ export class DiagramModel {
         return this.graph.getLink(linkId);
     }
 
-    getLinkType(linkTypeId: string): FatLinkType | undefined {
+    getLinkType(linkTypeId: LinkTypeIri): FatLinkType | undefined {
         return this.graph.getLinkType(linkTypeId);
     }
 
-    linksOfType(linkTypeId: string): ReadonlyArray<Link> {
+    linksOfType(linkTypeId: LinkTypeIri): ReadonlyArray<Link> {
         return this.graph.getLinks().filter(link => link.typeId === linkTypeId);
     }
 
-    findLink(link: LinkModel): Link | undefined {
-        return this.graph.findLink(link);
+    findLink(linkTypeId: LinkTypeIri, sourceId: string, targetId: string): Link | undefined {
+        return this.graph.findLink(linkTypeId, sourceId, targetId);
     }
 
     sourceOf(link: Link) { return this.getElement(link.sourceId); }
@@ -217,7 +216,8 @@ export class DiagramModel {
 
     private setLinkSettings(settings: LinkTypeOptions[]) {
         for (const setting of settings) {
-            const {id: linkTypeId, visible = true, showLabel = true} = setting;
+            const {visible = true, showLabel = true} = setting;
+            const linkTypeId = setting.id as LinkTypeIri;
             this.linkSettings[linkTypeId] = {id: linkTypeId, visible, showLabel};
             const linkType = this.getLinkType(linkTypeId);
             if (linkType) {
@@ -240,7 +240,7 @@ export class DiagramModel {
             hideUnusedLinkTypes,
         } = params;
 
-        const elementIrisToRequestData: string[] = [];
+        const elementIrisToRequestData: ElementIri[] = [];
         const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
         const normalizedCells = layoutData.cells.map(normalizeImportedCell);
@@ -263,12 +263,9 @@ export class DiagramModel {
                 const linkType = this.createLinkType(typeId);
                 usedLinkTypes[linkType.id] = linkType;
                 const link = this.createLink({
-                    data: {
-                        linkTypeId: typeId,
-                        sourceId: source.id,
-                        targetId: target.id,
-                    },
                     linkType,
+                    sourceId: source.id,
+                    targetId: target.id,
                     vertices,
                 });
                 if (link) {
@@ -301,7 +298,7 @@ export class DiagramModel {
         }
     }
 
-    requestElementData(elementIris: ReadonlyArray<string>): Promise<void> {
+    requestElementData(elementIris: ReadonlyArray<ElementIri>): Promise<void> {
         if (elementIris.length === 0) {
             return Promise.resolve();
         }
@@ -313,7 +310,7 @@ export class DiagramModel {
             });
     }
 
-    requestLinksOfType(linkTypeIds?: string[]): Promise<void> {
+    requestLinksOfType(linkTypeIds?: LinkTypeIri[]): Promise<void> {
         const linkTypes = linkTypeIds || this.graph.getLinkTypes()
             .filter(type => type.visible)
             .map(type => type.id);
@@ -327,7 +324,7 @@ export class DiagramModel {
         });
     }
 
-    getPropertyById(propertyId: string): RichProperty {
+    getPropertyById(propertyId: PropertyTypeIri): RichProperty {
         const existing = this.graph.getProperty(propertyId);
         if (existing) {
             return existing;
@@ -358,7 +355,7 @@ export class DiagramModel {
         return this.classTree;
     }
 
-    getClassesById(classId: string): FatClassModel {
+    getClassesById(classId: ClassIri): FatClassModel {
         const existing = this.graph.getClass(classId);
         if (existing) {
             return existing;
@@ -385,9 +382,9 @@ export class DiagramModel {
         return classModel;
     }
 
-    createElement(elementIriOrModel: string | ElementModel, group?: string): Element {
+    createElement(elementIriOrModel: ElementIri | ElementModel, group?: string): Element {
         const elementIri = typeof elementIriOrModel === 'string'
-                ? elementIriOrModel : elementIriOrModel.id;
+            ? elementIriOrModel : (elementIriOrModel as ElementModel).id;
 
         const elements = this.elements.filter(el => el.iri === elementIri && el.group === group);
         if (elements.length > 0) {
@@ -396,7 +393,7 @@ export class DiagramModel {
         }
 
         let data = typeof elementIriOrModel === 'string'
-            ? placeholderTemplateFromIri(elementIri) : elementIriOrModel;
+            ? placeholderTemplateFromIri(elementIri) : elementIriOrModel as ElementModel;
         data = {...data, id: data.id};
         const element = new Element({id: `element_${generate64BitID()}`, data, group});
         this.history.execute(
@@ -415,7 +412,7 @@ export class DiagramModel {
         }
     }
 
-    createLinkType(linkTypeId: string): FatLinkType {
+    createLinkType(linkTypeId: LinkTypeIri): FatLinkType {
         const existing = this.graph.getLinkType(linkTypeId);
         if (existing) {
             return existing;
@@ -473,51 +470,56 @@ export class DiagramModel {
         }
     }
 
-    private createLinks(linkModel: LinkModel, linkType: FatLinkType) {
-        const {sourceId, targetId} = linkModel;
-        const sources = this.elements.filter(el => el.iri === sourceId);
-        const targets = this.elements.filter(el => el.iri === targetId);
+    private createLinks(data: LinkModel, linkType: FatLinkType) {
+        const sources = this.elements.filter(el => el.iri === data.sourceId);
+        const targets = this.elements.filter(el => el.iri === data.targetId);
 
         for (const source of sources) {
             for (const target of targets) {
-                const data = {...linkModel, sourceId: source.id, targetId: target.id};
-                this.createLink({data, linkType});
+                this.createLink({linkType, sourceId: source.id, targetId: target.id, data});
             }
         }
     }
 
-    private createLink(params: {
-        data: LinkModel;
+    createLink(params: {
         linkType: FatLinkType;
+        sourceId: string;
+        targetId: string;
+        data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
     }): Link {
-        const {data, linkType, vertices} = params;
-        if (data.linkTypeId !== linkType.id) {
+        const {linkType, sourceId, targetId, data, vertices} = params;
+        if (data && data.linkTypeId !== linkType.id) {
             throw new Error('linkTypeId must match linkType.id');
         }
 
-        const existingLink = this.findLink(data);
+        const existingLink = this.findLink(linkType.id, sourceId, targetId);
         if (existingLink) {
             existingLink.setLayoutOnly(false);
+            existingLink.setData(data);
             return existingLink;
         }
 
-        const shouldBeVisible = linkType.visible
-            && this.getElement(data.sourceId)
-            && this.getElement(data.targetId);
-
+        const shouldBeVisible = linkType.visible && this.getElement(sourceId) && this.getElement(targetId);
         if (!shouldBeVisible) {
             return undefined;
         }
 
-        const link = new Link({id: `link_${generate64BitID()}`, data, vertices});
+        const link = new Link({
+            id: `link_${generate64BitID()}`,
+            typeId: linkType.id,
+            sourceId,
+            targetId,
+            data,
+            vertices,
+        });
         this.graph.addLink(link);
         return link;
     }
 }
 
 export interface LinkTypeOptions {
-    id: string;
+    id: string; // LinkTypeIri
     visible: boolean;
     showLabel?: boolean;
 }
@@ -541,14 +543,14 @@ function removeElement(graph: Graph, element: Element): Command {
     });
 }
 
-export function restoreLinksBetweenElements(model: DiagramModel, elementIris: ReadonlyArray<string>): Command {
+export function restoreLinksBetweenElements(model: DiagramModel, elementIris: ReadonlyArray<ElementIri>): Command {
     return Command.effect('Restore links between elements', () => {
         model.requestElementData(elementIris);
         model.requestLinksOfType();
     });
 }
 
-function placeholderTemplateFromIri(iri: string): ElementModel {
+function placeholderTemplateFromIri(iri: ElementIri): ElementModel {
     return {
         id: iri,
         types: [],

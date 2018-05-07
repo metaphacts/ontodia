@@ -4,6 +4,11 @@ import * as ReactDOM from 'react-dom';
 import { Workspace, WorkspaceProps, DemoDataProvider, ToolbarProps } from '../index';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
+const CLASSES = require<any>('./resources/classes.json');
+const LINK_TYPES = require<any>('./resources/linkTypes.json');
+const ELEMENTS = require<any>('./resources/elements.json');
+const LINKS  = require<any>('./resources/links.json');
+
 export interface Props extends ToolbarProps {
     onExampleClick?: () => void;
 }
@@ -41,7 +46,11 @@ function onWorkspaceMounted(workspace: Workspace) {
     const model = workspace.getModel();
 
     const layoutData = tryLoadLayoutFromLocalStorage();
-    model.importLayout({layoutData, dataProvider: new DemoDataProvider(), validateLinks: true});
+    model.importLayout({
+        dataProvider: new DemoDataProvider(CLASSES, LINK_TYPES, ELEMENTS, LINKS),
+        layoutData,
+        validateLinks: true,
+    });
 }
 
 const props: WorkspaceProps & React.ClassAttributes<Workspace> = {

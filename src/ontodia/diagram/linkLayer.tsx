@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
-import { LocalizedString } from '../data/model';
+import { LocalizedString, LinkTypeIri } from '../data/model';
 import {
     LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle,
     LinkRouter, RoutedLinks, RoutedLink,
@@ -217,7 +217,7 @@ interface LinkViewProps {
 const LINK_CLASS = 'ontodia-link';
 
 class LinkView extends Component<LinkViewProps, {}> {
-    private templateTypeId: string;
+    private templateTypeId: LinkTypeIri;
     private template: LinkTemplate;
 
     constructor(props: LinkViewProps, context: any) {
@@ -528,15 +528,10 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
 
     render() {
         const {view} = this.props;
-        const templates = view.getLinkTemplates();
         const markers: Array<ReactElement<LinkMarkerProps>> = [];
 
-        for (const linkTypeId in templates) {
-            if (!templates.hasOwnProperty(linkTypeId)) { continue; }
-
+        view.getLinkTemplates().forEach((template, linkTypeId) => {
             const typeIndex = view.model.getLinkType(linkTypeId).index;
-            const template = templates[linkTypeId];
-
             if (template.markerSource) {
                 markers.push(
                     <LinkMarker key={typeIndex * 2}
@@ -555,7 +550,7 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
                     />
                 );
             }
-        }
+        });
 
         return <defs>{markers}</defs>;
     }

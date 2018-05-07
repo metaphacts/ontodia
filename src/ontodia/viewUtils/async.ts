@@ -44,23 +44,23 @@ export abstract class BatchingScheduler {
     }
 }
 
-export class DataFetchingThread extends BatchingScheduler {
-    private fetchingPromise: Promise<string[]>;
+export class DataFetchingThread<Key extends string> extends BatchingScheduler {
+    private fetchingPromise: Promise<Key[]>;
     private fetchingQueue: { [key: string]: true } = Object.create(null);
 
-    private resolve: (queue: string[]) => void;
+    private resolve: (queue: Key[]) => void;
     private reject: (error: any) => void;
 
     constructor(waitingTime = 200) {
         super(waitingTime);
     }
 
-    push(key: string): Promise<string[]> {
+    push(key: Key): Promise<Key[]> {
         this.fetchingQueue[key] = true;
         if (this.fetchingPromise) {
             return Promise.resolve([]);
         } else {
-            this.fetchingPromise = new Promise<string[]>((resolve, reject) => {
+            this.fetchingPromise = new Promise<Key[]>((resolve, reject) => {
                 this.resolve = resolve;
                 this.reject = reject;
                 this.schedule();
@@ -79,7 +79,7 @@ export class DataFetchingThread extends BatchingScheduler {
         this.fetchingQueue = Object.create(null);
         this.resolve = undefined;
         this.reject = undefined;
-        resolve(Object.keys(fetchingQueue));
+        resolve(Object.keys(fetchingQueue) as Key[]);
     }
 
     dispose() {

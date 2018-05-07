@@ -1,5 +1,6 @@
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
 } from './model';
 
 /**
@@ -43,39 +44,39 @@ export interface DataProvider {
      * Class information
      */
     classInfo(params: {
-        classIds: string[];
+        classIds: ClassIri[];
     }): Promise<ClassModel[]>;
 
     /**
      * Data properties information
      */
-    propertyInfo?(params: { propertyIds: string[] }): Promise<Dictionary<PropertyModel>>;
+    propertyInfo?(params: { propertyIds: PropertyTypeIri[] }): Promise<Dictionary<PropertyModel>>;
 
     /**
      * Link type information.
      */
     linkTypesInfo(params: {
-        linkTypeIds: string[];
+        linkTypeIds: LinkTypeIri[];
     }): Promise<LinkType[]>;
 
     /**
      * Getting the elements from the data source on diagram initialization and on navigation events
      */
-    elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>>;
+    elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>>;
 
     /**
      * Should return all links between elements.
      * linkTypeIds is ignored in current sparql providers and is subject to be removed
      */
     linksInfo(params: {
-        elementIds: string[];
-        linkTypeIds: string[];
+        elementIds: ElementIri[];
+        linkTypeIds: LinkTypeIri[];
     }): Promise<LinkModel[]>;
 
     /**
      * Get link types of element to build navigation menu
      */
-    linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]>;
+    linkTypesOf(params: { elementId: ElementIri }): Promise<LinkCount[]>;
 
     /**
      * returns elements following link for specified element.
@@ -85,8 +86,9 @@ export interface DataProvider {
     linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>>;
 
     /**
-     * Supports filter functionality with different filters - by type, by element and it's connection, by full-text search
-     * Implementation should implement all possible combinations
+     * Supports filter functionality with different filters - by type,
+     * by element and it's connection, by full-text search.
+     * Implementation should implement all possible combinations.
      */
     filter(params: FilterParams): Promise<Dictionary<ElementModel>>;
 }
@@ -94,18 +96,18 @@ export interface DataProvider {
 export default DataProvider;
 
 export interface LinkElementsParams {
-    elementId: string;
-    linkId: string;
+    elementId: ElementIri;
+    linkId: LinkTypeIri;
     limit?: number;
     offset: number;
-    direction?: 'in' | 'out'
+    direction?: 'in' | 'out';
 }
 
 export interface FilterParams {
     /**
      * element type filter
      */
-    elementTypeId?: string;
+    elementTypeId?: ClassIri;
     /**
      * text search
      */
@@ -115,12 +117,12 @@ export interface FilterParams {
      * Reference element id to limit elements accessible through links from this elements only.
      * Could be used with refElementLinkId to limit link types which to follow.
      */
-    refElementId?: string;
+    refElementId?: ElementIri;
 
     /**
      * Reference element link type id. Is used only when refElementId is set.
      */
-    refElementLinkId?: string;
+    refElementLinkId?: LinkTypeIri;
 
     /**
      * Reference element link type direction ('in' | 'out'). Is used only when refElementLinkId is set.

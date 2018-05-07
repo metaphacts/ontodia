@@ -1,5 +1,7 @@
 import { pick } from 'lodash';
 
+import { ElementIri, LinkTypeIri } from '../data/model';
+
 import { Element as DiagramElement, Link as DiagramLink } from './elements';
 import { Vector, Size } from './geometry';
 
@@ -12,7 +14,7 @@ export type LayoutCell = LayoutElement | LayoutLink;
 export interface LayoutElement {
     type: 'element';
     id: string;
-    iri: string;
+    iri: ElementIri;
     position: Vector;
     size?: Size;
     angle?: number;
@@ -23,7 +25,7 @@ export interface LayoutElement {
 export interface LayoutLink {
     type: 'link';
     id: string;
-    typeId: string;
+    typeId: LinkTypeIri;
     source: { id: string };
     target: { id: string };
     vertices?: Array<Vector>;

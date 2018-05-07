@@ -9,7 +9,7 @@ import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 import { restoreLinksBetweenElements, formatLocalizedLabel } from '../diagram/model';
 
-import { Dictionary, LocalizedString, ElementModel } from '../data/model';
+import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
 import { EventObserver } from '../viewUtils/events';
 
 type Label = { values: LocalizedString[] };
@@ -23,7 +23,7 @@ export interface ReactElementModel {
 const MENU_OFFSET = 40;
 const MAX_LINK_COUNT = 100;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
-    id: 'allRelatedElements',
+    id: 'allRelatedElements' as LinkTypeIri,
     label: [{lang: '', text: 'All'}],
 });
 
@@ -177,7 +177,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         let xi = 0;
         let yi = 0;
 
-        const addedElementIris: string[] = [];
+        const addedElementIris: ElementIri[] = [];
         selectedObjects.forEach(el => {
             const element = view.model.createElement(el.model);
             addedElementIris.push(element.iri);

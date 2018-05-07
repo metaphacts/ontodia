@@ -1,4 +1,7 @@
-import { ClassModel, ElementModel, LinkModel, LocalizedString, Property } from '../data/model';
+import {
+    ClassModel, ElementModel, LinkModel, LocalizedString, Property,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+} from '../data/model';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
@@ -116,7 +119,7 @@ export class Element {
 
     addToFilter(linkType?: FatLinkType, direction?: 'in' | 'out') {
         this.source.trigger('requestedAddToFilter', {
-            source: this, linkType, direction
+            source: this, linkType, direction,
         });
     }
 
@@ -140,7 +143,7 @@ export class FatClassModel {
     private readonly source = new EventSource<FatClassModelEvents>();
     readonly events: Events<FatClassModelEvents> = this.source;
 
-    readonly id: string;
+    readonly id: ClassIri;
 
     private _base: FatClassModel | undefined;
     private _derived: FatClassModel[] = [];
@@ -149,7 +152,7 @@ export class FatClassModel {
     private _count: number | undefined;
 
     constructor(props: {
-        id: string;
+        id: ClassIri;
         label: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {
@@ -209,12 +212,12 @@ export class RichProperty {
     private readonly source = new EventSource<RichPropertyEvents>();
     readonly events: Events<RichPropertyEvents> = this.source;
 
-    readonly id: string;
+    readonly id: PropertyTypeIri;
 
     private _label: ReadonlyArray<LocalizedString>;
 
     constructor(props: {
-        id: string;
+        id: PropertyTypeIri;
         label: ReadonlyArray<LocalizedString>;
     }) {
         const {id, label} = props;
@@ -257,37 +260,40 @@ export class Link {
 
     private _typeIndex: number;
 
-    private _typeId: string;
+    private _typeId: LinkTypeIri;
     private _sourceId: string;
     private _targetId: string;
 
-    private _data: LinkModel;
+    private _data: LinkModel | undefined;
     private _layoutOnly: boolean;
     private _vertices: ReadonlyArray<Vector>;
 
     constructor(props: {
         id: string;
-        data: LinkModel;
+        typeId: LinkTypeIri;
+        sourceId: string;
+        targetId: string;
+        data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
     }) {
-        const {id, data, vertices = []} = props;
+        const {id, typeId, sourceId, targetId, data, vertices = []} = props;
         this.id = id;
+        this._typeId = typeId;
+        this._sourceId = sourceId;
+        this._targetId = targetId;
         this._data = data;
-        this._typeId = data.linkTypeId;
-        this._sourceId = data.sourceId;
-        this._targetId = data.targetId;
         this._vertices = vertices;
     }
 
     get typeIndex(): number { return this._typeIndex; }
     set typeIndex(value: number) { this._typeIndex = value; }
 
-    get typeId(): string { return this._typeId; }
+    get typeId() { return this._typeId; }
     get sourceId(): string { return this._sourceId; }
     get targetId(): string { return this._targetId; }
 
-    get data(): LinkModel { return this._data; }
-    setData(value: LinkModel) {
+    get data() { return this._data; }
+    setData(value: LinkModel | undefined) {
         const previous = this._data;
         if (previous === value) { return; }
         this._data = value;
@@ -335,7 +341,7 @@ export class FatLinkType {
     private readonly source = new EventSource<FatLinkTypeEvents>();
     readonly events: Events<FatLinkTypeEvents> = this.source;
 
-    readonly id: string;
+    readonly id: LinkTypeIri;
 
     private _index: number | undefined;
 
@@ -346,7 +352,7 @@ export class FatLinkType {
     private _showLabel = true;
 
     constructor(props: {
-        id: string;
+        id: LinkTypeIri;
         index?: number;
         label: ReadonlyArray<LocalizedString>;
     }) {

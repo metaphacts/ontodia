@@ -2,7 +2,7 @@ import * as React from 'react';
 import { findDOMNode } from 'react-dom';
 import { hcl } from 'd3-color';
 
-import { Property } from '../data/model';
+import { Property, ClassIri, PropertyTypeIri } from '../data/model';
 import { TemplateProps } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
@@ -131,7 +131,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private readonly listener = new EventObserver();
     private disposed = false;
 
-    private typesObserver = new KeyedObserver(key => {
+    private typesObserver = new KeyedObserver<ClassIri>(key => {
         const type = this.props.view.model.getClassesById(key);
         if (type) {
             type.events.on('changeLabel', this.rerenderTemplate);
@@ -140,7 +140,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         return undefined;
     });
 
-    private propertyObserver = new KeyedObserver(key => {
+    private propertyObserver = new KeyedObserver<PropertyTypeIri>(key => {
         const property = this.props.view.model.getPropertyById(key);
         if (property) {
             property.events.on('changeLabel', this.rerenderTemplate);
@@ -174,7 +174,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         const {model, view, onResize, onRender} = this.props;
 
         this.typesObserver.observe(model.data.types);
-        this.propertyObserver.observe(Object.keys(model.data.properties));
+        this.propertyObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
 
         const template = view.getElementTemplate(model.data.types);
 
@@ -282,7 +282,8 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         if (!model.data.properties) { return []; }
 
-        const propTable = Object.keys(model.data.properties).map(key => {
+        const propertyIris = Object.keys(model.data.properties) as PropertyTypeIri[];
+        const propTable = propertyIris.map(key => {
             const property = view.model.getPropertyById(key);
             const name = formatLocalizedLabel(key, property.label, view.getLanguage());
             return {
@@ -309,12 +310,12 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 }
 
-class KeyedObserver {
+class KeyedObserver<Key extends string> {
     private observedKeys = createStringMap<Unsubscribe>();
 
-    constructor(readonly subscribe: (key: string) => Unsubscribe | undefined) {}
+    constructor(readonly subscribe: (key: Key) => Unsubscribe | undefined) {}
 
-    observe(keys: string[]) {
+    observe(keys: ReadonlyArray<Key>) {
         const newObservedKeys = createStringMap<Unsubscribe>();
 
         for (const key of keys) {

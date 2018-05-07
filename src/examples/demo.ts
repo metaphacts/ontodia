@@ -5,13 +5,18 @@ import { Workspace, WorkspaceProps, DemoDataProvider } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
+const CLASSES = require<any>('./resources/classes.json');
+const LINK_TYPES = require<any>('./resources/linkTypes.json');
+const ELEMENTS = require<any>('./resources/elements.json');
+const LINKS  = require<any>('./resources/links.json');
+
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
     const layoutData = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
         layoutData,
-        dataProvider: new DemoDataProvider(),
+        dataProvider: new DemoDataProvider(CLASSES, LINK_TYPES, ELEMENTS, LINKS),
         validateLinks: true,
     });
 }

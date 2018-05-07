@@ -1,13 +1,18 @@
 import { cloneDeep, keyBy, map, each } from 'lodash';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
-import { Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount } from '../model';
-
-const CLASSES = require<ClassModel[]>('./data/classes.json');
-const LINK_TYPES = require<LinkType[]>('./data/linkTypes.json');
-const ELEMENTS = require<Dictionary<ElementModel>>('./data/elements.json');
-const LINKS  = require<LinkModel[]>('./data/links.json');
+import {
+    Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+} from '../model';
 
 export class DemoDataProvider implements DataProvider {
+    constructor(
+        private allClasses: ClassModel[],
+        private allLinkTypes: LinkType[],
+        private allElements: Dictionary<ElementModel>,
+        private allLinks: LinkModel[],
+    ) {}
+
     private simulateNetwork<T>(result: T) {
         const MEAN_DELAY = 200;
         const cloned = cloneDeep(result);
@@ -19,46 +24,46 @@ export class DemoDataProvider implements DataProvider {
     }
 
     classTree() {
-        return this.simulateNetwork(CLASSES);
+        return this.simulateNetwork(this.allClasses);
     }
 
-    classInfo(params: { classIds: string[] }) {
-        let classIds = params.classIds || [];
-        return this.simulateNetwork(CLASSES.filter(cl => classIds.indexOf(cl.id)));
+    classInfo(params: { classIds: ClassIri[] }) {
+        const classIds = params.classIds || [];
+        return this.simulateNetwork(this.allClasses.filter(cl => classIds.indexOf(cl.id)));
     }
 
     linkTypes() {
-        return this.simulateNetwork(LINK_TYPES);
+        return this.simulateNetwork(this.allLinkTypes);
     }
 
-    linkTypesInfo(params: { linkTypeIds: string[] }): Promise<LinkType[]> {
+    linkTypesInfo(params: { linkTypeIds: LinkTypeIri[] }): Promise<LinkType[]> {
         const types = keyBy(params.linkTypeIds);
-        const linkTypes = LINK_TYPES.filter(type => types[type.id]);
+        const linkTypes = this.allLinkTypes.filter(type => types[type.id]);
         return this.simulateNetwork(linkTypes);
     }
 
-    elementInfo(params: { elementIds: string[]; }): Promise<Dictionary<ElementModel>> {
+    elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
         const elements = params.elementIds
-            .map(elementId => ELEMENTS[elementId])
+            .map(elementId => this.allElements[elementId])
             .filter(element => element !== undefined);
         return this.simulateNetwork(
             keyBy(elements, element => element.id));
     }
 
     linksInfo(params: {
-        elementIds: string[];
-        linkTypeIds: string[];
+        elementIds: ElementIri[];
+        linkTypeIds: LinkTypeIri[];
     }) {
         const nodes = keyBy(params.elementIds);
         const types = keyBy(params.linkTypeIds);
-        const links = LINKS.filter(link =>
+        const links = this.allLinks.filter(link =>
         types[link.linkTypeId] && nodes[link.sourceId] && nodes[link.targetId]);
         return this.simulateNetwork(links);
     }
 
-    linkTypesOf(params: { elementId: string; }) {
+    linkTypesOf(params: { elementId: ElementIri }) {
         const counts: Dictionary<LinkCount> = {};
-        for (const link of LINKS) {
+        for (const link of this.allLinks) {
             if (link.sourceId === params.elementId ||
                 link.targetId === params.elementId
             ) {
@@ -77,14 +82,15 @@ export class DemoDataProvider implements DataProvider {
     }
 
     linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
-        //for sparql we have rich filtering features and we just reuse filter.
+        // for sparql we have rich filtering features and we just reuse filter.
         return this.filter({
             refElementId: params.elementId,
             refElementLinkId: params.linkId,
             linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
-            languageCode: ""});
+            languageCode: '',
+        });
     }
 
     filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
@@ -94,32 +100,32 @@ export class DemoDataProvider implements DataProvider {
 
         let filtered: Dictionary<ElementModel> = {};
         if (params.elementTypeId) {
-            each(ELEMENTS, element => {
+            each(this.allElements, element => {
                 if (element.types.indexOf(params.elementTypeId) >= 0) {
                     filtered[element.id] = element;
                 }
             });
         } else if (params.refElementId) {
             const filteredLinks = params.refElementLinkId
-                ? LINKS.filter(link => link.linkTypeId === params.refElementLinkId)
-                : LINKS;
+                ? this.allLinks.filter(link => link.linkTypeId === params.refElementLinkId)
+                : this.allLinks;
             const nodeId = params.refElementId;
             for (const link of filteredLinks) {
-                let linkedElementId: string = undefined;
+                let linkedElementId: string;
                 if (link.sourceId === nodeId && params.linkDirection !== 'in') {
                     linkedElementId = link.targetId;
                 } else if (link.targetId === nodeId && params.linkDirection !== 'out') {
                     linkedElementId = link.sourceId;
                 }
                 if (linkedElementId !== undefined) {
-                    const linkedElement = ELEMENTS[linkedElementId];
+                    const linkedElement = this.allElements[linkedElementId];
                     if (linkedElement) {
                         filtered[linkedElement.id] = linkedElement;
                     }
                 }
             }
         } else if (params.text) {
-            filtered = ELEMENTS; // filtering by text is done below
+            filtered = this.allElements; // filtering by text is done below
         } else {
             return Promise.reject(new Error('This type of filter is not implemented'));
         }

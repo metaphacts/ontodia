@@ -2,7 +2,7 @@ import { keyBy } from 'lodash';
 
 import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
-import { Dictionary, ElementModel, LinkModel } from '../model';
+import { Dictionary, ElementModel, LinkModel, ElementIri, LinkTypeIri } from '../model';
 import { generate64BitID } from '../utils';
 
 import { DataProvider } from '../provider';
@@ -14,9 +14,9 @@ const GREED_STEP = 150;
 export class GraphBuilder {
     constructor(public dataProvider: DataProvider) {}
 
-    createGraph(graph: { elementIds: string[], links: LinkModel[] }): Promise<{
-        preloadedElements: Dictionary<ElementModel>,
-        layoutData: LayoutData,
+    createGraph(graph: { elementIds: ElementIri[]; links: LinkModel[] }): Promise<{
+        preloadedElements: Dictionary<ElementModel>;
+        layoutData: LayoutData;
     }> {
         return this.dataProvider.elementInfo({elementIds: graph.elementIds}).then(elementsInfo => ({
             preloadedElements: elementsInfo,
@@ -25,22 +25,23 @@ export class GraphBuilder {
     }
 
     getGraphFromRDFGraph(graph: Triple[]): Promise<{
-        preloadedElements: Dictionary<ElementModel>,
-        layoutData: LayoutData,
+        preloadedElements: Dictionary<ElementModel>;
+        layoutData: LayoutData;
     }> {
-        let {elementIds, links} = this.getGraphElements(graph);
+        const {elementIds, links} = this.getGraphElements(graph);
         return this.createGraph({elementIds, links});
-    };
+    }
 
     getGraphFromTurtleGraph(graph: string): Promise<{
-        preloadedElements: Dictionary<ElementModel>,
-        layoutData: LayoutData,
+        preloadedElements: Dictionary<ElementModel>;
+        layoutData: LayoutData;
     }> {
         return parseTurtleText(graph).then(triples => this.getGraphFromRDFGraph(triples));
     }
 
     private getGraphElements(response: Triple[]): {
-        elementIds: string[], links: LinkModel[]
+        elementIds: ElementIri[];
+        links: LinkModel[];
     } {
         const elements: Dictionary<boolean> = {};
         const links: LinkModel[] = [];
@@ -56,16 +57,16 @@ export class GraphBuilder {
 
             if (subject.type === 'uri' && object.type === 'uri') {
                 links.push({
-                    linkTypeId: predicate.value,
-                    sourceId: subject.value,
-                    targetId: object.value,
+                    linkTypeId: predicate.value as LinkTypeIri,
+                    sourceId: subject.value as ElementIri,
+                    targetId: object.value as ElementIri,
                 });
             }
         }
-        return {elementIds: Object.keys(elements), links: links};
+        return {elementIds: Object.keys(elements) as ElementIri[], links};
     }
 
-    private getLayout(elementsIds: string[], linksInfo: LinkModel[]): LayoutData {
+    private getLayout(elementsIds: ElementIri[], linksInfo: LinkModel[]): LayoutData {
         const rows = Math.ceil(Math.sqrt(elementsIds.length));
         const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
 

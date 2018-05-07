@@ -7,6 +7,7 @@ import {
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import * as _ from 'lodash';
 
@@ -63,7 +64,7 @@ function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassMod
 }
 
 function calcCounts(children: ClassModel[]) {
-    for (let node of children) {
+    for (const node of children) {
         // no more to count
         if (!node.children) {return; }
         // ensure all children have their counts completed;
@@ -88,7 +89,7 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
     const classes: { [id: string]: ClassModel } = {};
     for (const binding of response.results.bindings) {
         if (!binding.class) { continue; }
-        const id = binding.class.value;
+        const id = binding.class.value as ClassIri;
         const model = classes[id];
         if (model) {
             const newLabel = getLocalizedString(binding.label);
@@ -135,8 +136,7 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
     const instancesMap: Dictionary<LinkType> = {};
 
     for (const sLink of sInst) {
-        let sInstTypeId: string = sLink.link.value;
-
+        const sInstTypeId = sLink.link.value as LinkTypeIri;
         if (instancesMap[sInstTypeId]) {
             if (sLink.label) {
                 const label = instancesMap[sInstTypeId].label;
@@ -149,7 +149,6 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
             instancesMap[sInstTypeId] = getLinkTypeInfo(sLink);
             linkTypes.push(instancesMap[sInstTypeId]);
         }
-
     }
 
     return linkTypes;
@@ -211,7 +210,7 @@ export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: s
     const instancesMap: Dictionary<ElementModel> = {};
 
     for (const sInst of sInstances) {
-        let sInstTypeId = sInst.inst.value;
+        const sInstTypeId = sInst.inst.value as ElementIri;
         if (!instancesMap[sInstTypeId]) {
             instancesMap[sInstTypeId] = emptyElementInfo(sInstTypeId);
         }
@@ -265,9 +264,9 @@ export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): Lin
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
-export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): string[] {
+export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): LinkTypeIri[] {
     const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
-    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value);
+    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value as LinkTypeIri);
 }
 
 export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount {
@@ -283,10 +282,11 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
         if (!isRdfIri(sInst.inst) && !isRdfBlank(sInst.inst)) {
             continue;
         }
-        if (!instancesMap[sInst.inst.value]) {
-            instancesMap[sInst.inst.value] = emptyElementInfo(sInst.inst.value);
+        const iri = sInst.inst.value as ElementIri;
+        if (!instancesMap[iri]) {
+            instancesMap[iri] = emptyElementInfo(iri);
         }
-        enrichElement(instancesMap[sInst.inst.value], sInst);
+        enrichElement(instancesMap[iri], sInst);
     }
     return instancesMap;
 }
@@ -321,8 +321,8 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
             element.label.values.push(label);
         }
     }
-    if (sInst.class && element.types.indexOf(sInst.class.value) < 0) {
-        element.types.push(sInst.class.value);
+    if (sInst.class && element.types.indexOf(sInst.class.value as ClassIri) < 0) {
+        element.types.push(sInst.class.value as ClassIri);
     }
     if (sInst.propType && sInst.propType.value !== LABEL_URI) {
         mergeProperties(element.properties, sInst.propType, sInst.propValue);
@@ -358,7 +358,7 @@ export interface HierarchicalClassModel extends ClassModel {
 export function getClassModel(node: ClassBinding): HierarchicalClassModel {
     const label = getLocalizedString(node.label);
     return {
-        id: node.class.value,
+        id: node.class.value as ClassIri,
         children: [],
         label: { values: label ? [label] : [] },
         count: getInstCount(node.instcount),
@@ -369,14 +369,14 @@ export function getClassModel(node: ClassBinding): HierarchicalClassModel {
 export function getPropertyModel(node: PropertyBinding): PropertyModel {
     const label = getLocalizedString(node.label);
     return {
-        id: node.prop.value,
+        id: node.prop.value as PropertyTypeIri,
         label: { values: label ? [label] : [] },
     };
 }
 
 export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     return {
-        id: sLinkType.link.value,
+        id: sLinkType.link.value as LinkTypeIri,
         inCount: getInstCount(sLinkType.inCount),
         outCount: getInstCount(sLinkType.outCount),
     };
@@ -390,7 +390,7 @@ export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
     };
 }
 
-export function emptyElementInfo(id: string): ElementModel {
+export function emptyElementInfo(id: ElementIri): ElementModel {
     const elementInfo: ElementModel = {
         id: id,
         label: { values: [] },
@@ -403,9 +403,9 @@ export function emptyElementInfo(id: string): ElementModel {
 export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     if (!sLinkInfo) { return undefined; }
     const linkModel: LinkModel = {
-        linkTypeId: sLinkInfo.type.value,
-        sourceId: sLinkInfo.source.value,
-        targetId: sLinkInfo.target.value,
+        linkTypeId: sLinkInfo.type.value as LinkTypeIri,
+        sourceId: sLinkInfo.source.value as ElementIri,
+        targetId: sLinkInfo.target.value as ElementIri,
         properties: {},
     };
     if (sLinkInfo.propType && sLinkInfo.propValue) {
@@ -421,8 +421,8 @@ export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     const label = getLocalizedString(sLinkInfo.label);
     return {
-        id: sLinkInfo.link.value,
-        label: { values: label ? [label] : [] },
+        id: sLinkInfo.link.value as LinkTypeIri,
+        label: {values: label ? [label] : []},
         count: getInstCount(sLinkInfo.instcount),
     };
 }

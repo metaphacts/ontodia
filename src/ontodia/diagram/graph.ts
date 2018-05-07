@@ -1,4 +1,4 @@
-import { Dictionary, ElementModel, LinkModel } from '../data/model';
+import { Dictionary, ElementModel, LinkModel, ClassIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
 import { generate64BitID } from '../data/utils';
 import { OrderedMap, createStringMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
@@ -39,10 +39,10 @@ export class Graph {
         return this.links.get(linkId);
     }
 
-    findLink(linkModel: LinkModel): DiagramLink | undefined {
-        const source = this.getElement(linkModel.sourceId);
+    findLink(linkTypeId: LinkTypeIri, sourceId: string, targetId: string): DiagramLink | undefined {
+        const source = this.getElement(sourceId);
         if (!source) { return undefined; }
-        const index = findLinkIndex(source.links, linkModel);
+        const index = findLinkIndex(source.links, linkTypeId, sourceId, targetId);
         return index >= 0 ? source.links[index] : undefined;
     }
 
@@ -89,7 +89,7 @@ export class Graph {
         if (this.getLink(link.id)) {
             throw new Error(`Link '${link.id}' already exists.`);
         }
-        const existing = this.findLink(link.data);
+        const existing = this.findLink(link.typeId, link.sourceId, link.targetId);
         if (existing) { return; }
         const linkType = this.getLinkType(link.typeId);
         if (!linkType) {
@@ -124,19 +124,22 @@ export class Graph {
         if (link) {
             const {typeId, sourceId, targetId} = link;
             link.events.offAny(this.onLinkEvent);
-            this.removeLinkReferences({linkTypeId: typeId, sourceId, targetId});
+            this.removeLinkReferences(typeId, sourceId, targetId);
             if (!(options && options.silent)) {
                 this.source.trigger('changeCells', {source: this});
             }
         }
     }
 
-    private removeLinkReferences(linkModel: LinkModel) {
-        const source = this.getElement(linkModel.sourceId);
-        removeLinkFrom(source && source.links, linkModel);
-
-        const target = this.getElement(linkModel.targetId);
-        removeLinkFrom(target && target.links, linkModel);
+    private removeLinkReferences(linkTypeId: LinkTypeIri, sourceId: string, targetId: string) {
+        const source = this.getElement(sourceId);
+        if (source) {
+            removeLinkFrom(source.links, linkTypeId, sourceId, targetId);
+        }
+        const target = this.getElement(targetId);
+        if (target) {
+            removeLinkFrom(target.links, linkTypeId, sourceId, targetId);
+        }
     }
 
     getLinkTypes(): FatLinkType[] {
@@ -148,7 +151,7 @@ export class Graph {
         return result;
     }
 
-    getLinkType(linkTypeId: string): FatLinkType | undefined {
+    getLinkType(linkTypeId: LinkTypeIri): FatLinkType | undefined {
         return this.linkTypes[linkTypeId];
     }
 
@@ -165,7 +168,7 @@ export class Graph {
         this.source.trigger('linkTypeEvent', {key, data});
     }
 
-    getProperty(propertyId: string): RichProperty | undefined {
+    getProperty(propertyId: PropertyTypeIri): RichProperty | undefined {
         return this.propertiesById[propertyId];
     }
 
@@ -176,7 +179,7 @@ export class Graph {
         this.propertiesById[property.id] = property;
     }
 
-    getClass(classId: string): FatClassModel | undefined {
+    getClass(classId: ClassIri): FatClassModel | undefined {
         return this.classesById[classId];
     }
 
@@ -202,17 +205,16 @@ export class Graph {
     }
 }
 
-function removeLinkFrom(links: DiagramLink[], model: LinkModel) {
+function removeLinkFrom(links: DiagramLink[], linkTypeId: LinkTypeIri, sourceId: string, targetId: string) {
     if (!links) { return; }
     while (true) {
-        const index = findLinkIndex(links, model);
+        const index = findLinkIndex(links, linkTypeId, sourceId, targetId);
         if (index < 0) { break; }
         links.splice(index, 1);
     }
 }
 
-function findLinkIndex(haystack: DiagramLink[], needle: LinkModel) {
-    const {sourceId, targetId, linkTypeId} = needle;
+function findLinkIndex(haystack: DiagramLink[], linkTypeId: LinkTypeIri, sourceId: string, targetId: string) {
     for (let i = 0; i < haystack.length; i++) {
         const link = haystack[i];
         if (link.sourceId === sourceId &&

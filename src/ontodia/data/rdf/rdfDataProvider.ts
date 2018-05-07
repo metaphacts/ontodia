@@ -3,8 +3,8 @@ import { RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNod
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { RDFLoader } from './rdfLoader';
 import {
-    LocalizedString, Dictionary, ClassModel, LinkType, ElementModel,
-    LinkModel, LinkCount, PropertyModel, Property,
+    LocalizedString, Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel, Property,
+    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import { RDFCompositeParser } from './rdfCompositeParser';
 
@@ -125,12 +125,12 @@ export class RDFDataProvider implements DataProvider {
         const classes = rdfClasses.concat(owlClasses).concat(rdfTypes);
         const classIris = classes
             .filter(clazz => clazz.interfaceName !== 'BlankNode')
-            .map(clazz => clazz.nominalValue);
+            .map(clazz => clazz.nominalValue as ClassIri);
 
-        const parents: Dictionary<string[]> = {};
+        const parents: Dictionary<ClassIri[]> = {};
         for (const triple of subClasses) {
-            const subClassIRI = triple.subject.nominalValue;
-            const classIRI = triple.object.nominalValue;
+            const subClassIRI = triple.subject.nominalValue as ClassIri;
+            const classIRI = triple.object.nominalValue as ClassIri;
             if (isNamedNode(triple.subject) && !parents[subClassIRI]) {
                 parents[subClassIRI] = [];
             }
@@ -181,7 +181,7 @@ export class RDFDataProvider implements DataProvider {
         return result;
     }
 
-    async propertyInfo(params: {propertyIds: string[]}): Promise<Dictionary<PropertyModel>> {
+    async propertyInfo(params: { propertyIds: PropertyTypeIri[] }): Promise<Dictionary<PropertyModel>> {
         await this.waitInitCompleted();
         const propertyInfoResult: Dictionary<PropertyModel> = {};
 
@@ -211,7 +211,7 @@ export class RDFDataProvider implements DataProvider {
         return propertyInfoResult;
     }
 
-    async classInfo(params: { classIds: string[] }): Promise<ClassModel[]> {
+    async classInfo(params: { classIds: ClassIri[] }): Promise<ClassModel[]> {
         await this.waitInitCompleted();
         const queries = params.classIds.map(
             async classId => {
@@ -235,7 +235,7 @@ export class RDFDataProvider implements DataProvider {
         return fetchedModels.filter(cm => cm);
     }
 
-    async linkTypesInfo(params: {linkTypeIds: string[]}): Promise<LinkType[]> {
+    async linkTypesInfo(params: { linkTypeIds: LinkTypeIri[] }): Promise<LinkType[]> {
         await this.waitInitCompleted();
         const queries: Promise<LinkType>[]  = params.linkTypeIds.map(
             async typeId => {
@@ -274,18 +274,18 @@ export class RDFDataProvider implements DataProvider {
         const [rdfLinks, owlLinks] = await Promise.all([rdfLinksQueries, owlLinksQueries]);
         const links = rdfLinks.toArray().concat(owlLinks.toArray());
         return Promise.all(
-            links.map(async l => {
-                const labels = await this.getLabels(l.subject.nominalValue);
+            links.map(async t => {
+                const labels = await this.getLabels(t.subject.nominalValue);
                 return {
-                    id: l.subject.nominalValue,
-                    label: { values: labels },
-                    count: this.rdfStorage.getTypeCount(l.subject.nominalValue),
+                    id: t.subject.nominalValue as LinkTypeIri,
+                    label: {values: labels},
+                    count: this.rdfStorage.getTypeCount(t.subject.nominalValue),
                 };
             }),
         );
     }
 
-    async elementInfo(params: { elementIds: string[] }): Promise<Dictionary<ElementModel>> {
+    async elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
         await this.waitInitCompleted();
         const elementInfoResult: Dictionary<ElementModel> = {};
 
@@ -310,8 +310,8 @@ export class RDFDataProvider implements DataProvider {
     }
 
     async linksInfo(params: {
-        elementIds: string[];
-        linkTypeIds: string[];
+        elementIds: ElementIri[];
+        linkTypeIds: LinkTypeIri[];
     }): Promise<LinkModel[]> {
         await this.waitInitCompleted();
         const statementPromises: Promise<MatchStatement>[] = [];
@@ -340,16 +340,16 @@ export class RDFDataProvider implements DataProvider {
             triples = graph.toArray().filter(tripple =>
                 isNamedNode(tripple.subject) && isNamedNode(tripple.object));
         }
-        const fetchedModels = triples.map(tripple => ({
-            sourceId: tripple.subject.nominalValue,
-            linkTypeId: tripple.predicate.nominalValue,
-            targetId: tripple.object.nominalValue,
-        })).filter(model => model);
 
+        const fetchedModels = triples.map((t): LinkModel => ({
+            linkTypeId: t.predicate.nominalValue as LinkTypeIri,
+            sourceId: t.subject.nominalValue as ElementIri,
+            targetId: t.object.nominalValue as ElementIri,
+        }));
         return fetchedModels;
     }
 
-    async linkTypesOf(params: { elementId: string; }): Promise<LinkCount[]> {
+    async linkTypesOf(params: { elementId: ElementIri }): Promise<LinkCount[]> {
         await this.waitInitCompleted();
         const links: LinkCount[] = [];
         const element = params.elementId;
@@ -362,15 +362,16 @@ export class RDFDataProvider implements DataProvider {
             .filter(t => isNamedNode(t.subject))
             .map(triple => triple.predicate);
         for (const el of incomingElements) {
-            if (!linkMap[el.nominalValue]) {
-                linkMap[el.nominalValue] = {
-                    id: el.nominalValue,
+            const linkTypeId = el.nominalValue as LinkTypeIri;
+            if (!linkMap[linkTypeId]) {
+                linkMap[linkTypeId] = {
+                    id: linkTypeId,
                     inCount: 1,
                     outCount: 0,
                 };
-                links.push(linkMap[el.nominalValue]);
+                links.push(linkMap[linkTypeId]);
             } else {
-                linkMap[el.nominalValue].inCount++;
+                linkMap[linkTypeId].inCount++;
             }
         }
 
@@ -381,15 +382,16 @@ export class RDFDataProvider implements DataProvider {
             .filter(t => isNamedNode(t.object))
             .map(triple => triple.predicate);
         for (const el of outElements) {
-            if (!linkMap[el.nominalValue]) {
-                linkMap[el.nominalValue] = {
-                    id: el.nominalValue,
+            const linkTypeId = el.nominalValue as LinkTypeIri;
+            if (!linkMap[linkTypeId]) {
+                linkMap[linkTypeId] = {
+                    id: linkTypeId,
                     inCount: 0,
                     outCount: 1,
                 };
-                links.push(linkMap[el.nominalValue]);
+                links.push(linkMap[linkTypeId]);
             } else {
-                linkMap[el.nominalValue].outCount++;
+                linkMap[linkTypeId].outCount++;
             }
         }
         return links;
@@ -446,7 +448,7 @@ export class RDFDataProvider implements DataProvider {
     };
 
     private async filterByTypeId(
-        elementTypeId: string, filter: (node: Node, index: number) => boolean,
+        elementTypeId: ClassIri, filter: (node: Node, index: number) => boolean,
     ): Promise<ElementModel[]> {
         const elementTriples = await this.rdfStorage.match(
             undefined,
@@ -456,13 +458,13 @@ export class RDFDataProvider implements DataProvider {
 
         return Promise.all(elementTriples.toArray()
             .filter((t, index) => filter(t.subject, index))
-            .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+            .map(el => this.getElementInfo(el.subject.nominalValue as ElementIri, true)),
         );
     }
 
     private async filterByRefAndLink(
-        refEl: string,
-        refLink: string,
+        refEl: ElementIri,
+        refLink: LinkTypeIri,
         linkDirection: 'in' | 'out',
         filter: (node: Node, index: number) => boolean,
     ): Promise<ElementModel[]> {
@@ -470,30 +472,30 @@ export class RDFDataProvider implements DataProvider {
             const elementTriples = await this.rdfStorage.match(null, refLink, refEl);
             return Promise.all(
                 elementTriples.toArray().filter((t, index) => filter(t.subject, index))
-                    .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+                    .map(el => this.getElementInfo(el.subject.nominalValue as ElementIri, true)),
             );
         } else {
             const elementTriples = await this.rdfStorage.match(refEl, refLink, null);
             return Promise.all(
                 elementTriples.toArray().filter((t, index) => filter(t.object, index))
-                    .map(el => this.getElementInfo(el.object.nominalValue, true)),
+                    .map(el => this.getElementInfo(el.object.nominalValue as ElementIri, true)),
             );
         }
     }
 
     private async filterByRef(
-        refEl: string,
+        refEl: ElementIri,
         filter: (node: Node, index: number) => boolean,
     ): Promise<ElementModel[]> {
         const incomingTriples = await this.rdfStorage.match(null, null, refEl);
         const inRelations = await Promise.all(
             incomingTriples.toArray().filter((t, index) => filter(t.subject, index))
-                .map(el => this.getElementInfo(el.subject.nominalValue, true)),
+                .map(el => this.getElementInfo(el.subject.nominalValue as ElementIri, true)),
         );
         const outgoingTriples = await this.rdfStorage.match(refEl, null, null);
         const outRelations = await Promise.all(
             outgoingTriples.toArray().filter((t, index) => filter(t.object, index))
-                .map(el => this.getElementInfo(el.object.nominalValue, true)),
+                .map(el => this.getElementInfo(el.object.nominalValue as ElementIri, true)),
         );
 
         return inRelations.concat(outRelations);
@@ -507,10 +509,10 @@ export class RDFDataProvider implements DataProvider {
         const promices: Promise<ElementModel>[] = [];
         for (const tripple of elementTriples.toArray()) {
             if (filter(tripple.object, promices.length)) {
-                promices.push(this.getElementInfo(tripple.object.nominalValue, true));
+                promices.push(this.getElementInfo(tripple.object.nominalValue as ElementIri, true));
             }
             if (filter(tripple.subject, promices.length)) {
-                promices.push(this.getElementInfo(tripple.subject.nominalValue, true));
+                promices.push(this.getElementInfo(tripple.subject.nominalValue as ElementIri, true));
             }
         }
         return Promise.all(promices);
@@ -538,8 +540,8 @@ export class RDFDataProvider implements DataProvider {
 
     private checkElement(id: string): Promise<boolean> {
         return this.dataFetching ?
-               this.rdfStorage.checkElement(id) :
-               Promise.resolve(true);
+            this.rdfStorage.checkElement(id) :
+            Promise.resolve(true);
     }
 
     private fetchIfNecessary(id: string, exists: boolean) {
@@ -556,7 +558,7 @@ export class RDFDataProvider implements DataProvider {
         }
     }
 
-    private getElementInfo(id: string, shortInfo?: boolean): Promise<ElementModel> {
+    private getElementInfo(id: ElementIri, shortInfo?: boolean): Promise<ElementModel> {
         return Promise.all([
             this.getTypes(id),
             (!shortInfo ? this.getProps(id) : Promise.resolve({})),
@@ -603,14 +605,14 @@ export class RDFDataProvider implements DataProvider {
         });
     }
 
-    private getTypes(el: string): Promise<string[]> {
+    private getTypes(el: ElementIri): Promise<ClassIri[]> {
         return this.rdfStorage.match(el, PREFIX_FACTORIES.RDF('type'), null)
             .then(typeTriples => {
-                return typeTriples.toArray().map(t => t.object.nominalValue);
+                return typeTriples.toArray().map(t => t.object.nominalValue as ClassIri);
             });
     }
 
-    private createEmptyClass(classIri: string): ClassModel {
+    private createEmptyClass(classIri: ClassIri): ClassModel {
         return {
             id: classIri,
             label: {
