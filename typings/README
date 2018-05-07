@@ -1,8 +1,0 @@
-See https://github.com/Microsoft/TypeScript-Handbook/blob/master/pages/declaration%20files/Library%20Structures.md
-for declaration files authoring.
-
-/globals - global libraries authored by us
-/local - global libraries authored by us
-/local-modules - modular libraries authored by us
-
-Important: modular libraries should follow pattern {library-name}/index.d.ts

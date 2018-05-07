@@ -380,7 +380,7 @@ function getPathAttributes(model: DiagramLink, style: LinkStyle): SVGAttributes<
     return {fill, stroke, strokeWidth, strokeDasharray};
 }
 
-function getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
+function getLabelTextAttributes(label: LinkLabelProperties): CSSProperties {
     const {
         fill = 'black',
         stroke = 'none',
@@ -389,10 +389,13 @@ function getLabelTextAttributes(label: LinkLabelProperties): TextAttributes {
         'font-size': fontSize = 'inherit',
         'font-weight': fontWeight = 'bold',
     } = label.attrs ? label.attrs.text : {};
-    return {fill, stroke, strokeWidth, fontFamily, fontSize, fontWeight};
+    return {
+        fill, stroke, strokeWidth, fontFamily, fontSize,
+        fontWeight: fontWeight as CSSProperties['fontWeight']
+    };
 }
 
-function getLabelRectAttributes(label: LinkLabelProperties): RectAttributes {
+function getLabelRectAttributes(label: LinkLabelProperties): CSSProperties {
     const {
         fill = 'white',
         stroke = 'none',
@@ -405,24 +408,9 @@ interface LabelAttributes {
     offset: number;
     text: LocalizedString;
     attributes: {
-        text: TextAttributes;
-        rect: RectAttributes;
+        text: CSSProperties;
+        rect: CSSProperties;
     };
-}
-
-interface TextAttributes {
-    stroke?: string;
-    strokeWidth?: number;
-    fill?: string;
-    fontFamily?: string;
-    fontSize?: string | number;
-    fontWeight?: 'normal' | 'bold' | 'lighter' | 'bolder' | number;
-}
-
-interface RectAttributes {
-    fill?: string;
-    stroke?: string;
-    strokeWidth?: number;
 }
 
 interface LinkLabelProps {

@@ -24,7 +24,7 @@ export interface ToolbarProps {
 
 const CLASS_NAME = 'ontodia-toolbar';
 
-export class DefaultToolbar extends React.Component<ToolbarProps, void> {
+export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
     private onChangeLanguage = (event: React.SyntheticEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value;
         this.props.onChangeLanguage(value);

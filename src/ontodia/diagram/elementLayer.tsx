@@ -26,7 +26,7 @@ interface BatchUpdateItem {
     node: HTMLDivElement;
 }
 
-export class ElementLayer extends React.Component<Props, void> {
+export class ElementLayer extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
 
     private batch = createStringMap<BatchUpdateItem>();

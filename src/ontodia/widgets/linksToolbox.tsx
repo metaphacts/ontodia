@@ -227,10 +227,8 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
                 <div className='ontodia-progress'>
                     <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
                         role='progressbar'
-                        aria-valuemin='0'
-                        aria-valuemax='100'
-                        aria-valuenow='100'
-                        style={ {width: '100%'} }>
+                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
+                        style={{width: '100%'}}>
                     </div>
                 </div>
                 <div className={`${className}__rest`}>

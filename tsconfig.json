@@ -16,8 +16,7 @@
         "./index.ts",
         "./src/**/*.ts",
         "./src/**/*.tsx",
-        "./typings/index.d.ts",
-        "./typings/local.d.ts"
+        "./typings/typings.d.ts"
     ],
     "compileOnSave": false
 }

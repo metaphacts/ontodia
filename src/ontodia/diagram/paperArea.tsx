@@ -152,7 +152,7 @@ export class PaperArea extends React.Component<Props, State> {
     render() {
         const {view} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
-        const paperTransformStyle = {
+        const paperTransformStyle: React.CSSProperties = {
             position: 'absolute', left: 0, top: 0,
             transform: `scale(${scale},${scale})translate(${originX}px,${originY}px)`,
         };

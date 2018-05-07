@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Component } from 'react';
 
-import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
 
@@ -43,14 +42,9 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         if (!imgUrl) { return null; }
 
         return (
-            <CrossOriginImage
-                className={`${CLASS_NAME}__photo`}
-                style={{borderColor: color}}
-                imageProps={{
-                    src: imgUrl,
-                    className: `${CLASS_NAME}__photo-image`
-                }}
-            />
+            <div className={`${CLASS_NAME}__photo`} style={{borderColor: color}}>
+                <img src={imgUrl} className={`${CLASS_NAME}__photo-image`} />
+            </div>
         );
     }
 
@@ -77,14 +71,9 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
 
         if (imgUrl) {
             return (
-                <CrossOriginImage
-                    className={`${CLASS_NAME}__thumbnail`}
-                    aria-hidden='true'
-                    imageProps={{
-                        src: imgUrl,
-                        className: `${CLASS_NAME}__thumbnail-image`,
-                    }}
-                />
+                <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true'>
+                    <img src={imgUrl} className={`${CLASS_NAME}__thumbnail-image`} />
+                </div>
             );
         }
 

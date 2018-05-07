@@ -1,8 +1,6 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
 
-import { CrossOriginImage } from '../../viewUtils/crossOriginImage';
-
 import { TemplateProps } from '../props';
 
 const CLASS_NAME = 'ontodia-default-template';
@@ -12,8 +10,9 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
         const props = this.props;
 
         const image = props.imgUrl ? (
-            <CrossOriginImage className={`${CLASS_NAME}__thumbnail`}
-                imageProps={{src: props.imgUrl}} />
+            <div className={`${CLASS_NAME}__thumbnail`}>
+                <img src={props.imgUrl} />
+            </div>
         ) : undefined;
 
         const expander = props.isExpanded ? (

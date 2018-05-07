@@ -19,7 +19,7 @@ export interface Props extends PaperWidgetProps {
 
 const CLASS_NAME = 'ontodia-halo';
 
-export class Halo extends React.Component<Props, void> {
+export class Halo extends React.Component<Props, {}> {
     private unsubscribeFromElement: Unsubscribe | undefined = undefined;
 
     componentDidMount() {

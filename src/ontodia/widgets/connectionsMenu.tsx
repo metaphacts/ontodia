@@ -61,7 +61,7 @@ export interface ConnectionsMenuProps extends PaperWidgetProps {
     suggestProperties?: PropertySuggestionHandler;
 }
 
-export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, void> {
+export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     private container: HTMLElement;
     private readonly handler = new EventObserver();
     private readonly linkTypesListener = new EventObserver();
@@ -313,8 +313,8 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     }
 
     private onChangeFilter = (e: React.FormEvent<HTMLInputElement>) => {
-        this.state.filterKey = e.currentTarget.value;
-        this.setState(this.state);
+        const filterKey = e.currentTarget.value;
+        this.setState({filterKey});
     };
 
     private getTitle = () => {
@@ -452,9 +452,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                     `ontodia-connections-menu__progress-bar--${this.props.state}`}>
                     <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
                         role='progressbar'
-                        aria-valuemin='0'
-                        aria-valuemax='100'
-                        aria-valuenow='100'
+                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
                         style={{width: '100%'}}>
                     </div>
                 </div>
@@ -705,103 +703,73 @@ interface ObjectsPanelProps {
     onMoveToFilter?: (linkDataChunk: LinkDataChunk) => void;
 }
 
-class ObjectsPanel extends React.Component<ObjectsPanelProps, {
-    checkMap: { [id: string]: boolean },
-    selectAll: string,
-}> {
+interface ObjectsPanelState {
+    checkMap: { readonly [id: string]: boolean };
+}
 
+class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState> {
     constructor(props: ObjectsPanelProps) {
         super(props);
-        this.state  = { checkMap: {}, selectAll: 'checked' };
-        this.updateCheckMap();
+        this.state = {checkMap: selectNonPreseted(this.props.data.objects)};
     }
 
-    private updateCheckMap = () => {
-        this.props.data.objects.forEach(element => {
-            if (this.state.checkMap[element.model.id] === undefined) {
-                this.state.checkMap[element.model.id] = true;
-            }
-        });
-    };
+    componentWillReceiveProps(nextProps: ObjectsPanelProps) {
+        if (this.props.data.objects.length < nextProps.data.objects.length) {
+            this.setState({checkMap: selectNonPreseted(nextProps.data.objects)});
+        }
+    }
 
-    private onCheckboxChanged = (object: ReactElementModel, value: boolean) => {
-        if (this.state.checkMap[object.model.id] === value) {
+    private onCheckboxChanged = (object: ReactElementModel, newValue: boolean) => {
+        const {checkMap} = this.state;
+        if (checkMap[object.model.id] === newValue) {
             return;
         }
-        this.state.checkMap[object.model.id] = value;
-
-        const filtered = this.getFilteredObjects().map(o => o.model.id);
-        const keys = Object.keys(this.state.checkMap).filter(key => filtered.indexOf(key) !== -1);
-
-        const unchekedListElementLength = keys.filter(key => !this.state.checkMap[key]).length;
-        if (!value && unchekedListElementLength === keys.length) {
-            this.state.selectAll = 'unchecked';
-        } else if (unchekedListElementLength === 0) {
-            this.state.selectAll = 'checked';
-        } else {
-            this.state.selectAll = 'undefined';
-        }
-        this.setState(this.state);
-    };
+        const nextCheckMap = {...checkMap, [object.model.id]: newValue};
+        this.setState({checkMap: nextCheckMap});
+    }
 
     private onSelectAll = () => {
-        let checked = !this.selectAllValue();
-        if (checked) {
-            this.state.selectAll = 'checked';
-        } else {
-            this.state.selectAll = 'unchecked';
-        }
-        const filtered = this.getFilteredObjects().filter(o => !o.presentOnDiagram).map(o => o.model.id);
-        const keys = Object.keys(this.state.checkMap).filter(key => filtered.indexOf(key) !== -1);
-        keys.forEach(key => {
-            this.state.checkMap[key] = checked;
-        });
-        this.setState(this.state);
-    };
+        const objects = this.props.data.objects;
+        if (objects.length === 0) { return; }
+        const allSelected = allNonPresentedAreSelected(objects, this.state.checkMap);
+        const checkMap = allSelected ? {} : selectNonPreseted(this.props.data.objects);
+        this.setState({checkMap});
+    }
 
-    private selectAllValue = () => {
-        if (this.state.selectAll === 'undefined' || this.state.selectAll === 'checked') {
-            return true;
-        } else {
-            return false;
-        }
-    };
-
-    private getFilteredObjects = (): ReactElementModel[] => {
-        return this.props.data.objects
-        .filter(element => {
-            const label: Label = element.model.label;
+    private getFilteredObjects(): ReactElementModel[] {
+        return this.props.data.objects.filter(element => {
+            const label = element.model.label;
             const text  = formatLocalizedLabel(element.model.id, element.model.label.values, this.props.lang);
             return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         });
-    };
+    }
 
-    private getObjects = (list: ReactElementModel[]) => {
-        const keyMap: Dictionary<boolean> = {};
-        return list.filter(obj => {
-            if (keyMap[obj.model.id]) {
-                return false;
-            } else {
-               keyMap[obj.model.id] = true;
-               return true;
-            }
-        }).map(obj => {
-            return <ElementInPopupMenu
-                key={obj.model.id}
-                element={obj}
-                lang={this.props.lang}
-                filterKey={this.props.filterKey}
-                checked={this.state.checkMap[obj.model.id]}
-                onCheckboxChanged={this.onCheckboxChanged}
-            />;
-        });
-    };
+    private getObjects(list: ReadonlyArray<ReactElementModel>) {
+        const {checkMap} = this.state;
+        const added: { [id: string]: true } = {};
+        const result: React.ReactElement<any>[] = [];
+        for (const obj of list) {
+            if (added[obj.model.id]) { continue; }
+            added[obj.model.id] = true;
+            result.push(
+                <ElementInPopupMenu
+                    key={obj.model.id}
+                    element={obj}
+                    lang={this.props.lang}
+                    filterKey={this.props.filterKey}
+                    checked={checkMap[obj.model.id] || false}
+                    onCheckedChanged={this.onCheckboxChanged}
+                />
+            );
+        }
+        return result;
+    }
 
     private addSelected = () => {
         this.props.onPressAddSelected(
             this.getFilteredObjects().filter(el => this.state.checkMap[el.model.id] && !el.presentOnDiagram)
         );
-    };
+    }
 
     private counter = (activeObjCount: number) => {
         const countString = `${activeObjCount}\u00A0of\u00A0${this.props.data.objects.length}`;
@@ -824,17 +792,22 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
     }
 
     render() {
-        this.updateCheckMap();
+        const {checkMap} = this.state;
         const objects = this.getFilteredObjects();
         const objectViews = this.getObjects(objects);
-        const activeObjCount = objects.filter(el => this.state.checkMap[el.model.id]  && !el.presentOnDiagram).length;
+        const nonPresentedCount = objects.filter(el => !el.presentOnDiagram).length;
+        const activeCount = objects.filter(el => checkMap[el.model.id]  && !el.presentOnDiagram).length;
+        const allSelected = allNonPresentedAreSelected(objects, checkMap);
 
         return <div className='ontodia-connections-menu_objects-panel'>
-            <div className='ontodia-connections-menu_objects-panel__select-all' onClick={this.onSelectAll}>
-                <input className={this.state.selectAll === 'undefined' ? 'undefined' : ''}
-                    type='checkbox' checked={this.selectAllValue()} onChange={() => {/*nothing*/}}
-                    disabled={this.props.data.objects.length === 0}/>
-                <span>Select All</span>
+            <div className='ontodia-connections-menu_objects-panel__select-all'>
+                <label>
+                    <input type='checkbox'
+                        checked={allSelected && nonPresentedCount > 0}
+                        onChange={this.onSelectAll}
+                        disabled={nonPresentedCount === 0} />
+                    Select All
+                </label>
             </div>
             {(
                 this.props.loading ?
@@ -853,12 +826,12 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
                 </div>
             )}
             <div className='ontodia-connections-menu_objects-panel_bottom-panel'>
-                {this.counter(activeObjCount)}
+                {this.counter(activeCount)}
                 <button className={
                         'ontodia-btn ontodia-btn-primary pull-right ' +
                         'ontodia-connections-menu_objects-panel_bottom-panel__add-button'
                     }
-                    disabled={this.props.loading || activeObjCount === 0}
+                    disabled={this.props.loading || activeCount === 0}
                     onClick={this.addSelected}>
                     Add selected
                 </button>
@@ -867,46 +840,53 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, {
     }
 }
 
-interface ElementInPopupMenuProps {
-    element: ReactElementModel;
-    onCheckboxChanged?: (object: ReactElementModel, value: boolean) => void;
-    lang?: string;
-    checked?: boolean;
-    filterKey?: string;
+function selectNonPreseted(objects: ReadonlyArray<ReactElementModel>) {
+    const checkMap: { [id: string]: boolean } = {};
+    for (const object of objects) {
+        if (object.presentOnDiagram) { continue; }
+        checkMap[object.model.id] = true;
+    }
+    return checkMap;
 }
 
-class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, { checked: boolean }> {
-    constructor(props: ElementInPopupMenuProps) {
-        super(props);
-        this.state = { checked: this.props.checked };
+function allNonPresentedAreSelected(
+    objects: ReadonlyArray<ReactElementModel>,
+    checkMap: { readonly [id: string]: boolean }
+): boolean {
+    let allSelected = true;
+    for (const object of objects) {
+        if (object.presentOnDiagram) { continue; }
+        const selected = Boolean(checkMap[object.model.id]);
+        allSelected = allSelected && selected;
     }
+    return allSelected;
+}
 
-    private onCheckboxChange = () => {
-        if (this.props.element.presentOnDiagram) {
-            return;
-        }
-        this.state.checked = !this.state.checked;
-        this.setState(this.state);
-        this.props.onCheckboxChanged(this.props.element, this.state.checked);
-    }
+interface ElementInPopupMenuProps {
+    element: ReactElementModel;
+    lang?: string;
+    filterKey?: string;
+    checked: boolean;
+    onCheckedChanged: (object: ReactElementModel, value: boolean) => void;
+}
 
-    componentWillReceiveProps(props: ElementInPopupMenuProps) {
-        this.setState({ checked: props.checked });
+class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, {}> {
+    private onToggleCheckbox = () => {
+        const {element, checked, onCheckedChanged} = this.props;
+        if (this.props.element.presentOnDiagram) { return; }
+        onCheckedChanged(element, !checked);
     }
 
     render() {
-        const model = this.props.element.model;
-        const fullText = formatLocalizedLabel(model.id, model.label.values, this.props.lang);
-        const textLine = getColoredText(fullText, this.props.filterKey);
+        const {element, lang, filterKey, checked} = this.props;
+        const {model} = element;
+        const fullText = formatLocalizedLabel(model.id, model.label.values, lang);
+        const textLine = getColoredText(fullText, filterKey);
         return (
             <li data-linkTypeId={model.id}
-                className={
-                    'element-in-popup-menu'
-                    + (!this.state.checked ? ' unchecked' : '')
-                }
-                onClick={this.onCheckboxChange}
-            >
-                <input type='checkbox' checked={this.state.checked}
+                className={'element-in-popup-menu' + (checked ? '' : ' unchecked')}
+                onClick={this.onToggleCheckbox}>
+                <input type='checkbox' checked={checked}
                     onChange={() => {/*nothing*/}}
                     className='element-in-popup-menu__checkbox'
                     disabled={this.props.element.presentOnDiagram}/>

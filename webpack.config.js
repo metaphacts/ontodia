@@ -1,23 +1,11 @@
-var webpack = require('webpack');
-var path = require('path');
-
-var npmDir = path.join(__dirname, 'node_modules');
+const path = require('path');
 
 // if BUNDLE_PEERS is set, we'll produce bundle with all dependencies
-var BUNDLE_PEERS = Boolean(process.env.BUNDLE_PEERS);
+const BUNDLE_PEERS = Boolean(process.env.BUNDLE_PEERS);
 // always include IE support in full bundle
-var SUPPORT_IE = Boolean(process.env.SUPPORT_IE || process.env.BUNDLE_PEERS);
+const SUPPORT_IE = BUNDLE_PEERS || Boolean(process.env.SUPPORT_IE);
 
-var plugins = [];
-if (BUNDLE_PEERS) {
-    plugins.push(new webpack.optimize.UglifyJsPlugin({
-        compress: {
-            warnings: false
-        }
-    }));
-}
-
-var aliases = {};
+const aliases = {};
 if (!SUPPORT_IE) {
     const emptyModule = path.resolve(__dirname, 'src', 'emptyModule.ts');
     aliases['canvg-fixed'] = emptyModule;
@@ -25,25 +13,24 @@ if (!SUPPORT_IE) {
 }
 
 module.exports = {
-    entry: {
-        ontodia: path.join(__dirname, 'src', 'index.ts'),
-    },
+    mode: BUNDLE_PEERS ? 'production' : 'none',
+    entry: './src/index.ts',
     resolve: {
         alias: aliases,
-        extensions: ['', '.ts', '.tsx', '.webpack.js', '.web.js', '.js'],
+        extensions: ['.ts', '.tsx', '.js'],
     },
     module: {
-        loaders: [
-            {test: /\.ts$|\.tsx$/, loader: 'ts-loader'},
-            {test: /\.css$/, loader: 'style-loader!css-loader'},
-            {test: /\.scss$/, loader: 'style-loader!css-loader!sass-loader'},
-            {test: /\.jpe?g$/, loader: 'url-loader?mimetype=image/jpeg'},
-            {test: /\.gif$/, loader: 'url-loader?mimetype=image/gif'},
-            {test: /\.png$/, loader: 'url-loader?mimetype=image/png'},
-            {test: /\.svg$/, loader: 'url-loader?mimetype=image/svg+xml'},
-        ],
+        rules: [
+            {test: /\.ts$|\.tsx$/, use: ['ts-loader']},
+            {test: /\.css$/, use: ['style-loader', 'css-loader']},
+            {test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']},
+            {
+                test: /\.(jpe?g|gif|png|svg)$/,
+                use: [{loader: 'url-loader'}],
+            },
+            {test: /\.ttl$/, use: ['raw-loader']},
+        ]
     },
-    plugins: plugins,
     output: {
         path: path.join(__dirname, 'dist'),
         filename: (
@@ -54,15 +41,17 @@ module.exports = {
         library: 'Ontodia',
         libraryTarget: 'umd',
     },
-    externals: BUNDLE_PEERS ? {} : {
-        'd3-color': true,
-        'intro.js': true,
-        'lodash': true,
-        'n3': true,
-        'react': true,
-        'react-dom': true,
-        'webcola': true,
-        'whatwg-fetch': true,
-    },
-    devtool: '#source-map',
+    devtool: 'source-map',
+    externals: BUNDLE_PEERS ? [] : [
+        'd3-color',
+        'file-saverjs',
+        'intro.js',
+        'lodash',
+        'n3',
+        'rdf-ext',
+        'react',
+        'react-dom',
+        'webcola',
+        'whatwg-fetch',
+    ],
 };

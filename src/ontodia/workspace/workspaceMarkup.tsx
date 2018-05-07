@@ -49,7 +49,7 @@ const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present
 
 const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
 
-export class WorkspaceMarkup extends React.Component<Props, void> {
+export class WorkspaceMarkup extends React.Component<Props, {}> {
     element: HTMLElement;
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;

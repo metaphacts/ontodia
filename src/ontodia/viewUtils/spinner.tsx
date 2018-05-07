@@ -10,7 +10,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-spinner';
 
-export class Spinner extends React.Component<Props, void> {
+export class Spinner extends React.Component<Props, {}> {
     render() {
         let {position = {x: 0, y: 0}, size = 50, statusText, errorOccured} = this.props;
 

@@ -68,8 +68,9 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
         return <div className={className} data-state={progressState}>
             <div className='ontodia-progress'>
-                <div className='ontodia-progress-bar ontodia-progress-bar-striped active' role='progressbar'
-                    aria-valuemin='0' aria-valuemax='100' aria-valuenow='100'
+                <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
+                    role='progressbar'
+                    aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
                     style={{width: '100%'}}>
                 </div>
             </div>
@@ -212,14 +213,21 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     componentDidMount() {
         this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
         this.listener.listen(this.props.view.model.events, 'changeCells', () => {
-            if (isEmptyMap(this.state.selectedItems)) { return; }
-            const selectedItems: Dictionary<true> = {...this.state.selectedItems};
-            for (const element of this.props.view.model.elements) {
-                if (element.group === undefined && selectedItems[element.iri]) {
-                    delete selectedItems[element.iri];
+            const {selectedItems: currentSelection, items} = this.state;
+            if (isEmptyMap(currentSelection)) {
+                if (items && items.length > 0) {
+                    // redraw "already on diagram" state
+                    this.forceUpdate();
                 }
+            } else {
+                const selectedItems: Dictionary<true> = {...currentSelection};
+                for (const element of this.props.view.model.elements) {
+                    if (element.group === undefined && selectedItems[element.iri]) {
+                        delete selectedItems[element.iri];
+                    }
+                }
+                this.setState({selectedItems});
             }
-            this.setState({selectedItems});
         });
         this.queryItems(false);
     }

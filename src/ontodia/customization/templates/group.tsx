@@ -5,7 +5,7 @@ import { EmbeddedLayer } from '../../diagram/embeddedLayer';
 
 const CLASS = 'ontodia-group-template';
 
-export class GroupTemplate extends React.Component<TemplateProps, void> {
+export class GroupTemplate extends React.Component<TemplateProps, {}> {
     render() {
         const {label, icon, types, color, isExpanded} = this.props;
 

@@ -19,9 +19,9 @@ function onWorkspaceMounted(workspace: Workspace) {
             ],
             // queryMethod: SparqlQueryMethod.POST
         }, {...OWLRDFSSettings, ...{
-            ftsSettings: {
-                ftsPrefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
-                ftsQueryPattern: ` 
+            fullTextSearch: {
+                prefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
+                queryPattern: ` 
               ?inst rdfs:label ?searchLabel. 
               SERVICE bds:search {
                      ?searchLabel bds:search "\${text}*" ;
