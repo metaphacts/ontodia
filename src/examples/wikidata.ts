@@ -82,7 +82,7 @@ function onWorkspaceMounted(wspace: Workspace) {
 
     workspace = wspace;
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     const dataProvider = new SparqlDataProvider({
         endpointUrl: '/wikidata',
         imagePropertyUris: [
@@ -92,14 +92,14 @@ function onWorkspaceMounted(wspace: Workspace) {
         queryMethod: SparqlQueryMethod.POST,
     }, WikidataSettings);
 
-    workspace.getModel().importLayout({layoutData, dataProvider, validateLinks: true});
+    workspace.getModel().importLayout({diagram, dataProvider, validateLinks: true});
 }
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     viewOptions: {

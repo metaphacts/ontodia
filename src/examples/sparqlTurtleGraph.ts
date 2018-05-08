@@ -75,10 +75,10 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     workspace.showWaitIndicatorWhile(loadingGraph);
 
-    loadingGraph.then(({layoutData, preloadedElements}) => {
+    loadingGraph.then(({diagram, preloadedElements}) => {
         const model = workspace.getModel();
         return model.importLayout({
-            layoutData,
+            diagram,
             preloadedElements,
             dataProvider: provider,
         });

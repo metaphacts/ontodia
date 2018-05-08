@@ -10,9 +10,9 @@ import { DBPediaSettings } from '../ontodia/data/sparql/sparqlDataProviderSettin
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
-        layoutData,
+        diagram,
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
             endpointUrl: 'http://dbpedia.org/sparql',
@@ -28,8 +28,8 @@ function onWorkspaceMounted(workspace: Workspace) {
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     viewOptions: {

@@ -1,5 +1,4 @@
 import { Dictionary, ElementModel, LinkModel, ClassIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
-import { generate64BitID } from '../data/utils';
 import { OrderedMap, createStringMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
 

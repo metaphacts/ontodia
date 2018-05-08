@@ -34,8 +34,8 @@ function onWorkspaceMounted(workspace: Workspace) {
     );
     workspace.showWaitIndicatorWhile(loadingGraph);
 
-    loadingGraph.then(({layoutData, preloadedElements}) =>
-        workspace.getModel().importLayout({layoutData, preloadedElements, dataProvider}),
+    loadingGraph.then(({diagram, preloadedElements}) =>
+        workspace.getModel().importLayout({diagram, preloadedElements, dataProvider}),
     ).then(() => {
         workspace.forceLayout();
         workspace.zoomToFit();

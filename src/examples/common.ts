@@ -1,4 +1,5 @@
 import { LayoutData } from '../index';
+import {SerializedDiagram} from '../ontodia/diagram/serializedDiagram';
 
 export function onPageLoad(callback: (container: HTMLDivElement) => void) {
     document.addEventListener('DOMContentLoaded', () => {
@@ -9,7 +10,7 @@ export function onPageLoad(callback: (container: HTMLDivElement) => void) {
     });
 }
 
-export function tryLoadLayoutFromLocalStorage(): LayoutData | undefined {
+export function tryLoadLayoutFromLocalStorage(): SerializedDiagram | undefined {
     if (window.location.hash.length > 1) {
         try {
             const key = window.location.hash.substring(1);
@@ -20,9 +21,9 @@ export function tryLoadLayoutFromLocalStorage(): LayoutData | undefined {
     return undefined;
 }
 
-export function saveLayoutToLocalStorage(layout: LayoutData): string {
+export function saveLayoutToLocalStorage(diagram: SerializedDiagram): string {
     const randomKey = Math.floor((1 + Math.random()) * 0x10000000000)
         .toString(16).substring(1);
-    localStorage.setItem(randomKey, JSON.stringify(layout));
+    localStorage.setItem(randomKey, JSON.stringify(diagram));
     return randomKey;
 }
