@@ -1,4 +1,4 @@
-import { LayoutData } from '../../editor/layoutData';
+import {LayoutData, SerializedDiagram} from '../../editor/serializedDiagram';
 
 import { Dictionary, ElementModel } from '../model';
 
@@ -19,7 +19,7 @@ export class SparqlGraphBuilder {
 
     getGraphFromConstruct(constructQuery: string): Promise<{
         preloadedElements: Dictionary<ElementModel>,
-        layoutData: LayoutData,
+        diagram: SerializedDiagram,
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
         return this.dataProvider.executeSparqlConstruct(query)

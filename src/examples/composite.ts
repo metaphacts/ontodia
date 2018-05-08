@@ -164,9 +164,9 @@ function onWorkspaceMounted(workspace: Workspace) {
 `,
     }});
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
-        layoutData,
+        diagram,
         validateLinks: true,
         dataProvider: new CompositeDataProvider(
             [
@@ -181,8 +181,8 @@ function onWorkspaceMounted(workspace: Workspace) {
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     viewOptions: {
