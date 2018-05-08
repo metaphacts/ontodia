@@ -3,12 +3,11 @@ import {
     ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
-import { generate64BitID } from '../data/utils';
+import { generate64BitID, uri2name } from '../data/utils';
 
-import { DataFetchingThread } from '../viewUtils/async';
 import { EventSource, Events, EventObserver, AnyEvent, AnyListener, Listener } from '../viewUtils/events';
 
-import { LayoutData, LayoutElement, normalizeImportedCell, exportLayoutData } from './layoutData';
+import { DataFetcher } from './dataFetcher';
 import {
     Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
     FatClassModel, FatClassModelEvents, RichProperty,
@@ -16,6 +15,7 @@ import {
 import { Vector } from './geometry';
 import { Graph } from './graph';
 import { CommandHistory, Command } from './history';
+import { LayoutData, LayoutElement, normalizeImportedCell, exportLayoutData } from './layoutData';
 
 export interface DiagramModelEvents {
     loadingStart: { source: DiagramModel };
@@ -40,22 +40,14 @@ export class DiagramModel {
 
     private graph = new Graph();
     private graphListener = new EventObserver();
+    private fetcher: DataFetcher;
 
     dataProvider: DataProvider;
 
-    private classFetching: DataFetchingThread<ClassIri>;
-    private linkFetching: DataFetchingThread<LinkTypeIri>;
-    private propertyLabelFetching: DataFetchingThread<PropertyTypeIri>;
-
+    private classTree: FatClassModel[] = [];
     private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
-    private classTree: FatClassModel[] = [];
-
-    constructor(readonly history: CommandHistory) {
-        this.classFetching = new DataFetchingThread();
-        this.linkFetching = new DataFetchingThread();
-        this.propertyLabelFetching = new DataFetchingThread();
-    }
+    constructor(readonly history: CommandHistory) {}
 
     get elements() { return this.graph.getElements(); }
     get links() { return this.graph.getLinks(); }
@@ -86,15 +78,18 @@ export class DiagramModel {
         return Boolean(this.sourceOf(link) && this.targetOf(link));
     }
 
-    private resetGraph() {
+    getClasses() {
+        return this.classTree;
+    }
+
+    private resetGraph(dataProvider: DataProvider) {
         if (this.graphListener) {
             this.graphListener.stopListening();
             this.graphListener = new EventObserver();
         }
         this.graph = new Graph();
-        this.classFetching.clear();
-        this.linkFetching.clear();
-        this.propertyLabelFetching.clear();
+        this.dataProvider = dataProvider;
+        this.fetcher = new DataFetcher(this.graph, this.dataProvider);
     }
 
     private subscribeGraph() {
@@ -121,8 +116,7 @@ export class DiagramModel {
     }
 
     createNewDiagram(dataProvider: DataProvider): Promise<void> {
-        this.resetGraph();
-        this.dataProvider = dataProvider;
+        this.resetGraph(dataProvider);
         this.source.trigger('loadingStart', {source: this});
 
         return Promise.all<any>([
@@ -160,8 +154,7 @@ export class DiagramModel {
         linkSettings?: LinkTypeOptions[];
         hideUnusedLinkTypes?: boolean;
     }): Promise<void> {
-        this.resetGraph();
-        this.dataProvider = params.dataProvider;
+        this.resetGraph(params.dataProvider);
         this.source.trigger('loadingStart', {source: this});
 
         return Promise.all<ClassModel[], LinkType[]>([
@@ -299,15 +292,7 @@ export class DiagramModel {
     }
 
     requestElementData(elementIris: ReadonlyArray<ElementIri>): Promise<void> {
-        if (elementIris.length === 0) {
-            return Promise.resolve();
-        }
-        return this.dataProvider.elementInfo({elementIds: [...elementIris]})
-            .then(models => this.onElementInfoLoaded(models))
-            .catch(err => {
-                console.error(err);
-                return Promise.reject(err);
-            });
+        return this.fetcher.fetchElementData(elementIris);
     }
 
     requestLinksOfType(linkTypeIds?: LinkTypeIri[]): Promise<void> {
@@ -317,11 +302,7 @@ export class DiagramModel {
         return this.dataProvider.linksInfo({
             elementIds: this.elements.map(element => element.iri),
             linkTypeIds: linkTypes,
-        }).then(links => this.onLinkInfoLoaded(links))
-        .catch(err => {
-            console.error(err);
-            return Promise.reject(err);
-        });
+        }).then(links => this.onLinkInfoLoaded(links));
     }
 
     getPropertyById(propertyId: PropertyTypeIri): RichProperty {
@@ -329,30 +310,10 @@ export class DiagramModel {
         if (existing) {
             return existing;
         }
-        const property = new RichProperty({
-            id: propertyId,
-            label: [{lang: '', text: uri2name(propertyId)}],
-        });
+        const property = new RichProperty({id: propertyId});
         this.graph.addProperty(property);
-        this.propertyLabelFetching.push(propertyId).then(propertyIds => {
-            if (!this.dataProvider.propertyInfo) { return; }
-            if (propertyIds.length === 0) { return; }
-            this.dataProvider.propertyInfo({propertyIds}).then(propertyModels => {
-                for (const propId in propertyModels) {
-                    if (!Object.hasOwnProperty.call(propertyModels, propertyId)) { continue; }
-                    const {id, label} = propertyModels[propId];
-                    const targetProperty = this.graph.getProperty(id);
-                    if (targetProperty) {
-                        targetProperty.setLabel(label.values);
-                    }
-                }
-            });
-        });
+        this.fetcher.fetchPropertyType(property);
         return property;
-    }
-
-    getClasses() {
-        return this.classTree;
     }
 
     getClassesById(classId: ClassIri): FatClassModel {
@@ -360,25 +321,9 @@ export class DiagramModel {
         if (existing) {
             return existing;
         }
-        const classModel = new FatClassModel({
-            id: classId,
-            label: [{lang: '', text: uri2name(classId)}],
-        });
+        const classModel = new FatClassModel({id: classId});
         this.graph.addClass(classModel);
-
-        this.classFetching.push(classId).then(classIds => {
-            if (classIds.length === 0) { return; }
-            this.dataProvider.classInfo({classIds}).then(classInfos => {
-                for (const {id, label, count} of classInfos) {
-                    const model = this.graph.getClass(id);
-                    if (!model) { continue; }
-                    model.setLabel(label.values);
-                    if (typeof count === 'number') {
-                        model.setCount(count);
-                    }
-                }
-            });
-        });
+        this.fetcher.fetchClass(classModel);
         return classModel;
     }
 
@@ -417,10 +362,7 @@ export class DiagramModel {
         if (existing) {
             return existing;
         }
-        const linkType = new FatLinkType({
-            id: linkTypeId,
-            label: [{text: uri2name(linkTypeId), lang: ''}],
-        });
+        const linkType = new FatLinkType({id: linkTypeId});
 
         const setting = this.linkSettings[linkType.id];
         if (setting) {
@@ -429,16 +371,7 @@ export class DiagramModel {
         }
 
         this.graph.addLinkType(linkType);
-        this.linkFetching.push(linkTypeId).then(linkTypeIds => {
-            if (linkTypeIds.length === 0) { return; }
-            this.dataProvider.linkTypesInfo({linkTypeIds}).then(linkTypesInfo => {
-                for (const {id, label} of linkTypesInfo) {
-                    const model = this.graph.getLinkType(id);
-                    if (!model) { continue; }
-                    model.setLabel(label.values);
-                }
-            });
-        });
+        this.fetcher.fetchLinkType(linkType);
         return linkType;
     }
 
@@ -450,15 +383,6 @@ export class DiagramModel {
         } else {
             for (const link of this.linksOfType(e.source.id)) {
                 this.graph.removeLink(link.id);
-            }
-        }
-    }
-
-    private onElementInfoLoaded(elements: Dictionary<ElementModel>) {
-        for (const element of this.elements) {
-            const loadedModel = elements[element.iri];
-            if (loadedModel) {
-                element.setData(loadedModel);
             }
         }
     }
@@ -528,8 +452,10 @@ function addElement(graph: Graph, element: Element, connectedLinks: ReadonlyArra
     return Command.create('Add element', () => {
         graph.addElement(element);
         for (const link of connectedLinks) {
-            if (graph.getLink(link.id)) { continue; }
-            graph.addLink(link);
+            const existing = graph.getLink(link.id) || graph.findLink(link.typeId, link.sourceId, link.targetId);
+            if (!existing) {
+                graph.addLink(link);
+            }
         }
         return removeElement(graph, element);
     });
@@ -557,23 +483,6 @@ function placeholderTemplateFromIri(iri: ElementIri): ElementModel {
         label: {values: []},
         properties: {},
     };
-}
-
-export function uri2name(uri: string): string {
-    const hashIndex = uri.lastIndexOf('#');
-    if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
-        return uri.substring(hashIndex + 1);
-    }
-    const endsWithSlash = uri[uri.length - 1] === '/';
-    if (endsWithSlash) {
-        uri = uri.substring(0, uri.length - 1);
-    }
-
-    const lastPartStart = uri.lastIndexOf('/');
-    if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
-        return uri.substring(lastPartStart + 1);
-    }
-    return uri;
 }
 
 export function chooseLocalizedText(

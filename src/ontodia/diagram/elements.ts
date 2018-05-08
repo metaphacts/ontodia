@@ -153,10 +153,10 @@ export class FatClassModel {
 
     constructor(props: {
         id: ClassIri;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {
-        const {id, label, count} = props;
+        const {id, label = [], count} = props;
         this.id = id;
         this._label = label;
         this._count = count;
@@ -218,9 +218,9 @@ export class RichProperty {
 
     constructor(props: {
         id: PropertyTypeIri;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
     }) {
-        const {id, label} = props;
+        const {id, label = []} = props;
         this.id = id;
         this._label = label;
     }
@@ -354,9 +354,9 @@ export class FatLinkType {
     constructor(props: {
         id: LinkTypeIri;
         index?: number;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
     }) {
-        const {id, index, label} = props;
+        const {id, index, label = []} = props;
         this.id = id;
         this._index = index;
         this._label = label;

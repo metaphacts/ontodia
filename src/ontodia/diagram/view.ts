@@ -21,13 +21,13 @@ import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectio
 import { Halo } from '../widgets/halo';
 
 import { Dictionary, ElementModel, LocalizedString, ElementIri, ClassIri, LinkTypeIri } from '../data/model';
-import { hashFnv32a } from '../data/utils';
+import { hashFnv32a, uri2name } from '../data/utils';
 
 import { setElementExpanded } from './commands';
 import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
 import { Vector, Size, boundsOf } from './geometry';
 import { Batch, Command } from './history';
-import { DiagramModel, restoreLinksBetweenElements, chooseLocalizedText, uri2name } from './model';
+import { DiagramModel, restoreLinksBetweenElements, chooseLocalizedText } from './model';
 import { PaperArea, PointerUpEvent } from './paperArea';
 
 export interface DiagramViewOptions {
@@ -415,7 +415,7 @@ export class DiagramView {
             }
         }
 
-        fillLinkTemplateDefaults(template, this.model);
+        fillLinkTemplateDefaults(template);
         this.linkTemplates.set(linkType.id, template);
         this.source.trigger('changeLinkTemplates', {source: this});
         return template;
@@ -462,7 +462,7 @@ function getHueFromClasses(classes: ReadonlyArray<ClassIri>, seed?: number): num
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
 }
 
-function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
+function fillLinkTemplateDefaults(template: LinkTemplate) {
     const defaults: Partial<LinkTemplate> = {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
     };

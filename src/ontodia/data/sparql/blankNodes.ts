@@ -1,6 +1,6 @@
-import { uri2name } from '../../diagram/model';
 import { Dictionary } from '../model';
 import { FilterParams } from '../provider';
+import { uri2name } from '../utils';
 
 import {
     ElementBinding, LinkBinding, BlankBinding, isRdfIri, isRdfBlank,

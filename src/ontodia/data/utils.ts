@@ -28,3 +28,20 @@ export function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     return hval >>> 0;
     /* tslint:enable:no-bitwise */
 }
+
+export function uri2name(uri: string): string {
+    const hashIndex = uri.lastIndexOf('#');
+    if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
+        return uri.substring(hashIndex + 1);
+    }
+    const endsWithSlash = uri[uri.length - 1] === '/';
+    if (endsWithSlash) {
+        uri = uri.substring(0, uri.length - 1);
+    }
+
+    const lastPartStart = uri.lastIndexOf('/');
+    if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
+        return uri.substring(lastPartStart + 1);
+    }
+    return uri;
+}

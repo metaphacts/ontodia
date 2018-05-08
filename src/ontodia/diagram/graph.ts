@@ -89,8 +89,6 @@ export class Graph {
         if (this.getLink(link.id)) {
             throw new Error(`Link '${link.id}' already exists.`);
         }
-        const existing = this.findLink(link.typeId, link.sourceId, link.targetId);
-        if (existing) { return; }
         const linkType = this.getLinkType(link.typeId);
         if (!linkType) {
             throw new Error(`Link type '${link.typeId}' not found.`);

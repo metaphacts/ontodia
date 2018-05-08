@@ -44,29 +44,19 @@ export abstract class BatchingScheduler {
     }
 }
 
-export class DataFetchingThread<Key extends string> extends BatchingScheduler {
-    private fetchingPromise: Promise<Key[]>;
+export class BufferingQueue<Key extends string> extends BatchingScheduler {
     private fetchingQueue: { [key: string]: true } = Object.create(null);
 
-    private resolve: (queue: Key[]) => void;
-    private reject: (error: any) => void;
-
-    constructor(waitingTime = 200) {
+    constructor(
+        private onFetch: (keys: Key[]) => void,
+        waitingTime = 200
+    ) {
         super(waitingTime);
     }
 
-    push(key: Key): Promise<Key[]> {
+    push(key: Key) {
         this.fetchingQueue[key] = true;
-        if (this.fetchingPromise) {
-            return Promise.resolve([]);
-        } else {
-            this.fetchingPromise = new Promise<Key[]>((resolve, reject) => {
-                this.resolve = resolve;
-                this.reject = reject;
-                this.schedule();
-            });
-            return this.fetchingPromise;
-        }
+        this.schedule();
     }
 
     clear() {
@@ -74,22 +64,9 @@ export class DataFetchingThread<Key extends string> extends BatchingScheduler {
     }
 
     protected run() {
-        const {fetchingQueue, resolve} = this;
-        this.fetchingPromise = undefined;
+        const {fetchingQueue, onFetch} = this;
         this.fetchingQueue = Object.create(null);
-        this.resolve = undefined;
-        this.reject = undefined;
-        resolve(Object.keys(fetchingQueue) as Key[]);
-    }
-
-    dispose() {
-        super.dispose();
-        const {reject} = this;
-        this.resolve = undefined;
-        this.reject = undefined;
-        if (reject) {
-            reject(new Error('DataFetchingThread was disposed'));
-        }
+        onFetch(Object.keys(fetchingQueue) as Key[]);
     }
 }
 
