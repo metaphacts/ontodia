@@ -45,10 +45,10 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const model = workspace.getModel();
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     model.importLayout({
         dataProvider: new DemoDataProvider(CLASSES, LINK_TYPES, ELEMENTS, LINKS),
-        layoutData,
+        diagram,
         validateLinks: true,
     });
 }
@@ -56,8 +56,8 @@ function onWorkspaceMounted(workspace: Workspace) {
 const props: WorkspaceProps & React.ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     toolbar: <Toolbar onExampleClick={() => { alert('Example button have been pressed!'); }}/>,

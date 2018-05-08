@@ -1,11 +1,9 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps } from '../index';
+import { Workspace, WorkspaceProps, RDFDataProvider, GraphBuilder } from '../index';
 
 import { onPageLoad } from './common';
-import { RDFDataProvider } from '../ontodia/data/rdf/rdfDataProvider';
-import { GraphBuilder } from '../ontodia/data/sparql/graphBuilder';
 
 const N3Parser: any = require('rdf-parser-n3');
 const RdfXmlParser: any = require('rdf-parser-rdfxml');
@@ -75,10 +73,10 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     workspace.showWaitIndicatorWhile(loadingGraph);
 
-    loadingGraph.then(({layoutData, preloadedElements}) => {
+    loadingGraph.then(({diagram, preloadedElements}) => {
         const model = workspace.getModel();
         return model.importLayout({
-            layoutData,
+            diagram,
             preloadedElements,
             dataProvider: provider,
         });

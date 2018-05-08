@@ -3,13 +3,12 @@ import * as React from 'react';
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi, ElementError } from '../data/validationApi';
 import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink, sameElement } from '../data/model';
-import { generate64BitID } from '../data/utils';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, Size, boundsOf, computeGrouping } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
+import {DiagramModel, generateID, IDKind} from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
@@ -606,7 +605,7 @@ export class EditorController {
         const batch = this.model.history.startBatch('Create new entity');
         const elementModel = {
             // TODO: change IRI generation
-            id: `http://ontodia.org/newEntity_${generate64BitID()}` as ElementIri,
+            id: `http://ontodia.org/${generateID(IDKind.newElement)}` as ElementIri,
             types: [classIri],
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},

@@ -1,16 +1,26 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod, GroupTemplate } from '../index';
+import {
+    Workspace,
+    WorkspaceProps,
+    SparqlDataProvider,
+    OWLStatsSettings,
+    SparqlQueryMethod,
+    GroupTemplate,
+    LinkTypeIri
+} from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
-        layoutData,
+        diagram: {...diagram, ...{linkTypeOptions: [
+                    {property: 'http://www.researchspace.org/ontology/group' as LinkTypeIri, visible: false},
+                ]}},
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql',
@@ -21,17 +31,14 @@ function onWorkspaceMounted(workspace: Workspace) {
             queryMethod: SparqlQueryMethod.GET,
             acceptBlankNodes: true,
         }, OWLStatsSettings),
-        linkSettings: [
-            {id: 'http://www.researchspace.org/ontology/group', visible: false},
-        ],
     });
 }
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     viewOptions: {
