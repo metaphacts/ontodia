@@ -174,3 +174,19 @@ export function findNearestSegmentIndex(polyline: ReadonlyArray<Vector>, locatio
     }
     return foundIndex;
 }
+
+export function computeGrouping(elements: ReadonlyArray<DiagramElement>): Map<string, DiagramElement[]> {
+    const grouping = new Map<string, DiagramElement[]>();
+    for (const element of elements) {
+        const group = element.group;
+        if (typeof group === 'string') {
+            let children = grouping.get(group);
+            if (!children) {
+                children = [];
+                grouping.set(group, children);
+            }
+            children.push(element);
+        }
+    }
+    return grouping;
+}

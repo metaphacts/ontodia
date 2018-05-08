@@ -132,7 +132,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private disposed = false;
 
     private typesObserver = new KeyedObserver<ClassIri>(key => {
-        const type = this.props.view.model.getClassesById(key);
+        const type = this.props.view.model.getClass(key);
         if (type) {
             type.events.on('changeLabel', this.rerenderTemplate);
             return () => type.events.off('changeLabel', this.rerenderTemplate);
@@ -141,7 +141,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     });
 
     private propertyObserver = new KeyedObserver<PropertyTypeIri>(key => {
-        const property = this.props.view.model.getPropertyById(key);
+        const property = this.props.view.model.getProperty(key);
         if (property) {
             property.events.on('changeLabel', this.rerenderTemplate);
             return () => property.events.off('changeLabel', this.rerenderTemplate);
@@ -284,7 +284,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         const propertyIris = Object.keys(model.data.properties) as PropertyTypeIri[];
         const propTable = propertyIris.map(key => {
-            const property = view.model.getPropertyById(key);
+            const property = view.model.createProperty(key);
             const name = formatLocalizedLabel(key, property.label, view.getLanguage());
             return {
                 id: key,

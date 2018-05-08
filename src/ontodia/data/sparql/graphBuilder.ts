@@ -1,11 +1,12 @@
 import { keyBy } from 'lodash';
 
-import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../diagram/layoutData';
+import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../editor/layoutData';
 import { uniformGrid } from '../../viewUtils/layout';
+
 import { Dictionary, ElementModel, LinkModel, ElementIri, LinkTypeIri } from '../model';
+import { DataProvider } from '../provider';
 import { generate64BitID } from '../utils';
 
-import { DataProvider } from '../provider';
 import { Triple } from './sparqlModels';
 import { parseTurtleText } from './turtle';
 

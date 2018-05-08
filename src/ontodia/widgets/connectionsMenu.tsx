@@ -1,15 +1,19 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
+import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+
 import { changeLinkTypeVisibility } from '../diagram/commands';
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
 import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { restoreLinksBetweenElements, formatLocalizedLabel } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
-import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+import { restoreLinksBetweenElements } from '../editor/asyncModel';
+import { EditorController } from '../editor/editorController';
+
 import { EventObserver } from '../viewUtils/events';
 
 type Label = { values: LocalizedString[] };
@@ -56,6 +60,7 @@ export interface ObjectsData {
 
 export interface ConnectionsMenuProps extends PaperWidgetProps {
     view: DiagramView;
+    editor: EditorController;
     target: Element;
     onClose: () => void;
     suggestProperties?: PropertySuggestionHandler;
@@ -98,12 +103,12 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private loadLinks() {
-        const {view, target} = this.props;
+        const {view, editor, target} = this.props;
 
         this.loadingState = 'loading';
         this.links = [];
         this.countMap = {};
-        view.model.dataProvider.linkTypesOf({elementId: target.iri})
+        editor.model.dataProvider.linkTypesOf({elementId: target.iri})
             .then(linkTypes => {
                 this.loadingState = 'completed';
 
@@ -135,7 +140,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private loadObjects(linkDataChunk: LinkDataChunk) {
-        const {view, target} = this.props;
+        const {view, editor, target} = this.props;
         const {link, direction, expectedCount } = linkDataChunk;
         const offset = (linkDataChunk.offset || 0);
 
@@ -143,7 +148,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         this.linkDataChunk = linkDataChunk;
         this.objects = [];
 
-        view.model.dataProvider.linkElements({
+        editor.model.dataProvider.linkElements({
             elementId: target.iri,
             linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : link.id),
             limit: offset + MAX_LINK_COUNT,
@@ -166,7 +171,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
-        const {view, target, onClose} = this.props;
+        const {view, editor, target, onClose} = this.props;
         const batch = view.model.history.startBatch();
 
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
@@ -211,7 +216,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         }
 
         batch.history.execute(
-            restoreLinksBetweenElements(view.model, addedElementIris)
+            restoreLinksBetweenElements(editor.model, addedElementIris)
         );
         batch.store();
         onClose();

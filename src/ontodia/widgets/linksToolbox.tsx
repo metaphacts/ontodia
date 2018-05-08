@@ -8,6 +8,8 @@ import { CommandHistory } from '../diagram/history';
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
+import { EditorController } from '../editor/editorController';
+
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 
@@ -244,6 +246,7 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
 
 export interface LinkTypesToolboxProps {
     view: DiagramView;
+    editor: EditorController;
 }
 
 export interface LinkTypesToolboxState {
@@ -263,11 +266,11 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
     constructor(props: LinkTypesToolboxProps, context: any) {
         super(props, context);
 
-        const {view} = this.props;
+        const {view, editor} = this.props;
 
-        this.listener.listen(view.model.events, 'loadingSuccess', () => this.updateOnCurrentSelection());
         this.listener.listen(view.events, 'changeLanguage', () => this.updateOnCurrentSelection());
-        this.listener.listen(view.events, 'changeSelection', () => {
+        this.listener.listen(editor.model.events, 'loadingSuccess', () => this.updateOnCurrentSelection());
+        this.listener.listen(editor.events, 'changeSelection', () => {
             this.debounceSelection.call(this.updateOnCurrentSelection);
         });
 
@@ -285,8 +288,8 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
     }
 
     private updateOnCurrentSelection = () => {
-        const {view} = this.props;
-        const single = view.selection.length === 1 ? view.selection[0] : null;
+        const {editor} = this.props;
+        const single = editor.selection.length === 1 ? editor.selection[0] : null;
         if (single !== this.state.selectedElement) {
             this.requestLinksOf(single);
         }
@@ -297,7 +300,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
             const request = {elementId: selectedElement.iri};
             this.currentRequest = request;
             this.setState({dataState: 'querying', selectedElement});
-            this.props.view.model.dataProvider.linkTypesOf(request).then(linkTypes => {
+            this.props.editor.model.dataProvider.linkTypesOf(request).then(linkTypes => {
                 if (this.currentRequest !== request) { return; }
                 const {linksOfElement, countMap} = this.computeStateFromRequestResult(linkTypes);
                 this.subscribeOnLinksEvents(linksOfElement);
@@ -322,7 +325,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
         const linksOfElement: FatLinkType[] = [];
         const countMap: { [linkTypeId: string]: number } = {};
 
-        const model = this.props.view.model;
+        const model = this.props.editor.model;
         for (const linkType of linkTypes) {
             const type = model.createLinkType(linkType.id);
             linksOfElement.push(type);
@@ -347,9 +350,9 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
     }
 
     render() {
-        const {view} = this.props;
+        const {view, editor} = this.props;
         const {selectedElement, dataState, linksOfElement, countMap} = this.state;
-        return <LinkTypesToolboxView history={view.model.history}
+        return <LinkTypesToolboxView history={editor.model.history}
             dataState={dataState}
             links={linksOfElement}
             countMap={countMap}

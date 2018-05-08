@@ -12,7 +12,7 @@ import {
 } from './elements';
 
 export interface GraphEvents {
-    changeCells: { source: Graph };
+    changeCells: {};
     elementEvent: AnyEvent<ElementEvents>;
     linkEvent: AnyEvent<LinkEvents>;
     linkTypeEvent: AnyEvent<FatLinkTypeEvents>;
@@ -64,7 +64,7 @@ export class Graph {
         }
         element.events.onAny(this.onElementEvent);
         this.elements.push(element.id, element);
-        this.source.trigger('changeCells', {source: this});
+        this.source.trigger('changeCells', {});
     }
 
     private onElementEvent: AnyListener<ElementEvents> = (data, key) => {
@@ -81,7 +81,7 @@ export class Graph {
             }
             this.elements.delete(elementId);
             element.events.offAny(this.onElementEvent);
-            this.source.trigger('changeCells', {source: this});
+            this.source.trigger('changeCells', {});
         }
     }
 
@@ -89,8 +89,6 @@ export class Graph {
         if (this.getLink(link.id)) {
             throw new Error(`Link '${link.id}' already exists.`);
         }
-        const existing = this.findLink(link.typeId, link.sourceId, link.targetId);
-        if (existing) { return; }
         const linkType = this.getLinkType(link.typeId);
         if (!linkType) {
             throw new Error(`Link type '${link.typeId}' not found.`);
@@ -112,7 +110,7 @@ export class Graph {
 
         link.events.onAny(this.onLinkEvent);
         this.links.push(link.id, link);
-        this.source.trigger('changeCells', {source: this});
+        this.source.trigger('changeCells', {});
     }
 
     private onLinkEvent: AnyListener<LinkEvents> = (data, key) => {
@@ -126,7 +124,7 @@ export class Graph {
             link.events.offAny(this.onLinkEvent);
             this.removeLinkReferences(typeId, sourceId, targetId);
             if (!(options && options.silent)) {
-                this.source.trigger('changeCells', {source: this});
+                this.source.trigger('changeCells', {});
             }
         }
     }

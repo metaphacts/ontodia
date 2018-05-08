@@ -23,10 +23,13 @@ export { RestoreGeometry } from './ontodia/diagram/commands';
 export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell } from './ontodia/diagram/elements';
 export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
 export * from './ontodia/diagram/history';
-export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/diagram/layoutData';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
+
+export * from './ontodia/editor/asyncModel';
+export { EditorOptions, EditorEvents, EditorController } from './ontodia/editor/editorController';
+export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/editor/layoutData';
 
 export * from './ontodia/viewUtils/events';
 

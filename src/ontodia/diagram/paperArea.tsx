@@ -4,12 +4,10 @@ import { ReactElement } from 'react';
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
-import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
 import { RestoreGeometry } from './commands';
 import { Element, Link, Cell, LinkVertex } from './elements';
-import { ElementLayer } from './elementLayer';
 import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
 import { DiagramModel } from './model';
@@ -152,10 +150,6 @@ export class PaperArea extends React.Component<Props, State> {
     render() {
         const {view} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
-        const paperTransformStyle: React.CSSProperties = {
-            position: 'absolute', left: 0, top: 0,
-            transform: `scale(${scale},${scale})translate(${originX}px,${originY}px)`,
-        };
         return (
             <div className={CLASS_NAME}
                 ref={area => this.area = area}
@@ -170,7 +164,6 @@ export class PaperArea extends React.Component<Props, State> {
                     paddingX={paddingX}
                     paddingY={paddingY}
                     onPointerDown={this.onPaperPointerDown}>
-                    <ElementLayer view={view} scale={scale} style={paperTransformStyle} />
                     <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
                         {renderedWidgets.map(widget => {
                             const props: PaperWidgetProps = {paperArea: this};
@@ -208,17 +201,6 @@ export class PaperArea extends React.Component<Props, State> {
 
         this.area.addEventListener('dragover', this.onDragOver);
         this.area.addEventListener('drop', this.onDragDrop);
-
-        this.listener.listen(view.model.events, 'loadingStart', () => this.showIndicator());
-        this.listener.listen(view.model.events, 'loadingError', ({error}) => {
-            this.updateWidgets({[LoadingWidget.Key]: undefined});
-            this.renderSpinner({statusText: error.message, errorOccured: true});
-        });
-        this.listener.listen(view.model.events, 'loadingSuccess', () => {
-            this.updateWidgets({[LoadingWidget.Key]: undefined});
-            view.performSyncUpdate();
-            this.centerContent();
-        });
     }
 
     componentDidUpdate(prevProps: Props, prevState: State) {
@@ -638,26 +620,6 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    private renderSpinner(props: SpinnerProps = {}) {
-        this.updateWidgets({
-            [LoadingWidget.Key]: <LoadingWidget spinnerProps={props} />,
-        });
-    }
-
-    showIndicator(operation?: Promise<any>) {
-        this.centerTo();
-        this.renderSpinner();
-
-        if (operation) {
-            operation.then(() => {
-                this.updateWidgets({[LoadingWidget.Key]: undefined});
-            }).catch(error => {
-                console.error(error);
-                this.renderSpinner({statusText: 'Unknown error occured', errorOccured: true});
-            });
-        }
-    }
-
     private makeToSVGOptions(): ToSVGOptions {
         return {
             model: this.props.view.model,
@@ -688,32 +650,6 @@ function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
         x: e.offsetX + (targetBox.left - containerBox.left),
         y: e.offsetY + (targetBox.top - containerBox.top),
     };
-}
-
-interface LoadingWidgetProps extends PaperWidgetProps {
-    spinnerProps: Partial<SpinnerProps>;
-}
-
-class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
-    static readonly Key = 'loadingWidget';
-
-    render() {
-        const {spinnerProps, paperArea} = this.props;
-
-        const paperSize = paperArea.getPaperSize();
-        const paneStart = paperArea.paperToScrollablePaneCoords(0, 0);
-        const paneEnd = paperArea.paperToScrollablePaneCoords(paperSize.width, paperSize.height);
-        const paneWidth = paneEnd.x - paneStart.x;
-        const paneHeight = paneEnd.y - paneStart.y;
-
-        const x = spinnerProps.statusText ? paneWidth / 3 : paneWidth / 2;
-        const position = {x, y: paneHeight / 2};
-        return (
-            <svg width={paneWidth} height={paneHeight}>
-                <Spinner position={position} {...spinnerProps} />
-            </svg>
-        );
-    }
 }
 
 export function getContentFittingBox(

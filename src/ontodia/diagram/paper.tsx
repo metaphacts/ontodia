@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Component, SVGAttributes, CSSProperties } from 'react';
 
 import { Cell, Element as DiagramElement, Link as DiagramLink, LinkVertex } from './elements';
+import { ElementLayer } from './elementLayer';
 import { Vector } from './geometry';
 import { LinkLayer, LinkMarkers } from './linkLayer';
 import { DiagramModel } from './model';
@@ -24,7 +25,7 @@ const CLASS_NAME = 'ontodia-paper';
 
 export class Paper extends Component<PaperProps, {}> {
     render() {
-        const {width, height, originX, originY, scale, paddingX, paddingY} = this.props;
+        const {view, group, width, height, originX, originY, scale, paddingX, paddingY} = this.props;
         const scaledWidth = width * scale;
         const scaledHeight = height * scale;
         // using padding instead of margin in combination with setting width and height
@@ -38,16 +39,24 @@ export class Paper extends Component<PaperProps, {}> {
             paddingRight: paddingX,
             paddingBottom: paddingY,
         };
+
+        const svgTransform = `scale(${scale},${scale})translate(${originX},${originY})`;
+        const htmlTransformStyle: React.CSSProperties = {
+            position: 'absolute', left: 0, top: 0,
+            transform: `scale(${scale},${scale})translate(${originX}px,${originY}px)`,
+        };
+
         return (
             <div className={CLASS_NAME} style={style} onMouseDown={this.onMouseDown}>
                 <svg className={`${CLASS_NAME}__canvas`}
                     width={scaledWidth} height={scaledHeight}
                     style={{overflow: 'visible'}}>
-                    <LinkMarkers view={this.props.view} />
-                    <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                        <LinkLayer view={this.props.view} group={this.props.group} />
+                    <LinkMarkers view={view} />
+                    <g transform={svgTransform}>
+                        <LinkLayer view={view} group={group} />
                     </g>
                 </svg>
+                <ElementLayer view={view} group={group} scale={scale} style={htmlTransformStyle} />
                 {this.props.children}
             </div>
         );

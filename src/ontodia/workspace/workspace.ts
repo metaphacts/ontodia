@@ -4,11 +4,13 @@ import * as saveAs from 'file-saverjs';
 
 import { RestoreGeometry } from '../diagram/commands';
 import { Element, Link, FatLinkType } from '../diagram/elements';
-import { boundsOf } from '../diagram/geometry';
+import { boundsOf, computeGrouping } from '../diagram/geometry';
 import { Batch, Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
-import { DiagramView, DiagramViewOptions } from '../diagram/view';
+import { DiagramView, ViewOptions } from '../diagram/view';
+
+import { AsyncModel, GroupBy } from '../editor/asyncModel';
+import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 import {
@@ -64,6 +66,10 @@ export interface WorkspaceProps {
     viewOptions?: DiagramViewOptions;
 }
 
+export interface DiagramViewOptions extends ViewOptions, EditorOptions {
+    groupBy?: GroupBy[];
+}
+
 export interface WorkspaceLanguage {
     code: string;
     label: string;
@@ -89,21 +95,39 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     private readonly listener = new EventObserver();
 
-    private readonly model: DiagramModel;
-    private readonly diagram: DiagramView;
+    private readonly model: AsyncModel;
+    private readonly view: DiagramView;
+    private readonly editor: EditorController;
 
     private markup: WorkspaceMarkup;
     private tree: ClassTree;
 
     constructor(props: WorkspaceProps) {
         super(props);
-        const {hideHalo, language, history, viewOptions} = this.props;
-        this.model = new DiagramModel(history || new NonRememberingHistory());
-        this.diagram = new DiagramView(this.model, {
-            ...viewOptions,
-            disableDefaultHalo: this.props.hideHalo,
+
+        const {hideHalo, language, history, viewOptions = {}} = this.props;
+        const {
+            templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
+            disableDefaultHalo, suggestProperties, groupBy,
+        } = viewOptions;
+
+        this.model = new AsyncModel(
+            history || new NonRememberingHistory(),
+            groupBy || [],
+        );
+        this.view = new DiagramView(this.model, {
+            templatesResolvers,
+            linkTemplateResolvers,
+            typeStyleResolvers,
+            linkRouter,
+            onIriClick,
         });
-        this.diagram.setLanguage(this.props.language);
+        this.editor = new EditorController(this.model, this.view, {
+            disableDefaultHalo: hideHalo || disableDefaultHalo,
+            suggestProperties,
+        });
+
+        this.view.setLanguage(this.props.language);
         this.state = {
             isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
             isRightPanelOpen: this.props.rightPanelInitiallyOpen,
@@ -111,8 +135,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
-        if (nextProps.language !== this.diagram.getLanguage()) {
-            this.diagram.setLanguage(nextProps.language);
+        if (nextProps.language !== this.view.getLanguage()) {
+            this.view.setLanguage(nextProps.language);
         }
     }
 
@@ -136,7 +160,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     this.zoomToFit();
                 },
                 languages,
-                selectedLanguage: this.diagram.getLanguage(),
+                selectedLanguage: this.view.getLanguage(),
                 onChangeLanguage: this.changeLanguage,
                 onShowTutorial: this.showTutorial,
                 hidePanels,
@@ -158,7 +182,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
             ref: markup => { this.markup = markup; },
             hidePanels,
             hideToolbar,
-            view: this.diagram,
+            model: this.model,
+            view: this.view,
+            editor: this.editor,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,
@@ -174,7 +200,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentDidMount() {
-        this.diagram._initializePaperComponents(this.markup.paperArea);
+        this.editor._initializePaperComponents(this.markup.paperArea);
+
+        this.listener.listen(this.model.events, 'loadingSuccess', () => {
+            this.view.performSyncUpdate();
+            this.markup.paperArea.centerContent();
+        });
 
         this.listener.listen(this.model.events, 'elementEvent', ({key, data}) => {
             if (!data.requestedAddToFilter) { return; }
@@ -211,11 +242,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.diagram.dispose();
+        this.view.dispose();
     }
 
     getModel() { return this.model; }
-    getDiagram() { return this.diagram; }
+    getDiagram() { return this.view; }
+    getEditor() { return this.editor; }
 
     preventTextSelectionUntilMouseUp() { this.markup.preventTextSelection(); }
 
@@ -223,57 +255,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.zoomToFit();
     }
 
-    showWaitIndicatorWhile(promise: Promise<any>) {
-        this.markup.paperArea.showIndicator(promise);
-    }
-
-    private forceLayoutElements = (elements: Element[], group?: Element) => {
-        const model = this.model;
-
-        for (const element of elements) {
-            const nestedNodes = model.elements.filter(el => el.group === element.id);
-            if (nestedNodes.length > 0) {
-                this.forceLayoutElements(nestedNodes, element);
-            }
-        }
-
-        const nodes: LayoutNode[] = [];
-        const nodeById: { [id: string]: LayoutNode } = {};
-        for (const element of elements) {
-            const {x, y, width, height} = boundsOf(element);
-            const node: LayoutNode = {id: element.id, x, y, width, height};
-            nodeById[element.id] = node;
-            nodes.push(node);
-        }
-
-        const links: LayoutLink[] = [];
-        for (const link of this.model.links) {
-            if (!model.isSourceAndTargetVisible(link)) {
-                continue;
-            }
-            const source = model.sourceOf(link);
-            const target = model.targetOf(link);
-
-            const sourceNode = nodeById[source.id];
-            const targetNode = nodeById[target.id];
-
-            if (sourceNode && targetNode) {
-                links.push({source: sourceNode, target: targetNode});
-            }
-        }
-
-        forceLayout({nodes, links, preferredLinkLength: 200});
-        padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
-
-        const padding: { x: number; y: number; } = (
-            group ? getContentFittingBox(elements, []) : {x: 150, y: 150}
-        );
-
-        translateToPositiveQuadrant({nodes, padding});
-
-        for (const node of nodes) {
-            const element = this.model.getElement(node.id);
-            element.setPosition({x: node.x, y: node.y});
+    showWaitIndicatorWhile(operation: Promise<any>) {
+        this.markup.paperArea.centerTo();
+        this.editor.setSpinner({});
+        if (operation) {
+            operation.then(() => {
+                this.editor.setSpinner(undefined);
+            }).catch(error => {
+                console.error(error);
+                this.editor.setSpinner({statusText: 'Unknown error occured', errorOccured: true});
+            });
         }
     }
 
@@ -282,8 +273,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
         batch.history.registerToUndo(this.makeSyncAndZoom());
         batch.history.registerToUndo(RestoreGeometry.capture(this.model));
 
-        const elements = this.model.elements.filter(element => element.group === undefined);
-        this.forceLayoutElements(elements);
+        const grouping = computeGrouping(this.model.elements);
+        recursiveForceLayout(this.model, grouping);
+
         for (const link of this.model.links) {
             link.setVertices([]);
         }
@@ -294,7 +286,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     private makeSyncAndZoom(): Command {
         return Command.effect('Sync and zoom to fit', () => {
-            this.diagram.performSyncUpdate();
+            this.view.performSyncUpdate();
             this.zoomToFit();
         });
     }
@@ -350,7 +342,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         if (this.props.onLanguageChange) {
             this.props.onLanguageChange(language);
         } else {
-            this.diagram.setLanguage(language);
+            this.view.setLanguage(language);
             // since we have toolbar dependent on language, we're forcing update here
             this.forceUpdate();
         }
@@ -365,10 +357,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 }
 
-export function renderTo<WorkspaceProps>(
-    workspace: React.ComponentClass<WorkspaceProps>,
+export function renderTo<WorkspaceComponentProps>(
+    workspace: React.ComponentClass<WorkspaceComponentProps>,
     container: HTMLElement,
-    props: WorkspaceProps,
+    props: WorkspaceComponentProps,
 ) {
     ReactDOM.render(createElement(workspace, props), container);
 }

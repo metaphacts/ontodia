@@ -3,47 +3,29 @@ import { defaultsDeep, cloneDeep } from 'lodash';
 import { ReactElement, createElement } from 'react';
 
 import {
-    TypeStyleResolver,
-    LinkTemplateResolver,
-    TemplateResolver,
-    CustomTypeStyle,
-    ElementTemplate,
-    LinkTemplate,
-    LinkMarkerStyle,
-    LinkRouter,
+    LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
+    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
 
-import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
-import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
-import { Halo } from '../widgets/halo';
-
 import { Dictionary, ElementModel, LocalizedString, ElementIri, ClassIri, LinkTypeIri } from '../data/model';
-import { hashFnv32a } from '../data/utils';
+import { hashFnv32a, uri2name } from '../data/utils';
 
-import { setElementExpanded } from './commands';
+import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
+
 import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
 import { Vector, Size, boundsOf } from './geometry';
 import { Batch, Command } from './history';
-import { DiagramModel, restoreLinksBetweenElements, chooseLocalizedText, uri2name } from './model';
-import { PaperArea, PointerUpEvent } from './paperArea';
+import { DiagramModel, chooseLocalizedText } from './model';
 
-export interface DiagramViewOptions {
+export interface ViewOptions {
     typeStyleResolvers?: TypeStyleResolver[];
     linkTemplateResolvers?: LinkTemplateResolver[];
     templatesResolvers?: TemplateResolver[];
-    disableDefaultHalo?: boolean;
     linkRouter?: LinkRouter;
-    suggestProperties?: PropertySuggestionHandler;
     onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
-    groupBy?: GroupBy[];
-}
-
-export interface GroupBy {
-    linkType: string;
-    linkDirection: 'in' | 'out';
 }
 
 export interface TypeStyle {
@@ -63,12 +45,10 @@ export enum RenderingLayer {
 
 export interface DiagramViewEvents {
     changeLanguage: PropertyChange<DiagramView, string>;
-    changeSelection: PropertyChange<DiagramView, ReadonlyArray<Element>>;
-    changeLinkTemplates: { source: DiagramView };
-    toggleNavigationMenu: { isOpened: boolean };
+    changeLinkTemplates: {};
     syncUpdate: { layer: RenderingLayer };
     updateWidgets: UpdateWidgetsEvent;
-    dispose: { source: DiagramView };
+    dispose: {};
 }
 
 export interface UpdateWidgetsEvent {
@@ -88,15 +68,13 @@ export class DiagramView {
     private linkTemplateResolvers: LinkTemplateResolver[];
     private templatesResolvers: TemplateResolver[];
 
-    private connectionsMenuTarget: Element | undefined;
-
     private _language = 'en';
-    private _selection: ReadonlyArray<Element> = [];
+
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
 
     constructor(
         public readonly model: DiagramModel,
-        public readonly options: DiagramViewOptions = {},
+        public readonly options: ViewOptions = {},
     ) {
         this.typeStyleResolvers = options.typeStyleResolvers
             ? options.typeStyleResolvers : DefaultTypeStyleBundle;
@@ -106,14 +84,6 @@ export class DiagramView {
 
         this.templatesResolvers = options.templatesResolvers
             ? options.templatesResolvers : DefaultTemplateBundle;
-    }
-
-    get selection() { return this._selection; }
-    setSelection(value: ReadonlyArray<Element>) {
-        const previous = this._selection;
-        if (previous === value) { return; }
-        this._selection = value;
-        this.source.trigger('changeSelection', {source: this, previous});
     }
 
     getLanguage(): string { return this._language; }
@@ -131,74 +101,9 @@ export class DiagramView {
         return this.linkTemplates;
     }
 
-    cancelSelection() {
-        this.setSelection([]);
-    }
-
     performSyncUpdate() {
         for (let layer = RenderingLayer.FirstToUpdate; layer <= RenderingLayer.LastToUpdate; layer++) {
             this.source.trigger('syncUpdate', {layer});
-        }
-    }
-
-    _initializePaperComponents(paperArea: PaperArea) {
-        this.listener.listen(paperArea.events, 'pointerUp', e => this.onPaperPointerUp(e));
-        this.listener.listen(this.model.events, 'changeCells', () => this.onCellsChanged());
-
-        if (!this.options.disableDefaultHalo) {
-            this.configureHalo();
-            document.addEventListener('keyup', this.onKeyUp);
-            this.listener.listen(this.events, 'dispose', () => {
-                document.removeEventListener('keyup', this.onKeyUp);
-            });
-        }
-    }
-
-    private onKeyUp = (e: KeyboardEvent) => {
-        const DELETE_KEY_CODE = 46;
-        if (e.keyCode === DELETE_KEY_CODE &&
-            document.activeElement.localName !== 'input'
-        ) {
-            this.removeSelectedElements();
-        }
-    }
-
-    removeSelectedElements() {
-        const elementsToRemove = this.selection;
-        if (elementsToRemove.length === 0) { return; }
-
-        this.cancelSelection();
-
-        const batch = this.model.history.startBatch();
-        for (const element of elementsToRemove) {
-            this.model.removeElement(element.id);
-        }
-        batch.store();
-    }
-
-    private onPaperPointerUp(event: PointerUpEvent) {
-        if (this.options.disableDefaultHalo) { return; }
-        const {sourceEvent, target, triggerAsClick} = event;
-
-        if (sourceEvent.ctrlKey || sourceEvent.shiftKey || sourceEvent.metaKey) { return; }
-
-        if (target instanceof Element) {
-            this.setSelection([target]);
-            target.focus();
-        } else if (!target && triggerAsClick) {
-            this.setSelection([]);
-            this.hideNavigationMenu();
-            if (document.activeElement) {
-                (document.activeElement as HTMLElement).blur();
-            }
-        }
-    }
-
-    private onCellsChanged() {
-        if (this.selection.length === 0) { return; }
-        const newSelection = this.selection.filter(el => this.model.getElement(el.id));
-        if (newSelection.length < this.selection.length) {
-            this.setSelection(newSelection);
         }
     }
 
@@ -211,106 +116,9 @@ export class DiagramView {
         }
     }
 
-    private configureHalo() {
-        if (this.options.disableDefaultHalo) { return; }
-
-        const renderDefaultHalo = () => {
-            const selectedElement = this.selection.length === 1 ? this.selection[0] : undefined;
-            const halo = createElement(Halo, {
-                diagramView: this,
-                target: selectedElement,
-                onDelete: () => this.removeSelectedElements(),
-                onExpand: () => {
-                    this.model.history.execute(
-                        setElementExpanded(selectedElement, !selectedElement.isExpanded)
-                    );
-                },
-                navigationMenuOpened: Boolean(this.connectionsMenuTarget),
-                onToggleNavigationMenu: () => {
-                    if (this.connectionsMenuTarget) {
-                        this.hideNavigationMenu();
-                    } else {
-                        this.showNavigationMenu(selectedElement);
-                    }
-                    renderDefaultHalo();
-                },
-                onAddToFilter: () => selectedElement.addToFilter(),
-            });
-            this.source.trigger('updateWidgets', {widgets: {halo}});
-        };
-
-        this.listener.listen(this.events, 'changeSelection', () => {
-            const selected = this.selection.length === 1 ? this.selection[0] : undefined;
-            if (this.connectionsMenuTarget && selected !== this.connectionsMenuTarget) {
-                this.hideNavigationMenu();
-            }
-            renderDefaultHalo();
-        });
-
-        this.listener.listen(this.events, 'toggleNavigationMenu', ({isOpened}) => {
-            renderDefaultHalo();
-        });
-
-        renderDefaultHalo();
-    }
-
     setPaperWidget(widget: { key: string; widget: ReactElement<any>; }) {
         const widgets = {[widget.key]: widget.widget};
         this.source.trigger('updateWidgets', {widgets});
-    }
-
-    showNavigationMenu(target: Element) {
-        const connectionsMenu = createElement(ConnectionsMenu, {
-            view: this,
-            target,
-            onClose: () => this.hideNavigationMenu(),
-            suggestProperties: this.options.suggestProperties,
-        });
-        this.connectionsMenuTarget = target;
-        this.source.trigger('updateWidgets', {widgets: {connectionsMenu}});
-        this.source.trigger('toggleNavigationMenu', {isOpened: false});
-    }
-
-    hideNavigationMenu() {
-        if (this.connectionsMenuTarget) {
-            this.connectionsMenuTarget = undefined;
-            this.source.trigger('updateWidgets', {widgets: {connectionsMenu: undefined}});
-            this.source.trigger('toggleNavigationMenu', {isOpened: false});
-        }
-    }
-
-    onDragDrop(e: DragEvent, paperPosition: Vector) {
-        e.preventDefault();
-        let elementIris: ElementIri[];
-        try {
-            elementIris = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
-        } catch (ex) {
-            try {
-                elementIris = JSON.parse(e.dataTransfer.getData('text')); // IE fix
-            } catch (ex) {
-                const draggedUri = e.dataTransfer.getData('text/uri-list');
-                // element dragged from the class tree has URI of the form:
-                // <window.location without hash>#<class URI>
-                const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
-                const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
-                    ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
-                elementIris = [uri as ElementIri];
-            }
-        }
-        if (!elementIris || elementIris.length === 0) { return; }
-
-        const batch = this.model.history.startBatch('Drag and drop onto diagram');
-        const placedElements = placeElements(this.model, elementIris, paperPosition);
-        batch.history.execute(
-            restoreLinksBetweenElements(this.model, elementIris)
-        );
-        batch.store();
-
-        if (placedElements.length > 0) {
-            placedElements[placedElements.length - 1].focus();
-        }
-
-        this.setSelection(placedElements);
     }
 
     /**
@@ -323,7 +131,7 @@ export class DiagramView {
 
     public getElementTypeString(elementModel: ElementModel): string {
         return elementModel.types.map(typeId => {
-            const type = this.model.getClassesById(typeId);
+            const type = this.model.createClass(typeId);
             return this.getElementTypeLabel(type).text;
         }).sort().join(', ');
     }
@@ -334,7 +142,7 @@ export class DiagramView {
     }
 
     public getLinkLabel(linkTypeId: LinkTypeIri): LocalizedString {
-        const type = this.model.getLinkType(linkTypeId);
+        const type = this.model.createLinkType(linkTypeId);
         const label = type ? this.getLocalizedText(type.label) : null;
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
@@ -415,9 +223,9 @@ export class DiagramView {
             }
         }
 
-        fillLinkTemplateDefaults(template, this.model);
+        fillLinkTemplateDefaults(template);
         this.linkTemplates.set(linkType.id, template);
-        this.source.trigger('changeLinkTemplates', {source: this});
+        this.source.trigger('changeLinkTemplates', {});
         return template;
     }
 
@@ -433,23 +241,9 @@ export class DiagramView {
 
     dispose() {
         if (this.disposed) { return; }
-        this.source.trigger('dispose', {source: this});
+        this.source.trigger('dispose', {});
         this.listener.stopListening();
         this.disposed = true;
-    }
-
-    loadEmbeddedElements = (elementIri: ElementIri): Promise<Dictionary<ElementModel>> => {
-        const elements = this.options.groupBy.map(groupBy =>
-            this.model.dataProvider.linkElements({
-                elementId: elementIri,
-                linkId: groupBy.linkType as LinkTypeIri,
-                offset: 0,
-                direction: groupBy.linkDirection,
-            })
-        );
-        return Promise.all(elements).then(res =>
-            res.reduce((memo, current) => Object.assign(memo, current), {})
-        );
     }
 }
 
@@ -462,7 +256,7 @@ function getHueFromClasses(classes: ReadonlyArray<ClassIri>, seed?: number): num
     return 360 * ((hash === undefined ? 0 : hash) / MAX_INT32);
 }
 
-function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
+function fillLinkTemplateDefaults(template: LinkTemplate) {
     const defaults: Partial<LinkTemplate> = {
         markerTarget: {d: 'M0,0 L0,8 L9,4 z', width: 9, height: 8, fill: 'black'},
     };
@@ -471,43 +265,3 @@ function fillLinkTemplateDefaults(template: LinkTemplate, model: DiagramModel) {
         template.renderLink = () => ({});
     }
 }
-
-function placeElements(
-    model: DiagramModel, elementIris: ReadonlyArray<ElementIri>, position: Vector
-): Element[] {
-    const elements: Element[] = [];
-    let totalXOffset = 0;
-    let {x, y} = position;
-    for (const elementIri of elementIris) {
-        const center = elementIris.length === 1;
-        const {element, size} = createElementAt(
-            model, elementIri, {x: x + totalXOffset, y, center}
-        );
-        elements.push(element);
-        totalXOffset += size.width + 20;
-    }
-    return elements;
-}
-
-function createElementAt(
-    model: DiagramModel,
-    elementIri: ElementIri,
-    position: { x: number; y: number; center?: boolean; },
-) {
-    const element = model.createElement(elementIri);
-
-    let {x, y} = position;
-    let {width, height} = boundsOf(element);
-    if (width === 0) { width = 100; }
-    if (height === 0) { height = 50; }
-
-    if (position.center) {
-        x -= width / 2;
-        y -= height / 2;
-    }
-    element.setPosition({x, y});
-
-    return {element, size: {width, height}};
-}
-
-export default DiagramView;

@@ -16,6 +16,7 @@ export interface ElementEvents {
     changeExpanded: PropertyChange<Element, boolean>;
     changeGroup: PropertyChange<Element, string>;
     requestedFocus: { source: Element };
+    requestedGroupContent: { source: Element };
     requestedAddToFilter: {
         source: Element;
         linkType?: FatLinkType;
@@ -117,6 +118,10 @@ export class Element {
         this.source.trigger('requestedFocus', {source: this});
     }
 
+    requestGroupContent() {
+        this.source.trigger('requestedGroupContent', {source: this});
+    }
+
     addToFilter(linkType?: FatLinkType, direction?: 'in' | 'out') {
         this.source.trigger('requestedAddToFilter', {
             source: this, linkType, direction,
@@ -153,10 +158,10 @@ export class FatClassModel {
 
     constructor(props: {
         id: ClassIri;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {
-        const {id, label, count} = props;
+        const {id, label = [], count} = props;
         this.id = id;
         this._label = label;
         this._count = count;
@@ -218,9 +223,9 @@ export class RichProperty {
 
     constructor(props: {
         id: PropertyTypeIri;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
     }) {
-        const {id, label} = props;
+        const {id, label = []} = props;
         this.id = id;
         this._label = label;
     }
@@ -354,9 +359,9 @@ export class FatLinkType {
     constructor(props: {
         id: LinkTypeIri;
         index?: number;
-        label: ReadonlyArray<LocalizedString>;
+        label?: ReadonlyArray<LocalizedString>;
     }) {
-        const {id, index, label} = props;
+        const {id, index, label = []} = props;
         this.id = id;
         this._index = index;
         this._label = label;

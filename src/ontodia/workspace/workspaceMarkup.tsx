@@ -1,11 +1,13 @@
 import * as React from 'react';
 
-import { DiagramModel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolbox } from '../widgets/linksToolbox';
+
+import { AsyncModel } from '../editor/asyncModel';
+import { EditorController } from '../editor/editorController';
 
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
@@ -13,7 +15,9 @@ import { AccordionItem } from './accordionItem';
 
 export interface Props {
     toolbar: React.ReactElement<any>;
+    model: AsyncModel;
     view: DiagramView;
+    editor: EditorController;
     hidePanels?: boolean;
     hideToolbar?: boolean;
     searchCriteria?: SearchCriteria;
@@ -94,8 +98,9 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             'data-intro': INTRO_CLASSES,
                         }}>
                         <ClassTree view={this.props.view}
+                            editor={this.props.editor}
                             onClassSelected={classId => {
-                                const elementType = this.props.view.model.getClassesById(classId);
+                                const elementType = this.props.model.createClass(classId);
                                 this.props.onSearchCriteriaChanged({elementType});
                             }}
                         />
@@ -108,6 +113,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             'data-intro': INTRO_INSTANCES,
                         }}>
                         <InstancesSearch view={this.props.view}
+                            model={this.props.model}
                             criteria={this.props.searchCriteria || {}}
                             onCriteriaChanged={this.props.onSearchCriteriaChanged}
                         />
@@ -140,7 +146,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             'data-intro-id': 'link-types-toolbox',
                             'data-intro': INTRO_CONNECTIONS,
                         }}>
-                        <LinkTypesToolbox view={this.props.view}/>
+                        <LinkTypesToolbox view={this.props.view} editor={this.props.editor} />
                     </AccordionItem>
                 </Accordion>
             </ResizableSidebar>
@@ -158,7 +164,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                         <PaperArea ref={el => this.paperArea = el}
                             view={this.props.view}
                             zoomOptions={this.props.zoomOptions}
-                            onDragDrop={(e, position) => this.props.view.onDragDrop(e, position)}
+                            onDragDrop={(e, position) => this.props.editor.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
                         </PaperArea>
                     </div>
