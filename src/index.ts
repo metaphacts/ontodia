@@ -36,7 +36,10 @@ export * from './ontodia/editor/authoringState';
 export {
     EditorOptions, EditorEvents, EditorController, PropertyEditor, PropertyEditorOptions,
 } from './ontodia/editor/editorController';
-export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/editor/layoutData';
+
+export {
+    LayoutData, LayoutElement, LayoutLink, SerializedDiagram, diagramContextV1, convertToSerializedDiagram
+} from './ontodia/editor/serializedDiagram';
 export { recursiveLayout } from './ontodia/viewUtils/layout';
 
 export { CancellationToken } from './ontodia/viewUtils/async';

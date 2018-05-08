@@ -1,14 +1,15 @@
 import { keyBy } from 'lodash';
 
-import { LayoutData, LayoutCell, LayoutElement, LayoutLink } from '../../editor/layoutData';
+import {
+    LayoutElement, LayoutLink, SerializedDiagram, makeSerializedDiagram
+} from '../../editor/serializedDiagram';
 import { uniformGrid } from '../../viewUtils/layout';
 
 import { Dictionary, ElementModel, LinkModel, ElementIri, LinkTypeIri } from '../model';
 import { DataProvider } from '../provider';
-import { generate64BitID } from '../utils';
-
 import { Triple } from './sparqlModels';
 import { parseTurtleText } from './turtle';
+import { GenerateID } from '../../..';
 
 const GREED_STEP = 150;
 
@@ -17,17 +18,17 @@ export class GraphBuilder {
 
     createGraph(graph: { elementIds: ElementIri[]; links: LinkModel[] }): Promise<{
         preloadedElements: Dictionary<ElementModel>;
-        layoutData: LayoutData;
+        diagram: SerializedDiagram;
     }> {
         return this.dataProvider.elementInfo({elementIds: graph.elementIds}).then(elementsInfo => ({
             preloadedElements: elementsInfo,
-            layoutData: makeLayout(graph.elementIds, graph.links),
+            diagram: makeLayout(graph.elementIds, graph.links),
         }));
     }
 
     getGraphFromRDFGraph(graph: Triple[]): Promise<{
         preloadedElements: Dictionary<ElementModel>;
-        layoutData: LayoutData;
+        diagram: SerializedDiagram;
     }> {
         const {elementIds, links} = makeGraphItems(graph);
         return this.createGraph({elementIds, links});
@@ -35,7 +36,7 @@ export class GraphBuilder {
 
     getGraphFromTurtleGraph(graph: string): Promise<{
         preloadedElements: Dictionary<ElementModel>;
-        layoutData: LayoutData;
+        diagram: SerializedDiagram;
     }> {
         return parseTurtleText(graph).then(triples => this.getGraphFromRDFGraph(triples));
     }
@@ -70,17 +71,17 @@ export function makeGraphItems(response: ReadonlyArray<Triple>): {
     return {elementIds: Object.keys(elements) as ElementIri[], links};
 }
 
-export function makeLayout(elementsIds: ReadonlyArray<ElementIri>, linksInfo: ReadonlyArray<LinkModel>): LayoutData {
+export function makeLayout(elementsIds: ReadonlyArray<ElementIri>, linksInfo: ReadonlyArray<LinkModel>): SerializedDiagram {
     const rows = Math.ceil(Math.sqrt(elementsIds.length));
     const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
 
-    const layoutElements: LayoutCell[] = elementsIds.map<LayoutElement>((id, index) => {
+    const elements: LayoutElement[] = elementsIds.map<LayoutElement>((id, index) => {
         const {x, y} = grid(index);
-        return {type: 'element', id: `element_${generate64BitID()}`, iri: id, position: {x, y}};
+        return {'@type': 'Element', '@id': GenerateID.forElement(), iri: id, position: {x, y}};
     });
 
-    const layoutElementsMap: {[iri: string]: LayoutCell} = keyBy(layoutElements, 'iri');
-    const layoutLinks: LayoutLink[] = [];
+    const layoutElementsMap: {[iri: string]: LayoutElement} = keyBy(elements, 'iri');
+    const links: LayoutLink[] = [];
 
     linksInfo.forEach((link, index) => {
         const source = layoutElementsMap[link.sourceId];
@@ -88,13 +89,13 @@ export function makeLayout(elementsIds: ReadonlyArray<ElementIri>, linksInfo: Re
 
         if (!source || !target) { return; }
 
-        layoutLinks.push({
-            type: 'link',
-            id: `link_${generate64BitID()}`,
-            typeId: link.linkTypeId,
-            source: {id: source.id},
-            target: {id: target.id},
+        links.push({
+            '@type': 'Link',
+            '@id': GenerateID.forLink(),
+            property: link.linkTypeId,
+            source: {'@id': source['@id']},
+            target: {'@id': target['@id']},
         });
     });
-    return {cells: layoutElements.concat(layoutLinks)};
+    return makeSerializedDiagram({layoutData: {'@type': 'Layout', elements, links}, linkTypeOptions: []});
 }

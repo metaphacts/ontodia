@@ -2,11 +2,11 @@ import {
     ClassModel, ElementModel, LinkModel, LocalizedString, Property,
     ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
-import { generate64BitID } from '../data/utils';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
 import { Vector, Size, isPolylineEqual } from './geometry';
+import {GenerateID} from './model';
 
 export type Cell = Element | Link | LinkVertex;
 
@@ -274,7 +274,7 @@ export class Link {
         data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
     }) {
-        const {id = `link_${generate64BitID()}`, typeId, sourceId, targetId, data, vertices = []} = props;
+        const {id = GenerateID.forLink(), typeId, sourceId, targetId, data, vertices = []} = props;
         this.id = id;
         this._typeId = typeId;
         this._sourceId = sourceId;

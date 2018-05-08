@@ -38,9 +38,9 @@ const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
 
-    const layoutData = tryLoadLayoutFromLocalStorage();
+    const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
-        layoutData,
+        diagram,
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql',
             imagePropertyUris: [
@@ -54,8 +54,8 @@ function onWorkspaceMounted(workspace: Workspace) {
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     onSaveDiagram: workspace => {
-        const {layoutData} = workspace.getModel().exportLayout();
-        window.location.hash = saveLayoutToLocalStorage(layoutData);
+        const diagram = workspace.getModel().exportLayout();
+        window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },
     viewOptions: {
