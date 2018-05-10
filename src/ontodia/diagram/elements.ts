@@ -16,6 +16,7 @@ export interface ElementEvents {
     changeExpanded: PropertyChange<Element, boolean>;
     changeGroup: PropertyChange<Element, string>;
     requestedFocus: { source: Element };
+    requestedGroupContent: { source: Element };
     requestedAddToFilter: {
         source: Element;
         linkType?: FatLinkType;
@@ -115,6 +116,10 @@ export class Element {
 
     focus() {
         this.source.trigger('requestedFocus', {source: this});
+    }
+
+    requestGroupContent() {
+        this.source.trigger('requestedGroupContent', {source: this});
     }
 
     addToFilter(linkType?: FatLinkType, direction?: 'in' | 'out') {

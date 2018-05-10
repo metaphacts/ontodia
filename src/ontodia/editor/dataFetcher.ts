@@ -4,11 +4,11 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
+import { FatClassModel, FatLinkType, RichProperty } from '../diagram/elements';
+import { Graph } from '../diagram/graph';
+
 import { BufferingQueue } from '../viewUtils/async';
 import { hasOwnProperty } from '../viewUtils/collections';
-
-import { FatClassModel, FatLinkType, RichProperty } from './elements';
-import { Graph } from './graph';
 
 export class DataFetcher {
     private classQueue = new BufferingQueue<ClassIri>(classIds => {

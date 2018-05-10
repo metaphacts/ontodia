@@ -3,13 +3,14 @@ import * as React from 'react';
 import { Element as DiagramElement, ElementEvents } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
-import { DiagramView } from '../diagram/view';
+
+import { EditorController } from '../editor/editorController';
 
 import { AnyListener, Unsubscribe } from '../viewUtils/events';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
-    diagramView: DiagramView;
+    editor: EditorController;
     onDelete?: () => void;
     onExpand?: () => void;
     navigationMenuOpened?: boolean;
@@ -51,7 +52,7 @@ export class Halo extends React.Component<Props, {}> {
 
     componentWillUnmount() {
         this.listenToElement(undefined);
-        this.props.diagramView.hideNavigationMenu();
+        this.props.editor.hideNavigationMenu();
     }
 
     render() {

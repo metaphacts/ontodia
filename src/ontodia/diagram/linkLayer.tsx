@@ -13,7 +13,7 @@ import { EventObserver } from '../viewUtils/events';
 import { restoreCapturedLinkGeometry } from './commands';
 import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey } from './elements';
 import {
-    Vector, computePolyline, computePolylineLength, getPointAlongPolyline,
+    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
 } from './geometry';
 import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel } from './model';
@@ -168,34 +168,12 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 }
 
-interface Grouping {
-    [group: string]: DiagramElement[];
-}
-
-function computeGrouping(elements: ReadonlyArray<DiagramElement>): Grouping {
-    const grouping: Grouping = {};
-
-    for (const element of elements) {
-        const group = element.group;
-        if (typeof group === 'string') {
-            let children = grouping[group];
-            if (!children) {
-                children = [];
-                grouping[group] = children;
-            }
-            children.push(element);
-        }
-    }
-
-    return grouping;
-}
-
-function computeDeepNestedElements(grouping: Grouping, groupId: string): { [id: string]: true } {
+function computeDeepNestedElements(grouping: Map<string, DiagramElement[]>, groupId: string): { [id: string]: true } {
     const deepChildren: { [elementId: string]: true } = {};
 
     function collectNestedItems(parentId: string) {
         deepChildren[parentId] = true;
-        const children = grouping[parentId];
+        const children = grouping.get(parentId);
         if (!children) { return; }
         for (const element of children) {
             if (element.group !== parentId) { continue; }
