@@ -83,3 +83,45 @@ export class Debouncer extends BatchingScheduler {
         callback();
     }
 }
+
+export class Cancellation {
+    private signal: Promise<never>;
+    private reject: ((error: CancelledError) => void) | undefined;
+
+    readonly token: CancellationToken;
+
+    constructor() {
+        this.signal = new Promise((resolve, reject) => {
+            this.reject = reject;
+        });
+        this.token = new CancellationToken(this.signal);
+    }
+
+    isCancelled() {
+        return Boolean(this.reject);
+    }
+
+    cancel() {
+        const {reject} = this;
+        if (reject) {
+            this.reject = undefined;
+            reject(new CancelledError('Task was cancelled'));
+        }
+    }
+}
+
+export class CancellationToken {
+    constructor(private signal: Promise<never>) {}
+
+    map<T>(promise: Promise<T>): Promise<T> {
+        return Promise.race([this.signal, promise]);
+    }
+}
+
+export class CancelledError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = CancelledError.name;
+        Object.setPrototypeOf(this, CancelledError.prototype);
+    }
+}
