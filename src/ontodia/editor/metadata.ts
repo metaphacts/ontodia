@@ -1,7 +1,6 @@
 import {ElementTypeIri, ElementModel, LinkType} from '../data/model';
 import {LinkTypeIri, PropertyTypeIri} from '../..';
-
-export interface CT {}
+import {CancellationToken} from '../viewUtils/async';
 
 export interface MetadataAPI {
     // link creation
@@ -11,7 +10,7 @@ export interface MetadataAPI {
      * @param {ElementModel} source
      * @returns {boolean}
      */
-    canLink(source: ElementModel, ct: CT): Promise<boolean>;
+    canLink(source: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     /**
      * Can we create link between two elements? Maybe it's unnesesary.
@@ -19,7 +18,7 @@ export interface MetadataAPI {
      * @param {ElementModel} target
      * @returns {boolean}
      */
-    canDrop(source: ElementModel, target: ElementModel, ct: CT): Promise<boolean>;
+    canDrop(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     /**
      * Links of which types can we create between elements?
@@ -27,7 +26,7 @@ export interface MetadataAPI {
      * @param {ElementModel} target
      * @returns {LinkType[]}
      */
-    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CT): Promise<LinkTypeIri[]>;
+    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]>;
 
     // element creation
 
@@ -37,13 +36,13 @@ export interface MetadataAPI {
      * @param {ElementModel} source
      * @returns {string[]}
      */
-    typesOfElementsDraggedFrom(source: ElementModel, ct: CT): Promise<ElementTypeIri[]>;
+    typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]>;
 
     /**
      * list properties for type meant to be edited in-place
      * @param {string} type
      * @returns {string[]}
      */
-    propertiesForType(type: ElementTypeIri, ct: CT): Promise<PropertyTypeIri | LinkTypeIri>[];
+    propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri | LinkTypeIri>[];
 
 }

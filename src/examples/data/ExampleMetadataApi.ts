@@ -1,5 +1,6 @@
-import {CT, MetadataAPI} from '../../ontodia/editor/metadata';
+import {MetadataAPI} from '../../ontodia/editor/metadata';
 import {ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri} from '../..';
+import {CancellationToken} from '../../ontodia/viewUtils/async';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
 const rdfsPrefix = 'http://www.w3.org/2000/01/rdf-schema#';
@@ -18,14 +19,14 @@ function type(model: ElementModel) {
 }
 
 export class ExampleMetadataApi implements MetadataAPI {
-    canLink(source: ElementModel, ct: CT): Promise<boolean> {
+    canLink(source: ElementModel, ct: CancellationToken): Promise<boolean> {
         return Promise.resolve(
             (type(source) === schema.class) ? true :
                 (type(source) === schema.objectProperty) ? true :
                         undefined
         );
     }
-    canDrop(source: ElementModel, target: ElementModel, ct: CT): Promise<boolean> {
+    canDrop(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
         return Promise.resolve(
             (type(source) === schema.class
                 && type(target) === schema.class) ? true :
@@ -37,7 +38,7 @@ export class ExampleMetadataApi implements MetadataAPI {
         );
     }
 
-    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CT): Promise<LinkTypeIri[]> {
+    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
         return Promise.resolve(
             (type(source) === schema.class
                 && type(target) === schema.class) ? [schema.subClassOf] :
@@ -49,7 +50,7 @@ export class ExampleMetadataApi implements MetadataAPI {
         );
     }
 
-    typesOfElementsDraggedFrom(source: ElementModel, ct: CT): Promise<ElementTypeIri[]> {
+    typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
         return Promise.resolve(
             (type(source) === schema.class) ? [schema.class] :
                 (type(source) === schema.objectProperty) ? [schema.class, schema.objectProperty] :
@@ -57,7 +58,7 @@ export class ExampleMetadataApi implements MetadataAPI {
         );
     }
 
-    propertiesForType(type: ElementTypeIri, ct: CT): Promise<PropertyTypeIri | LinkTypeIri>[] {
+    propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri | LinkTypeIri>[] {
         return undefined;
     }
 
