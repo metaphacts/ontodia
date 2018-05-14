@@ -1,6 +1,6 @@
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from './model';
 
 /**
@@ -44,7 +44,7 @@ export interface DataProvider {
      * Class information
      */
     classInfo(params: {
-        classIds: ClassIri[];
+        classIds: ElementTypeIri[];
     }): Promise<ClassModel[]>;
 
     /**
@@ -107,7 +107,7 @@ export interface FilterParams {
     /**
      * element type filter
      */
-    elementTypeId?: ClassIri;
+    elementTypeId?: ElementTypeIri;
     /**
      * text search
      */

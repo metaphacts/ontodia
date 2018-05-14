@@ -10,7 +10,7 @@ import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
 
-import { Dictionary, ElementModel, LocalizedString, ElementIri, ClassIri, LinkTypeIri } from '../data/model';
+import { Dictionary, ElementModel, LocalizedString, ElementIri, ElementTypeIri, LinkTypeIri } from '../data/model';
 import { hashFnv32a, uri2name } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
@@ -179,7 +179,7 @@ export class DiagramView {
         return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
-    public getTypeStyle(types: ClassIri[]): TypeStyle {
+    public getTypeStyle(types: ElementTypeIri[]): TypeStyle {
         types.sort();
 
         let customStyle: CustomTypeStyle;
@@ -216,7 +216,7 @@ export class DiagramView {
         }
     }
 
-    public getElementTemplate(types: ClassIri[]): ElementTemplate {
+    public getElementTemplate(types: ElementTypeIri[]): ElementTemplate {
         for (const resolver of this.templatesResolvers) {
             const result = resolver(types);
             if (result) {
@@ -279,7 +279,7 @@ export class DiagramView {
     }
 }
 
-function getHueFromClasses(classes: ReadonlyArray<ClassIri>, seed?: number): number {
+function getHueFromClasses(classes: ReadonlyArray<ElementTypeIri>, seed?: number): number {
     let hash = seed;
     for (const name of classes) {
         hash = hashFnv32a(name, hash);

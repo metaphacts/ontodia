@@ -1,6 +1,6 @@
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 import { generate64BitID, uri2name } from '../data/utils';
@@ -162,11 +162,11 @@ export class DiagramModel {
         return link;
     }
 
-    getClass(classIri: ClassIri): FatClassModel {
+    getClass(classIri: ElementTypeIri): FatClassModel {
         return this.graph.getClass(classIri);
     }
 
-    createClass(classIri: ClassIri): FatClassModel {
+    createClass(classIri: ElementTypeIri): FatClassModel {
         const existing = this.graph.getClass(classIri);
         if (existing) {
             return existing;
@@ -208,7 +208,7 @@ export class DiagramModel {
         this.source.trigger('changeGroupContent', {group});
     }
 
-    createNewEntity(classIri = 'http://www.w3.org/2002/07/owl#Thing' as ClassIri): Element {
+    createNewEntity(classIri = 'http://www.w3.org/2002/07/owl#Thing' as ElementTypeIri): Element {
         const elementModel = {
             id: `${classIri}-new-entity` as ElementIri,
             types: [classIri],

@@ -1,6 +1,6 @@
 import {
     ClassModel, ElementModel, LinkModel, LocalizedString, Property,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
@@ -154,7 +154,7 @@ export class FatClassModel {
     private readonly source = new EventSource<FatClassModelEvents>();
     readonly events: Events<FatClassModelEvents> = this.source;
 
-    readonly id: ClassIri;
+    readonly id: ElementTypeIri;
 
     private _base: FatClassModel | undefined;
     private _derived: FatClassModel[] = [];
@@ -163,7 +163,7 @@ export class FatClassModel {
     private _count: number | undefined;
 
     constructor(props: {
-        id: ClassIri;
+        id: ElementTypeIri;
         label?: ReadonlyArray<LocalizedString>;
         count?: number;
     }) {

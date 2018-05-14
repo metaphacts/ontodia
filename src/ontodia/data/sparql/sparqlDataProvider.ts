@@ -2,7 +2,7 @@ import * as N3 from 'n3';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import {
     triplesToElementBinding,
@@ -107,7 +107,7 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
     }
 
-    classInfo(params: { classIds: ClassIri[] }): Promise<ClassModel[]> {
+    classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
         const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = this.settings.defaultPrefix + `
             SELECT ?class ?label ?instcount

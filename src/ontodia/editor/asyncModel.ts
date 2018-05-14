@@ -1,6 +1,6 @@
 import {
     Dictionary, ElementModel, LinkModel, ClassModel, LinkType,
-    ElementIri, LinkTypeIri, ClassIri, PropertyTypeIri,
+    ElementIri, LinkTypeIri, ElementTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
@@ -263,7 +263,7 @@ export class AsyncModel extends DiagramModel {
         }).then(links => this.onLinkInfoLoaded(links));
     }
 
-    createClass(classId: ClassIri): FatClassModel {
+    createClass(classId: ElementTypeIri): FatClassModel {
         if (this.graph.getClass(classId)) {
             return super.createClass(classId);
         }

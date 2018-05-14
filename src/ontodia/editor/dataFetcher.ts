@@ -1,6 +1,6 @@
 import {
     ElementModel, ClassModel, LinkType, PropertyModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
@@ -11,7 +11,7 @@ import { BufferingQueue } from '../viewUtils/async';
 import { hasOwnProperty } from '../viewUtils/collections';
 
 export class DataFetcher {
-    private classQueue = new BufferingQueue<ClassIri>(classIds => {
+    private classQueue = new BufferingQueue<ElementTypeIri>(classIds => {
         this.dataProvider.classInfo({classIds}).then(this.onClassesLoaded);
     });
     private linkTypeQueue = new BufferingQueue<LinkTypeIri>(linkTypeIds => {

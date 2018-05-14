@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { ClassIri, ElementIri, ElementModel, LinkModel } from '../data/model';
+import { ElementTypeIri, ElementIri, ElementModel, LinkModel } from '../data/model';
 
 import { setElementExpanded } from '../diagram/commands';
 import { Element, Link, LinkVertex } from '../diagram/elements';
@@ -336,7 +336,7 @@ export class EditorController {
         });
     }
 
-    createNewEntity(classIri?: ClassIri): Element {
+    createNewEntity(classIri?: ElementTypeIri): Element {
         const element = this.model.createNewEntity(classIri);
         this.setSelection([element]);
         this.showDialog(element, DialogTypes.EditEntityForm);

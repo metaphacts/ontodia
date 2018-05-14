@@ -2,7 +2,7 @@ import * as React from 'react';
 import { findDOMNode } from 'react-dom';
 import { hcl } from 'd3-color';
 
-import { Property, ClassIri, PropertyTypeIri } from '../data/model';
+import { Property, ElementTypeIri, PropertyTypeIri } from '../data/model';
 import { TemplateProps } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
@@ -131,7 +131,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private readonly listener = new EventObserver();
     private disposed = false;
 
-    private typesObserver = new KeyedObserver<ClassIri>(key => {
+    private typesObserver = new KeyedObserver<ElementTypeIri>(key => {
         const type = this.props.view.model.getClass(key);
         if (type) {
             type.events.on('changeLabel', this.rerenderTemplate);

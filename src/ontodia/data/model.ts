@@ -8,13 +8,13 @@ export interface LocalizedString {
 export type Property = { type: 'string'; values: LocalizedString[]; };
 
 export type ElementIri = string & { readonly elementBrand: void };
-export type ClassIri = string & { readonly classBrand: void };
+export type ElementTypeIri = string & { readonly classBrand: void };
 export type LinkTypeIri = string & { readonly linkTypeBrand: void };
 export type PropertyTypeIri = string & { readonly propertyTypeBrand: void };
 
 export interface ElementModel {
     id: ElementIri;
-    types: ClassIri[];
+    types: ElementTypeIri[];
     label: { values: LocalizedString[] };
     image?: string;
     properties: { [id: string]: Property };
@@ -29,7 +29,7 @@ export interface LinkModel {
 }
 
 export interface ClassModel {
-    id: ClassIri;
+    id: ElementTypeIri;
     label: { values: LocalizedString[] };
     count?: number;
     children: ClassModel[];

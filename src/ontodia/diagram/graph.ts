@@ -1,4 +1,4 @@
-import { Dictionary, ElementModel, LinkModel, ClassIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
+import { Dictionary, ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
 import { generate64BitID } from '../data/utils';
 import { OrderedMap, createStringMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
@@ -177,7 +177,7 @@ export class Graph {
         this.propertiesById[property.id] = property;
     }
 
-    getClass(classId: ClassIri): FatClassModel | undefined {
+    getClass(classId: ElementTypeIri): FatClassModel | undefined {
         return this.classesById[classId];
     }
 

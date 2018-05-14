@@ -1,7 +1,7 @@
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, Property, PropertyModel, LocalizedString,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import {
     CompositeResponse,
@@ -73,7 +73,7 @@ export class CompositeDataProvider implements DataProvider {
         }
     }
 
-    classInfo(params: { classIds: ClassIri[] }): Promise<ClassModel[]> {
+    classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
         if (this.mergeMode === 'fetchAll') {
             return this.fetchSequentially('classInfo', mergeClassInfo, params);
         } else {
