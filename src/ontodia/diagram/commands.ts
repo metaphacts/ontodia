@@ -1,3 +1,5 @@
+import { ElementModel } from '../data/model';
+
 import { Element as DiagramElement, Link as DiagramLink, FatLinkType, Cell, LinkVertex } from './elements';
 import { Vector, isPolylineEqual } from './geometry';
 import { Command } from './history';
@@ -92,5 +94,16 @@ export function changeLinkTypeVisibility(params: {
             showLabel: previousShowLabel,
             preventLoading,
         });
+    });
+}
+
+export function setElementData(model: DiagramModel, data: ElementModel): Command {
+    const elements = model.elements.filter(el => el.iri === data.id);
+    const previous = elements.length > 0 ? elements[0].data : undefined;
+    return Command.create('Set element data', () => {
+        for (const element of model.elements.filter(el => el.iri === data.id)) {
+            element.setData(data);
+        }
+        return setElementData(model, previous);
     });
 }

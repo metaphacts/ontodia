@@ -122,10 +122,6 @@ export class DiagramModel {
         }
     }
 
-    removeLink(linkId: string) {
-        this.graph.removeLink(linkId);
-    }
-
     createLink(params: {
         linkType: FatLinkType;
         sourceId: string;
@@ -160,6 +156,10 @@ export class DiagramModel {
         });
         this.graph.addLink(link);
         return link;
+    }
+
+    removeLink(linkId: string) {
+        this.graph.removeLink(linkId);
     }
 
     getClass(classIri: ElementTypeIri): FatClassModel {
@@ -208,24 +208,6 @@ export class DiagramModel {
         this.source.trigger('changeGroupContent', {group});
     }
 
-    createNewEntity(classIri = 'http://www.w3.org/2002/07/owl#Thing' as ElementTypeIri): Element {
-        const elementModel = {
-            id: `${classIri}-new-entity` as ElementIri,
-            types: [classIri],
-            label: {values: [{text: 'New Entity', lang: ''}]},
-            properties: {},
-        };
-        return this.createElement(elementModel);
-    }
-
-    editEntity(elementModel: ElementModel) {
-        this.elements.forEach(element => {
-            if (element.iri === elementModel.id) {
-                element.setData(elementModel);
-            }
-        });
-    }
-
     createTemporaryElement(): Element {
         const target = new Element({
             id: `element_${generate64BitID()}`,
@@ -236,63 +218,6 @@ export class DiagramModel {
         this.graph.addElement(target);
 
         return target;
-    }
-
-    establishNewLink(params: {linkTypeId?: LinkTypeIri; sourceId: string; targetId: string }): Link {
-        const {
-            linkTypeId = 'http://www.w3.org/2000/01/rdf-schema#subClassOf' as LinkTypeIri, sourceId, targetId,
-        } = params;
-
-        const source = this.getElement(sourceId);
-        const target = this.getElement(targetId);
-
-        if (source && target) {
-            const data = {linkTypeId, sourceId: source.iri, targetId: target.iri};
-
-            const linkType = this.createLinkType(data.linkTypeId);
-
-            return this.createLink({linkType, sourceId, targetId, data});
-        }
-
-        return undefined;
-    }
-
-    moveLinkSource(params: { link: Link; sourceId: string }): Link {
-        const {link, sourceId} = params;
-
-        const source = this.getElement(sourceId);
-
-        if (source) {
-            const {typeId, targetId, vertices} = link;
-
-            const linkType = this.createLinkType(typeId);
-            const data = link.data ? {...link.data, sourceId: source.iri} : undefined;
-
-            this.removeLink(link.id);
-
-            return this.createLink({linkType, sourceId, targetId, data, vertices});
-        }
-
-        return undefined;
-    }
-
-    moveLinkTarget(params: { link: Link; targetId: string }): Link {
-        const {link, targetId} = params;
-
-        const target = this.getElement(targetId);
-
-        if (target) {
-            const {typeId, sourceId, vertices} = link;
-
-            const linkType = this.createLinkType(typeId);
-            const data = link.data ? {...link.data, targetId: target.iri} : undefined;
-
-            this.removeLink(link.id);
-
-            return this.createLink({linkType, sourceId, targetId, data, vertices});
-        }
-
-        return undefined;
     }
 }
 

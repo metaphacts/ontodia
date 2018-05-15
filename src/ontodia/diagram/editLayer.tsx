@@ -1,10 +1,14 @@
 import * as React from 'react';
 
-import { DiagramView } from './view';
+import { ElementTypeIri, LinkTypeIri } from '../data/model';
+
 import { EditorController, DialogTypes } from '../editor/editorController';
+
+import { EventObserver } from '../viewUtils/events';
+
+import { DiagramView } from './view';
 import { LinkLayer, LinkMarkers } from './linkLayer';
 import { Element, Link } from './elements';
-import { EventObserver } from '../viewUtils/events';
 import { boundsOf } from './geometry';
 
 enum EditMode {
@@ -31,6 +35,9 @@ export interface State {
     temporaryElement?: Element;
     targetElement?: Element;
 }
+
+const ELEMENT_TYPE = 'http://www.w3.org/2002/07/owl#Thing' as ElementTypeIri;
+const LINK_TYPE = 'http://www.w3.org/2000/01/rdf-schema#subClassOf' as LinkTypeIri;
 
 export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
@@ -65,19 +72,19 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private onEstablishLink = (params: { sourceId: string; point: { x: number; y: number } }) => {
-        const {view} = this.props;
+        const {editor} = this.props;
         const {sourceId, point} = params;
 
         this.mode = EditMode.establishNewLink;
 
         const temporaryElement = this.createTemporaryElement(point);
-        const temporaryLink = view.model.establishNewLink({sourceId, targetId: temporaryElement.id});
+        const temporaryLink = editor.establishNewLink({linkTypeId: LINK_TYPE, sourceId, targetId: temporaryElement.id});
 
         this.setState({temporaryLink, temporaryElement});
     }
 
     private onMoveLink(params: { link: Link; point: { x: number; y: number } }) {
-        const {view} = this.props;
+        const {editor} = this.props;
         const {link, point} = params;
 
         const temporaryElement = this.createTemporaryElement(point);
@@ -85,9 +92,9 @@ export class EditLayer extends React.Component<Props, State> {
         let temporaryLink: Link;
 
         if (this.mode === EditMode.moveLinkSource) {
-            temporaryLink = view.model.moveLinkSource({link, sourceId: temporaryElement.id});
+            temporaryLink = editor.moveLinkSource({link, sourceId: temporaryElement.id});
         } else if (this.mode === EditMode.moveLinkTarget) {
-            temporaryLink = view.model.moveLinkTarget({link, targetId: temporaryElement.id});
+            temporaryLink = editor.moveLinkTarget({link, targetId: temporaryElement.id});
         } else {
             throw new Error('Unknown edit mode');
         }
@@ -129,15 +136,15 @@ export class EditLayer extends React.Component<Props, State> {
         let link: Link;
 
         if (this.mode === EditMode.establishNewLink) {
-            const params = {sourceId: temporaryLink.sourceId, targetId: element.id};
+            const params = {linkTypeId: LINK_TYPE, sourceId: temporaryLink.sourceId, targetId: element.id};
 
             view.model.removeLink(temporaryLink.id);
 
-            link = view.model.establishNewLink(params);
+            link = editor.establishNewLink(params);
         } else if (this.mode === EditMode.moveLinkSource) {
-            link = view.model.moveLinkSource({link: temporaryLink, sourceId: element.id});
+            link = editor.moveLinkSource({link: temporaryLink, sourceId: element.id});
         } else if (this.mode === EditMode.moveLinkTarget) {
-            link = view.model.moveLinkTarget({link: temporaryLink, targetId: element.id});
+            link = editor.moveLinkTarget({link: temporaryLink, targetId: element.id});
         } else {
             throw new Error('Unknown edit mode');
         }
@@ -154,7 +161,7 @@ export class EditLayer extends React.Component<Props, State> {
         let element = this.findElementFormPoint(point);
 
         if (element === undefined) {
-            element = editor.createNewEntity();
+            element = editor.createNewEntity(ELEMENT_TYPE);
             element.setPosition(point);
         }
 

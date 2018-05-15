@@ -129,7 +129,8 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
     private onCreateNewEntity = () => {
         const {criteria = {}, editor} = this.props;
-        const classIri = criteria.elementType ? criteria.elementType.id : undefined;
+        const classIri = criteria.elementType
+            ? criteria.elementType.id : ('http://www.w3.org/2002/07/owl#Thing' as any);
         editor.createNewEntity(classIri);
     }
 

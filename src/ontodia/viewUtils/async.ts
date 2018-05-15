@@ -94,10 +94,14 @@ export class Cancellation {
         this.signal = new Promise((resolve, reject) => {
             this.reject = reject;
         });
-        this.token = new CancellationToken(this.signal);
+        this.token = new (class {
+            constructor(private parent: Cancellation) {}
+            get cancelled() { return this.parent.cancelled; }
+            get signal() { return this.parent.signal; }
+        })(this);
     }
 
-    isCancelled() {
+    get cancelled(): boolean {
         return Boolean(this.reject);
     }
 
@@ -110,12 +114,9 @@ export class Cancellation {
     }
 }
 
-export class CancellationToken {
-    constructor(private signal: Promise<never>) {}
-
-    map<T>(promise: Promise<T>): Promise<T> {
-        return Promise.race([this.signal, promise]);
-    }
+export interface CancellationToken {
+    readonly cancelled: boolean;
+    readonly signal: Promise<never>;
 }
 
 export class CancelledError extends Error {
@@ -125,3 +126,5 @@ export class CancelledError extends Error {
         Object.setPrototypeOf(this, CancelledError.prototype);
     }
 }
+
+AbortController;
