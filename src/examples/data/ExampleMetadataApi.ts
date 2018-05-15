@@ -34,7 +34,7 @@ export class ExampleMetadataApi implements MetadataAPI {
                     && type(target) === schema.class) ? true :
                     (type(source) === schema.objectProperty
                         && type(target) === schema.objectProperty) ? true :
-                        undefined
+                        false
         );
     }
 
@@ -46,7 +46,7 @@ export class ExampleMetadataApi implements MetadataAPI {
                     && type(target) === schema.class) ? [schema.domain, schema.range] :
                     (type(source) === schema.objectProperty
                         && type(target) === schema.objectProperty) ? [schema.subPropertyOf] :
-                    undefined
+                        []
         );
     }
 
@@ -54,7 +54,7 @@ export class ExampleMetadataApi implements MetadataAPI {
         return Promise.resolve(
             (type(source) === schema.class) ? [schema.class] :
                 (type(source) === schema.objectProperty) ? [schema.class, schema.objectProperty] :
-                        undefined
+                    []
         );
     }
 

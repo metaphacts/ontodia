@@ -8,6 +8,7 @@ import { Vector, Size, boundsOf, computeGrouping } from '../diagram/geometry';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
+import { MetadataAPI } from './metadata';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
@@ -26,8 +27,9 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import { AuthoringState } from './authoringState';
 import { Command } from '../..';
+import { generate64BitID } from '../data/utils';
 
-export enum DialogTypes {
+enum DialogTypes {
     ConnectionsMenu,
     EditEntityForm,
     EditLinkForm,
@@ -62,6 +64,7 @@ export class EditorController {
     constructor(
         readonly model: AsyncModel,
         private view: DiagramView,
+        readonly metadata: MetadataAPI,
         private options: EditorOptions,
     ) {}
 
@@ -206,12 +209,12 @@ export class EditorController {
                         if (this.dialogTarget && this.dialogType === DialogTypes.ConnectionsMenu) {
                             this.hideDialog();
                         } else {
-                            this.showDialog(selectedElement, DialogTypes.ConnectionsMenu);
+                            this.showConnectionsMenu(selectedElement);
                         }
                         this.renderDefaultHalo();
                     }}
                     onAddToFilter={() => selectedElement.addToFilter()}
-                    onEdit={() => this.showDialog(selectedElement, DialogTypes.EditEntityForm)}
+                    onEdit={() => this.showEditEntityForm(selectedElement)}
                     onEstablishNewLink={(point: { x: number; y: number }) => {
                         this.source.trigger('establishLink', {sourceId: selectedElement.id, point});
                     }}
@@ -221,7 +224,7 @@ export class EditorController {
             halo = (
                 <HaloLink view={this.view}
                     target={selectedElement}
-                    onEdit={() => this.showDialog(selectedElement, DialogTypes.EditLinkForm)}
+                    onEdit={() => this.showEditLinkForm(selectedElement)}
                     onRemove={() => this.model.removeLink(selectedElement.id)}
                     onSourceMove={(point: { x: number; y: number }) => {
                         this.source.trigger('moveLinkSource', {link: selectedElement, point});
@@ -236,51 +239,58 @@ export class EditorController {
         this.view.setPaperWidget({key: 'halo', widget: halo});
     }
 
-    showDialog(target: SelectedElement, dialogType: DialogTypes) {
-        if ((this.dialogTarget && this.dialogTarget.id !== target.id) ||
-            (this.dialogType && this.dialogType !== dialogType)) {
-            this.hideDialog();
-        }
+    showConnectionsMenu(target: Element) {
+        const dialogType = DialogTypes.ConnectionsMenu;
+        const content = (
+            <ConnectionsMenu view={this.view}
+                editor={this}
+                target={target}
+                onClose={() => this.hideDialog()}
+                suggestProperties={this.options.suggestProperties}
+            />
+        );
+        this.showDialog({target, dialogType, content});
+    }
 
-        let content: React.ReactElement<any>;
+    showEditEntityForm(target: Element, elementTypes?: ElementTypeIri[]) {
+        const dialogType = DialogTypes.EditEntityForm;
+        const content = (
+            <EditEntityForm view={this.view}
+                entity={target.data}
+                elementTypes={elementTypes}
+                onApply={(elementModel: ElementModel) => {
+                    this.hideDialog();
+                    this.editEntity(elementModel);
+                }}
+                onCancel={() => this.hideDialog()}/>
+        );
+        this.showDialog({target, dialogType, content});
+    }
 
-        if (dialogType === DialogTypes.ConnectionsMenu && target instanceof Element) {
-            content = (
-                <ConnectionsMenu view={this.view}
-                    editor={this}
-                    target={target}
-                    onClose={() => this.hideDialog()}
-                    suggestProperties={this.options.suggestProperties}
-                />
-            );
-        } else if (dialogType === DialogTypes.EditEntityForm && target instanceof Element) {
-            content = React.createElement(EditEntityForm, {
-                view: this.view,
-                entity: target.data,
-                onApply: (entity: ElementModel) => {
-                    this.editEntity(entity);
+    showEditLinkForm(target: Link) {
+        const dialogType = DialogTypes.EditLinkForm;
+        const content = (
+            <EditLinkForm view={this.view}
+                editor={this}
+                link={target}
+                onApply={(linkModel: LinkModel) => {
                     this.hideDialog();
-                },
-                onCancel: () => this.hideDialog(),
-            });
-        } else if (dialogType === DialogTypes.EditLinkForm && target instanceof Link) {
-            content = React.createElement(EditLinkForm, {
-                view: this.view,
-                link: target.data,
-                onApply: (link: LinkModel) => {
-                    this.hideDialog();
-                },
-                onCancel: () => this.hideDialog(),
-            });
-        } else {
-            throw new Error('Unknown dialog type');
-        }
+                    target.setData(linkModel);
+                }}
+                onCancel={() => this.hideDialog()}/>
+        );
+        this.showDialog({target, dialogType, content});
+    }
+
+    showDialog(params: { target: SelectedElement; dialogType: DialogTypes; content: React.ReactElement<any> }) {
+        const {target, dialogType, content} = params;
+
+        this.dialogTarget = target;
+        this.dialogType = dialogType;
 
         const dialog = (
             <Dialog view={this.view} target={target}>{content}</Dialog>
         );
-        this.dialogTarget = target;
-        this.dialogType = dialogType;
         this.view.setPaperWidget({key: 'dialog', widget: dialog});
         this.source.trigger('toggleDialog', {isOpened: false});
     }
@@ -352,7 +362,7 @@ export class EditorController {
     createNewEntity(classIri: ElementTypeIri): Element {
         const batch = this.model.history.startBatch('Create new entity');
         const elementModel = {
-            id: `${classIri}-new-entity` as ElementIri,
+            id: `element_${generate64BitID()}` as ElementIri,
             types: [classIri],
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},
@@ -365,7 +375,7 @@ export class EditorController {
         batch.store();
 
         this.setSelection([element]);
-        this.showDialog(element, DialogTypes.EditEntityForm);
+        this.showEditEntityForm(element);
         return element;
     }
 

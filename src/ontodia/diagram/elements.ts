@@ -308,6 +308,7 @@ export class Link {
         const previous = this._data;
         if (previous === value) { return; }
         this._data = value;
+        this._typeId = value.linkTypeId;
         this.source.trigger('changeData', {source: this, previous});
     }
 

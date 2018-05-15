@@ -51,10 +51,8 @@ export class HaloLink extends React.Component<Props, {}> {
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
 
-            if (source && target) {
-                this.listenToElement(source);
-                this.listenToElement(target);
-            }
+            this.listenToElement(source);
+            this.listenToElement(target);
 
             this.handler.listen(link.events, 'changeVertices', this.updateAll);
 

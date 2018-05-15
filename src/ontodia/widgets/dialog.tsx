@@ -41,7 +41,7 @@ export class Dialog extends React.Component<Props, {}> {
         this.listenToTarget(undefined);
     }
 
-    private listenToTarget(target: Element | Link | undefined) {
+    private listenToTarget(target?: Element | Link) {
         if (this.unsubscribeFromTarget) {
             this.unsubscribeFromTarget();
             this.unsubscribeFromTarget = undefined;
@@ -68,13 +68,14 @@ export class Dialog extends React.Component<Props, {}> {
     }
 
     private listenToLink(link: Link) {
-        const target = this.props.view.model.getElement(link.targetId);
+        const {view} = this.props;
 
-        if (!target) {
-            throw new Error('Target is not specified');
-        }
+        const source = view.model.getElement(link.sourceId);
+        const target = view.model.getElement(link.targetId);
 
+        this.listenToElement(source);
         this.listenToElement(target);
+
         this.handler.listen(link.events, 'changeVertices', this.updateAll);
     }
 

@@ -54,7 +54,6 @@ export class Halo extends React.Component<Props, {}> {
 
     componentWillUnmount() {
         this.listenToElement(undefined);
-        this.props.editor.hideDialog();
     }
 
     private onEstablishNewLink = (e: React.MouseEvent<HTMLElement>) => {

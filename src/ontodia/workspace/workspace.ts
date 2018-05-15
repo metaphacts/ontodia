@@ -12,6 +12,9 @@ import { DiagramView, ViewOptions } from '../diagram/view';
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
 
+import { MetadataAPI } from '../editor/metadata';
+import { ExampleMetadataApi } from '../../examples/data/ExampleMetadataApi';
+
 import { EventObserver } from '../viewUtils/events';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
@@ -98,6 +101,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
     private readonly editor: EditorController;
+    private readonly metadata: MetadataAPI;
 
     private markup: WorkspaceMarkup;
     private tree: ClassTree;
@@ -122,7 +126,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
             linkRouter,
             onIriClick,
         });
-        this.editor = new EditorController(this.model, this.view, {
+        this.metadata = new ExampleMetadataApi();
+        this.editor = new EditorController(this.model, this.view, this.metadata, {
             disableDefaultHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
         });
