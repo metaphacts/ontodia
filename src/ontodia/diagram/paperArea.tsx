@@ -14,7 +14,6 @@ import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 import { Paper } from './paper';
 import { EditorController } from '../editor/editorController';
-import { EditLayer } from './editLayer';
 
 export interface Props {
     view: DiagramView;
@@ -173,9 +172,6 @@ export class PaperArea extends React.Component<Props, State> {
                             return React.cloneElement(widget, props);
                         })}
                     </div>
-                    <EditLayer view={view} editor={this.props.editor}
-                        paperProps={{width: paperWidth, height: paperHeight, originX, originY, scale}}
-                        pageToPaperCoords={(pageX, pageY) => this.pageToPaperCoords(pageX, pageY)} />
                 </Paper>
             </div>
         );

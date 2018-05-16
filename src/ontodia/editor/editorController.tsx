@@ -28,6 +28,7 @@ import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import { AuthoringState } from './authoringState';
 import { Command } from '../..';
 import { generate64BitID } from '../data/utils';
+import { EditLayer, EditMode } from './editLayer';
 
 enum DialogTypes {
     ConnectionsMenu,
@@ -215,9 +216,9 @@ export class EditorController {
                     }}
                     onAddToFilter={() => selectedElement.addToFilter()}
                     onEdit={() => this.showEditEntityForm(selectedElement)}
-                    onEstablishNewLink={(point: { x: number; y: number }) => {
-                        this.source.trigger('establishLink', {sourceId: selectedElement.id, point});
-                    }}
+                    onEstablishNewLink={(point: { x: number; y: number }) =>
+                        this.startEditing({target: selectedElement, mode: EditMode.establishNewLink, point})
+                    }
                 />
             );
         } else if (selectedElement instanceof Link) {
@@ -226,12 +227,12 @@ export class EditorController {
                     target={selectedElement}
                     onEdit={() => this.showEditLinkForm(selectedElement)}
                     onRemove={() => this.model.removeLink(selectedElement.id)}
-                    onSourceMove={(point: { x: number; y: number }) => {
-                        this.source.trigger('moveLinkSource', {link: selectedElement, point});
-                    }}
-                    onTargetMove={(point: { x: number; y: number }) => {
-                        this.source.trigger('moveLinkTarget', {link: selectedElement, point});
-                    }}
+                    onSourceMove={(point: { x: number; y: number }) =>
+                        this.startEditing({target: selectedElement, mode: EditMode.moveLinkSource, point})
+                    }
+                    onTargetMove={(point: { x: number; y: number }) =>
+                        this.startEditing({target: selectedElement, mode: EditMode.moveLinkTarget, point})
+                    }
                 />
             );
         }
@@ -436,6 +437,18 @@ export class EditorController {
 
         this.model.removeLink(link.id);
         return this.model.createLink({linkType, sourceId, targetId, data, vertices});
+    }
+
+    private startEditing(params: { target: Element | Link; mode: EditMode; point: { x: number; y: number } }) {
+        const {target, mode, point} = params;
+        const editLayer = (
+            <EditLayer view={this.view} editor={this} mode={mode} target={target} point={point} />
+        );
+        this.view.setPaperWidget({key: 'editLayer', widget: editLayer});
+    }
+
+    finishEditing() {
+        this.view.setPaperWidget({key: 'editLayer', widget: undefined});
     }
 }
 
