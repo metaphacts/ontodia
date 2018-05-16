@@ -13,11 +13,9 @@ import { Batch } from './history';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 import { Paper } from './paper';
-import { EditorController } from '../editor/editorController';
 
 export interface Props {
     view: DiagramView;
-    editor: EditorController;
     zoomOptions?: ZoomOptions;
     panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
@@ -355,22 +353,11 @@ export class PaperArea extends React.Component<Props, State> {
         const restore = RestoreGeometry.capture(this.props.view.model);
         const batch = this.props.view.model.history.startBatch(restore.title);
 
-        const {editor} = this.props;
-        const selectedElement = editor.selection.length === 1 ? editor.selection[0] : undefined;
-
         if (cell && e.button === LEFT_MOUSE_BUTTON) {
             if (cell instanceof Element) {
                 e.preventDefault();
                 this.startMoving(e, cell);
                 this.listenToPointerMove(e, cell, batch, restore);
-            } else if (cell instanceof Link && selectedElement && selectedElement.id === cell.id) {
-                e.preventDefault();
-                const location = this.pageToPaperCoords(e.pageX, e.pageY);
-                const linkVertex = this.generateLinkVertex(cell, location);
-                linkVertex.createAt(location);
-                this.listenToPointerMove(e, linkVertex, batch, restore);
-                // prevent click on newly created vertex
-                this.movingState.pointerMoved = true;
             } else {
                 e.preventDefault();
                 this.listenToPointerMove(e, cell, batch, restore);
@@ -474,6 +461,11 @@ export class PaperArea extends React.Component<Props, State> {
             });
             this.source.trigger('pointerMove', {source: this, sourceEvent: e, target, panning});
             this.props.view.performSyncUpdate();
+        } else if (target instanceof Link) {
+            const location = this.pageToPaperCoords(e.pageX, e.pageY);
+            const linkVertex = this.generateLinkVertex(target, location);
+            linkVertex.createAt(location);
+            this.movingState.target = linkVertex;
         } else if (target instanceof LinkVertex) {
             const location = this.pageToPaperCoords(e.pageX, e.pageY);
             target.moveTo(location);

@@ -46,9 +46,6 @@ export interface EditorOptions {
 export interface EditorEvents {
     changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectedElement>>;
     toggleDialog: { isOpened: boolean };
-    establishLink: { sourceId: string; point: { x: number; y: number } };
-    moveLinkSource: { link: Link; point: { x: number; y: number } };
-    moveLinkTarget: { link: Link; point: { x: number; y: number } };
 }
 
 export class EditorController {
@@ -277,6 +274,9 @@ export class EditorController {
                 onApply={(linkModel: LinkModel) => {
                     this.hideDialog();
                     target.setData(linkModel);
+
+                    const linkType = this.model.createLinkType(linkModel.linkTypeId);
+                    target.typeIndex = linkType.index;
                 }}
                 onCancel={() => this.hideDialog()}/>
         );
