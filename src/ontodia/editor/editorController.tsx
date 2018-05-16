@@ -30,13 +30,13 @@ import { Command } from '../..';
 import { generate64BitID } from '../data/utils';
 import { EditLayer, EditMode } from './editLayer';
 
-enum DialogTypes {
+export enum DialogTypes {
     ConnectionsMenu,
     EditEntityForm,
     EditLinkForm,
 }
 
-type SelectedElement = Element | Link;
+export type SelectedElement = Element | Link;
 
 export interface EditorOptions {
     disableDefaultHalo?: boolean;
