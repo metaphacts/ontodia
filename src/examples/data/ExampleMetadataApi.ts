@@ -1,4 +1,4 @@
-import {MetadataAPI} from '../../ontodia/editor/metadata';
+import {MetadataApi} from '../../ontodia/editor/metadata';
 import {ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri} from '../..';
 import {CancellationToken} from '../../ontodia/viewUtils/async';
 
@@ -11,14 +11,14 @@ const schema = {
     domain: owlPrefix + 'domain' as LinkTypeIri,
     range: owlPrefix + 'range' as LinkTypeIri,
     subClassOf: rdfsPrefix + 'subClassOf' as LinkTypeIri,
-    subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri
+    subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri,
 };
 
 function type(model: ElementModel) {
     return model.types[0];
 }
 
-export class ExampleMetadataApi implements MetadataAPI {
+export class ExampleMetadataApi implements MetadataApi {
     canLink(source: ElementModel, ct: CancellationToken): Promise<boolean> {
         return Promise.resolve(
             (type(source) === schema.class) ? true :

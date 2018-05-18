@@ -2,7 +2,7 @@ import {ElementTypeIri, ElementModel, LinkType} from '../data/model';
 import {LinkTypeIri, PropertyTypeIri} from '../..';
 import {CancellationToken} from '../viewUtils/async';
 
-export interface MetadataAPI {
+export interface MetadataApi {
     // link creation
 
     /**

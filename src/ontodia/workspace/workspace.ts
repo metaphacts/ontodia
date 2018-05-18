@@ -12,7 +12,7 @@ import { DiagramView, ViewOptions } from '../diagram/view';
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
 
-import { MetadataAPI } from '../editor/metadata';
+import { MetadataApi } from '../editor/metadata';
 import { ExampleMetadataApi } from '../../examples/data/ExampleMetadataApi';
 
 import { EventObserver } from '../viewUtils/events';
@@ -101,7 +101,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
     private readonly editor: EditorController;
-    private readonly metadata: MetadataAPI;
+    private readonly metadata: MetadataApi;
 
     private markup: WorkspaceMarkup;
     private tree: ClassTree;

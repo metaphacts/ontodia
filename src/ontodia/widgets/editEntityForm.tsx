@@ -9,7 +9,7 @@ const CLASS_NAME = 'ontodia-edit-form';
 export interface Props {
     view: DiagramView;
     entity: ElementModel;
-    elementTypes?: ElementTypeIri[];
+    elementTypes?: ReadonlyArray<ElementTypeIri>;
     onApply: (entity: ElementModel) => void;
     onCancel: () => void;
 }

@@ -1,42 +1,212 @@
-import { ElementModel, LinkModel } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, sameLink } from '../data/model';
 
 import { Element, Link } from '../diagram/elements';
+import { DiagramModel } from '../diagram/model';
 
 export interface AuthoringState {
-    created: ReadonlyArray<Element | Link>;
-    deleted: ReadonlyArray<Element | Link>;
-    changed: ReadonlyArray<ElementChange | LinkChange>;
+    events: ReadonlyArray<AuthoringEvent>;
+}
+
+export type AuthoringEvent =
+    | ElementChange
+    | ElementDeletion
+    | LinkChange
+    | LinkDeletion;
+
+export const enum AuthoringKind {
+    ChangeElement = 'changeElement',
+    DeleteElement = 'deleteElement',
+    ChangeLink = 'changeLink',
+    DeleteLink = 'deleteLink',
+}
+
+export interface ElementDeletion {
+    readonly type: AuthoringKind.DeleteElement;
+    readonly model: ElementModel;
+    readonly items: ReadonlyArray<Element>;
+}
+
+export interface LinkDeletion {
+    readonly type: AuthoringKind.DeleteLink;
+    readonly model: LinkModel;
+    readonly items: ReadonlyArray<Link>;
 }
 
 export interface ElementChange {
-    readonly type: 'element';
-    readonly model: ElementModel;
+    readonly type: AuthoringKind.ChangeElement;
+    readonly before?: ElementModel;
+    readonly after: ElementModel;
 }
 
 export interface LinkChange {
-    readonly type: 'link';
-    readonly model: LinkModel;
+    readonly type: AuthoringKind.ChangeLink;
+    readonly before?: LinkModel;
+    readonly after: LinkModel;
 }
 
 export namespace AuthoringState {
     export const empty: AuthoringState = {
-        created: [],
-        deleted: [],
-        changed: [],
+        events: [],
     };
 
     export function set(state: AuthoringState, change: Partial<AuthoringState>): AuthoringState {
         return {...state, ...change};
     }
 
-    export function changeElement(state: AuthoringState, model: ElementModel) {
-        const changed = [...state.changed];
-        const index = changed.findIndex(change => change.type === 'element' && change.model.id === model.id);
-        if (index >= 0) {
-            changed.splice(index, 1, {type: 'element', model});
-        } else {
-            changed.push({type: 'element', model});
+    export function addElements(state: AuthoringState, items: ReadonlyArray<ElementModel>) {
+        if (items.length === 0) {
+            return state;
         }
-        return AuthoringState.set(state, {changed});
+        const additional = items.map((item): ElementChange => {
+            return {type: AuthoringKind.ChangeElement, after: item};
+        });
+        return AuthoringState.set(state, {events: [...state.events, ...additional]});
     }
+
+    export function addLinks(state: AuthoringState, items: ReadonlyArray<LinkModel>) {
+        if (items.length === 0) {
+            return state;
+        }
+        const additional = items.map((item): LinkChange => {
+            return {type: AuthoringKind.ChangeLink, after: item};
+        });
+        return AuthoringState.set(state, {events: [...state.events, ...additional]});
+    }
+
+    export function changeElement(state: AuthoringState, before: ElementModel, after: ElementModel) {
+        const iriChanged = after.id !== before.id;
+        if (iriChanged) {
+            // disallow changing IRI for existing (non-new) entities
+            const isNewEntity = state.events.find(e =>
+                e.type === AuthoringKind.ChangeElement &&
+                e.after.id === before.id &&
+                !e.before
+            );
+            if (!isNewEntity) {
+                throw new Error('Cannot change IRI of already persisted entity');
+            }
+        }
+        const additional: AuthoringEvent[] = [];
+        const events = state.events.filter(e => {
+            if (e.type === AuthoringKind.ChangeElement) {
+                if (e.after.id === before.id) {
+                    additional.push({
+                        type: AuthoringKind.ChangeElement,
+                        before: e.before,
+                        after: after,
+                    });
+                    return false;
+                }
+            } else if (e.type === AuthoringKind.ChangeLink) {
+                if (iriChanged && linkConnectedToElement(e.after, before.id)) {
+                    additional.push({
+                        type: AuthoringKind.ChangeLink,
+                        before: e.before,
+                        after: updateLinkToReferByNewIri(e.after, before.id, after.id),
+                    });
+                    return false;
+                }
+            }
+            return true;
+        });
+        return AuthoringState.set(state, {events: [...events, ...additional]});
+    }
+
+    export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel) {
+        const additional: AuthoringEvent[] = [];
+        const events = state.events.filter(e => {
+            if (e.type === AuthoringKind.ChangeLink) {
+                if (sameLink(e.after, before)) {
+                    additional.push({
+                        type: AuthoringKind.ChangeLink,
+                        before: e.before,
+                        after: after,
+                    });
+                    return false;
+                }
+            }
+            return true;
+        });
+        return AuthoringState.set(state, {events: [...events, ...additional]});
+    }
+
+    export function deleteElement(state: AuthoringState, targetIri: ElementIri, model: DiagramModel) {
+        const additional: AuthoringEvent[] = [];
+        const events = state.events.filter(e => {
+            if (e.type === AuthoringKind.ChangeElement) {
+                if (e.after.id === targetIri) {
+                    if (isNewElement(e)) {
+                        additional.push({
+                            type: AuthoringKind.DeleteElement,
+                            model: e.before,
+                            items: model.elements.filter(el => el.iri === e.before.id),
+                        });
+                    }
+                    return false;
+                }
+            } else if (e.type === AuthoringKind.ChangeLink) {
+                if (linkConnectedToElement(e.after, targetIri)) {
+                    if (isSourceOrTargetChanged(e)) {
+                        additional.push({
+                            type: AuthoringKind.DeleteLink,
+                            model: e.before,
+                            items: model.links.filter(link => sameLink(link.data, e.before)),
+                        });
+                    }
+                    return false;
+                }
+            } else if (e.type === AuthoringKind.DeleteLink) {
+                if (linkConnectedToElement(e.model, targetIri)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        return AuthoringState.set(state, {events: [...events, ...additional]});
+    }
+
+    export function deleteLink(state: AuthoringState, target: LinkModel, model: DiagramModel) {
+        let existingLink = true;
+        const events = state.events.filter(e => {
+            if (e.type === AuthoringKind.ChangeLink) {
+                if (sameLink(e.after, target)) {
+                    existingLink = Boolean(e.before);
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (existingLink) {
+            events.push({
+                type: AuthoringKind.DeleteLink,
+                model: target,
+                items: model.links.filter(link => sameLink(link.data, target)),
+            });
+        }
+        return AuthoringState.set(state, {events});
+    }
+}
+
+function isNewElement(change: ElementChange) {
+    return !change.before;
+}
+
+function linkConnectedToElement(link: LinkModel, elementIri: ElementIri) {
+    return link.sourceId === elementIri || link.targetId === elementIri;
+}
+
+function isSourceOrTargetChanged(change: LinkChange) {
+    const {before, after} = change;
+    return before && !(
+        before.sourceId === after.sourceId &&
+        before.targetId === after.targetId
+    );
+}
+
+function updateLinkToReferByNewIri(link: LinkModel, oldIri: ElementIri, newIri: ElementIri): LinkModel {
+    return {
+        ...link,
+        sourceId: link.sourceId === oldIri ? newIri : link.sourceId,
+        targetId: link.targetId === oldIri ? newIri : link.targetId,
+    };
 }

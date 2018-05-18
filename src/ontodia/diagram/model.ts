@@ -122,38 +122,30 @@ export class DiagramModel {
         }
     }
 
-    createLink(params: {
-        linkType: FatLinkType;
-        sourceId: string;
-        targetId: string;
-        data?: LinkModel;
-        vertices?: ReadonlyArray<Vector>;
-    }): Link {
-        const {linkType, sourceId, targetId, data, vertices} = params;
-        if (data && data.linkTypeId !== linkType.id) {
+    addLink(link: Link): Link {
+        const {typeId, sourceId, targetId, data} = link;
+        if (data && data.linkTypeId !== typeId) {
             throw new Error('linkTypeId must match linkType.id');
         }
 
-        const existingLink = this.findLink(linkType.id, sourceId, targetId);
-        if (existingLink) {
+        const existingLink = this.findLink(typeId, sourceId, targetId);
+        if (existingLink && link.data) {
             existingLink.setLayoutOnly(false);
             existingLink.setData(data);
             return existingLink;
         }
 
-        const shouldBeVisible = linkType.visible && this.getElement(sourceId) && this.getElement(targetId);
+        const linkType = this.createLinkType(link.typeId);
+        const source = this.getElement(sourceId);
+        const target = this.getElement(targetId);
+        const shouldBeVisible = linkType.visible && source && target;
         if (!shouldBeVisible) {
             return undefined;
         }
 
-        const link = new Link({
-            id: `link_${generate64BitID()}`,
-            typeId: linkType.id,
-            sourceId,
-            targetId,
-            data,
-            vertices,
-        });
+        if (!link.data) {
+            link.setData({linkTypeId: typeId, sourceId: source.iri, targetId: target.iri});
+        }
         this.graph.addLink(link);
         return link;
     }

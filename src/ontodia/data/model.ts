@@ -51,3 +51,11 @@ export interface PropertyModel {
     id: PropertyTypeIri;
     label: { values: LocalizedString[] };
 }
+
+export function sameLink(left: LinkModel, right: LinkModel) {
+    return (
+        left.linkTypeId === right.linkTypeId &&
+        left.sourceId === right.sourceId &&
+        left.targetId === right.targetId
+    );
+}

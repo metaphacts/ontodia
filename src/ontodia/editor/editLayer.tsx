@@ -9,7 +9,7 @@ import { EventObserver } from '../viewUtils/events';
 import { DiagramView } from '../diagram/view';
 import { LinkLayer, LinkMarkers } from '../diagram/linkLayer';
 import { Element, Link } from '../diagram/elements';
-import { boundsOf } from '../diagram/geometry';
+import { boundsOf, Vector } from '../diagram/geometry';
 import { Cancellation } from '../viewUtils/async';
 import { Spinner } from '../viewUtils/spinner';
 import { PaperWidgetProps } from '../diagram/paperArea';
@@ -53,9 +53,9 @@ export class EditLayer extends React.Component<Props, State> {
         const {mode, target, point} = this.props;
 
         if (mode === EditMode.establishNewLink) {
-            this.onEstablishLink({sourceId: target.id, point});
+            this.beginCreatingLink({sourceId: target.id, point});
         } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
-            this.onMoveLink({link: target as Link, point});
+            this.beginMovingLink({link: target as Link, point});
         } else {
             throw new Error('Unknown edit mode');
         }
@@ -70,30 +70,39 @@ export class EditLayer extends React.Component<Props, State> {
         document.removeEventListener('mouseup', this.onMouseUp);
     }
 
-    private onEstablishLink = (params: { sourceId: string; point: { x: number; y: number } }) => {
-        const {editor} = this.props;
+    private beginCreatingLink = (params: { sourceId: string; point: Vector }) => {
+        const {editor, view} = this.props;
         const {sourceId, point} = params;
 
         const temporaryElement = this.createTemporaryElement(point);
-        const temporaryLink = editor.establishNewLink({linkTypeId: LINK_TYPE, sourceId, targetId: temporaryElement.id});
+        const temporaryLink = view.model.addLink(new Link({
+            typeId: LINK_TYPE,
+            sourceId,
+            targetId: temporaryElement.id,
+        }));
 
         this.setState({temporaryLink, temporaryElement});
     }
 
-    private onMoveLink(params: { link: Link; point: { x: number; y: number } }) {
+    private beginMovingLink(params: { link: Link; point: Vector }) {
         const {editor, mode} = this.props;
         const {link, point} = params;
 
         this.oldLink = link;
+        editor.model.removeLink(link.id);
+        const {id, typeId, sourceId, targetId, data, vertices} = link;
 
         const temporaryElement = this.createTemporaryElement(point);
-
         let temporaryLink: Link;
 
         if (mode === EditMode.moveLinkSource) {
-            temporaryLink = editor.moveLinkSource({link, sourceId: temporaryElement.id});
+            temporaryLink = editor.model.addLink(new Link({
+                id, typeId, sourceId: temporaryElement.id, targetId, data, vertices,
+            }));
         } else if (mode === EditMode.moveLinkTarget) {
-            temporaryLink = editor.moveLinkTarget({link, targetId: temporaryElement.id});
+            temporaryLink = editor.model.addLink(new Link({
+                id, typeId, sourceId, targetId: temporaryElement.id, data, vertices,
+            }));
         } else {
             throw new Error('Unknown edit mode');
         }
@@ -101,7 +110,7 @@ export class EditLayer extends React.Component<Props, State> {
         this.setState({temporaryLink, temporaryElement});
     }
 
-    private createTemporaryElement(point: { x: number; y: number }) {
+    private createTemporaryElement(point: Vector) {
         const temporaryElement = this.props.view.model.createTemporaryElement();
         temporaryElement.setPosition(point);
 
@@ -167,7 +176,7 @@ export class EditLayer extends React.Component<Props, State> {
         editor.model.removeElement(this.state.temporaryElement.id);
 
         if (targetElement || (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget)) {
-            const link = this.editLink({link: temporaryLink, targetElement, canDrop});
+            const link = this.endChangingLink({link: temporaryLink, targetElement, canDrop});
             if (link) {
                 editor.setSelection([link]);
                 editor.showEditLinkForm(link);
@@ -175,7 +184,7 @@ export class EditLayer extends React.Component<Props, State> {
         } else {
             const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
             this.createNewEntity(point).then(element => {
-                const link = this.editLink({link: temporaryLink, targetElement: element, canDrop});
+                const link = this.endChangingLink({link: temporaryLink, targetElement: element, canDrop});
                 if (link) {
                     this.listener.listenOnce(element.events, 'changeData', () => {
                         editor.setSelection([link]);
@@ -193,27 +202,45 @@ export class EditLayer extends React.Component<Props, State> {
         editor.finishEditing();
     }
 
-    private editLink(params: {link: Link; targetElement?: Element; canDrop: boolean}): Link | undefined {
+    private endChangingLink(params: { link: Link; targetElement?: Element; canDrop: boolean }): Link | undefined {
         const {editor, mode} = this.props;
         const {link, targetElement, canDrop} = params;
 
+        let originalLink: Link;
+
+        editor.model.removeLink(link.id);
+        if (this.oldLink) {
+            originalLink = editor.model.addLink(this.oldLink);
+        }
+
         if (mode === EditMode.establishNewLink) {
-            const {sourceId} = link;
-            editor.model.removeLink(link.id);
+            const sourceElement = editor.model.getElement(link.sourceId);
             if (canDrop && targetElement) {
-                return editor.establishNewLink({linkTypeId: LINK_TYPE, sourceId, targetId: targetElement.id});
+                const typeId = LINK_TYPE;
+                return editor.createNewLink(new Link({
+                    typeId,
+                    sourceId: sourceElement.id,
+                    targetId: targetElement.id,
+                    data: {
+                        linkTypeId: typeId,
+                        sourceId: sourceElement.iri,
+                        targetId: targetElement.iri,
+                    },
+                }));
             }
         } else if (mode === EditMode.moveLinkSource) {
-            const sourceId = canDrop && targetElement ? targetElement.id : this.oldLink.sourceId;
-            return editor.moveLinkSource({link, sourceId});
+            if (canDrop && targetElement) {
+                return editor.moveLinkSource({link, newSource: targetElement});
+            }
         } else if (mode === EditMode.moveLinkTarget) {
-            const targetId = canDrop && targetElement ? targetElement.id : this.oldLink.targetId;
-            return editor.moveLinkTarget({link, targetId});
+            if (canDrop && targetElement) {
+                return editor.moveLinkTarget({link, newTarget: targetElement});
+            }
         } else {
             throw new Error('Unknown edit mode');
         }
 
-        return undefined;
+        return originalLink;
     }
 
     private createNewEntity(point: { x: number; y: number }): Promise<Element | undefined> {

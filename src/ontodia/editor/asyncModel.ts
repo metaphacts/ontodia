@@ -4,7 +4,7 @@ import {
 } from '../data/model';
 import { DataProvider } from '../data/provider';
 
-import { Element, FatLinkType, FatClassModel, RichProperty, FatLinkTypeEvents } from '../diagram/elements';
+import { Element, FatLinkType, FatClassModel, RichProperty, FatLinkTypeEvents, Link } from '../diagram/elements';
 import { CommandHistory, Command } from '../diagram/history';
 import { DiagramModel, DiagramModelEvents, placeholderDataFromIri } from '../diagram/model';
 
@@ -213,12 +213,13 @@ export class AsyncModel extends DiagramModel {
                 const {id, typeId, source, target, vertices} = cell;
                 const linkType = this.createLinkType(typeId);
                 usedLinkTypes[linkType.id] = linkType;
-                const link = this.createLink({
-                    linkType,
+                const link = this.addLink(new Link({
+                    id,
+                    typeId: linkType.id,
                     sourceId: source.id,
                     targetId: target.id,
                     vertices,
-                });
+                }));
                 if (link) {
                     link.setLayoutOnly(markLinksAsLayoutOnly);
                 }
@@ -310,17 +311,18 @@ export class AsyncModel extends DiagramModel {
     private onLinkInfoLoaded(links: LinkModel[]) {
         for (const linkModel of links) {
             const linkType = this.createLinkType(linkModel.linkTypeId);
-            this.createLinks(linkModel, linkType);
+            this.createLinks(linkModel);
         }
     }
 
-    private createLinks(data: LinkModel, linkType: FatLinkType) {
+    createLinks(data: LinkModel) {
         const sources = this.graph.getElements().filter(el => el.iri === data.sourceId);
         const targets = this.graph.getElements().filter(el => el.iri === data.targetId);
+        const typeId = data.linkTypeId;
 
         for (const source of sources) {
             for (const target of targets) {
-                this.createLink({linkType, sourceId: source.id, targetId: target.id, data});
+                this.addLink(new Link({typeId, sourceId: source.id, targetId: target.id, data}));
             }
         }
     }

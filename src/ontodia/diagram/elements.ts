@@ -2,6 +2,7 @@ import {
     ClassModel, ElementModel, LinkModel, LocalizedString, Property,
     ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
+import { generate64BitID } from '../data/utils';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
@@ -251,18 +252,6 @@ export interface LinkEvents {
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
 }
 
-/**
- * Properties:
- *     typeId: string
- *     typeIndex: number
- *     source: { id: string }
- *     target: { id: string }
- *     layoutOnly: boolean -- link exists only in layout (instead of underlying data)
- *
- * Events:
- *     state:loaded
- *     updateRouting
- */
 export class Link {
     private readonly source = new EventSource<LinkEvents>();
     readonly events: Events<LinkEvents> = this.source;
@@ -280,14 +269,14 @@ export class Link {
     private _vertices: ReadonlyArray<Vector>;
 
     constructor(props: {
-        id: string;
+        id?: string;
         typeId: LinkTypeIri;
         sourceId: string;
         targetId: string;
         data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
     }) {
-        const {id, typeId, sourceId, targetId, data, vertices = []} = props;
+        const {id = `link_${generate64BitID()}`, typeId, sourceId, targetId, data, vertices = []} = props;
         this.id = id;
         this._typeId = typeId;
         this._sourceId = sourceId;

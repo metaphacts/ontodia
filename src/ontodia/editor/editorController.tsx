@@ -1,14 +1,16 @@
 import * as React from 'react';
 
-import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink } from '../data/model';
+import { generate64BitID } from '../data/utils';
 
-import { setElementExpanded, setElementData } from '../diagram/commands';
+import { setElementExpanded, setElementData, setLinkData } from '../diagram/commands';
 import { Element, Link, LinkVertex } from '../diagram/elements';
 import { Vector, Size, boundsOf, computeGrouping } from '../diagram/geometry';
+import { Command } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { MetadataAPI } from './metadata';
+import { MetadataApi } from './metadata';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
@@ -26,8 +28,6 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import { AuthoringState } from './authoringState';
-import { Command } from '../..';
-import { generate64BitID } from '../data/utils';
 import { EditLayer, EditMode } from './editLayer';
 
 export enum DialogTypes {
@@ -36,7 +36,7 @@ export enum DialogTypes {
     EditLinkForm,
 }
 
-export type SelectedElement = Element | Link;
+export type SelectionItem = Element | Link;
 
 export interface EditorOptions {
     disableDefaultHalo?: boolean;
@@ -44,7 +44,8 @@ export interface EditorOptions {
 }
 
 export interface EditorEvents {
-    changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectedElement>>;
+    changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectionItem>>;
+    changeAuthoringState: PropertyChange<EditorController, AuthoringState>;
     toggleDialog: { isOpened: boolean };
 }
 
@@ -54,17 +55,21 @@ export class EditorController {
     readonly events: Events<EditorEvents> = this.source;
 
     private _authoringState = AuthoringState.empty;
-    private _selection: ReadonlyArray<SelectedElement> = [];
+    private _selection: ReadonlyArray<SelectionItem> = [];
 
     private dialogType: DialogTypes;
-    private dialogTarget: SelectedElement;
+    private dialogTarget: SelectionItem;
 
     constructor(
         readonly model: AsyncModel,
         private view: DiagramView,
-        readonly metadata: MetadataAPI,
+        readonly metadata: MetadataApi,
         private options: EditorOptions,
-    ) {}
+    ) {
+        this.listener.listen(this.events, 'changeAuthoringState', e => {
+            console.log('authoringState', this.authoringState);
+        });
+    }
 
     _initializePaperComponents(paperArea: PaperArea) {
         this.listener.listen(paperArea.events, 'pointerUp', e => this.onPaperPointerUp(e));
@@ -96,12 +101,13 @@ export class EditorController {
         const previous = this._authoringState;
         return Command.create('Create or delete entities and links', () => {
             this._authoringState = state;
+            this.source.trigger('changeAuthoringState', {source: this, previous});
             return this.setAuthoringState(previous);
         });
     }
 
     get selection() { return this._selection; }
-    setSelection(value: ReadonlyArray<SelectedElement>) {
+    setSelection(value: ReadonlyArray<SelectionItem>) {
         const previous = this._selection;
         if (previous === value) { return; }
         this._selection = value;
@@ -223,7 +229,7 @@ export class EditorController {
                 <HaloLink view={this.view}
                     target={selectedElement}
                     onEdit={() => this.showEditLinkForm(selectedElement)}
-                    onRemove={() => this.model.removeLink(selectedElement.id)}
+                    onRemove={() => this.deleteLink(selectedElement.data)}
                     onSourceMove={(point: { x: number; y: number }) =>
                         this.startEditing({target: selectedElement, mode: EditMode.moveLinkSource, point})
                     }
@@ -250,7 +256,7 @@ export class EditorController {
         this.showDialog({target, dialogType, content});
     }
 
-    showEditEntityForm(target: Element, elementTypes?: ElementTypeIri[]) {
+    showEditEntityForm(target: Element, elementTypes?: ReadonlyArray<ElementTypeIri>) {
         const dialogType = DialogTypes.EditEntityForm;
         const content = (
             <EditEntityForm view={this.view}
@@ -258,7 +264,7 @@ export class EditorController {
                 elementTypes={elementTypes}
                 onApply={(elementModel: ElementModel) => {
                     this.hideDialog();
-                    this.editEntity(elementModel);
+                    this.changeEntityData(target.iri, elementModel);
                 }}
                 onCancel={() => this.hideDialog()}/>
         );
@@ -271,19 +277,20 @@ export class EditorController {
             <EditLinkForm view={this.view}
                 editor={this}
                 link={target}
-                onApply={(linkModel: LinkModel) => {
+                onApply={(newData: LinkModel) => {
                     this.hideDialog();
-                    target.setData(linkModel);
-
-                    const linkType = this.model.createLinkType(linkModel.linkTypeId);
-                    target.typeIndex = linkType.index;
+                    this.changeLinkData(target.data, newData);
                 }}
                 onCancel={() => this.hideDialog()}/>
         );
         this.showDialog({target, dialogType, content});
     }
 
-    showDialog(params: { target: SelectedElement; dialogType: DialogTypes; content: React.ReactElement<any> }) {
+    showDialog(params: {
+        target: SelectionItem;
+        dialogType: DialogTypes;
+        content: React.ReactElement<any>;
+    }) {
         const {target, dialogType, content} = params;
 
         this.dialogTarget = target;
@@ -363,16 +370,16 @@ export class EditorController {
     createNewEntity(classIri: ElementTypeIri): Element {
         const batch = this.model.history.startBatch('Create new entity');
         const elementModel = {
-            id: `element_${generate64BitID()}` as ElementIri,
+            // TODO: change IRI generation
+            id: `http://ontodia.org/newEntity_${generate64BitID()}` as ElementIri,
             types: [classIri],
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},
         };
         const element = this.model.createElement(elementModel);
-        const state = AuthoringState.set(this._authoringState, {
-            created: [...this._authoringState.created, element],
-        });
-        this.model.history.execute(this.setAuthoringState(state));
+        this.model.history.execute(this.setAuthoringState(
+            AuthoringState.addElements(this._authoringState, [element.data])
+        ));
         batch.store();
 
         this.setSelection([element]);
@@ -380,66 +387,122 @@ export class EditorController {
         return element;
     }
 
-    editEntity(elementModel: ElementModel) {
-        const batch = this.model.history.startBatch('Edit entity');
-        this.model.history.execute(setElementData(this.model, elementModel));
-        const state = AuthoringState.changeElement(this._authoringState, elementModel);
-        this.model.history.execute(this.setAuthoringState(state));
-        batch.store();
-    }
-
-    establishNewLink(params: {
-        linkTypeId: LinkTypeIri;
-        sourceId: string;
-        targetId: string;
-    }): Link {
-        const {linkTypeId, sourceId, targetId} = params;
-
-        const source = this.model.getElement(sourceId);
-        const target = this.model.getElement(targetId);
-
-        const data = {linkTypeId, sourceId: source.iri, targetId: target.iri};
-        const linkType = this.model.createLinkType(data.linkTypeId);
-
-        const batch = this.model.history.startBatch('Create new link');
-        const link = this.model.createLink({linkType, sourceId, targetId, data});
-        if (link) {
-            const state = AuthoringState.set(this._authoringState, {
-                created: [...this._authoringState.created, link],
-            });
-            this.model.history.execute(this.setAuthoringState(state));
+    changeEntityData(targetIri: ElementIri, newData: ElementModel) {
+        const elements = this.model.elements.filter(el => el.iri === targetIri);
+        if (elements.length === 0) {
+            return;
         }
+        const oldData = elements[0].data;
+        const batch = this.model.history.startBatch('Edit entity');
+        this.model.history.execute(setElementData(this.model, targetIri, newData));
+        this.model.history.execute(this.setAuthoringState(
+            AuthoringState.changeElement(this._authoringState, oldData, newData)
+        ));
         batch.store();
-        return link;
     }
 
-    moveLinkSource(params: { link: Link; sourceId: string }): Link {
-        const {link, sourceId} = params;
-
-        const source = this.model.getElement(sourceId);
-        const {typeId, targetId, vertices} = link;
-
-        const linkType = this.model.createLinkType(typeId);
-        const data = link.data ? {...link.data, sourceId: source.iri} : undefined;
-
-        this.model.removeLink(link.id);
-        return this.model.createLink({linkType, sourceId, targetId, data, vertices});
+    deleteEntity(elementIri: ElementIri) {
+        const elements = this.model.elements.filter(el => el.iri === elementIri);
+        if (elements.length === 0) {
+            return;
+        }
+        const batch = this.model.history.startBatch('Delete entity');
+        for (const element of elements) {
+            this.model.removeElement(element.id);
+        }
+        this.model.history.execute(this.setAuthoringState(
+            AuthoringState.deleteElement(this._authoringState, elementIri, this.model)
+        ));
+        batch.store();
     }
 
-    moveLinkTarget(params: { link: Link; targetId: string }): Link {
-        const {link, targetId} = params;
+    createNewLink(base: Link): Link {
+        const batch = this.model.history.startBatch('Create new link');
 
-        const target = this.model.getElement(targetId);
-        const {typeId, sourceId, vertices} = link;
+        this.model.createLinks(base.data);
+        const links = this.model.links.filter(link => sameLink(link.data, base.data));
+        if (links.length > 0) {
+            this.model.history.execute(this.setAuthoringState(
+                AuthoringState.addLinks(this._authoringState, [base.data])
+            ));
+            batch.store();
+        } else {
+            batch.discard();
+        }
 
-        const linkType = this.model.createLinkType(typeId);
-        const data = link.data ? {...link.data, targetId: target.iri} : undefined;
-
-        this.model.removeLink(link.id);
-        return this.model.createLink({linkType, sourceId, targetId, data, vertices});
+        return links.find(({sourceId, targetId}) => sourceId === base.sourceId && targetId === base.targetId);
     }
 
-    private startEditing(params: { target: Element | Link; mode: EditMode; point: { x: number; y: number } }) {
+    changeLinkData(oldData: LinkModel, newData: LinkModel) {
+        const batch = this.model.history.startBatch('Change link');
+        if (sameLink(oldData, newData)) {
+            this.model.history.execute(setLinkData(this.model, oldData, newData));
+        } else {
+            this.model.links
+                .filter(link => sameLink(link.data, oldData))
+                .forEach(link => this.model.removeLink(link.id));
+            this.model.createLinks(newData);
+        }
+        this.model.history.execute(this.setAuthoringState(
+            AuthoringState.changeLink(this._authoringState, oldData, newData)
+        ));
+        batch.store();
+    }
+
+    private setLinkData(link: Link, newData: LinkModel) {
+        if (sameLink(link.data, newData)) {
+            link.setData(newData);
+        } else {
+            this.model.removeLink(link.id);
+            this.model.addLink(new Link({
+                typeId: newData.linkTypeId,
+                sourceId: newData.sourceId,
+                targetId: newData.targetId,
+                data: newData,
+            }));
+        }
+    }
+
+    moveLinkSource(params: { link: Link; newSource: Element }): Link {
+        const {link, newSource} = params;
+        const batch = this.model.history.startBatch('Move link to another element');
+        this.changeLinkData(link.data, {...link.data, sourceId: newSource.iri});
+        const newLink = this.model.findLink(link.typeId, newSource.id, link.targetId);
+        newLink.setVertices(link.vertices);
+        batch.store();
+        return newLink;
+    }
+
+    moveLinkTarget(params: { link: Link; newTarget: Element }): Link {
+        const {link, newTarget} = params;
+        const batch = this.model.history.startBatch('Move link to another element');
+        this.changeLinkData(link.data, {...link.data, targetId: newTarget.iri});
+        const newLink = this.model.findLink(link.typeId, link.sourceId, newTarget.id);
+        newLink.setVertices(link.vertices);
+        batch.store();
+        return newLink;
+    }
+
+    deleteLink(model: LinkModel) {
+        const links = this.model.links.filter(({data}) =>
+            data.linkTypeId === model.linkTypeId &&
+            data.sourceId === model.sourceId &&
+            data.targetId === model.targetId
+        );
+        if (links.length === 0) {
+            return;
+        }
+        const batch = this.model.history.startBatch('Delete link');
+        for (const link of links) {
+            this.model.removeLink(link.id);
+        }
+        this.model.history.execute(this.setAuthoringState(
+            AuthoringState.deleteLink(this._authoringState, model, this.model)
+        ));
+        batch.store();
+    }
+
+    private startEditing(params: { target: Element | Link; mode: EditMode; point: Vector }) {
         const {target, mode, point} = params;
         const editLayer = (
             <EditLayer view={this.view} editor={this} mode={mode} target={target} point={point} />
