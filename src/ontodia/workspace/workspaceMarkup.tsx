@@ -2,6 +2,8 @@ import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
+
+import { AuthoringTools } from '../widgets/authoringTools';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolbox } from '../widgets/linksToolbox';
@@ -72,6 +74,7 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
     private renderLeftPanel = () => {
         if (this.props.hidePanels) { return null; }
 
+        const {searchCriteria = {}} = this.props;
         return (
             <ResizableSidebar dockSide={DockSide.Left}
                 isOpen={this.props.isLeftPanelOpen}
@@ -105,6 +108,12 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             }}
                         />
                     </AccordionItem>
+                    <AccordionItem heading='Authoring Tools'>
+                        <AuthoringTools view={this.props.view}
+                            editor={this.props.editor}
+                            selectedElementType={searchCriteria.elementType}
+                        />
+                    </AccordionItem>
                     <AccordionItem heading='Instances'
                         tutorialProps={{
                             'data-position': 'top',
@@ -113,9 +122,8 @@ export class WorkspaceMarkup extends React.Component<Props, {}> {
                             'data-intro': INTRO_INSTANCES,
                         }}>
                         <InstancesSearch view={this.props.view}
-                            editor={this.props.editor}
                             model={this.props.model}
-                            criteria={this.props.searchCriteria || {}}
+                            criteria={searchCriteria}
                             onCriteriaChanged={this.props.onSearchCriteriaChanged}
                         />
                     </AccordionItem>
