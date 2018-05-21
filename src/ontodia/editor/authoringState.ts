@@ -1,7 +1,10 @@
 import { ElementModel, LinkModel, ElementIri, sameLink } from '../data/model';
+import { hashFnv32a } from '../data/utils';
 
 import { Element, Link } from '../diagram/elements';
 import { DiagramModel } from '../diagram/model';
+
+import { HashMap } from '../viewUtils/collections';
 
 export interface AuthoringState {
     events: ReadonlyArray<AuthoringEvent>;
@@ -42,6 +45,11 @@ export interface LinkChange {
     readonly type: AuthoringKind.ChangeLink;
     readonly before?: LinkModel;
     readonly after: LinkModel;
+}
+
+export interface AuthoringIndex {
+    elements: Map<ElementIri, ElementChange | ElementDeletion>;
+    links: HashMap<LinkModel, LinkChange | LinkDeletion>;
 }
 
 export namespace AuthoringState {
@@ -184,6 +192,38 @@ export namespace AuthoringState {
             });
         }
         return AuthoringState.set(state, {events});
+    }
+}
+
+export namespace AuthoringIndex {
+    export function fromState(state: AuthoringState): AuthoringIndex {
+        const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
+        const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(
+            ({linkTypeId, sourceId, targetId}) => {
+                let hash = hashFnv32a(linkTypeId);
+                hash = hash * 31 + hashFnv32a(sourceId);
+                hash = hash * 31 + hashFnv32a(targetId);
+                return hash;
+            },
+            sameLink,
+        );
+        for (const e of state.events) {
+            if (e.type === AuthoringKind.ChangeElement) {
+                elements.set(e.after.id, e);
+            } else if (e.type === AuthoringKind.DeleteElement) {
+                elements.set(e.model.id, e);
+            } else if (e.type === AuthoringKind.ChangeLink) {
+                links.set(e.after, e);
+            } else if (e.type === AuthoringKind.DeleteLink) {
+                links.set(e.model, e);
+            }
+        }
+        return {elements, links};
+    }
+
+    export function getElementState(index: AuthoringIndex, elementIri: ElementIri): AuthoringKind | undefined {
+        const event = index.elements.get(elementIri);
+        return event ? event.type : undefined;
     }
 }
 
