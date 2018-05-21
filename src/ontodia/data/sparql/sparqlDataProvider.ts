@@ -15,7 +15,6 @@ import {
     getLinksTypeIds,
     getFilteredData,
     getEnrichedElementsInfo,
-    getLinkTypesInfo,
     getLinksTypesOf,
     getLinkStatistics,
 } from './responseHandler';
@@ -130,7 +129,7 @@ export class SparqlDataProvider implements DataProvider {
                 BIND("" as ?instcount)
             }
         `;
-        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypesInfo);
+        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
     }
 
     linkTypes(): Promise<LinkType[]> {
