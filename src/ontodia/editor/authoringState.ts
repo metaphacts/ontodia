@@ -4,10 +4,11 @@ import { hashFnv32a } from '../data/utils';
 import { Element, Link } from '../diagram/elements';
 import { DiagramModel } from '../diagram/model';
 
-import { HashMap } from '../viewUtils/collections';
+import { HashMap, ReadonlyHashMap } from '../viewUtils/collections';
 
 export interface AuthoringState {
-    events: ReadonlyArray<AuthoringEvent>;
+    readonly events: ReadonlyArray<AuthoringEvent>;
+    readonly index: AuthoringIndex;
 }
 
 export type AuthoringEvent =
@@ -48,17 +49,20 @@ export interface LinkChange {
 }
 
 export interface AuthoringIndex {
-    elements: Map<ElementIri, ElementChange | ElementDeletion>;
-    links: HashMap<LinkModel, LinkChange | LinkDeletion>;
+    readonly elements: ReadonlyMap<ElementIri, ElementChange | ElementDeletion>;
+    readonly links: ReadonlyHashMap<LinkModel, LinkChange | LinkDeletion>;
 }
 
 export namespace AuthoringState {
     export const empty: AuthoringState = {
         events: [],
+        index: makeIndex([]),
     };
 
-    export function set(state: AuthoringState, change: Partial<AuthoringState>): AuthoringState {
-        return {...state, ...change};
+    export function set(state: AuthoringState, change: Pick<AuthoringState, 'events'>): AuthoringState {
+        const events = change.events || state.events;
+        const index = makeIndex(events);
+        return {...state, events, index};
     }
 
     export function addElements(state: AuthoringState, items: ReadonlyArray<ElementModel>) {
@@ -94,15 +98,12 @@ export namespace AuthoringState {
                 throw new Error('Cannot change IRI of already persisted entity');
             }
         }
+        let previousBefore: ElementModel | undefined;
         const additional: AuthoringEvent[] = [];
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeElement) {
                 if (e.after.id === before.id) {
-                    additional.push({
-                        type: AuthoringKind.ChangeElement,
-                        before: e.before,
-                        after: after,
-                    });
+                    previousBefore = e.before;
                     return false;
                 }
             } else if (e.type === AuthoringKind.ChangeLink) {
@@ -117,25 +118,31 @@ export namespace AuthoringState {
             }
             return true;
         });
+        additional.unshift({
+            type: AuthoringKind.ChangeElement,
+            before: previousBefore,
+            after: after,
+        });
         return AuthoringState.set(state, {events: [...events, ...additional]});
     }
 
     export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel) {
-        const additional: AuthoringEvent[] = [];
+        let previousBefore: LinkModel | undefined;
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeLink) {
                 if (sameLink(e.after, before)) {
-                    additional.push({
-                        type: AuthoringKind.ChangeLink,
-                        before: e.before,
-                        after: after,
-                    });
+                    previousBefore = e.before;
                     return false;
                 }
             }
             return true;
         });
-        return AuthoringState.set(state, {events: [...events, ...additional]});
+        const event: AuthoringEvent = {
+            type: AuthoringKind.ChangeLink,
+            before: previousBefore,
+            after: after,
+        };
+        return AuthoringState.set(state, {events: [...events, event]});
     }
 
     export function deleteElement(state: AuthoringState, targetIri: ElementIri, model: DiagramModel) {
@@ -143,7 +150,7 @@ export namespace AuthoringState {
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeElement) {
                 if (e.after.id === targetIri) {
-                    if (isNewElement(e)) {
+                    if (!isNewElement(e)) {
                         additional.push({
                             type: AuthoringKind.DeleteElement,
                             model: e.before,
@@ -181,6 +188,10 @@ export namespace AuthoringState {
                     existingLink = Boolean(e.before);
                     return false;
                 }
+            } else if (e.type === AuthoringKind.DeleteLink) {
+                if (sameLink(e.model, target)) {
+                    return false;
+                }
             }
             return true;
         });
@@ -193,10 +204,8 @@ export namespace AuthoringState {
         }
         return AuthoringState.set(state, {events});
     }
-}
 
-export namespace AuthoringIndex {
-    export function fromState(state: AuthoringState): AuthoringIndex {
+    function makeIndex(events: ReadonlyArray<AuthoringEvent>): AuthoringIndex {
         const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
         const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(
             ({linkTypeId, sourceId, targetId}) => {
@@ -207,7 +216,7 @@ export namespace AuthoringIndex {
             },
             sameLink,
         );
-        for (const e of state.events) {
+        for (const e of events) {
             if (e.type === AuthoringKind.ChangeElement) {
                 elements.set(e.after.id, e);
             } else if (e.type === AuthoringKind.DeleteElement) {
@@ -219,11 +228,6 @@ export namespace AuthoringIndex {
             }
         }
         return {elements, links};
-    }
-
-    export function getElementState(index: AuthoringIndex, elementIri: ElementIri): AuthoringKind | undefined {
-        const event = index.elements.get(elementIri);
-        return event ? event.type : undefined;
     }
 }
 

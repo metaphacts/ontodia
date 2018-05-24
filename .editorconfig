@@ -7,7 +7,7 @@ root = true
 charset = utf-8
 insert_final_newline = true
 
-[*.{ts,tsx}]
+[*.{js,jsx,ts,tsx}]
 indent_style = space
 indent_size = 4
 
@@ -16,5 +16,9 @@ indent_style = space
 indent_size = 4
 
 [*.scss]
+indent_style = space
+indent_size = 2
+
+[*.json]
 indent_style = space
 indent_size = 2

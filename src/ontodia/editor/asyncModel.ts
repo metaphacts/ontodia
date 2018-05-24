@@ -31,6 +31,11 @@ export interface AsyncModelEvents extends DiagramModelEvents {
         source: AsyncModel;
         error: any;
     };
+    createLoadedLink: {
+        source: AsyncModel;
+        model: LinkModel;
+        cancel(): void;
+    };
 }
 
 export class AsyncModel extends DiagramModel {
@@ -309,9 +314,16 @@ export class AsyncModel extends DiagramModel {
     }
 
     private onLinkInfoLoaded(links: LinkModel[]) {
+        let allowToCreate: boolean;
+        const cancel = () => { allowToCreate = false; };
+
         for (const linkModel of links) {
-            const linkType = this.createLinkType(linkModel.linkTypeId);
-            this.createLinks(linkModel);
+            this.createLinkType(linkModel.linkTypeId);
+            allowToCreate = true;
+            this.source.trigger('createLoadedLink', {source: this, model: linkModel, cancel});
+            if (allowToCreate) {
+                this.createLinks(linkModel);
+            }
         }
     }
 

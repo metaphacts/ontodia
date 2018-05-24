@@ -11,10 +11,14 @@
     background-size: cover;
     cursor: pointer;
     pointer-events: auto;
-    opacity: 0.5;
-    transition: opacity 0.3s;
     width: $buttonWidth;
     height: $buttonHeight;
+
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    &:hover {
+      opacity: 1;
+    }
   }
 
   &__navigate {
@@ -22,10 +26,6 @@
     top: 50%;
     margin-top: -($buttonHeight / 2);
     right: -($buttonWidth + $buttonMargin);
-
-    &:hover {
-      opacity: 1;
-    }
 
     &--open {
       background-image: url("../images/connections.svg");
@@ -36,15 +36,11 @@
     }
   }
 
-  &__delete {
+  &__remove {
     @include halo-button;
     background-image: url("../images/delete.svg");
     top: -($buttonHeight + $buttonMargin);
     right: -($buttonWidth + $buttonMargin);
-
-    &:hover {
-      opacity: 1;
-    }
   }
 
   &__expand {
@@ -52,10 +48,6 @@
     bottom: -($buttonHeight + $buttonMargin);
     left: 50%;
     margin-left: -($buttonWidth / 2);
-
-    &:hover {
-      opacity: 1;
-    }
 
     &--open {
       background-image: url("../images/expand-properties.png");
@@ -71,10 +63,6 @@
     background-image: url("../images/add-to-filter.png");
     bottom: -($buttonHeight + $buttonMargin);
     right: -($buttonWidth + $buttonMargin);
-
-    &:hover {
-      opacity: 1;
-    }
   }
 
   &__edit {
@@ -82,10 +70,14 @@
     background-image: url("../images/edit.svg");
     bottom: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
+  }
 
-    &:hover {
-      opacity: 1;
-    }
+  &__delete {
+    @include halo-button;
+    background-image: url("../images/delete.svg");
+    top: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
   }
 
   &__establish-connection {
@@ -93,9 +85,5 @@
     background-image: url("../images/establish-connection.svg");
     top: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
-
-    &:hover {
-      opacity: 1;
-    }
   }
 }

@@ -27,7 +27,7 @@ import {
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
-import { AuthoringState } from './authoringState';
+import { AuthoringState, AuthoringKind } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
 export enum DialogTypes {
@@ -80,6 +80,12 @@ export class EditorController {
             }
         });
 
+        this.listener.listen(this.model.events, 'createLoadedLink', e => {
+            const event = this.authoringState.index.links.get(e.model);
+            if (event && event.type === AuthoringKind.DeleteLink) {
+                e.cancel();
+            }
+        });
         this.listener.listen(this.model.events, 'loadingStart', () => this.setSpinner({}));
         this.listener.listen(this.model.events, 'loadingSuccess', () => this.setSpinner(undefined));
         this.listener.listen(this.model.events, 'loadingError', ({error}) => {
@@ -202,7 +208,7 @@ export class EditorController {
             halo = (
                 <Halo editor={this}
                     target={selectedElement}
-                    onDelete={() => this.removeSelectedElements()}
+                    onRemove={() => this.removeSelectedElements()}
                     onExpand={() => {
                         this.model.history.execute(
                             setElementExpanded(selectedElement, !selectedElement.isExpanded)
@@ -219,6 +225,7 @@ export class EditorController {
                     }}
                     onAddToFilter={() => selectedElement.addToFilter()}
                     onEdit={() => this.showEditEntityForm(selectedElement)}
+                    onDelete={() => this.deleteEntity(selectedElement.iri)}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selectedElement, mode: EditMode.establishNewLink, point})
                     }
@@ -447,20 +454,6 @@ export class EditorController {
             AuthoringState.changeLink(this._authoringState, oldData, newData)
         ));
         batch.store();
-    }
-
-    private setLinkData(link: Link, newData: LinkModel) {
-        if (sameLink(link.data, newData)) {
-            link.setData(newData);
-        } else {
-            this.model.removeLink(link.id);
-            this.model.addLink(new Link({
-                typeId: newData.linkTypeId,
-                sourceId: newData.sourceId,
-                targetId: newData.targetId,
-                data: newData,
-            }));
-        }
     }
 
     moveLinkSource(params: { link: Link; newSource: Element }): Link {

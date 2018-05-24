@@ -11,12 +11,13 @@ import { AnyListener, Unsubscribe } from '../viewUtils/events';
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
     editor: EditorController;
-    onDelete?: () => void;
+    onRemove?: () => void;
     onExpand?: () => void;
     navigationMenuOpened?: boolean;
     onToggleNavigationMenu?: () => void;
     onAddToFilter?: () => void;
     onEdit?: () => void;
+    onDelete?: () => void;
     onEstablishNewLink?: (point: { x: number; y: number; }) => void;
 }
 
@@ -66,7 +67,10 @@ export class Halo extends React.Component<Props, {}> {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
         }
 
-        const {paperArea, target, navigationMenuOpened} = this.props;
+        const {
+            paperArea, target, navigationMenuOpened, onRemove, onToggleNavigationMenu,
+            onAddToFilter, onExpand, onEdit, onDelete,
+        } = this.props;
         const cellExpanded = target.isExpanded;
 
         const bbox = boundsOf(target);
@@ -79,35 +83,36 @@ export class Halo extends React.Component<Props, {}> {
 
         return (
             <div className={CLASS_NAME} style={style}>
-                <div className={`${CLASS_NAME}__delete`}
+                {onRemove && <div className={`${CLASS_NAME}__remove`}
                     role='button'
                     title='Remove an element from the diagram'
-                    onClick={this.props.onDelete} />
-
-                <div className={`${CLASS_NAME}__navigate ` +
+                    onClick={onRemove} />}
+                {onToggleNavigationMenu && <div className={`${CLASS_NAME}__navigate ` +
                     `${CLASS_NAME}__navigate--${navigationMenuOpened ? 'closed' : 'open'}`}
                     role='button'
                     title='Open a dialog to navigate to connected elements'
-                    onClick={this.props.onToggleNavigationMenu} />
-
-                <div className={`${CLASS_NAME}__add-to-filter`}
+                    onClick={onToggleNavigationMenu} />}
+                {onAddToFilter && <div className={`${CLASS_NAME}__add-to-filter`}
                     role='button'
                     title='Search for connected elements'
-                    onClick={this.props.onAddToFilter} />
-
-                <div className={`${CLASS_NAME}__expand ` +
+                    onClick={onAddToFilter} />}
+                {onExpand && <div className={`${CLASS_NAME}__expand ` +
                     `${CLASS_NAME}__expand--${cellExpanded ? 'closed' : 'open'}`}
                     role='button'
                     title={`Expand an element to reveal additional properties`}
-                    onClick={this.props.onExpand} />
-                <div className={`${CLASS_NAME}__edit`}
+                    onClick={onExpand} />}
+                {onEdit && <div className={`${CLASS_NAME}__edit`}
                      role='button'
                      title={`Edit entity`}
-                     onClick={this.props.onEdit} />
-                <div className={`${CLASS_NAME}__establish-connection`}
+                     onClick={onEdit} />}
+                {onDelete && <div className={`${CLASS_NAME}__delete`}
+                     role='button'
+                     title={`Delete entity`}
+                     onClick={onDelete} />}
+                {this.props.onEstablishNewLink && <div className={`${CLASS_NAME}__establish-connection`}
                      role='button'
                      title={`Establish connection`}
-                     onMouseDown={this.onEstablishNewLink} />
+                     onMouseDown={this.onEstablishNewLink} />}
             </div>
         );
     }

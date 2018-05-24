@@ -20,6 +20,12 @@ export function isEmptyMap(map: object) {
     return true;
 }
 
+export function cloneMap<K, V>(map: ReadonlyMap<K, V>): Map<K, V> {
+    const clone = new Map<K, V>();
+    map.forEach((value, key) => clone.set(key, value));
+    return clone;
+}
+
 export class OrderedMap<V> {
     private mapping: { [key: string]: V };
     private ordered: V[];
@@ -60,13 +66,29 @@ export class OrderedMap<V> {
     }
 }
 
-export class HashMap<K, V> {
+export interface ReadonlyHashMap<K, V> {
+    readonly size: number;
+    has(key: K): boolean;
+    get(key: K): V | undefined;
+    set(key: K, value: V): this;
+    delete(key: K): boolean;
+    clear(): void;
+    forEach(callback: (value: V, key: K, map: ReadonlyHashMap<K, V>) => void): void;
+    clone(): HashMap<K, V>;
+}
+
+export class HashMap<K, V> implements ReadonlyHashMap<K, V> {
     private readonly map = new Map<number, Array<{ key: K; value: V }>>();
+    private _size = 0;
 
     constructor(
         private hashCode: (key: K) => number,
         private equals: (k1: K, k2: K) => boolean,
     ) {}
+
+    get size() {
+        return this._size;
+    }
 
     has(key: K): boolean {
         const items = this.map.get(this.hashCode(key));
@@ -88,11 +110,14 @@ export class HashMap<K, V> {
             const index = items.findIndex(p => this.equals(p.key, key));
             if (index >= 0 && index !== items.length - 1) {
                 items.splice(index, 1);
+            } else {
+                this._size++;
             }
             items.push({key, value});
         } else {
             items = [{key, value}];
             this.map.set(hash, items);
+            this._size++;
         }
         return this;
     }
@@ -103,6 +128,7 @@ export class HashMap<K, V> {
         const index = items.findIndex(p => this.equals(p.key, key));
         if (index >= 0) {
             items.splice(index, 1);
+            this._size--;
             return true;
         } else {
             return false;
@@ -111,6 +137,7 @@ export class HashMap<K, V> {
 
     clear(): void {
         this.map.clear();
+        this._size = 0;
     }
 
     forEach(callback: (value: V, key: K, map: HashMap<K, V>) => void) {
@@ -119,5 +146,12 @@ export class HashMap<K, V> {
                 callback(value, key, this);
             }
         });
+    }
+
+    clone(): HashMap<K, V> {
+        const clone = new HashMap<K, V>(this.hashCode, this.equals);
+        clone._size = this.size;
+        this.map.forEach((value, key) => clone.map.set(key, [...value]));
+        return clone;
     }
 }
