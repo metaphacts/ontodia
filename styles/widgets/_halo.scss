@@ -8,7 +8,9 @@
 
   @mixin halo-button {
     position: absolute;
-    background-size: cover;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: pointer;
     pointer-events: auto;
     width: $buttonWidth;
@@ -67,14 +69,14 @@
 
   &__edit {
     @include halo-button;
-    background-image: url("../images/edit.svg");
+    background-image: url("../images/font-awesome/edit.svg");
     bottom: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
   }
 
   &__delete {
     @include halo-button;
-    background-image: url("../images/delete.svg");
+    background-image: url("../images/font-awesome/trash-alt.svg");
     top: -($buttonHeight + $buttonMargin);
     left: 50%;
     margin-left: -($buttonWidth / 2);
@@ -82,7 +84,7 @@
 
   &__establish-connection {
     @include halo-button;
-    background-image: url("../images/establish-connection.svg");
+    background-image: url("../images/font-awesome/plug.svg");
     top: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
   }
