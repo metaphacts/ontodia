@@ -20,6 +20,7 @@ import { EditEntityForm } from '../widgets/editEntityForm';
 import { EditLinkForm } from '../widgets/editLinkForm';
 import { Halo } from '../widgets/halo';
 import { HaloLink } from '../widgets/haloLink';
+import { StatesWidget } from './statesWidget';
 
 import {
     LayoutNode, LayoutLink, forceLayout, padded, removeOverlaps, translateToPositiveQuadrant,
@@ -87,7 +88,12 @@ export class EditorController {
             }
         });
         this.listener.listen(this.model.events, 'loadingStart', () => this.setSpinner({}));
-        this.listener.listen(this.model.events, 'loadingSuccess', () => this.setSpinner(undefined));
+        this.listener.listen(this.model.events, 'loadingSuccess', () => {
+            this.setSpinner(undefined);
+
+            const widget = <StatesWidget editor={this} view={this.view} />;
+            this.view.setPaperWidget({key: 'states', widget});
+        });
         this.listener.listen(this.model.events, 'loadingError', ({error}) => {
             this.setSpinner({statusText: error.message, errorOccured: true});
         });

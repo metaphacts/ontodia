@@ -120,7 +120,7 @@ export namespace AuthoringState {
         });
         additional.unshift({
             type: AuthoringKind.ChangeElement,
-            before: previousBefore,
+            before: previousBefore || before,
             after: after,
         });
         return AuthoringState.set(state, {events: [...events, ...additional]});
@@ -139,7 +139,7 @@ export namespace AuthoringState {
         });
         const event: AuthoringEvent = {
             type: AuthoringKind.ChangeLink,
-            before: previousBefore,
+            before: previousBefore || before,
             after: after,
         };
         return AuthoringState.set(state, {events: [...events, event]});
