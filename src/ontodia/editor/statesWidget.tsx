@@ -3,9 +3,8 @@ import * as React from 'react';
 import { EditorController } from './editorController';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { Element, Link } from '../diagram/elements';
 import { boundsOf, computePolyline } from '../diagram/geometry';
-import { Unsubscribe } from '../viewUtils/events';
+import { EventObserver } from '../viewUtils/events';
 import { AuthoringKind } from '../editor/authoringState';
 
 export interface Props extends PaperWidgetProps {
@@ -14,35 +13,26 @@ export interface Props extends PaperWidgetProps {
 }
 
 export class StatesWidget extends React.Component<Props, {}> {
-    private unsubscribe: {[id: string]: Unsubscribe} = {};
+    private readonly listener = new EventObserver();
 
     private updateAll = () => this.forceUpdate();
 
+    componentDidMount() {
+        this.listenEvents();
+    }
+
+    componentWillReceiveProps() {
+        this.listener.stopListening();
+        this.listenEvents();
+    }
+
     componentWillUnmount() {
-        Object.keys(this.unsubscribe).forEach(id => this.unsubscribe[id]());
+        this.listener.stopListening();
     }
 
-    private listenToTarget(target: Element | Link) {
-        if (this.unsubscribe[target.id]) {
-            this.unsubscribe[target.id]();
-            this.unsubscribe[target.id] = undefined;
-        }
-
-        if (target instanceof Element) {
-            this.listenToElement(target);
-        } else if (target instanceof Link) {
-            this.listenToLink(target);
-        }
-    }
-
-    private listenToElement(element: Element) {
-        element.events.onAny(this.updateAll);
-        this.unsubscribe[element.id] = () => element.events.offAny(this.updateAll);
-    }
-
-    private listenToLink(link: Link) {
-        link.events.onAny(this.updateAll);
-        this.unsubscribe[link.id] = () => link.events.offAny(this.updateAll);
+    private listenEvents() {
+        this.listener.listen(this.props.editor.model.events, 'elementEvent', this.updateAll);
+        this.listener.listen(this.props.editor.model.events, 'linkEvent', this.updateAll);
     }
 
     private renderLinksStates() {
@@ -73,10 +63,6 @@ export class StatesWidget extends React.Component<Props, {}> {
                 elements.push(
                     <path key={link.id} d={path} fill={'none'} stroke={color} strokeWidth={5} strokeOpacity={0.5} />
                 );
-
-                this.listenToTarget(source);
-                this.listenToTarget(target);
-                this.listenToTarget(link);
             }
         });
 
@@ -104,8 +90,6 @@ export class StatesWidget extends React.Component<Props, {}> {
                     <rect key={element.id} x={x} y={y} width={width} height={height} fill={'none'} stroke={color}
                         strokeWidth={3} strokeOpacity={0.7} />
                 );
-
-                this.listenToTarget(element);
             }
         });
 
