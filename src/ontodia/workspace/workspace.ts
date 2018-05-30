@@ -12,7 +12,9 @@ import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFitting
 import { DiagramView, ViewOptions } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
-import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
+import {
+    EditorController, EditorOptions, recursiveForceLayout, RenderPropertyEditor,
+} from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 import {
@@ -68,6 +70,7 @@ export interface WorkspaceProps {
     toolbar?: ReactElement<any>;
     metadataApi?: MetadataApi;
     viewOptions?: DiagramViewOptions;
+    renderPropertyEditor?: RenderPropertyEditor;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -111,7 +114,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     constructor(props: WorkspaceProps) {
         super(props);
 
-        const {hideHalo, language, history, metadataApi, viewOptions = {}} = this.props;
+        const {hideHalo, language, history, metadataApi, viewOptions = {}, renderPropertyEditor} = this.props;
         const {
             templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
             disableDefaultHalo, suggestProperties, groupBy,
@@ -134,6 +137,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             metadataApi,
             disableHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
+            renderPropertyEditor,
         });
 
         this.view.setLanguage(this.props.language);

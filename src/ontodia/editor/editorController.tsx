@@ -31,6 +31,12 @@ import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import { AuthoringState, AuthoringKind } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
+export interface PropertyEditorOptions {
+    elementData: ElementModel;
+    onSubmit: (newData: ElementModel) => void;
+}
+export type RenderPropertyEditor = (options: PropertyEditorOptions) => void;
+
 export enum DialogTypes {
     ConnectionsMenu,
     EditEntityForm,
@@ -48,6 +54,7 @@ export interface EditorOptions {
     metadataApi?: MetadataApi;
     disableHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
+    renderPropertyEditor?: RenderPropertyEditor;
 }
 
 export interface EditorEvents {
@@ -239,7 +246,16 @@ export class EditorController {
                         this.renderDefaultHalo();
                     }}
                     onAddToFilter={() => selectedElement.addToFilter()}
-                    onEdit={() => this.showEditEntityForm(selectedElement)}
+                    onEdit={() => {
+                        if (this.options.renderPropertyEditor) {
+                            this.options.renderPropertyEditor({
+                                elementData: selectedElement.data,
+                                onSubmit: newData => this.changeEntityData(newData.id, newData),
+                            });
+                        } else {
+                            this.showEditEntityForm(selectedElement);
+                        }
+                    }}
                     onDelete={() => this.deleteEntity(selectedElement.iri)}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selectedElement, mode: EditMode.establishNewLink, point})
