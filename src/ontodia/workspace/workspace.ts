@@ -2,6 +2,8 @@ import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 import * as saveAs from 'file-saverjs';
 
+import { MetadataApi } from '../data/metadataApi';
+
 import { RestoreGeometry } from '../diagram/commands';
 import { Element, Link, FatLinkType } from '../diagram/elements';
 import { boundsOf, computeGrouping } from '../diagram/geometry';
@@ -12,9 +14,6 @@ import { DiagramView, ViewOptions } from '../diagram/view';
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import { EditorController, EditorOptions, recursiveForceLayout } from '../editor/editorController';
 
-import { MetadataApi } from '../editor/metadata';
-import { ExampleMetadataApi } from '../../examples/data/ExampleMetadataApi';
-
 import { EventObserver } from '../viewUtils/events';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
@@ -23,11 +22,12 @@ import {
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';
+import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
-import { WorkspaceMarkup, Props as MarkupProps } from './workspaceMarkup';
+import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
@@ -66,11 +66,14 @@ export interface WorkspaceProps {
 
     history?: CommandHistory;
     toolbar?: ReactElement<any>;
+    metadataApi?: MetadataApi;
     viewOptions?: DiagramViewOptions;
 }
 
-export interface DiagramViewOptions extends ViewOptions, EditorOptions {
+export interface DiagramViewOptions extends ViewOptions {
     groupBy?: GroupBy[];
+    disableDefaultHalo?: boolean;
+    suggestProperties?: PropertySuggestionHandler;
 }
 
 export interface WorkspaceLanguage {
@@ -101,7 +104,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
     private readonly editor: EditorController;
-    private readonly metadata: MetadataApi;
 
     private markup: WorkspaceMarkup;
     private tree: ClassTree;
@@ -109,7 +111,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     constructor(props: WorkspaceProps) {
         super(props);
 
-        const {hideHalo, language, history, viewOptions = {}} = this.props;
+        const {hideHalo, language, history, metadataApi, viewOptions = {}} = this.props;
         const {
             templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
             disableDefaultHalo, suggestProperties, groupBy,
@@ -126,9 +128,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
             linkRouter,
             onIriClick,
         });
-        this.metadata = new ExampleMetadataApi();
-        this.editor = new EditorController(this.model, this.view, this.metadata, {
-            disableDefaultHalo: hideHalo || disableDefaultHalo,
+        this.editor = new EditorController({
+            model: this.model,
+            view: this.view,
+            metadataApi,
+            disableHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
         });
 
@@ -201,7 +205,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: this.getToolbar(),
-        } as MarkupProps & React.ClassAttributes<WorkspaceMarkup>);
+        } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {

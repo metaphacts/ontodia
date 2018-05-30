@@ -82,6 +82,9 @@ export class AuthoringTools extends React.Component<AuthoringToolsProps, {}> {
     }
 
     private onCreateNewEntity = () => {
-        this.props.editor.createNewEntity(this.props.selectedElementType.id);
+        const {editor} = this.props;
+        const element = editor.createNewEntity(this.props.selectedElementType.id);
+        editor.setSelection([element]);
+        editor.showEditEntityForm(element);
     }
 }

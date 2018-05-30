@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { MetadataApi } from '../data/metadataApi';
 import { ElementModel, ElementTypeIri, LinkTypeIri } from '../data/model';
 
 import { EditorController } from './editorController';
@@ -23,6 +24,7 @@ export enum EditMode {
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     editor: EditorController;
+    metadataApi: MetadataApi | undefined;
     mode: EditMode;
     target: Element | Link;
     point: { x: number; y: number };
@@ -66,6 +68,7 @@ export class EditLayer extends React.Component<Props, State> {
 
     componentWillUnmount() {
         this.listener.stopListening();
+        this.cancellation.abort();
         document.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('mouseup', this.onMouseUp);
     }
@@ -139,9 +142,14 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private canDrop(targetElement?: Element) {
-        const {mode, editor} = this.props;
-        const {temporaryLink} = this.state;
+        const {mode, editor, metadataApi} = this.props;
 
+        if (!metadataApi) {
+            this.setState({canDrop: false});
+            return;
+        }
+
+        const {temporaryLink} = this.state;
         this.setState({canDrop: undefined});
 
         let source: ElementModel;
@@ -155,15 +163,15 @@ export class EditLayer extends React.Component<Props, State> {
             target = editor.model.getElement(temporaryLink.targetId).data;
         }
 
-        const canDropPromise = editor.metadata.canDrop(source, target, this.cancellation.token);
+        const canDropPromise = metadataApi.canDrop(source, target, this.cancellation.signal);
 
         if (mode === EditMode.establishNewLink) {
             canDropPromise.then(canDrop => this.setState({canDrop}));
         } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
-            const linkTypesPromise = editor.metadata.possibleLinkTypes(source, target, this.cancellation.token);
-            Promise.all([canDropPromise, linkTypesPromise]).then(([canDrop, linkTypes]) =>
-                this.setState({canDrop: canDrop && linkTypes.indexOf(temporaryLink.typeId) !== -1})
-            );
+            const linkTypesPromise = metadataApi.possibleLinkTypes(source, target, this.cancellation.signal);
+            Promise.all([canDropPromise, linkTypesPromise]).then(([canDrop, linkTypes]) => {
+                this.setState({canDrop: canDrop && linkTypes.indexOf(temporaryLink.typeId) !== -1});
+            });
         }
     }
 
@@ -244,15 +252,20 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private createNewEntity(point: { x: number; y: number }): Promise<Element | undefined> {
-        const {editor} = this.props;
+        const {editor, metadataApi} = this.props;
+        if (!metadataApi) {
+            return Promise.resolve(undefined);
+        }
 
         const source = editor.model.getElement(this.state.temporaryLink.sourceId).data;
 
-        return editor.metadata.typesOfElementsDraggedFrom(source, this.cancellation.token).then(elementTypes => {
+        return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
             if (!elementTypes.length) { return undefined; }
 
+            const batch = editor.model.history.startBatch('Create new entity');
             const element = editor.createNewEntity(ELEMENT_TYPE);
             element.setPosition(point);
+            batch.store();
 
             editor.setSelection([element]);
             editor.showEditEntityForm(element, elementTypes);

@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { MetadataApi } from '../data/metadataApi';
 import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink } from '../data/model';
 import { generate64BitID } from '../data/utils';
 
@@ -10,7 +11,6 @@ import { Command } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { MetadataApi } from './metadata';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
@@ -39,8 +39,14 @@ export enum DialogTypes {
 
 export type SelectionItem = Element | Link;
 
+export interface EditorProps extends EditorOptions {
+    model: AsyncModel;
+    view: DiagramView;
+}
+
 export interface EditorOptions {
-    disableDefaultHalo?: boolean;
+    metadataApi?: MetadataApi;
+    disableHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
 }
 
@@ -55,18 +61,22 @@ export class EditorController {
     private readonly source = new EventSource<EditorEvents>();
     readonly events: Events<EditorEvents> = this.source;
 
+    readonly model: AsyncModel;
+    private readonly view: DiagramView;
+    private readonly options: EditorOptions;
+
     private _authoringState = AuthoringState.empty;
     private _selection: ReadonlyArray<SelectionItem> = [];
 
     private dialogType: DialogTypes;
     private dialogTarget: SelectionItem;
 
-    constructor(
-        readonly model: AsyncModel,
-        private view: DiagramView,
-        readonly metadata: MetadataApi,
-        private options: EditorOptions,
-    ) {
+    constructor(props: EditorProps) {
+        const {model, view, ...options} = props;
+        this.model = model;
+        this.view = view;
+        this.options = options;
+
         this.listener.listen(this.events, 'changeAuthoringState', e => {
             console.log('authoringState', this.authoringState);
         });
@@ -98,7 +108,7 @@ export class EditorController {
             this.setSpinner({statusText: error.message, errorOccured: true});
         });
 
-        if (!this.options.disableDefaultHalo) {
+        if (!this.options.disableHalo) {
             this.configureHalo();
             document.addEventListener('keyup', this.onKeyUp);
             this.listener.listen(this.view.events, 'dispose', () => {
@@ -108,7 +118,6 @@ export class EditorController {
     }
 
     get authoringState() { return this._authoringState; }
-
     private setAuthoringState(state: AuthoringState): Command {
         const previous = this._authoringState;
         return Command.create('Create or delete entities and links', () => {
@@ -153,7 +162,7 @@ export class EditorController {
     }
 
     private onPaperPointerUp(event: PointerUpEvent) {
-        if (this.options.disableDefaultHalo) { return; }
+        if (this.options.disableHalo) { return; }
         const {sourceEvent, target, triggerAsClick} = event;
 
         if (sourceEvent.ctrlKey || sourceEvent.shiftKey || sourceEvent.metaKey) { return; }
@@ -188,7 +197,7 @@ export class EditorController {
     }
 
     private configureHalo() {
-        if (this.options.disableDefaultHalo) { return; }
+        if (this.options.disableHalo) { return; }
 
         this.listener.listen(this.events, 'changeSelection', () => {
             const selected = this.selection.length === 1 ? this.selection[0] : undefined;
@@ -288,7 +297,7 @@ export class EditorController {
         const dialogType = DialogTypes.EditLinkForm;
         const content = (
             <EditLinkForm view={this.view}
-                editor={this}
+                metadataApi={this.options.metadataApi}
                 link={target}
                 onApply={(newData: LinkModel) => {
                     this.hideDialog();
@@ -394,9 +403,6 @@ export class EditorController {
             AuthoringState.addElements(this._authoringState, [element.data])
         ));
         batch.store();
-
-        this.setSelection([element]);
-        this.showEditEntityForm(element);
         return element;
     }
 
@@ -504,7 +510,13 @@ export class EditorController {
     private startEditing(params: { target: Element | Link; mode: EditMode; point: Vector }) {
         const {target, mode, point} = params;
         const editLayer = (
-            <EditLayer view={this.view} editor={this} mode={mode} target={target} point={point} />
+            <EditLayer view={this.view}
+                editor={this}
+                metadataApi={this.options.metadataApi}
+                mode={mode}
+                target={target}
+                point={point}
+            />
         );
         this.view.setPaperWidget({key: 'editLayer', widget: editLayer});
     }

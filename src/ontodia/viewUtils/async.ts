@@ -1,3 +1,5 @@
+import { Events, EventSource } from './events';
+
 export abstract class BatchingScheduler {
     private useAnimationFrame: boolean;
     private scheduled: number | undefined;
@@ -85,38 +87,44 @@ export class Debouncer extends BatchingScheduler {
 }
 
 export class Cancellation {
-    private signal: Promise<never>;
-    private reject: ((error: CancelledError) => void) | undefined;
+    private source: EventSource<{ abort: undefined }> | undefined = new EventSource();
+    private aborted = false;
 
-    readonly token: CancellationToken;
+    readonly signal: CancellationToken;
 
     constructor() {
-        this.signal = new Promise((resolve, reject) => {
-            this.reject = reject;
-        });
-        this.token = new (class {
+        this.signal = new (class {
             constructor(private parent: Cancellation) {}
-            get cancelled() { return this.parent.cancelled; }
-            get signal() { return this.parent.signal; }
+            get aborted() { return this.parent.aborted; }
+            addEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.on('abort', handler);
+                } else {
+                    handler();
+                }
+            }
+            removeEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.off('abort', handler);
+                }
+            }
         })(this);
     }
 
-    get cancelled(): boolean {
-        return Boolean(this.reject);
-    }
-
-    cancel() {
-        const {reject} = this;
-        if (reject) {
-            this.reject = undefined;
-            reject(new CancelledError('Task was cancelled'));
-        }
+    abort() {
+        if (this.aborted) { return; }
+        this.aborted = true;
+        this.source.trigger('abort', undefined);
+        this.source = undefined;
     }
 }
 
 export interface CancellationToken {
-    readonly cancelled: boolean;
-    readonly signal: Promise<never>;
+    readonly aborted: boolean;
+    addEventListener(event: 'abort', handler: () => void): void;
+    removeEventListener(event: 'abort', handler: () => void): void;
 }
 
 export class CancelledError extends Error {
@@ -126,5 +134,3 @@ export class CancelledError extends Error {
         Object.setPrototypeOf(this, CancelledError.prototype);
     }
 }
-
-AbortController;

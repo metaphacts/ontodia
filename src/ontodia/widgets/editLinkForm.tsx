@@ -1,16 +1,18 @@
 import * as React from 'react';
 
+import { MetadataApi } from '../data/metadataApi';
+import { LinkModel, LinkTypeIri } from '../data/model';
+
+import { Link } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EditorController } from '../editor/editorController';
-import { Link } from '../diagram/elements';
-import { LinkModel, LinkTypeIri } from '../data/model';
 import { Cancellation } from '../viewUtils/async';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
 export interface Props {
     view: DiagramView;
-    editor: EditorController;
+    metadataApi: MetadataApi | undefined;
     link: Link;
     onApply: (entity: LinkModel) => void;
     onCancel: () => void;
@@ -34,20 +36,26 @@ export class EditLinkForm extends React.Component<Props, State> {
     }
 
     componentDidMount() {
-        const {editor, link} = this.props;
+        const {view, metadataApi, link} = this.props;
 
-        const source = editor.model.getElement(link.sourceId);
-        const target = editor.model.getElement(link.targetId);
+        if (metadataApi) {
+            const source = view.model.getElement(link.sourceId);
+            const target = view.model.getElement(link.targetId);
+            metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
+                this.setState({linkTypes});
+            });
+        }
+    }
 
-        editor.metadata.possibleLinkTypes(source.data, target.data, this.cancellation.token).then(linkTypes =>
-            this.setState({linkTypes})
-        );
+    componentWillUnmount() {
+        this.cancellation.abort();
     }
 
     private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
-        const select = (e.target as HTMLSelectElement);
-        const {linkModel} = this.state;
-        this.setState({linkModel: {...linkModel, linkTypeId: select.value as LinkTypeIri}});
+        const linkTypeId = e.currentTarget.value as LinkTypeIri;
+        this.setState((state): State => ({
+            linkModel: {...state.linkModel, linkTypeId},
+        }));
     }
 
     renderType() {

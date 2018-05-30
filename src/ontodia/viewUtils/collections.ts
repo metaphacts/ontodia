@@ -70,9 +70,6 @@ export interface ReadonlyHashMap<K, V> {
     readonly size: number;
     has(key: K): boolean;
     get(key: K): V | undefined;
-    set(key: K, value: V): this;
-    delete(key: K): boolean;
-    clear(): void;
     forEach(callback: (value: V, key: K, map: ReadonlyHashMap<K, V>) => void): void;
     clone(): HashMap<K, V>;
 }

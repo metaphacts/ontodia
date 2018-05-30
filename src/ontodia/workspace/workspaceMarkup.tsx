@@ -15,7 +15,7 @@ import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
 
-export interface Props {
+export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
     model: AsyncModel;
     view: DiagramView;
@@ -55,7 +55,7 @@ const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present
 
 const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
 
-export class WorkspaceMarkup extends React.Component<Props, {}> {
+export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     element: HTMLElement;
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
