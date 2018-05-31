@@ -98,7 +98,7 @@ export namespace AuthoringState {
                 throw new Error('Cannot change IRI of already persisted entity');
             }
         }
-        let previousBefore: ElementModel | undefined;
+        let previousBefore: ElementModel | undefined = before;
         const additional: AuthoringEvent[] = [];
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeElement) {
@@ -120,14 +120,14 @@ export namespace AuthoringState {
         });
         additional.unshift({
             type: AuthoringKind.ChangeElement,
-            before: previousBefore || before,
+            before: previousBefore,
             after: after,
         });
         return AuthoringState.set(state, {events: [...events, ...additional]});
     }
 
     export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel) {
-        let previousBefore: LinkModel | undefined;
+        let previousBefore: LinkModel | undefined = before;
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeLink) {
                 if (sameLink(e.after, before)) {
@@ -139,7 +139,7 @@ export namespace AuthoringState {
         });
         const event: AuthoringEvent = {
             type: AuthoringKind.ChangeLink,
-            before: previousBefore || before,
+            before: previousBefore,
             after: after,
         };
         return AuthoringState.set(state, {events: [...events, event]});
