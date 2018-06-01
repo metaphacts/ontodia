@@ -29,6 +29,7 @@ export * from './ontodia/diagram/view';
 export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/editor/asyncModel';
+export * from './ontodia/editor/authoringState';
 export {
     EditorOptions, EditorEvents, EditorController, RenderPropertyEditor, PropertyEditorOptions,
 } from './ontodia/editor/editorController';
