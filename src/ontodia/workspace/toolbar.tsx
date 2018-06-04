@@ -4,6 +4,7 @@ import { WorkspaceLanguage } from './workspace';
 
 export interface ToolbarProps {
     onSaveDiagram?: () => void;
+    onPersistAuthoringState?: () => void;
     onForceLayout?: () => void;
     onZoomIn?: () => void;
     onZoomOut?: () => void;
@@ -45,6 +46,17 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
             <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-primary'
                     onClick={this.props.onSaveDiagram}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
+            </button>
+        );
+    }
+
+    private renderPersistAuthoringStateButton = () => {
+        if (!this.props.onPersistAuthoringState) { return null; }
+
+        return (
+            <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-success'
+                    onClick={this.props.onPersistAuthoringState}>
+                <span className='fa fa-floppy-o' aria-hidden='true' /> Save data
             </button>
         );
     }
@@ -112,7 +124,7 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
             <div className={CLASS_NAME}>
                 <div className='ontodia-btn-group ontodia-btn-group-sm'
                      data-position='bottom' data-step='6' data-intro={intro}>
-                    {this.renderBtnSaveDiagram()}
+                    {this.renderPersistAuthoringStateButton()}
                     <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Force layout' onClick={this.props.onForceLayout}>
                         <span className='fa fa-sitemap' aria-hidden='true'/> Layout

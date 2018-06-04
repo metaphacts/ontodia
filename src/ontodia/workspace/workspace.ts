@@ -15,6 +15,7 @@ import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import {
     EditorController, EditorOptions, recursiveForceLayout, RenderPropertyEditor,
 } from '../editor/editorController';
+import { AuthoringState } from '../editor/authoringState';
 
 import { EventObserver } from '../viewUtils/events';
 import {
@@ -33,6 +34,7 @@ import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 
 export interface WorkspaceProps {
     onSaveDiagram?: (workspace: Workspace) => void;
+    onPersistAuthoringState?: (authoringState: AuthoringState) => void;
     onPointerDown?: (e: PointerEvent) => void;
     onPointerMove?: (e: PointerEvent) => void;
     onPointerUp?: (e: PointerUpEvent) => void;
@@ -158,7 +160,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private getToolbar = () => {
-        const {languages, onSaveDiagram, hidePanels, toolbar} = this.props;
+        const {languages, onSaveDiagram, onPersistAuthoringState, hidePanels, toolbar} = this.props;
         return cloneElement(
             toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
@@ -168,6 +170,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onExportSVG: this.exportSvg,
                 onExportPNG: this.exportPng,
                 onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
+                onPersistAuthoringState: onPersistAuthoringState ? (
+                    () => onPersistAuthoringState(this.editor.authoringState)
+                ) : undefined,
                 onForceLayout: () => {
                     this.forceLayout();
                     this.zoomToFit();
