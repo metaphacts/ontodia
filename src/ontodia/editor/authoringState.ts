@@ -17,7 +17,7 @@ export type AuthoringEvent =
     | LinkChange
     | LinkDeletion;
 
-export const enum AuthoringKind {
+export enum AuthoringKind {
     ChangeElement = 'changeElement',
     DeleteElement = 'deleteElement',
     ChangeLink = 'changeLink',
