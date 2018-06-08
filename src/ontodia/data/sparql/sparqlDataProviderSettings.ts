@@ -88,6 +88,11 @@ export interface SparqlDataProviderSettings {
      * linkTypeOf query, refElement* queries, linkInfos query.
      */
     linkConfigurations: LinkConfiguration[];
+
+    /**
+     * Abstract property configuration similar to abstract link configuration. Not type-specific yet.
+     */
+    propertyConfigurations: PropertyConfiguration[];
 }
 
 /**
@@ -114,15 +119,46 @@ export interface FullTextSearchSettings {
     extractLabel?: boolean;
 }
 
+/**
+ * Link abstraction configuration.
+ */
 export interface LinkConfiguration {
+    /**
+     * IRI of the "virtual" link
+     */
     id: string;
-    inverseId: string;
+    /**
+     * IRI of the inverse
+     */
+    inverseId?: string;
+    /**
+     * Sparql pattern connecting $source to $target. It's required to use those specific variables.
+     */
     path: string;
+    /**
+     * Additional sparql patterns can be used for getting properties of the link. (propValue propType should be bound)
+     */
     properties?: string;
+}
+
+/**
+ * Specifies property abstraction configuration
+ */
+export interface PropertyConfiguration {
+    /**
+     * IRI of the "virtual" link
+     */
+    id: string;
+
+    /**
+     * Sparql pattern connecting $subject to $value. It's required to use those specific variables.
+     */
+    path: string;
 }
 
 export const RDFSettings: SparqlDataProviderSettings = {
     linkConfigurations: [],
+    propertyConfigurations: [],
 
     linksInfoQuery: `SELECT ?source ?type ?target
             WHERE {
