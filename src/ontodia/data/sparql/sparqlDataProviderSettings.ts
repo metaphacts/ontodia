@@ -116,7 +116,7 @@ export interface FullTextSearchSettings {
 
 export interface LinkConfiguration {
     id: string;
-    inverseId: string;
+    inverseId?: string;
     path: string;
     properties?: string;
 }
