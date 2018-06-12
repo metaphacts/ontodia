@@ -53,6 +53,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     componentDidMount() {
         const {view} = this.props;
 
+        this.listener.listen(view.events, 'changeLanguage', this.scheduleUpdateAll);
         this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
         this.listener.listen(view.model.events, 'elementEvent', ({key, data}) => {
             if (!(data.changePosition || data.changeSize)) { return; }
