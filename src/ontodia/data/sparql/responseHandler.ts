@@ -123,9 +123,20 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
 
 export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dictionary<PropertyModel> {
     const models: Dictionary<PropertyModel> = {};
-    for (const sProp of response.results.bindings) {
-        const model = getPropertyModel(sProp);
-        models[model.id] = model;
+
+    for (const sProperty of response.results.bindings) {
+        const sPropertyTypeId = sProperty.prop.value as PropertyTypeIri;
+        if (models[sPropertyTypeId]) {
+            if (sProperty.label) {
+                const label = models[sPropertyTypeId].label;
+                if (label.values.length === 1 && !label.values[0].lang) {
+                    label.values = [];
+                }
+                label.values.push(getLocalizedString(sProperty.label));
+            }
+        } else {
+            models[sPropertyTypeId] = getPropertyModel(sProperty);
+        }
     }
     return models;
 }
@@ -133,21 +144,21 @@ export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dict
 export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
-    const instancesMap: Dictionary<LinkType> = {};
+    const linkTypesMap: Dictionary<LinkType> = {};
 
     for (const sLink of sInst) {
         const sInstTypeId = sLink.link.value as LinkTypeIri;
-        if (instancesMap[sInstTypeId]) {
+        if (linkTypesMap[sInstTypeId]) {
             if (sLink.label) {
-                const label = instancesMap[sInstTypeId].label;
+                const label = linkTypesMap[sInstTypeId].label;
                 if (label.values.length === 1 && !label.values[0].lang) {
                     label.values = [];
                 }
                 label.values.push(getLocalizedString(sLink.label));
             }
         } else {
-            instancesMap[sInstTypeId] = getLinkTypeInfo(sLink);
-            linkTypes.push(instancesMap[sInstTypeId]);
+            linkTypesMap[sInstTypeId] = getLinkTypeInfo(sLink);
+            linkTypes.push(linkTypesMap[sInstTypeId]);
         }
     }
 
@@ -232,11 +243,6 @@ export function getEnrichedElementsInfo(
         }
     }
     return elementsInfo;
-}
-
-export function getLinkTypesInfo(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
-    const sparqlLinkTypes = response.results.bindings;
-    return sparqlLinkTypes.map((sLinkType: LinkTypeBinding) => getLinkTypeInfo(sLinkType));
 }
 
 export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
