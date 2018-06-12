@@ -1,5 +1,4 @@
-import { LayoutData } from '../index';
-import {SerializedDiagram} from '../ontodia/diagram/serializedDiagram';
+import {LayoutData, SerializedDiagram} from '../index';
 
 export function onPageLoad(callback: (container: HTMLDivElement) => void) {
     document.addEventListener('DOMContentLoaded', () => {

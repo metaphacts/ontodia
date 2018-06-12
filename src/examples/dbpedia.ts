@@ -1,11 +1,9 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, SparqlQueryMethod, DBPediaSettings } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import { SparqlQueryMethod } from '../ontodia/data/sparql/sparqlDataProvider';
-import { DBPediaSettings } from '../ontodia/data/sparql/sparqlDataProviderSettings';
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
