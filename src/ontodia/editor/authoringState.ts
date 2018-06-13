@@ -173,20 +173,12 @@ export namespace AuthoringState {
         });
 
         if (existingElement) {
-            let elementModel: ElementModel;
-
-            for (const element of model.elements) {
-                if (element.iri === targetIri) {
-                    elementModel = element.data;
-                    break;
-                }
-            }
-
-            if (elementModel) {
+            const element = model.elements.find(el => Boolean(el.iri === targetIri && el.data));
+            if (element) {
                 additional.push({
                     type: AuthoringKind.DeleteElement,
-                    model: elementModel,
-                    items: model.elements.filter(el => el.iri === elementModel.id),
+                    model: element.data,
+                    items: model.elements.filter(el => el.iri === targetIri),
                 });
             }
         }
@@ -242,16 +234,16 @@ export namespace AuthoringState {
         }
         return {elements, links};
     }
-}
 
-export function isNewElement(state: AuthoringState, elementIri: ElementIri): boolean {
-    const event = state.index.elements.get(elementIri);
-    return event && event.type === AuthoringKind.ChangeElement && !event.before;
-}
+    export function isNewElement(state: AuthoringState, elementIri: ElementIri): boolean {
+        const event = state.index.elements.get(elementIri);
+        return event && event.type === AuthoringKind.ChangeElement && !event.before;
+    }
 
-export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
-    const event = state.index.links.get(linkModel);
-    return event && event.type === AuthoringKind.ChangeLink && !event.before;
+    export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
+        const event = state.index.links.get(linkModel);
+        return event && event.type === AuthoringKind.ChangeLink && !event.before;
+    }
 }
 
 export function linkConnectedToElement(link: LinkModel, elementIri: ElementIri) {

@@ -30,7 +30,7 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, ElementChange, LinkChange, linkConnectedToElement,
-    isSourceOrTargetChanged, isNewElement, isNewLink,
+    isSourceOrTargetChanged,
 } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
@@ -128,18 +128,19 @@ export class EditorController {
     }
 
     get authoringState() { return this._authoringState; }
-    private setAuthoringState(state: AuthoringState): Command {
+    setAuthoringState(value: AuthoringState) {
+        const previous = this._authoringState;
+        if (previous === value) { return; }
+        this.model.history.execute(this.updateAuthoringState(value));
+    }
+
+    private updateAuthoringState(state: AuthoringState): Command {
         const previous = this._authoringState;
         return Command.create('Create or delete entities and links', () => {
             this._authoringState = state;
             this.source.trigger('changeAuthoringState', {source: this, previous});
-            return this.setAuthoringState(previous);
+            return this.updateAuthoringState(previous);
         });
-    }
-    resetAuthoringState() {
-        const previous = this._authoringState;
-        this._authoringState = AuthoringState.empty;
-        this.source.trigger('changeAuthoringState', {source: this, previous});
     }
 
     get selection() { return this._selection; }
@@ -423,9 +424,9 @@ export class EditorController {
             properties: {},
         };
         const element = this.model.createElement(elementModel);
-        this.model.history.execute(this.setAuthoringState(
+        this.setAuthoringState(
             AuthoringState.addElements(this._authoringState, [element.data])
-        ));
+        );
         batch.store();
         return element;
     }
@@ -438,38 +439,38 @@ export class EditorController {
         const oldData = elements[0].data;
         const batch = this.model.history.startBatch('Edit entity');
         this.model.history.execute(setElementData(this.model, targetIri, newData));
-        this.model.history.execute(this.setAuthoringState(
+        this.setAuthoringState(
             AuthoringState.changeElement(this._authoringState, oldData, newData)
-        ));
+        );
         batch.store();
     }
 
     deleteEntity(elementIri: ElementIri) {
+        const state = this.authoringState;
         const elements = this.model.elements.filter(el => el.iri === elementIri);
         if (elements.length === 0) {
             return;
         }
-        const batch = this.model.history.startBatch('Delete entity');
 
-        if (isNewElement(this.authoringState, elementIri)) {
+        const batch = this.model.history.startBatch('Delete entity');
+        this.setAuthoringState(
+            AuthoringState.deleteElement(state, elementIri, this.model)
+        );
+        if (AuthoringState.isNewElement(state, elementIri)) {
             for (const element of elements) {
                 this.model.removeElement(element.id);
             }
         }
-        this.authoringState.index.links.forEach(event => {
-            if (event.type === AuthoringKind.ChangeLink && linkConnectedToElement(event.after, elementIri)) {
-                if (!event.before || isSourceOrTargetChanged(event)) {
-                    const links = this.model.links.filter(({data}) => sameLink(data, event.after));
-                    for (const link of links) {
-                        this.model.removeLink(link.id);
-                    }
-                }
-            }
+        const newConnectedLinks = this.model.links.filter(link => {
+            if (!link.data) { return false; }
+            const event = state.index.links.get(link.data);
+            return event && event.type === AuthoringKind.ChangeLink
+                && (!event.before || isSourceOrTargetChanged(event))
+                && linkConnectedToElement(event.after, elementIri);
         });
-
-        this.model.history.execute(this.setAuthoringState(
-            AuthoringState.deleteElement(this._authoringState, elementIri, this.model)
-        ));
+        for (const link of newConnectedLinks) {
+            this.model.removeLink(link.id);
+        }
         batch.store();
     }
 
@@ -479,9 +480,9 @@ export class EditorController {
         this.model.createLinks(base.data);
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
-            this.model.history.execute(this.setAuthoringState(
+            this.setAuthoringState(
                 AuthoringState.addLinks(this._authoringState, [base.data])
-            ));
+            );
             batch.store();
         } else {
             batch.discard();
@@ -500,9 +501,9 @@ export class EditorController {
                 .forEach(link => this.model.removeLink(link.id));
             this.model.createLinks(newData);
         }
-        this.model.history.execute(this.setAuthoringState(
+        this.setAuthoringState(
             AuthoringState.changeLink(this._authoringState, oldData, newData)
-        ));
+        );
         batch.store();
     }
 
@@ -527,19 +528,20 @@ export class EditorController {
     }
 
     deleteLink(model: LinkModel) {
+        const state = this.authoringState;
         const links = this.model.links.filter(({data}) => sameLink(data, model));
         if (links.length === 0) {
             return;
         }
         const batch = this.model.history.startBatch('Delete link');
-        if (isNewLink(this.authoringState, model)) {
+        this.setAuthoringState(
+            AuthoringState.deleteLink(state, model, this.model)
+        );
+        if (AuthoringState.isNewLink(state, model)) {
             for (const link of links) {
                 this.model.removeLink(link.id);
             }
         }
-        this.model.history.execute(this.setAuthoringState(
-            AuthoringState.deleteLink(this._authoringState, model, this.model)
-        ));
         batch.store();
     }
 
