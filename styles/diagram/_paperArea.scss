@@ -1,14 +1,19 @@
 .ontodia-paper-area {
   flex: auto;
+  width: 0;
+  display: flex;
+  position: relative;
   cursor: default;
-  overflow: scroll;
-
-  // create new layer to to fix “repaints on scroll” bottleneck
-  -webkit-transform: translateZ(0);
-  -moz-transform: translateZ(0);
-  transform: translateZ(0);
-
   background: #fff;
+
+  &__area {
+    flex: auto;
+    overflow: scroll;
+    // create new layer to to fix “repaints on scroll” bottleneck
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    transform: translateZ(0);
+  }
 
   &__widgets {
     position: absolute;
@@ -24,4 +29,17 @@
 .uiElementView__iri {
     fill: #969696;
     font-size: smaller;
+}
+
+.ontodia-loading-widget {
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.06);
 }

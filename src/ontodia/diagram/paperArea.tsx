@@ -11,7 +11,7 @@ import { Element, Link, Cell, LinkVertex } from './elements';
 import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
 import { DiagramModel } from './model';
-import { DiagramView, RenderingLayer } from './view';
+import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper } from './paper';
 
 export interface Props {
@@ -64,7 +64,7 @@ export interface State {
     readonly scale?: number;
     readonly paddingX?: number;
     readonly paddingY?: number;
-    readonly renderedWidgets?: ReadonlyArray<ReactElement<any>>;
+    readonly renderedWidgets?: ReadonlyArray<WidgetDescription>;
 }
 
 export interface PaperAreaContextWrapper {
@@ -101,8 +101,9 @@ export class PaperArea extends React.Component<Props, State> {
     private readonly source = new EventSource<PaperAreaEvents>();
     readonly events: Events<PaperAreaEvents> = this.source;
 
+    private outer: HTMLDivElement;
     private area: HTMLDivElement;
-    private widgets: { [key: string]: ReactElement<any> } = {};
+    private widgets: { [key: string]: WidgetDescription } = {};
 
     private readonly pageSize = {x: 1500, y: 800};
 
@@ -151,29 +152,37 @@ export class PaperArea extends React.Component<Props, State> {
         const {view} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
         return (
-            <div className={CLASS_NAME}
-                ref={area => this.area = area}
-                onMouseDown={this.onAreaPointerDown}
-                onWheel={this.onWheel}>
-                <Paper view={view}
-                    width={paperWidth}
-                    height={paperHeight}
-                    originX={originX}
-                    originY={originY}
-                    scale={scale}
-                    paddingX={paddingX}
-                    paddingY={paddingY}
-                    onPointerDown={this.onPaperPointerDown}>
-                    <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
-                        {renderedWidgets.map(widget => {
-                            const props: PaperWidgetProps = {paperArea: this};
-                            return React.cloneElement(widget, props);
-                        })}
-                    </div>
-                </Paper>
+            <div className={CLASS_NAME} ref={this.onOuterMount}>
+                <div className={`${CLASS_NAME}__area`} ref={this.onAreaMount}
+                    onMouseDown={this.onAreaPointerDown}
+                    onWheel={this.onWheel}>
+                    <Paper view={view}
+                        width={paperWidth}
+                        height={paperHeight}
+                        originX={originX}
+                        originY={originY}
+                        scale={scale}
+                        paddingX={paddingX}
+                        paddingY={paddingY}
+                        onPointerDown={this.onPaperPointerDown}>
+                        <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
+                            {renderedWidgets.filter(w => !w.pinnedToScreen).map(widget => {
+                                const props: PaperWidgetProps = {paperArea: this};
+                                return React.cloneElement(widget.element, props);
+                            })}
+                        </div>
+                    </Paper>
+                </div>
+                {renderedWidgets.filter(w => w.pinnedToScreen).map(widget => {
+                    const props: PaperWidgetProps = {paperArea: this};
+                    return React.cloneElement(widget.element, props);
+                })}
             </div>
         );
     }
+
+    private onOuterMount = (outer: HTMLDivElement) => { this.outer = outer; };
+    private onAreaMount = (area: HTMLDivElement) => { this.area = area; };
 
     componentDidMount() {
         this.adjustPaper(() => this.centerTo());
@@ -226,12 +235,15 @@ export class PaperArea extends React.Component<Props, State> {
         this.area.removeEventListener('drop', this.onDragDrop);
     }
 
-    private updateWidgets(update: { [key: string]: ReactElement<any> }) {
+    private updateWidgets(update: { [key: string]: WidgetDescription }) {
         this.widgets = {...this.widgets, ...update};
-        const renderedWidgets = Object.keys(this.widgets).map(key => {
-            const widget = this.widgets[key];
-            return widget ? React.cloneElement(widget, {key}) : undefined;
-        }).filter(widget => widget !== undefined);
+        const renderedWidgets = Object.keys(this.widgets)
+            .filter(key => this.widgets[key])
+            .map(key => {
+                const widget = this.widgets[key];
+                const element = React.cloneElement(widget.element, {key});
+                return {...widget, element};
+            });
         this.setState({renderedWidgets});
     }
 
@@ -284,6 +296,11 @@ export class PaperArea extends React.Component<Props, State> {
     getPaperSize(): { width: number; height: number; } {
         const {paperWidth: width, paperHeight: height, scale} = this.state;
         return {width: width / scale, height: height / scale};
+    }
+
+    getAreaMetrics() {
+        const {clientWidth, clientHeight, offsetWidth, offsetHeight} = this.area;
+        return {clientWidth, clientHeight, offsetWidth, offsetHeight};
     }
 
     computeAdjustedBox(): Partial<State> {

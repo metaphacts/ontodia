@@ -209,7 +209,7 @@ export class EditorController {
 
     setSpinner(props: SpinnerProps | undefined) {
         const widget = props ? <LoadingWidget spinnerProps={props} /> : undefined;
-        this.view.setPaperWidget({key: LoadingWidget.Key, widget});
+        this.view.setPaperWidget({key: LoadingWidget.Key, widget, pinnedToScreen: true});
     }
 
     private configureHalo() {
@@ -573,19 +573,18 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
 
     render() {
         const {spinnerProps, paperArea} = this.props;
-
-        const paperSize = paperArea.getPaperSize();
-        const paneStart = paperArea.paperToScrollablePaneCoords(0, 0);
-        const paneEnd = paperArea.paperToScrollablePaneCoords(paperSize.width, paperSize.height);
-        const paneWidth = paneEnd.x - paneStart.x;
-        const paneHeight = paneEnd.y - paneStart.y;
+        const areaMetrics = paperArea.getAreaMetrics();
+        const paneWidth = areaMetrics.clientWidth * 0.8;
+        const paneHeight = areaMetrics.clientHeight * 0.8;
 
         const x = spinnerProps.statusText ? paneWidth / 3 : paneWidth / 2;
         const position = {x, y: paneHeight / 2};
         return (
-            <svg width={paneWidth} height={paneHeight}>
-                <Spinner position={position} {...spinnerProps} />
-            </svg>
+            <div className='ontodia-loading-widget'>
+                <svg width={paneWidth} height={paneHeight}>
+                    <Spinner position={position} {...spinnerProps} />
+                </svg>
+            </div>
         );
     }
 }

@@ -54,7 +54,12 @@ export interface DiagramViewEvents {
 }
 
 export interface UpdateWidgetsEvent {
-    widgets: { [key: string]: ReactElement<any> };
+    widgets: { [key: string]: WidgetDescription };
+}
+
+export interface WidgetDescription {
+    element: ReactElement<any>;
+    pinnedToScreen: boolean;
 }
 
 export class DiagramView {
@@ -148,8 +153,13 @@ export class DiagramView {
         }
     }
 
-    setPaperWidget(widget: { key: string; widget: ReactElement<any>; }) {
-        const widgets = {[widget.key]: widget.widget};
+    setPaperWidget(widget: {
+        key: string;
+        widget: ReactElement<any> | undefined;
+        pinnedToScreen?: boolean;
+    }) {
+        const {key, widget: element, pinnedToScreen} = widget;
+        const widgets = {[widget.key]: element ? {element, pinnedToScreen} : undefined};
         this.source.trigger('updateWidgets', {widgets});
     }
 
