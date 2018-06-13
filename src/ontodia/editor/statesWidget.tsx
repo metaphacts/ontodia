@@ -31,8 +31,18 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     private listenEvents() {
-        this.listener.listen(this.props.editor.model.events, 'elementEvent', this.updateAll);
-        this.listener.listen(this.props.editor.model.events, 'linkEvent', this.updateAll);
+        this.listener.listen(this.props.editor.model.events, 'elementEvent',  ({key, data}) => {
+            if (data.changeSize || data.changePosition) {
+                this.updateAll();
+            }
+        });
+        this.listener.listen(this.props.editor.model.events, 'linkEvent', ({key, data}) => {
+            if (data.changeVertices) {
+                this.updateAll();
+            }
+        });
+        this.listener.listen(this.props.editor.model.events, 'changeCells', this.updateAll);
+        this.listener.listen(this.props.editor.events, 'changeAuthoringState', this.updateAll);
     }
 
     private renderLinksStates() {
@@ -41,7 +51,11 @@ export class StatesWidget extends React.Component<Props, {}> {
         const elements: React.ReactElement<SVGPathElement>[] = [];
 
         editor.model.links.forEach(link => {
-            const state = editor.authoringState.index.links.get(link.data);
+            const state = (
+                editor.authoringState.index.links.get(link.data) ||
+                editor.authoringState.index.elements.get(link.data.sourceId) ||
+                editor.authoringState.index.elements.get(link.data.targetId)
+            );
             if (state) {
                 const source = editor.model.getElement(link.sourceId);
                 const target = editor.model.getElement(link.targetId);
@@ -56,7 +70,7 @@ export class StatesWidget extends React.Component<Props, {}> {
                 let color: string;
                 if (state.type === AuthoringKind.ChangeLink) {
                     color = state.before ? 'blue' : 'green';
-                } else if (state.type === AuthoringKind.DeleteLink) {
+                } else if (state.type === AuthoringKind.DeleteLink || state.type === AuthoringKind.DeleteElement) {
                     color = 'red';
                 }
 

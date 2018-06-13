@@ -147,16 +147,10 @@ export namespace AuthoringState {
 
     export function deleteElement(state: AuthoringState, targetIri: ElementIri, model: DiagramModel) {
         const additional: AuthoringEvent[] = [];
+        const existingElement = !isNewElement(state, targetIri);
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeElement) {
                 if (e.after.id === targetIri) {
-                    if (!isNewElement(e)) {
-                        additional.push({
-                            type: AuthoringKind.DeleteElement,
-                            model: e.before,
-                            items: model.elements.filter(el => el.iri === e.before.id),
-                        });
-                    }
                     return false;
                 }
             } else if (e.type === AuthoringKind.ChangeLink) {
@@ -177,15 +171,34 @@ export namespace AuthoringState {
             }
             return true;
         });
+
+        if (existingElement) {
+            let elementModel: ElementModel;
+
+            for (const element of model.elements) {
+                if (element.iri === targetIri) {
+                    elementModel = element.data;
+                    break;
+                }
+            }
+
+            if (elementModel) {
+                additional.push({
+                    type: AuthoringKind.DeleteElement,
+                    model: elementModel,
+                    items: model.elements.filter(el => el.iri === elementModel.id),
+                });
+            }
+        }
+
         return AuthoringState.set(state, {events: [...events, ...additional]});
     }
 
     export function deleteLink(state: AuthoringState, target: LinkModel, model: DiagramModel) {
-        let existingLink = true;
+        const existingLink = !isNewLink(state, target);
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeLink) {
                 if (sameLink(e.after, target)) {
-                    existingLink = Boolean(e.before);
                     return false;
                 }
             } else if (e.type === AuthoringKind.DeleteLink) {
@@ -231,15 +244,21 @@ export namespace AuthoringState {
     }
 }
 
-function isNewElement(change: ElementChange) {
-    return !change.before;
+export function isNewElement(state: AuthoringState, elementIri: ElementIri): boolean {
+    const event = state.index.elements.get(elementIri);
+    return event && event.type === AuthoringKind.ChangeElement && !event.before;
 }
 
-function linkConnectedToElement(link: LinkModel, elementIri: ElementIri) {
+export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
+    const event = state.index.links.get(linkModel);
+    return event && event.type === AuthoringKind.ChangeLink && !event.before;
+}
+
+export function linkConnectedToElement(link: LinkModel, elementIri: ElementIri) {
     return link.sourceId === elementIri || link.targetId === elementIri;
 }
 
-function isSourceOrTargetChanged(change: LinkChange) {
+export function isSourceOrTargetChanged(change: LinkChange) {
     const {before, after} = change;
     return before && !(
         before.sourceId === after.sourceId &&

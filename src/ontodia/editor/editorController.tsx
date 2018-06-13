@@ -28,7 +28,10 @@ import {
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
-import { AuthoringState, AuthoringKind } from './authoringState';
+import {
+    AuthoringState, AuthoringKind, ElementChange, LinkChange, linkConnectedToElement,
+    isSourceOrTargetChanged, isNewElement, isNewLink,
+} from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
 export interface PropertyEditorOptions {
@@ -132,6 +135,11 @@ export class EditorController {
             this.source.trigger('changeAuthoringState', {source: this, previous});
             return this.setAuthoringState(previous);
         });
+    }
+    resetAuthoringState() {
+        const previous = this._authoringState;
+        this._authoringState = AuthoringState.empty;
+        this.source.trigger('changeAuthoringState', {source: this, previous});
     }
 
     get selection() { return this._selection; }
@@ -442,9 +450,23 @@ export class EditorController {
             return;
         }
         const batch = this.model.history.startBatch('Delete entity');
-        for (const element of elements) {
-            this.model.removeElement(element.id);
+
+        if (isNewElement(this.authoringState, elementIri)) {
+            for (const element of elements) {
+                this.model.removeElement(element.id);
+            }
         }
+        this.authoringState.index.links.forEach(event => {
+            if (event.type === AuthoringKind.ChangeLink && linkConnectedToElement(event.after, elementIri)) {
+                if (!event.before || isSourceOrTargetChanged(event)) {
+                    const links = this.model.links.filter(({data}) => sameLink(data, event.after));
+                    for (const link of links) {
+                        this.model.removeLink(link.id);
+                    }
+                }
+            }
+        });
+
         this.model.history.execute(this.setAuthoringState(
             AuthoringState.deleteElement(this._authoringState, elementIri, this.model)
         ));
@@ -505,17 +527,15 @@ export class EditorController {
     }
 
     deleteLink(model: LinkModel) {
-        const links = this.model.links.filter(({data}) =>
-            data.linkTypeId === model.linkTypeId &&
-            data.sourceId === model.sourceId &&
-            data.targetId === model.targetId
-        );
+        const links = this.model.links.filter(({data}) => sameLink(data, model));
         if (links.length === 0) {
             return;
         }
         const batch = this.model.history.startBatch('Delete link');
-        for (const link of links) {
-            this.model.removeLink(link.id);
+        if (isNewLink(this.authoringState, model)) {
+            for (const link of links) {
+                this.model.removeLink(link.id);
+            }
         }
         this.model.history.execute(this.setAuthoringState(
             AuthoringState.deleteLink(this._authoringState, model, this.model)
