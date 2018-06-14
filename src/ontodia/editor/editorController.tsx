@@ -425,7 +425,7 @@ export class EditorController {
         };
         const element = this.model.createElement(elementModel);
         this.setAuthoringState(
-            AuthoringState.addElements(this._authoringState, [element.data])
+            AuthoringState.addElement(this._authoringState, element.data)
         );
         batch.store();
         return element;
@@ -481,7 +481,7 @@ export class EditorController {
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
             this.setAuthoringState(
-                AuthoringState.addLinks(this._authoringState, [base.data])
+                AuthoringState.addLink(this._authoringState, base.data)
             );
             batch.store();
         } else {

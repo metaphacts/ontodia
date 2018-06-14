@@ -102,16 +102,18 @@ export class EditEntityForm extends React.Component<Props, State> {
     private onChangeLabel = (e: React.FormEvent<HTMLInputElement>) => {
         const target = (e.target as HTMLInputElement);
 
-        const {elementModel} = this.state;
-        const label = {values: [{text: target.value, lang: ''}]};
+        const labels = target.value.length > 0 ? [{text: target.value, lang: ''}] : [];
 
-        this.setState({elementModel: {...elementModel, label}});
+        this.setState({elementModel: {
+            ...this.state.elementModel,
+            label: {values: labels},
+        }});
     }
 
     private renderLabel() {
         const {view} = this.props;
-        const label = chooseLocalizedText(this.state.elementModel.label.values, view.getLanguage()).text;
-
+        const labels = this.state.elementModel.label.values;
+        const label = labels.length > 0 ? chooseLocalizedText(labels, view.getLanguage()).text : '';
         return (
             <label>
                 Label

@@ -65,24 +65,14 @@ export namespace AuthoringState {
         return {...state, events, index};
     }
 
-    export function addElements(state: AuthoringState, items: ReadonlyArray<ElementModel>) {
-        if (items.length === 0) {
-            return state;
-        }
-        const additional = items.map((item): ElementChange => {
-            return {type: AuthoringKind.ChangeElement, after: item};
-        });
-        return AuthoringState.set(state, {events: [...state.events, ...additional]});
+    export function addElement(state: AuthoringState, item: ElementModel) {
+        const event: ElementChange = {type: AuthoringKind.ChangeElement, after: item};
+        return AuthoringState.set(state, {events: [...state.events, event]});
     }
 
-    export function addLinks(state: AuthoringState, items: ReadonlyArray<LinkModel>) {
-        if (items.length === 0) {
-            return state;
-        }
-        const additional = items.map((item): LinkChange => {
-            return {type: AuthoringKind.ChangeLink, after: item};
-        });
-        return AuthoringState.set(state, {events: [...state.events, ...additional]});
+    export function addLink(state: AuthoringState, item: LinkModel) {
+        const event: LinkChange = {type: AuthoringKind.ChangeLink, after: item};
+        return AuthoringState.set(state, {events: [...state.events, event]});
     }
 
     export function changeElement(state: AuthoringState, before: ElementModel, after: ElementModel) {
@@ -101,7 +91,12 @@ export namespace AuthoringState {
         let previousBefore: ElementModel | undefined = before;
         const additional: AuthoringEvent[] = [];
         const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.ChangeElement) {
+            if (e.type === AuthoringKind.DeleteElement) {
+                if (e.model.id === before.id) {
+                    previousBefore = e.model;
+                    return false;
+                }
+            } else if (e.type === AuthoringKind.ChangeElement) {
                 if (e.after.id === before.id) {
                     previousBefore = e.before;
                     return false;
