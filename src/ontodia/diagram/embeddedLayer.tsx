@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Dictionary, ElementModel, ElementIri } from '../data/model';
-import { Paper } from './paper';
+import { Paper, PaperTransform } from './paper';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from './paperArea';
 import { Element, Cell } from './elements';
 import { ElementLayer, ElementContextWrapper, ElementContextTypes } from './elementLayer';
@@ -193,20 +193,20 @@ export class EmbeddedLayer extends React.Component<{}, State> {
         const {view, element, scale} = this.context.ontodiaElement;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
-        const style: React.CSSProperties = {
-            position: 'absolute', left: -offsetX, top: -offsetY,
+        const paperTransform: PaperTransform = {
+            width: paperWidth,
+            height: paperHeight,
+            originX: -offsetX,
+            originY: -offsetY,
+            scale: 1,
+            paddingX: 0,
+            paddingY: 0,
         };
 
         return (
             <div className='ontodia-embedded-layer' ref={this.onLayerInit}>
                 <Paper view={view}
-                    width={paperWidth}
-                    height={paperHeight}
-                    originX={-offsetX}
-                    originY={-offsetY}
-                    scale={1}
-                    paddingX={0}
-                    paddingY={0}
+                    paperTransform={paperTransform}
                     onPointerDown={this.onPaperPointerDown}
                     group={element.id}>
                 </Paper>

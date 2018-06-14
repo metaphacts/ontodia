@@ -12,7 +12,7 @@ import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
-import { Paper } from './paper';
+import { Paper, PaperTransform } from './paper';
 
 export interface Props {
     view: DiagramView;
@@ -54,6 +54,7 @@ export interface PointerUpEvent extends PointerEvent {
 
 export interface PaperWidgetProps {
     paperArea?: PaperArea;
+    paperTransform?: PaperTransform;
 }
 
 export interface State {
@@ -151,31 +152,28 @@ export class PaperArea extends React.Component<Props, State> {
     render() {
         const {view} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
+        const paperTransform: PaperTransform = {
+            width: paperWidth, height: paperHeight,
+            originX, originY, scale, paddingX, paddingY,
+        };
+        const widgetProps: PaperWidgetProps = {paperArea: this, paperTransform};
         return (
             <div className={CLASS_NAME} ref={this.onOuterMount}>
                 <div className={`${CLASS_NAME}__area`} ref={this.onAreaMount}
                     onMouseDown={this.onAreaPointerDown}
                     onWheel={this.onWheel}>
                     <Paper view={view}
-                        width={paperWidth}
-                        height={paperHeight}
-                        originX={originX}
-                        originY={originY}
-                        scale={scale}
-                        paddingX={paddingX}
-                        paddingY={paddingY}
+                        paperTransform={paperTransform}
                         onPointerDown={this.onPaperPointerDown}>
                         <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
                             {renderedWidgets.filter(w => !w.pinnedToScreen).map(widget => {
-                                const props: PaperWidgetProps = {paperArea: this};
-                                return React.cloneElement(widget.element, props);
+                                return React.cloneElement(widget.element, widgetProps);
                             })}
                         </div>
                     </Paper>
                 </div>
                 {renderedWidgets.filter(w => w.pinnedToScreen).map(widget => {
-                    const props: PaperWidgetProps = {paperArea: this};
-                    return React.cloneElement(widget.element, props);
+                    return React.cloneElement(widget.element, widgetProps);
                 })}
             </div>
         );
@@ -303,7 +301,7 @@ export class PaperArea extends React.Component<Props, State> {
         return {clientWidth, clientHeight, offsetWidth, offsetHeight};
     }
 
-    computeAdjustedBox(): Partial<State> {
+    private computeAdjustedBox(): Partial<State> {
         // bbox in paper coordinates
         const bbox = this.getContentFittingBox();
         const bboxLeft = bbox.x;
@@ -335,8 +333,8 @@ export class PaperArea extends React.Component<Props, State> {
         const {clientWidth, clientHeight} = this.area;
         const adjusted: Partial<State> = {
             ...this.computeAdjustedBox(),
-            paddingX: Math.ceil(clientWidth * 0.75),
-            paddingY: Math.ceil(clientHeight * 0.75),
+            paddingX: Math.ceil(clientWidth),
+            paddingY: Math.ceil(clientHeight),
         };
         const previous = this.state;
         const samePaperProps = (

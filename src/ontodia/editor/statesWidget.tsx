@@ -1,11 +1,14 @@
 import * as React from 'react';
 
-import { EditorController } from './editorController';
+import { boundsOf, computePolyline } from '../diagram/geometry';
+import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { boundsOf, computePolyline } from '../diagram/geometry';
+
 import { EventObserver } from '../viewUtils/events';
-import { AuthoringKind } from '../editor/authoringState';
+
+import { AuthoringKind } from './authoringState';
+import { EditorController } from './editorController';
 
 export interface Props extends PaperWidgetProps {
     editor: EditorController;
@@ -111,22 +114,12 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     render() {
-        const {paperArea} = this.props;
-
-        const {paperWidth, paperHeight, originX, originY} = paperArea.computeAdjustedBox();
-        const scale = paperArea.getScale();
-
-        const scaledWidth = paperWidth * scale;
-        const scaledHeight = paperHeight * scale;
-
+        const {paperTransform} = this.props;
         return (
-            <svg width={scaledWidth} height={scaledHeight}
-                 style={{position: 'absolute', top: 0, left: 0, pointerEvents: 'none'}}>
-                <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                    {this.renderLinksStates()}
-                    {this.renderElementsStates()}
-                </g>
-            </svg>
+            <TransformedSvgCanvas paperTransform={paperTransform} style={{pointerEvents: 'none'}}>
+                {this.renderLinksStates()}
+                {this.renderElementsStates()}
+            </TransformedSvgCanvas>
         );
     }
 }

@@ -574,8 +574,8 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
     render() {
         const {spinnerProps, paperArea} = this.props;
         const areaMetrics = paperArea.getAreaMetrics();
-        const paneWidth = areaMetrics.clientWidth * 0.8;
-        const paneHeight = areaMetrics.clientHeight * 0.8;
+        const paneWidth = areaMetrics.clientWidth;
+        const paneHeight = areaMetrics.clientHeight;
 
         const x = spinnerProps.statusText ? paneWidth / 3 : paneWidth / 2;
         const position = {x, y: paneHeight / 2};

@@ -3,17 +3,18 @@ import * as React from 'react';
 import { MetadataApi } from '../data/metadataApi';
 import { ElementModel, ElementTypeIri, LinkTypeIri } from '../data/model';
 
-import { EditorController } from './editorController';
-
-import { EventObserver } from '../viewUtils/events';
-
 import { DiagramView } from '../diagram/view';
 import { LinkLayer, LinkMarkers } from '../diagram/linkLayer';
 import { Element, Link } from '../diagram/elements';
 import { boundsOf, Vector } from '../diagram/geometry';
-import { Cancellation } from '../viewUtils/async';
-import { Spinner } from '../viewUtils/spinner';
+import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
+
+import { Cancellation } from '../viewUtils/async';
+import { EventObserver } from '../viewUtils/events';
+import { Spinner } from '../viewUtils/spinner';
+
+import { EditorController } from './editorController';
 
 export enum EditMode {
     establishNewLink,
@@ -315,26 +316,15 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     render() {
-        const {view, paperArea} = this.props;
+        const {view, paperTransform} = this.props;
         const {temporaryLink} = this.state;
-
         if (!temporaryLink) { return null; }
-
-        const {paperWidth, paperHeight, originX, originY} = paperArea.computeAdjustedBox();
-        const scale = paperArea.getScale();
-
-        const scaledWidth = paperWidth * scale;
-        const scaledHeight = paperHeight * scale;
-
         return (
-            <svg width={scaledWidth} height={scaledHeight}
-                style={{overflow: 'visible', position: 'absolute', top: 0, left: 0}}>
+            <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible'}}>
                 <LinkMarkers view={view} />
-                <g transform={`scale(${scale},${scale})translate(${originX},${originY})`}>
-                    {this.renderHighlight()}
-                    <LinkLayer view={view} links={[temporaryLink]}/>
-                </g>
-            </svg>
+                {this.renderHighlight()}
+                <LinkLayer view={view} links={[temporaryLink]}/>
+            </TransformedSvgCanvas>
         );
     }
 }
