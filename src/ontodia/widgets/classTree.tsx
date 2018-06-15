@@ -28,6 +28,7 @@ interface ClassTreeElement {
     a_attr?: {
         href: string;
         draggable: boolean;
+        title: string;
     };
     text?: string;
     type?: string;
@@ -146,7 +147,11 @@ function mapClass(
         label,
         count,
         children,
-        a_attr: {href: id, draggable: true},
+        a_attr: {
+            href: id,
+            draggable: true,
+            title: `${classLabel} ${view.formatIri(id)}`,
+        },
         text,
         type,
     };

@@ -11,6 +11,7 @@ import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
 
 import { Dictionary, ElementModel, LocalizedString, ElementIri, ElementTypeIri, LinkTypeIri } from '../data/model';
+import { isEncodedBlank } from '../data/sparql/blankNodes';
 import { hashFnv32a, uri2name } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
@@ -210,6 +211,13 @@ export class DiagramView {
             color = {h: hue, c: 40, l: 75};
         }
         return {icon, color};
+    }
+
+    formatIri(iri: string): string {
+        if (isEncodedBlank(iri)) {
+            return '(blank node)';
+        }
+        return `<${iri}>`;
     }
 
     public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {

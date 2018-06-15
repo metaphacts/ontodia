@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Component } from 'react';
 
+import { isEncodedBlank } from '../../data/sparql/blankNodes';
+
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
 
@@ -50,7 +52,6 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
 
     private renderIri() {
         const {iri} = this.props;
-
         return (
             <div>
                 <div className={`${CLASS_NAME}__iri`}>
@@ -58,7 +59,9 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         IRI:
                     </div>
                     <div className={`${CLASS_NAME}__iri-value`}>
-                        <a href={iri} title={iri}>{iri}</a>
+                        {isEncodedBlank(iri)
+                            ? <span>(blank node)</span>
+                            : <a href={iri} title={iri}>{iri}</a>}
                     </div>
                 </div>
                 <hr className={`${CLASS_NAME}__hr`} />

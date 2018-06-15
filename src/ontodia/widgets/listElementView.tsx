@@ -24,9 +24,10 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
         const disabledClass = disabled ? `${CLASS_NAME}--disabled` : '';
         const className = `${CLASS_NAME} ${disabledClass} ${otherProps.className || ''}`;
         const localizedText = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
+        const classesString = view.getElementTypeString(model);
 
         return <li {...otherProps} className={className} draggable={!disabled}
-            title={`Classes: ${view.getElementTypeString(model)}`}
+            title={`${localizedText} ${view.formatIri(model.id)}\nClasses: ${classesString}`}
             style={{background: hcl(h, c, l)}}>
             <div className={`${CLASS_NAME}__label`} style={{background: frontColor}}>
                 {localizedText}
