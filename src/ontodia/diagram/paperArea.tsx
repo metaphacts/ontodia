@@ -633,9 +633,13 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private makeToSVGOptions(): ToSVGOptions {
+        const svg = this.area.querySelector('.ontodia-paper__canvas');
+        if (!svg) {
+            throw new Error('Cannot find SVG canvas to export');
+        }
         return {
             model: this.props.view.model,
-            paper: this.area.querySelector('svg'),
+            paper: svg as SVGSVGElement,
             contentBox: this.getContentFittingBox(),
             getOverlayedElement: id => this.area.querySelector(`[data-element-id='${id}']`) as HTMLElement,
             preserveDimensions: true,
