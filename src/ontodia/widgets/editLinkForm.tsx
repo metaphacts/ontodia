@@ -37,6 +37,8 @@ export class EditLinkForm extends React.Component<Props, State> {
         };
     }
 
+    private updateAll = () => this.forceUpdate();
+
     componentDidMount() {
         const {view, metadataApi, link} = this.props;
 
@@ -58,11 +60,9 @@ export class EditLinkForm extends React.Component<Props, State> {
     }
 
     private listenToLinkLabels(fatLinkTypes: {[id: string]: FatLinkType}) {
-        Object.keys(fatLinkTypes).forEach(linkType => {
-            this.listener.listen(fatLinkTypes[linkType].events, 'changeLabel', ({source}) =>
-                this.setState(prevState => ({fatLinkTypes: {...prevState.fatLinkTypes, [source.id]: source}}))
-            );
-        });
+        Object.keys(fatLinkTypes).forEach(linkType =>
+            this.listener.listen(fatLinkTypes[linkType].events, 'changeLabel', this.updateAll)
+        );
     }
 
     private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
