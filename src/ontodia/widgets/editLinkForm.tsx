@@ -2,10 +2,11 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { LinkModel, LinkTypeIri } from '../data/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
-import { Link } from '../diagram/elements';
+import { FatLinkType, Link } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
-import { EditorController } from '../editor/editorController';
+import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 
 const CLASS_NAME = 'ontodia-edit-form';
@@ -20,10 +21,11 @@ export interface Props {
 
 export interface State {
     linkModel?: LinkModel;
-    linkTypes?: LinkTypeIri[];
+    fatLinkTypes?: {[id: string]: FatLinkType};
 }
 
 export class EditLinkForm extends React.Component<Props, State> {
+    private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();
 
     constructor(props: Props) {
@@ -31,7 +33,7 @@ export class EditLinkForm extends React.Component<Props, State> {
 
         this.state = {
             linkModel: props.link.data,
-            linkTypes: [],
+            fatLinkTypes: {},
         };
     }
 
@@ -42,13 +44,25 @@ export class EditLinkForm extends React.Component<Props, State> {
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
             metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
-                this.setState({linkTypes});
+                const fatLinkTypes: {[id: string]: FatLinkType} = {};
+                linkTypes.forEach(linkTypeIri => fatLinkTypes[linkTypeIri] = view.model.createLinkType(linkTypeIri));
+                this.setState({fatLinkTypes});
+                this.listenToLinkLabels(fatLinkTypes);
             });
         }
     }
 
     componentWillUnmount() {
+        this.listener.stopListening();
         this.cancellation.abort();
+    }
+
+    private listenToLinkLabels(fatLinkTypes: {[id: string]: FatLinkType}) {
+        Object.keys(fatLinkTypes).forEach(linkType => {
+            this.listener.listen(fatLinkTypes[linkType].events, 'changeLabel', ({source}) =>
+                this.setState(prevState => ({fatLinkTypes: {...prevState.fatLinkTypes, [source.id]: source}}))
+            );
+        });
     }
 
     private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
@@ -59,7 +73,8 @@ export class EditLinkForm extends React.Component<Props, State> {
     }
 
     renderType() {
-        const {linkModel, linkTypes} = this.state;
+        const {view} = this.props;
+        const {linkModel, fatLinkTypes} = this.state;
 
         return (
             <label>
@@ -67,8 +82,9 @@ export class EditLinkForm extends React.Component<Props, State> {
                 <select className='ontodia-form-control' value={linkModel.linkTypeId} onChange={this.onChangeType}>
                     <option value='' disabled={true}>Select link type</option>
                     {
-                        linkTypes.map(linkType => {
-                            const label = this.props.view.getLinkLabel(linkType).text;
+                        Object.keys(fatLinkTypes).map(linkType => {
+                            const fatLinkType = fatLinkTypes[linkType];
+                            const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
                             return <option key={linkType} value={linkType}>{label}</option>;
                         })
                     }
