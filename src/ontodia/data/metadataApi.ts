@@ -3,14 +3,14 @@ import { CancellationToken } from '../viewUtils/async';
 
 export interface MetadataApi {
     /**
-     * Can user create links from this element?
+     * Can user create element and link from this element?
      */
-    canLink(source: ElementModel, ct: CancellationToken): Promise<boolean>;
+    canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     /**
      * Can we create link between two elements? Maybe it's unnesesary.
      */
-    canDrop(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
+    canDropOnElement(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     /**
      * Links of which types can we create between elements?

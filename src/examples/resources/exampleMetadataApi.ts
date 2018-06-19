@@ -23,19 +23,16 @@ function hasType(model: ElementModel, type: ElementTypeIri) {
 // }
 
 export class ExampleMetadataApi implements MetadataApi {
-    canLink(source: ElementModel, ct: CancellationToken): Promise<boolean> {
-        return Promise.resolve(
-            hasType(source, schema.class) ||
-            hasType(source, schema.objectProperty)
-        );
+    canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean> {
+        return new Promise<boolean>(resolve => {
+            this.typesOfElementsDraggedFrom(source, ct).then(elementTypes => resolve(elementTypes.length > 0));
+        });
     }
 
-    async canDrop(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
+    async canDropOnElement(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
         // await delay(1000);
-        return Promise.resolve(
-            hasType(source, schema.class) && hasType(target, schema.class) ||
-            hasType(source, schema.objectProperty) && hasType(target, schema.class) ||
-            hasType(source, schema.objectProperty) && hasType(target, schema.objectProperty)
+        return new Promise<boolean>(resolve =>
+            this.possibleLinkTypes(source, target, ct).then(linkTypes => resolve(linkTypes.length > 0))
         );
     }
 

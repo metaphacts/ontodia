@@ -32,10 +32,9 @@ export interface Props extends PaperWidgetProps {
 }
 
 export interface State {
-    temporaryLink?: Link;
-    temporaryElement?: Element;
     targetElement?: Element;
-    canDrop?: boolean;
+    canDropOnCanvas?: boolean;
+    canDropOnElement?: boolean;
 }
 
 const ELEMENT_TYPE = '' as ElementTypeIri;
@@ -45,16 +44,14 @@ export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();
 
+    private temporaryLink: Link;
+    private temporaryElement: Element;
     private oldLink: Link;
 
     constructor(props: Props) {
         super(props);
-        this.state = {canDrop: true};
-    }
 
-    componentDidMount() {
-        const {mode, target, point} = this.props;
-
+        const {mode, target, point} = props;
         if (mode === EditMode.establishNewLink) {
             this.beginCreatingLink({sourceId: target.id, point});
         } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
@@ -63,6 +60,11 @@ export class EditLayer extends React.Component<Props, State> {
             throw new Error('Unknown edit mode');
         }
 
+        this.state = {};
+    }
+
+    componentDidMount() {
+        this.canDropOnCanvas();
         document.addEventListener('mousemove', this.onMouseMove);
         document.addEventListener('mouseup', this.onMouseUp);
     }
@@ -85,7 +87,8 @@ export class EditLayer extends React.Component<Props, State> {
             targetId: temporaryElement.id,
         }));
 
-        this.setState({temporaryLink, temporaryElement});
+        this.temporaryElement = temporaryElement;
+        this.temporaryLink = temporaryLink;
     }
 
     private beginMovingLink(params: { link: Link; point: Vector }) {
@@ -111,7 +114,8 @@ export class EditLayer extends React.Component<Props, State> {
             throw new Error('Unknown edit mode');
         }
 
-        this.setState({temporaryLink, temporaryElement});
+        this.temporaryElement = temporaryElement;
+        this.temporaryLink = temporaryLink;
     }
 
     private createTemporaryElement(point: Vector) {
@@ -122,78 +126,86 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private onMouseMove = (e: MouseEvent) => {
-        const {temporaryElement, targetElement} = this.state;
-
-        if (!temporaryElement) { return; }
+        const {targetElement} = this.state;
 
         e.preventDefault();
         e.stopPropagation();
 
         const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
-        this.state.temporaryElement.setPosition(point);
+        this.temporaryElement.setPosition(point);
 
         const newTargetElement = this.findElementFormPoint(point);
 
         if (newTargetElement && (!targetElement || newTargetElement.iri !== targetElement.iri)) {
-            this.canDrop(newTargetElement);
-            this.setState({targetElement: newTargetElement});
-        } else if (!newTargetElement) {
-            this.setState({targetElement: undefined, canDrop: true});
+            this.canDropOnElement(newTargetElement);
         }
+        this.setState({targetElement: newTargetElement});
     }
 
-    private canDrop(targetElement?: Element) {
+    private canDropOnCanvas() {
         const {mode, editor, metadataApi} = this.props;
 
-        if (!metadataApi) {
-            this.setState({canDrop: false});
+        if (!metadataApi || mode !== EditMode.establishNewLink) {
+            this.setState({canDropOnCanvas: false});
             return;
         }
 
-        const {temporaryLink} = this.state;
-        this.setState({canDrop: undefined});
+        this.setState({canDropOnCanvas: undefined});
+
+        const source = editor.model.getElement(this.temporaryLink.sourceId).data;
+        metadataApi.canDropOnCanvas(source, this.cancellation.signal).then(canDropOnCanvas => {
+            if (!this.cancellation.signal.aborted) {
+                this.setState({canDropOnCanvas});
+            }
+        });
+    }
+
+    private canDropOnElement(targetElement: Element) {
+        const {mode, editor, metadataApi} = this.props;
+
+        if (!metadataApi) {
+            this.setState({canDropOnElement: false});
+            return;
+        }
+
+        this.setState({canDropOnElement: undefined});
 
         let source: ElementModel;
         let target: ElementModel;
 
         if (mode === EditMode.establishNewLink || mode === EditMode.moveLinkTarget) {
-            source = editor.model.getElement(temporaryLink.sourceId).data;
+            source = editor.model.getElement(this.temporaryLink.sourceId).data;
             target = targetElement.data;
         } else if (mode === EditMode.moveLinkSource) {
             source = targetElement.data;
-            target = editor.model.getElement(temporaryLink.targetId).data;
+            target = editor.model.getElement(this.temporaryLink.targetId).data;
         }
 
-        const canDropPromise = metadataApi.canDrop(source, target, this.cancellation.signal);
-
-        if (mode === EditMode.establishNewLink) {
-            canDropPromise.then(canDrop => this.setState({canDrop}));
-        } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
-            const linkTypesPromise = metadataApi.possibleLinkTypes(source, target, this.cancellation.signal);
-            Promise.all([canDropPromise, linkTypesPromise]).then(([canDrop, linkTypes]) => {
-                this.setState({canDrop: canDrop && linkTypes.indexOf(temporaryLink.typeId) !== -1});
-            });
-        }
+        metadataApi.canDropOnElement(source, target, this.cancellation.signal).then(canDropOnElement => {
+            if (!this.cancellation.signal.aborted) {
+                this.setState({canDropOnElement});
+            }
+        });
     }
 
     private onMouseUp = (e: MouseEvent) => {
-        if (!this.state.temporaryElement) { return; }
-
         const {editor, mode} = this.props;
-        const {temporaryLink, targetElement, canDrop} = this.state;
+        const {targetElement, canDropOnElement, canDropOnCanvas} = this.state;
 
-        editor.model.removeElement(this.state.temporaryElement.id);
+        editor.model.removeElement(this.temporaryElement.id);
 
         if (targetElement || (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget)) {
-            const link = this.endChangingLink({link: temporaryLink, targetElement, canDrop});
+            const link = this.endChangingLink({link: this.temporaryLink, targetElement, canDrop: canDropOnElement});
             if (link) {
                 editor.setSelection([link]);
                 editor.showEditLinkForm(link);
             }
-        } else {
+        } else if (canDropOnCanvas) {
             const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
             this.createNewEntity(point).then(element => {
-                const link = this.endChangingLink({link: temporaryLink, targetElement: element, canDrop});
+                const link = this.endChangingLink({
+                    link: this.temporaryLink, targetElement: element, canDrop: canDropOnCanvas,
+                });
                 if (link) {
                     this.listener.listenOnce(element.events, 'changeData', () => {
                         editor.setSelection([link]);
@@ -202,11 +214,6 @@ export class EditLayer extends React.Component<Props, State> {
                 }
             });
         }
-
-        this.oldLink = undefined;
-        this.setState({
-            temporaryLink: undefined, temporaryElement: undefined, targetElement: undefined, canDrop: undefined,
-        });
 
         editor.finishEditing();
     }
@@ -258,7 +265,7 @@ export class EditLayer extends React.Component<Props, State> {
             return Promise.resolve(undefined);
         }
 
-        const source = editor.model.getElement(this.state.temporaryLink.sourceId).data;
+        const source = editor.model.getElement(this.temporaryLink.sourceId).data;
 
         return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
             if (!elementTypes.length) { return undefined; }
@@ -293,13 +300,13 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private renderHighlight() {
-        const {targetElement, canDrop} = this.state;
+        const {targetElement, canDropOnElement} = this.state;
 
         if (!targetElement) { return null; }
 
         const {x, y, width, height} = boundsOf(targetElement);
 
-        if (canDrop === undefined) {
+        if (canDropOnElement === undefined) {
             return (
                 <g transform={`translate(${x},${y})`}>
                     <rect width={width} height={height} fill={'white'} fillOpacity={0.5} />
@@ -308,22 +315,50 @@ export class EditLayer extends React.Component<Props, State> {
             );
         }
 
-        const stroke = canDrop ? '#5cb85c' : '#c9302c';
+        const stroke = canDropOnElement ? '#5cb85c' : '#c9302c';
 
         return (
             <rect x={x} y={y} width={width} height={height} fill={'transparent'} stroke={stroke} strokeWidth={3} />
         );
     }
 
+    private renderCanDropIndicator() {
+        const {targetElement, canDropOnCanvas} = this.state;
+
+        if (targetElement) { return null; }
+
+        const {x, y} = this.temporaryElement.position;
+
+        let indicator: React.ReactElement<any>;
+        if (canDropOnCanvas === undefined) {
+            indicator = <Spinner size={1.2} position={{x: 0.5, y: -0.5}}/>;
+        } else if (canDropOnCanvas) {
+            indicator = <path d='M0.5,0 L0.5,-1 M0,-0.5 L1,-0.5' strokeWidth={0.2} stroke='#5cb85c'/>;
+        } else {
+            indicator = (
+                <g>
+                    <circle cx='0.5' cy='-0.5' r='0.5' fill='none' strokeWidth={0.2} stroke='#c9302c'/>
+                    <path d='M0.5,0 L0.5,-1' strokeWidth={0.2} stroke='#c9302c' transform='rotate(-45 0.5 -0.5)'/>
+                </g>
+            );
+        }
+
+        return (
+            <g transform={`translate(${x} ${y})scale(40)`}>
+                <rect x={-0.5} y={-0.5} width={1} height={1} fill='rgba(0, 0, 0, 0.1)' rx={0.25} ry={0.25} />
+                <g transform={`translate(${0.5}, -${0.5})scale(${0.25})`}>{indicator}</g>
+            </g>
+        );
+    }
+
     render() {
         const {view, paperTransform} = this.props;
-        const {temporaryLink} = this.state;
-        if (!temporaryLink) { return null; }
         return (
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible'}}>
                 <LinkMarkers view={view} />
                 {this.renderHighlight()}
-                <LinkLayer view={view} links={[temporaryLink]}/>
+                {this.renderCanDropIndicator()}
+                <LinkLayer view={view} links={[this.temporaryLink]}/>
             </TransformedSvgCanvas>
         );
     }
