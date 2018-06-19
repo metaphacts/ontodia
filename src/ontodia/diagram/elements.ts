@@ -258,8 +258,6 @@ export class Link {
 
     readonly id: string;
 
-    private _typeIndex: number;
-
     private _typeId: LinkTypeIri;
     private _sourceId: string;
     private _targetId: string;
@@ -284,9 +282,6 @@ export class Link {
         this._data = data;
         this._vertices = vertices;
     }
-
-    get typeIndex(): number { return this._typeIndex; }
-    set typeIndex(value: number) { this._typeIndex = value; }
 
     get typeId() { return this._typeId; }
     get sourceId(): string { return this._sourceId; }

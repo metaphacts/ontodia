@@ -93,15 +93,11 @@ export class Graph {
         if (!linkType) {
             throw new Error(`Link type '${link.typeId}' not found.`);
         }
-        this.registerLink(link, linkType);
+        this.registerLink(link);
     }
 
-    private registerLink(link: DiagramLink, linkType: FatLinkType) {
+    private registerLink(link: DiagramLink) {
         const {typeId} = link;
-
-        if (link.typeIndex === undefined) {
-            link.typeIndex = linkType.index;
-        }
 
         this.sourceOf(link).links.push(link);
         if (link.sourceId !== link.targetId) {
