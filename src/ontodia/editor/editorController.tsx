@@ -38,7 +38,7 @@ export interface PropertyEditorOptions {
     elementData: ElementModel;
     onSubmit: (newData: ElementModel) => void;
 }
-export type RenderPropertyEditor = (options: PropertyEditorOptions) => void;
+export type RenderPropertyEditor = (options: PropertyEditorOptions) => React.ReactElement<any>;
 
 export enum DialogTypes {
     ConnectionsMenu,
@@ -257,9 +257,16 @@ export class EditorController {
                     onAddToFilter={() => selectedElement.addToFilter()}
                     onEdit={() => {
                         if (this.options.renderPropertyEditor) {
-                            this.options.renderPropertyEditor({
+                            const customPropertyEditor = this.options.renderPropertyEditor({
                                 elementData: selectedElement.data,
-                                onSubmit: newData => this.changeEntityData(newData.id, newData),
+                                onSubmit: newData => {
+                                    this.hideDialog();
+                                    this.changeEntityData(newData.id, newData);
+                                },
+                            });
+                            this.showDialog({
+                                target: selectedElement, dialogType: DialogTypes.EditEntityForm,
+                                content: customPropertyEditor,
                             });
                         } else {
                             this.showEditEntityForm(selectedElement);
