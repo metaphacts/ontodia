@@ -5,12 +5,32 @@ import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
+import { EventObserver } from '../../viewUtils/events';
+import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
+import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
+import { ElementIri } from '../../data/model';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
 const CLASS_NAME = 'ontodia-standard-template';
 
 export class StandardTemplate extends Component<TemplateProps, {}> {
+    static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
+    context: ElementContextWrapper & PaperAreaContextWrapper;
+
+    private readonly listener = new EventObserver();
+
+    private updateAll = () => this.forceUpdate();
+
+    componentDidMount() {
+        const {editor} = this.context.ontodiaElement;
+        this.listener.listen(editor.events, 'changeValidation', this.updateAll);
+    }
+
+    componentWillUnmount() {
+        this.listener.stopListening();
+    }
+
     private renderProperties() {
         const {propsAsList} = this.props;
 
@@ -101,6 +121,20 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return getProperty(props, FOAF_NAME) || label;
     }
 
+    private renderInvalidIcon() {
+        const {editor} = this.context.ontodiaElement;
+        const {iri} = this.props;
+
+        if (!editor.validation.has(iri as ElementIri)) { return null; }
+
+        const errors = editor.validation.get(iri as ElementIri);
+        const title = errors.map(error => `${error.relationIri}: ${error.message}`).join('\n');
+
+        return (
+            <div className={`${CLASS_NAME}__invalid-icon`} title={title} />
+        );
+    }
+
     render() {
         const {color, types, isExpanded} = this.props;
         const label = this.getLabel();
@@ -117,6 +151,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
                     </div>
+                    {this.renderInvalidIcon()}
                 </div>
                 {isExpanded ? (
                     <div className={`${CLASS_NAME}__dropdown`} style={{borderColor: color}}>

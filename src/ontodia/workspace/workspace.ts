@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as saveAs from 'file-saverjs';
 
 import { MetadataApi } from '../data/metadataApi';
+import { ValidationApi } from '../data/validationApi';
 
 import { RestoreGeometry } from '../diagram/commands';
 import { Element, Link, FatLinkType } from '../diagram/elements';
@@ -71,6 +72,7 @@ export interface WorkspaceProps {
     history?: CommandHistory;
     toolbar?: ReactElement<any>;
     metadataApi?: MetadataApi;
+    validationApi?: ValidationApi;
     viewOptions?: DiagramViewOptions;
     renderPropertyEditor?: RenderPropertyEditor;
 }
@@ -116,7 +118,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
     constructor(props: WorkspaceProps) {
         super(props);
 
-        const {hideHalo, language, history, metadataApi, viewOptions = {}, renderPropertyEditor} = this.props;
+        const {
+            hideHalo, language, history, metadataApi, validationApi, viewOptions = {}, renderPropertyEditor,
+        } = this.props;
         const {
             templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
             disableDefaultHalo, suggestProperties, groupBy,
@@ -137,6 +141,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             model: this.model,
             view: this.view,
             metadataApi,
+            validationApi,
             disableHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
             renderPropertyEditor,

@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
+import { ValidationApi, ElementError } from '../data/validationApi';
 import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink } from '../data/model';
 import { generate64BitID } from '../data/utils';
 
@@ -34,6 +35,8 @@ import {
 } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
+import { Cancellation } from '../viewUtils/async';
+
 export interface PropertyEditorOptions {
     elementData: ElementModel;
     onSubmit: (newData: ElementModel) => void;
@@ -55,6 +58,7 @@ export interface EditorProps extends EditorOptions {
 
 export interface EditorOptions {
     metadataApi?: MetadataApi;
+    validationApi?: ValidationApi;
     disableHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
     renderPropertyEditor?: RenderPropertyEditor;
@@ -63,6 +67,7 @@ export interface EditorOptions {
 export interface EditorEvents {
     changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectionItem>>;
     changeAuthoringState: PropertyChange<EditorController, AuthoringState>;
+    changeValidation: PropertyChange<EditorController, Map<ElementIri, ElementError[]>>;
     toggleDialog: { isOpened: boolean };
 }
 
@@ -78,8 +83,12 @@ export class EditorController {
     private _authoringState = AuthoringState.empty;
     private _selection: ReadonlyArray<SelectionItem> = [];
 
+    private _validation = new Map<ElementIri, ElementError[]>();
+
     private dialogType: DialogTypes;
     private dialogTarget: SelectionItem;
+
+    private readonly cancellation = new Cancellation();
 
     constructor(props: EditorProps) {
         const {model, view, ...options} = props;
@@ -89,6 +98,38 @@ export class EditorController {
 
         this.listener.listen(this.events, 'changeAuthoringState', e => {
             console.log('authoringState', this.authoringState);
+            this.validate();
+        });
+    }
+
+    get validation() { return this._validation; }
+    setValidation(elementIri: ElementIri, errors: ElementError[]) {
+        const previous = this._validation;
+        if (errors.length) {
+            this._validation.set(elementIri, errors);
+        } else {
+            this._validation.delete(elementIri);
+        }
+        this.source.trigger('changeValidation', {source: this, previous});
+    }
+
+    private validate() {
+        const {validationApi} = this.options;
+
+        if (!validationApi) { return; }
+
+        this.model.elements.forEach(element => {
+            const state = this.authoringState.index.elements.get(element.iri);
+            const changedLinks = this.model.links.filter(link =>
+                link.data.sourceId === element.iri && this.authoringState.index.links.get(link.data)
+            );
+            if (state || changedLinks.length) {
+                validationApi.validateElement(
+                    element.data, this.authoringState, this.cancellation.signal
+                ).then(errors => this.setValidation(element.iri, errors));
+            } else if (this.validation.has(element.iri)) {
+                this.setValidation(element.iri, []);
+            }
         });
     }
 

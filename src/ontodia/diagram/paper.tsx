@@ -7,9 +7,11 @@ import { Vector } from './geometry';
 import { LinkLayer, LinkMarkers } from './linkLayer';
 import { DiagramModel } from './model';
 import { DiagramView } from './view';
+import { EditorController } from '../editor/editorController';
 
 export interface PaperProps {
     view: DiagramView;
+    editor: EditorController;
     paperTransform: PaperTransform;
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
     group?: string;
@@ -19,7 +21,7 @@ const CLASS_NAME = 'ontodia-paper';
 
 export class Paper extends Component<PaperProps, {}> {
     render() {
-        const {view, group, paperTransform} = this.props;
+        const {view, editor, group, paperTransform} = this.props;
         const {width, height, originX, originY, scale, paddingX, paddingY} = paperTransform;
 
         const scaledWidth = width * scale;
@@ -48,7 +50,7 @@ export class Paper extends Component<PaperProps, {}> {
                     <LinkMarkers view={view} />
                     <LinkLayer view={view} links={view.model.links} group={group} />
                 </TransformedSvgCanvas>
-                <ElementLayer view={view} group={group} scale={scale} style={htmlTransformStyle} />
+                <ElementLayer view={view} editor={editor} group={group} scale={scale} style={htmlTransformStyle} />
                 {this.props.children}
             </div>
         );

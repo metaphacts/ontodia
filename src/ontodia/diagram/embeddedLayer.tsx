@@ -190,7 +190,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
     }
 
     render() {
-        const {view, element, scale} = this.context.ontodiaElement;
+        const {view, editor, element, scale} = this.context.ontodiaElement;
         const {paperWidth, paperHeight, offsetX, offsetY} = this.state;
 
         const paperTransform: PaperTransform = {
@@ -206,6 +206,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
         return (
             <div className='ontodia-embedded-layer' ref={this.onLayerInit}>
                 <Paper view={view}
+                    editor={editor}
                     paperTransform={paperTransform}
                     onPointerDown={this.onPaperPointerDown}
                     group={element.id}>

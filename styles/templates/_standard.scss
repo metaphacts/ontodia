@@ -6,13 +6,14 @@
   &__main {
     border-radius: 10px;
     border: 1px solid;
+    position: relative;
   }
 
   &__body {
     margin-left: 13px;
     border-radius: 3px 10px 10px 3px;
     border-left: 1px solid;
-    padding: 3px 12px 3px 0;
+    padding: 3px 27px 3px 0;
     background: #fafaf9;
     display: flex;
     align-items: center;
@@ -146,5 +147,14 @@
   &__dropdown-content {
     width: 100%;
     padding: 9px;
+  }
+
+  &__invalid-icon {
+    background: url("../images/font-awesome/exclamation-triangle.svg");
+    height: 15px;
+    width: 17px;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
   }
 }

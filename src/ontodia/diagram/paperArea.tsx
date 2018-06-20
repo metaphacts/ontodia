@@ -13,9 +13,11 @@ import { Batch } from './history';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
+import { EditorController } from '../editor/editorController';
 
 export interface Props {
     view: DiagramView;
+    editor: EditorController;
     zoomOptions?: ZoomOptions;
     panningRequireModifiers?: boolean;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
@@ -150,7 +152,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     render() {
-        const {view} = this.props;
+        const {view, editor} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
         const paperTransform: PaperTransform = {
             width: paperWidth, height: paperHeight,
@@ -163,6 +165,7 @@ export class PaperArea extends React.Component<Props, State> {
                     onMouseDown={this.onAreaPointerDown}
                     onWheel={this.onWheel}>
                     <Paper view={view}
+                        editor={editor}
                         paperTransform={paperTransform}
                         onPointerDown={this.onPaperPointerDown}>
                         <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>

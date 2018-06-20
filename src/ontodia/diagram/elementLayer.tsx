@@ -13,9 +13,11 @@ import { setElementExpanded } from './commands';
 import { Element } from './elements';
 import { formatLocalizedLabel } from './model';
 import { DiagramView, RenderingLayer } from './view';
+import { EditorController } from '../editor/editorController';
 
 export interface Props {
     view: DiagramView;
+    editor: EditorController;
     group?: string;
     scale: number;
     style: React.CSSProperties;
@@ -36,7 +38,7 @@ export class ElementLayer extends React.Component<Props, {}> {
     private layer: HTMLDivElement;
 
     render() {
-        const {view, group, scale, style} = this.props;
+        const {view, editor, group, scale, style} = this.props;
         const models = view.model.elements.filter(model => model.group === group);
 
         return <div className='ontodia-element-layer'
@@ -45,6 +47,7 @@ export class ElementLayer extends React.Component<Props, {}> {
             {models.map(model => <OverlayedElement key={model.id}
                 model={model}
                 view={view}
+                editor={editor}
                 scale={scale}
                 onResize={this.updateElementSize}
                 onRender={this.updateElementSize} />)}
@@ -105,6 +108,7 @@ export class ElementLayer extends React.Component<Props, {}> {
 interface OverlayedElementProps {
     model: Element;
     view: DiagramView;
+    editor: EditorController;
     scale: number;
     onResize: (model: Element, node: HTMLDivElement) => void;
     onRender: (model: Element, node: HTMLDivElement) => void;
@@ -121,6 +125,7 @@ export const ElementContextTypes: { [K in keyof ElementContextWrapper]: any } = 
 
 export interface ElementContext {
     view: DiagramView;
+    editor: EditorController;
     element: Element;
     scale: number;
 }
@@ -159,6 +164,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     getChildContext(): ElementContextWrapper {
         const ontodiaElement: ElementContext = {
             view: this.props.view,
+            editor: this.props.editor,
             element: this.props.model,
             scale: this.props.scale,
         };
