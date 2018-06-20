@@ -50,8 +50,11 @@ export class EditLayer extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
+        this.state = {};
+    }
 
-        const {mode, target, point} = props;
+    componentDidMount() {
+        const {mode, target, point} = this.props;
         if (mode === EditMode.establishNewLink) {
             this.beginCreatingLink({sourceId: target.id, point});
         } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
@@ -59,11 +62,7 @@ export class EditLayer extends React.Component<Props, State> {
         } else {
             throw new Error('Unknown edit mode');
         }
-
-        this.state = {};
-    }
-
-    componentDidMount() {
+        this.forceUpdate();
         this.canDropOnCanvas();
         document.addEventListener('mousemove', this.onMouseMove);
         document.addEventListener('mouseup', this.onMouseUp);
@@ -353,6 +352,9 @@ export class EditLayer extends React.Component<Props, State> {
 
     render() {
         const {view, paperTransform} = this.props;
+
+        if (!this.temporaryLink) { return null; }
+
         return (
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible'}}>
                 <LinkMarkers view={view} />
