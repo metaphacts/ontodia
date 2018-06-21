@@ -144,7 +144,16 @@ export class EditorController {
 
         this.listener.listen(this.model.events, 'createLoadedLink', e => {
             const event = this.authoringState.index.links.get(e.model);
-            if (event && event.type === AuthoringKind.DeleteLink) {
+            const isDeleted = event && event.type === AuthoringKind.DeleteLink;
+
+            let isChanged = false;
+            this.authoringState.index.links.forEach(evt => {
+                if (evt.type === AuthoringKind.ChangeLink && evt.before && sameLink(evt.before, e.model)) {
+                    isChanged = true;
+                }
+            });
+
+            if (isDeleted || isChanged) {
                 e.cancel();
             }
         });
