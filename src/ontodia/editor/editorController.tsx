@@ -131,6 +131,17 @@ export class EditorController {
                 this.setValidation(element.iri, []);
             }
         });
+
+        this.model.links.forEach(({data, sourceId, targetId}) => {
+            const event = this.authoringState.index.links.get(data);
+            const source = this.model.getElement(sourceId);
+            const target = this.model.getElement(targetId);
+            if (event && event.type === AuthoringKind.ChangeLink) {
+                validationApi.validateLink(data, source.data, target.data, this.cancellation.signal).then(errors => {
+                    /* nothing */
+                });
+            }
+        });
     }
 
     _initializePaperComponents(paperArea: PaperArea) {
