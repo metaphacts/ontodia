@@ -195,7 +195,14 @@ export namespace AuthoringState {
             }
             return true;
         });
-        if (existingLink) {
+        if (AuthoringState.isMovedLink(state, target)) {
+            const event = state.index.links.get(target) as LinkChange;
+            events.push({
+                type: AuthoringKind.DeleteLink,
+                model: event.before,
+                items: model.links.filter(link => sameLink(link.data, event.before)),
+            });
+        } else if (existingLink) {
             events.push({
                 type: AuthoringKind.DeleteLink,
                 model: target,
@@ -238,6 +245,11 @@ export namespace AuthoringState {
     export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
         const event = state.index.links.get(linkModel);
         return event && event.type === AuthoringKind.ChangeLink && !event.before;
+    }
+
+    export function isMovedLink(state: AuthoringState, linkModel: LinkModel): boolean {
+        const event = state.index.links.get(linkModel);
+        return event && event.type === AuthoringKind.ChangeLink && event.before && !sameLink(event.before, event.after);
     }
 }
 

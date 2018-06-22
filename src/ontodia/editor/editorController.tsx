@@ -598,6 +598,12 @@ export class EditorController {
             for (const link of links) {
                 this.model.removeLink(link.id);
             }
+        } else if (AuthoringState.isMovedLink(state, model)) {
+            const event = state.index.links.get(model) as LinkChange;
+            this.model.createLinks(event.before);
+            for (const link of links) {
+                this.model.removeLink(link.id);
+            }
         }
         batch.store();
     }
