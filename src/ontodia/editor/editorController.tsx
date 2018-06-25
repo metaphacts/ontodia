@@ -98,7 +98,7 @@ export class EditorController {
 
         this.listener.listen(this.events, 'changeAuthoringState', e => {
             console.log('authoringState', this.authoringState);
-            this.validate();
+            this.validate(e.previous);
         });
     }
 
@@ -113,34 +113,44 @@ export class EditorController {
         this.source.trigger('changeValidation', {source: this, previous});
     }
 
-    private validate() {
+    private validate(previousState: AuthoringState) {
         const {validationApi} = this.options;
 
         if (!validationApi) { return; }
 
-        this.model.elements.forEach(element => {
-            const state = this.authoringState.index.elements.get(element.iri);
-            const changedLinks = this.model.links.filter(link =>
-                link.data.sourceId === element.iri && this.authoringState.index.links.get(link.data)
-            );
-            if (state || changedLinks.length) {
-                validationApi.validateElement(
-                    element.data, this.authoringState, this.cancellation.signal
-                ).then(errors => this.setValidation(element.iri, errors));
-            } else if (this.validation.has(element.iri)) {
-                this.setValidation(element.iri, []);
+        const changedLinks = this.model.links.filter(({data}) => {
+            const currentEvent = this.authoringState.index.links.get(data);
+            const previousEvent = previousState.index.links.get(data);
+            if (!currentEvent && !previousEvent) { return false; }
+
+            if (currentEvent && previousEvent) {
+                let previousLink: LinkModel;
+                if (previousEvent.type === AuthoringKind.ChangeLink) {
+                    previousLink = previousEvent.after;
+                } else if (previousEvent.type === AuthoringKind.DeleteLink) {
+                    previousLink = previousEvent.model;
+                }
+                return !sameLink(data, previousLink);
             }
+            return true;
         });
 
-        this.model.links.forEach(({data, sourceId, targetId}) => {
-            const event = this.authoringState.index.links.get(data);
+        const changedElements = this.model.elements.filter(element => {
+            const elementChangedLinks = changedLinks.filter(link => link.data.sourceId === element.iri);
+            return elementChangedLinks.length > 0;
+        });
+
+        changedElements.forEach(element =>
+            validationApi.validateElement(element.data, this.authoringState, this.cancellation.signal).then(errors =>
+                this.setValidation(element.iri, errors)
+            )
+        );
+        changedLinks.forEach(({data, sourceId, targetId}) => {
             const source = this.model.getElement(sourceId);
             const target = this.model.getElement(targetId);
-            if (event && event.type === AuthoringKind.ChangeLink) {
-                validationApi.validateLink(data, source.data, target.data, this.cancellation.signal).then(errors => {
-                    /* nothing */
-                });
-            }
+            validationApi.validateLink(data, source.data, target.data, this.cancellation.signal).then(errors => {
+                /* nothing */
+            });
         });
     }
 
