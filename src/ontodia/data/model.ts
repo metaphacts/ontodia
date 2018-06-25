@@ -59,3 +59,51 @@ export function sameLink(left: LinkModel, right: LinkModel) {
         left.targetId === right.targetId
     );
 }
+
+export function sameElement(left: ElementModel, right: ElementModel): boolean {
+    return (
+        left.id === right.id &&
+        isArraysEqual(left.types, right.types) &&
+        isLocalizedStringsEqual(left.label.values, right.label.values) &&
+        left.image === right.image &&
+        isPropertiesEqual(left.properties, right.properties) &&
+        (
+            (!left.sources && !right.sources) ||
+            (left.sources && right.sources && isArraysEqual(left.sources, right.sources))
+        )
+    );
+}
+
+function isArraysEqual(left: string[], right: string[]): boolean {
+    if (left.length !== right.length) { return false; }
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] !== left[i]) { return false; }
+    }
+    return true;
+}
+
+function isLocalizedStringsEqual(left: LocalizedString[], right: LocalizedString[]): boolean {
+    if (left.length !== right.length) { return false; }
+    for (let i = 0; i < left.length; i++) {
+        const leftValue = left[i];
+        const rightValue = right[i];
+        if (leftValue.text !== rightValue.text || leftValue.lang !== rightValue.lang) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isPropertiesEqual(left: { [id: string]: Property }, right: { [id: string]: Property }) {
+    if (Object.keys(left).length !== Object.keys(right).length) { return false; }
+    for (const key in left.properties) {
+        if (left.properties.hasOwnProperty(key)) {
+            const leftProperty = left[key];
+            const rightProperty = right[key];
+            if (!rightProperty || !isLocalizedStringsEqual(leftProperty.values, rightProperty.values)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}

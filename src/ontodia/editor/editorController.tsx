@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi, ElementError } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink, sameElement } from '../data/model';
 import { generate64BitID } from '../data/utils';
 
 import { setElementExpanded, setElementData, setLinkData } from '../diagram/commands';
@@ -137,7 +137,22 @@ export class EditorController {
 
         const changedElements = this.model.elements.filter(element => {
             const elementChangedLinks = changedLinks.filter(link => link.data.sourceId === element.iri);
-            return elementChangedLinks.length > 0;
+            if (elementChangedLinks.length) { return true; }
+
+            const currentEvent = this.authoringState.index.elements.get(element.iri);
+            const previousEvent = previousState.index.elements.get(element.iri);
+            if (!currentEvent && !previousEvent) { return false; }
+
+            if (currentEvent && previousEvent) {
+                let previousElement: ElementModel;
+                if (previousEvent.type === AuthoringKind.ChangeElement) {
+                    previousElement = previousEvent.after;
+                } else if (previousEvent.type === AuthoringKind.DeleteElement) {
+                    previousElement = previousEvent.model;
+                }
+                return !sameElement(element.data, previousElement);
+            }
+            return true;
         });
 
         changedElements.forEach(element =>
