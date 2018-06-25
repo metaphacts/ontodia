@@ -1,3 +1,5 @@
+import { hashFnv32a } from '../data/utils';
+
 export type Dictionary<T> = { [key: string]: T; };
 
 export interface LocalizedString {
@@ -58,6 +60,14 @@ export function sameLink(left: LinkModel, right: LinkModel) {
         left.sourceId === right.sourceId &&
         left.targetId === right.targetId
     );
+}
+
+export function hashLink(link: LinkModel): number {
+    const {linkTypeId, sourceId, targetId} = link;
+    let hash = hashFnv32a(linkTypeId);
+    hash = hash * 31 + hashFnv32a(sourceId);
+    hash = hash * 31 + hashFnv32a(targetId);
+    return hash;
 }
 
 export function sameElement(left: ElementModel, right: ElementModel): boolean {

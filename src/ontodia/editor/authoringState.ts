@@ -1,10 +1,11 @@
-import { ElementModel, LinkModel, ElementIri, sameLink } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, sameLink, hashLink } from '../data/model';
 import { hashFnv32a } from '../data/utils';
+import { ElementError, LinkError } from '../data/validationApi';
 
 import { Element, Link } from '../diagram/elements';
 import { DiagramModel } from '../diagram/model';
 
-import { HashMap, ReadonlyHashMap } from '../viewUtils/collections';
+import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
 
 export interface AuthoringState {
     readonly events: ReadonlyArray<AuthoringEvent>;
@@ -214,15 +215,7 @@ export namespace AuthoringState {
 
     function makeIndex(events: ReadonlyArray<AuthoringEvent>): AuthoringIndex {
         const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
-        const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(
-            ({linkTypeId, sourceId, targetId}) => {
-                let hash = hashFnv32a(linkTypeId);
-                hash = hash * 31 + hashFnv32a(sourceId);
-                hash = hash * 31 + hashFnv32a(targetId);
-                return hash;
-            },
-            sameLink,
-        );
+        const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(hashLink, sameLink);
         for (const e of events) {
             if (e.type === AuthoringKind.ChangeElement) {
                 elements.set(e.after.id, e);
@@ -250,6 +243,46 @@ export namespace AuthoringState {
     export function isMovedLink(state: AuthoringState, linkModel: LinkModel): boolean {
         const event = state.index.links.get(linkModel);
         return event && event.type === AuthoringKind.ChangeLink && event.before && !sameLink(event.before, event.after);
+    }
+}
+
+export interface ValidationState {
+   readonly elements: ReadonlyMap<ElementIri, ElementValidation>;
+   readonly links: ReadonlyHashMap<LinkModel, LinkValidation>;
+}
+
+export interface ElementValidation {
+    readonly loading: boolean;
+    readonly errors: ReadonlyArray<ElementError>;
+}
+
+export interface LinkValidation {
+    readonly loading: boolean;
+    readonly errors: ReadonlyArray<LinkError>;
+}
+
+export namespace ValidationState {
+    export const empty: ValidationState = createMutable();
+    export const emptyElement: ElementValidation = {loading: false, errors: []};
+    export const emptyLink: LinkValidation = {loading: false, errors: []};
+
+    export function createMutable() {
+        return {
+            elements: new Map<ElementIri, ElementValidation>(),
+            links: new HashMap<LinkModel, LinkValidation>(hashLink, sameLink),
+        };
+    }
+
+    export function setElementErrors(
+        state: ValidationState, target: ElementIri, errors: ReadonlyArray<ElementError>
+    ): ValidationState {
+        const elements = cloneMap(state.elements);
+        if (errors.length > 0) {
+            elements.set(target, {loading: false, errors});
+        } else {
+            elements.delete(target);
+        }
+        return {...state, elements};
     }
 }
 

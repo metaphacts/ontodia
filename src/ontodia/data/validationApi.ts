@@ -1,6 +1,6 @@
-import { CancellationToken } from '../viewUtils/async';
 import { ElementModel, LinkModel, LinkTypeIri, PropertyTypeIri } from './model';
 import { AuthoringState } from '../editor/authoringState';
+import { CancellationToken } from '../viewUtils/async';
 
 export interface ElementError {
     message: string;

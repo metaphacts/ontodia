@@ -30,12 +30,13 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, ElementChange, LinkChange, linkConnectedToElement,
-    isSourceOrTargetChanged,
+    AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
+    LinkValidation, linkConnectedToElement, isSourceOrTargetChanged,
 } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
 import { Cancellation } from '../viewUtils/async';
+import { HashMap } from '../viewUtils/collections';
 
 export interface PropertyEditorOptions {
     elementData: ElementModel;
@@ -67,7 +68,7 @@ export interface EditorOptions {
 export interface EditorEvents {
     changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectionItem>>;
     changeAuthoringState: PropertyChange<EditorController, AuthoringState>;
-    changeValidation: PropertyChange<EditorController, Map<ElementIri, ElementError[]>>;
+    changeValidationState: PropertyChange<EditorController, ValidationState>;
     toggleDialog: { isOpened: boolean };
 }
 
@@ -81,9 +82,8 @@ export class EditorController {
     private readonly options: EditorOptions;
 
     private _authoringState = AuthoringState.empty;
+    private _validationState = ValidationState.empty;
     private _selection: ReadonlyArray<SelectionItem> = [];
-
-    private _validation = new Map<ElementIri, ElementError[]>();
 
     private dialogType: DialogTypes;
     private dialogTarget: SelectionItem;
@@ -98,74 +98,17 @@ export class EditorController {
 
         this.listener.listen(this.events, 'changeAuthoringState', e => {
             console.log('authoringState', this.authoringState);
-            this.validate(e.previous);
+            this.validateChangedSince(e.previous);
         });
-    }
 
-    get validation() { return this._validation; }
-    setValidation(elementIri: ElementIri, errors: ElementError[]) {
-        const previous = this._validation;
-        if (errors.length) {
-            this._validation.set(elementIri, errors);
-        } else {
-            this._validation.delete(elementIri);
-        }
-        this.source.trigger('changeValidation', {source: this, previous});
-    }
-
-    private validate(previousState: AuthoringState) {
-        const {validationApi} = this.options;
-
-        if (!validationApi) { return; }
-
-        const changedLinks = this.model.links.filter(({data}) => {
-            const currentEvent = this.authoringState.index.links.get(data);
-            const previousEvent = previousState.index.links.get(data);
-            if (!currentEvent && !previousEvent) { return false; }
-
-            if (currentEvent && previousEvent) {
-                let previousLink: LinkModel;
-                if (previousEvent.type === AuthoringKind.ChangeLink) {
-                    previousLink = previousEvent.after;
-                } else if (previousEvent.type === AuthoringKind.DeleteLink) {
-                    previousLink = previousEvent.model;
+        this.listener.listen(this.events, 'changeValidationState', e => {
+            for (const element of this.model.elements) {
+                const previous = e.previous.elements.get(element.iri);
+                const current = this.validationState.elements.get(element.iri);
+                if (current !== previous) {
+                    element.redraw();
                 }
-                return !sameLink(data, previousLink);
             }
-            return true;
-        });
-
-        const changedElements = this.model.elements.filter(element => {
-            const elementChangedLinks = changedLinks.filter(link => link.data.sourceId === element.iri);
-            if (elementChangedLinks.length) { return true; }
-
-            const currentEvent = this.authoringState.index.elements.get(element.iri);
-            const previousEvent = previousState.index.elements.get(element.iri);
-            if (!currentEvent && !previousEvent) { return false; }
-
-            if (currentEvent && previousEvent) {
-                let previousElement: ElementModel;
-                if (previousEvent.type === AuthoringKind.ChangeElement) {
-                    previousElement = previousEvent.after;
-                } else if (previousEvent.type === AuthoringKind.DeleteElement) {
-                    previousElement = previousEvent.model;
-                }
-                return !sameElement(element.data, previousElement);
-            }
-            return true;
-        });
-
-        changedElements.forEach(element =>
-            validationApi.validateElement(element.data, this.authoringState, this.cancellation.signal).then(errors =>
-                this.setValidation(element.iri, errors)
-            )
-        );
-        changedLinks.forEach(({data, sourceId, targetId}) => {
-            const source = this.model.getElement(sourceId);
-            const target = this.model.getElement(targetId);
-            validationApi.validateLink(data, source.data, target.data, this.cancellation.signal).then(errors => {
-                /* nothing */
-            });
         });
     }
 
@@ -227,6 +170,14 @@ export class EditorController {
             this.source.trigger('changeAuthoringState', {source: this, previous});
             return this.updateAuthoringState(previous);
         });
+    }
+
+    get validationState() { return this._validationState; }
+    setValidationState(value: ValidationState) {
+        const previous = this._validationState;
+        if (value === previous) { return; }
+        this._validationState = value;
+        this.source.trigger('changeValidationState', {source: this, previous});
     }
 
     get selection() { return this._selection; }
@@ -660,6 +611,61 @@ export class EditorController {
 
     finishEditing() {
         this.view.setPaperWidget({key: 'editLayer', widget: undefined});
+    }
+
+    private validateChangedSince(previousAuthoring: AuthoringState) {
+        const {validationApi} = this.options;
+        if (!validationApi) { return; }
+
+        const previousValidation = this.validationState;
+        const currentAuthoring = this.authoringState;
+
+        const newState = ValidationState.createMutable();
+        const hasChangedLinks = new Set<ElementIri>();
+
+        for (const {data} of this.model.links) {
+            const current = currentAuthoring.index.links.get(data);
+            const previous = previousAuthoring.index.links.get(data);
+            const state = previousValidation.links.get(data);
+
+            if (current !== previous) {
+                hasChangedLinks.add(data.sourceId);
+                newState.links.set(data, {...ValidationState.emptyLink, ...state, loading: true});
+            } else if (state) {
+                newState.links.set(data, state);
+            }
+        }
+
+        for (const element of this.model.elements) {
+            if (newState.elements.has(element.iri)) { continue; }
+            const current = currentAuthoring.index.elements.get(element.iri);
+            const previous = previousAuthoring.index.elements.get(element.iri);
+            const state = previousValidation.elements.get(element.iri);
+
+            if (hasChangedLinks.has(element.iri) || current !== previous) {
+                const loadingState = {...ValidationState.emptyElement, ...state, loading: true};
+                newState.elements.set(element.iri, loadingState);
+
+                validationApi.validateElement(
+                    element.data,
+                    currentAuthoring,
+                    this.cancellation.signal
+                ).then(loadedErrors => {
+                    const stateAfterLoad = this.validationState.elements.get(element.iri);
+                    if (stateAfterLoad !== loadingState) { return; }
+                    const validation = ValidationState.setElementErrors(
+                        this.validationState,
+                        element.iri,
+                        loadedErrors,
+                    );
+                    this.setValidationState(validation);
+                });
+            } else if (state) {
+                newState.elements.set(element.iri, state);
+            }
+        }
+
+        this.setValidationState(newState);
     }
 }
 

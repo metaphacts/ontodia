@@ -1,14 +1,16 @@
 import * as React from 'react';
 import { Component } from 'react';
 
+import { ElementIri } from '../../data/model';
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
-import { EventObserver } from '../../viewUtils/events';
+
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
 import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
-import { ElementIri } from '../../data/model';
+import { EventObserver } from '../../viewUtils/events';
+import { Spinner } from '../../viewUtils/spinner';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
@@ -17,19 +19,6 @@ const CLASS_NAME = 'ontodia-standard-template';
 export class StandardTemplate extends Component<TemplateProps, {}> {
     static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
     context: ElementContextWrapper & PaperAreaContextWrapper;
-
-    private readonly listener = new EventObserver();
-
-    private updateAll = () => this.forceUpdate();
-
-    componentDidMount() {
-        const {editor} = this.context.ontodiaElement;
-        this.listener.listen(editor.events, 'changeValidation', this.updateAll);
-    }
-
-    componentWillUnmount() {
-        this.listener.stopListening();
-    }
 
     private renderProperties() {
         const {propsAsList} = this.props;
@@ -122,16 +111,23 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
     }
 
     private renderInvalidIcon() {
-        const {editor} = this.context.ontodiaElement;
-        const {iri} = this.props;
-
-        if (!editor.validation.has(iri as ElementIri)) { return null; }
-
-        const errors = editor.validation.get(iri as ElementIri);
-        const title = errors.map(error => `${error.relationIri}: ${error.message}`).join('\n');
-
+        const {editor, view} = this.context.ontodiaElement;
+        const iri = this.props.iri as ElementIri;
+        const validation = editor.validationState.elements.get(iri);
+        if (!validation) {
+            return null;
+        }
+        const title = validation.errors
+            .map(error => `${view.formatIri(error.relationIri)}: ${error.message}`)
+            .join('\n');
         return (
-            <div className={`${CLASS_NAME}__invalid-icon`} title={title} />
+            <div className={`${CLASS_NAME}__validation`} title={title}>
+                {validation.loading
+                    ? renderSpinnerInRect({width: 15, height: 17})
+                    : <div className={`${CLASS_NAME}__invalid-icon`} />}
+                {(!validation.loading && validation.errors.length > 0)
+                    ? validation.errors.length : undefined}
+            </div>
         );
     }
 
@@ -150,8 +146,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             </div>
                             <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
+                        {this.renderInvalidIcon()}
                     </div>
-                    {this.renderInvalidIcon()}
                 </div>
                 {isExpanded ? (
                     <div className={`${CLASS_NAME}__dropdown`} style={{borderColor: color}}>
@@ -165,4 +161,11 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
             </div>
         );
     }
+}
+
+function renderSpinnerInRect({width, height}: { width: number; height: number }) {
+    const size = Math.min(width, height);
+    return <svg width={width} height={height}>
+        <Spinner size={15} position={{x: width / 2, y: height / 2}} />
+    </svg>;
 }

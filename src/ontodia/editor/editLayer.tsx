@@ -259,7 +259,7 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private createNewEntity(point: { x: number; y: number }): Promise<Element | undefined> {
-        const {editor, metadataApi} = this.props;
+        const {editor, metadataApi, view} = this.props;
         if (!metadataApi) {
             return Promise.resolve(undefined);
         }
@@ -274,6 +274,7 @@ export class EditLayer extends React.Component<Props, State> {
             element.setPosition(point);
             batch.store();
 
+            view.performSyncUpdate();
             editor.setSelection([element]);
             editor.showEditEntityForm(element, elementTypes);
 
