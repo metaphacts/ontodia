@@ -18,6 +18,7 @@ import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils
 import { Dialog } from '../widgets/dialog';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { EditEntityForm } from '../widgets/editEntityForm';
+import { EditElementTypeForm } from '../widgets/editElementTypeForm';
 import { EditLinkForm } from '../widgets/editLinkForm';
 import { Halo } from '../widgets/halo';
 import { HaloLink } from '../widgets/haloLink';
@@ -292,23 +293,7 @@ export class EditorController {
                         this.renderDefaultHalo();
                     }}
                     onAddToFilter={() => selectedElement.addToFilter()}
-                    onEdit={() => {
-                        if (this.options.renderPropertyEditor) {
-                            const customPropertyEditor = this.options.renderPropertyEditor({
-                                elementData: selectedElement.data,
-                                onSubmit: newData => {
-                                    this.hideDialog();
-                                    this.changeEntityData(newData.id, newData);
-                                },
-                            });
-                            this.showDialog({
-                                target: selectedElement, dialogType: DialogTypes.EditEntityForm,
-                                content: customPropertyEditor,
-                            });
-                        } else {
-                            this.showEditEntityForm(selectedElement);
-                        }
-                    }}
+                    onEdit={() => this.showEditEntityForm(selectedElement)}
                     onDelete={() => this.deleteEntity(selectedElement.iri)}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selectedElement, mode: EditMode.establishNewLink, point})
@@ -347,10 +332,24 @@ export class EditorController {
         this.showDialog({target, dialogType, content});
     }
 
-    showEditEntityForm(target: Element, elementTypes?: ReadonlyArray<ElementTypeIri>) {
+    showEditEntityForm(target: Element) {
+        const {renderPropertyEditor} = this.options;
+        const dialogType = DialogTypes.EditEntityForm;
+        const onSubmit = (newData: ElementModel) => {
+            this.hideDialog();
+            this.changeEntityData(newData.id, newData);
+        };
+        const content = renderPropertyEditor ? renderPropertyEditor({elementData: target.data, onSubmit}) : (
+            <EditEntityForm view={this.view} entity={target.data} onApply={onSubmit}
+                onCancel={() => this.hideDialog()} />
+        );
+        this.showDialog({target, dialogType, content});
+    }
+
+    showEditElementTypeForm(target: Element, elementTypes: ReadonlyArray<ElementTypeIri>) {
         const dialogType = DialogTypes.EditEntityForm;
         const content = (
-            <EditEntityForm view={this.view}
+            <EditElementTypeForm view={this.view}
                 entity={target.data}
                 elementTypes={elementTypes}
                 onApply={(elementModel: ElementModel) => {

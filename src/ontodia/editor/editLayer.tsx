@@ -276,7 +276,7 @@ export class EditLayer extends React.Component<Props, State> {
 
             view.performSyncUpdate();
             editor.setSelection([element]);
-            editor.showEditEntityForm(element, elementTypes);
+            editor.showEditElementTypeForm(element, elementTypes);
 
             return element;
         });
