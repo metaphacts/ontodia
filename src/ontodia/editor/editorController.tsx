@@ -32,7 +32,7 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
-    LinkValidation, linkConnectedToElement, isSourceOrTargetChanged,
+    LinkValidation, linkConnectedToElement, isSourceOrTargetChanged, TemporaryState,
 } from './authoringState';
 import { EditLayer, EditMode } from './editLayer';
 
@@ -49,6 +49,7 @@ export enum DialogTypes {
     ConnectionsMenu,
     EditEntityForm,
     EditLinkForm,
+    EditEntityTypeForm,
 }
 
 export type SelectionItem = Element | Link;
@@ -70,6 +71,7 @@ export interface EditorEvents {
     changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectionItem>>;
     changeAuthoringState: PropertyChange<EditorController, AuthoringState>;
     changeValidationState: PropertyChange<EditorController, ValidationState>;
+    changeTemporaryState: PropertyChange<EditorController, TemporaryState>;
     toggleDialog: { isOpened: boolean };
 }
 
@@ -84,6 +86,7 @@ export class EditorController {
 
     private _authoringState = AuthoringState.empty;
     private _validationState = ValidationState.empty;
+    private _temporaryState = TemporaryState.empty;
     private _selection: ReadonlyArray<SelectionItem> = [];
 
     private dialogType: DialogTypes;
@@ -181,6 +184,14 @@ export class EditorController {
         this.source.trigger('changeValidationState', {source: this, previous});
     }
 
+    get temporaryState() { return this._temporaryState; }
+    setTemporaryState(value: TemporaryState) {
+        const previous = this._temporaryState;
+        if (value === previous) { return; }
+        this._temporaryState = value;
+        this.source.trigger('changeTemporaryState', {source: this, previous});
+    }
+
     get selection() { return this._selection; }
     setSelection(value: ReadonlyArray<SelectionItem>) {
         const previous = this._selection;
@@ -231,6 +242,7 @@ export class EditorController {
         } else if (!target && triggerAsClick) {
             this.setSelection([]);
             this.hideDialog();
+            this.resetTemporaryState();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
@@ -257,6 +269,7 @@ export class EditorController {
             const selected = this.selection.length === 1 ? this.selection[0] : undefined;
             if (this.dialogTarget && selected !== this.dialogTarget) {
                 this.hideDialog();
+                this.resetTemporaryState();
             }
             this.renderDefaultHalo();
         });
@@ -348,17 +361,49 @@ export class EditorController {
         this.showDialog({target, dialogType, content});
     }
 
-    showEditElementTypeForm(target: Element, elementTypes: ReadonlyArray<ElementTypeIri>) {
-        const dialogType = DialogTypes.EditEntityForm;
+    showEditElementTypeForm(params: {
+        link: Link;
+        source: Element;
+        target: Element;
+    }) {
+        const {link, source, target} = params;
+        const dialogType = DialogTypes.EditEntityTypeForm;
         const content = (
             <EditElementTypeForm view={this.view}
-                entity={target.data}
-                elementTypes={elementTypes}
-                onApply={(elementModel: ElementModel) => {
+                metadataApi={this.options.metadataApi}
+                link={link.data}
+                source={source.data}
+                target={target.data}
+                onApply={(elementData: ElementModel, linkData: LinkModel) => {
+                    if (this.temporaryState.elements.has(target.iri)) {
+                        target.setData(elementData);
+                        this.setTemporaryState(
+                            TemporaryState.deleteElement(this.temporaryState, target.data)
+                        );
+                        this.addNewEntity(target.data);
+                    } else {
+                        this.changeEntityData(target.iri, elementData);
+                    }
+                    if (this.temporaryState.links.has(link.data)) {
+                        link.setData(linkData);
+                        this.setTemporaryState(
+                            TemporaryState.deleteLink(this.temporaryState, link.data)
+                        );
+                        this.addNewLink(link.data);
+                    } else {
+                        this.changeLinkData(link.data, linkData);
+                    }
                     this.hideDialog();
-                    this.changeEntityData(target.iri, elementModel);
                 }}
-                onCancel={() => this.hideDialog()}/>
+                onCancel={() => {
+                    if (this.temporaryState.elements.has(target.iri)) {
+                        this.removeTemporaryElement(target);
+                    }
+                    if (this.temporaryState.links.has(link.data)) {
+                        this.removeTemporaryLink(link);
+                    }
+                    this.hideDialog();
+                }}/>
         );
         this.showDialog({target, dialogType, content});
     }
@@ -369,11 +414,25 @@ export class EditorController {
             <EditLinkForm view={this.view}
                 metadataApi={this.options.metadataApi}
                 link={target}
-                onApply={(newData: LinkModel) => {
+                onApply={(data: LinkModel) => {
+                    if (this.temporaryState.links.has(target.data)) {
+                        target.setData(data);
+                        this.setTemporaryState(
+                            TemporaryState.deleteLink(this.temporaryState, target.data)
+                        );
+                        this.addNewLink(target.data);
+                    } else {
+                        this.changeLinkData(target.data, data);
+                    }
                     this.hideDialog();
-                    this.changeLinkData(target.data, newData);
                 }}
-                onCancel={() => this.hideDialog()}/>
+                onCancel={() => {
+                    if (this.temporaryState.links.has(target.data)) {
+                        this.removeTemporaryLink(target);
+                    } else {
+                        this.hideDialog();
+                    }
+                }}/>
         );
         this.showDialog({target, dialogType, content});
     }
@@ -459,8 +518,7 @@ export class EditorController {
         });
     }
 
-    createNewEntity(classIri: ElementTypeIri): Element {
-        const batch = this.model.history.startBatch('Create new entity');
+    createEmptyElement(classIri: ElementTypeIri): Element {
         const elementModel = {
             // TODO: change IRI generation
             id: `http://ontodia.org/newEntity_${generate64BitID()}` as ElementIri,
@@ -468,7 +526,12 @@ export class EditorController {
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},
         };
-        const element = this.model.createElement(elementModel);
+        return this.model.createElement(elementModel);
+    }
+
+    createNewEntity(classIri: ElementTypeIri): Element {
+        const batch = this.model.history.startBatch('Create new entity');
+        const element = this.createEmptyElement(classIri);
         this.setAuthoringState(
             AuthoringState.addElement(this._authoringState, element.data)
         );
@@ -667,6 +730,67 @@ export class EditorController {
         }
 
         this.setValidationState(newState);
+    }
+
+    addNewEntity(element: ElementModel) {
+        const batch = this.model.history.startBatch('Create new entity');
+        this.setAuthoringState(
+            AuthoringState.addElement(this._authoringState, element)
+        );
+        batch.store();
+    }
+
+    addNewLink(link: LinkModel) {
+        const batch = this.model.history.startBatch('Create new link');
+        this.setAuthoringState(
+            AuthoringState.addLink(this._authoringState, link)
+        );
+        batch.store();
+    }
+
+    createTemporaryElement(classIri: ElementTypeIri): Element {
+        const element = this.createEmptyElement(classIri);
+        this.setTemporaryState(
+            TemporaryState.addElement(this.temporaryState, element.data)
+        );
+        return element;
+    }
+
+    createTemporaryLink(link: Link): Link {
+        this.model.createLinks(link.data);
+        this.setTemporaryState(
+            TemporaryState.addLink(this.temporaryState, link.data)
+        );
+        return this.model.links.find(({sourceId, targetId}) =>
+            sourceId === link.sourceId && targetId === link.targetId
+        );
+    }
+
+    private resetTemporaryState() {
+        this.model.elements.forEach(element => {
+            if (this.temporaryState.elements.has(element.iri)) {
+                this.removeTemporaryElement(element);
+            }
+        });
+        this.model.links.forEach(link => {
+            if (this.temporaryState.links.get(link.data)) {
+                this.removeTemporaryLink(link);
+            }
+        });
+    }
+
+    private removeTemporaryElement(element: Element) {
+        this.model.removeElement(element.id);
+        this.setTemporaryState(
+            TemporaryState.deleteElement(this.temporaryState, element.data)
+        );
+    }
+
+    private removeTemporaryLink(link: Link) {
+        this.model.removeLink(link.id);
+        this.setTemporaryState(
+            TemporaryState.deleteLink(this.temporaryState, link.data)
+        );
     }
 }
 

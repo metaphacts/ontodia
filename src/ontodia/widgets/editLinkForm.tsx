@@ -1,13 +1,12 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { LinkModel, LinkTypeIri } from '../data/model';
-import { formatLocalizedLabel } from '../diagram/model';
+import { LinkModel } from '../data/model';
 
-import { FatLinkType, Link } from '../diagram/elements';
+import { Link } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
-import { EventObserver } from '../viewUtils/events';
-import { Cancellation } from '../viewUtils/async';
+
+import { SelectLinkType } from './selectLinkType';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
@@ -21,84 +20,25 @@ export interface Props {
 
 export interface State {
     linkModel?: LinkModel;
-    fatLinkTypes?: {[id: string]: FatLinkType};
 }
 
 export class EditLinkForm extends React.Component<Props, State> {
-    private readonly listener = new EventObserver();
-    private readonly cancellation = new Cancellation();
-
     constructor(props: Props) {
         super(props);
-
-        this.state = {
-            linkModel: props.link.data,
-            fatLinkTypes: {},
-        };
-    }
-
-    private updateAll = () => this.forceUpdate();
-
-    componentDidMount() {
-        const {view, metadataApi, link} = this.props;
-
-        if (metadataApi) {
-            const source = view.model.getElement(link.sourceId);
-            const target = view.model.getElement(link.targetId);
-            metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
-                const fatLinkTypes: {[id: string]: FatLinkType} = {};
-                linkTypes.forEach(linkTypeIri => fatLinkTypes[linkTypeIri] = view.model.createLinkType(linkTypeIri));
-                this.setState({fatLinkTypes});
-                this.listenToLinkLabels(fatLinkTypes);
-            });
-        }
-    }
-
-    componentWillUnmount() {
-        this.listener.stopListening();
-        this.cancellation.abort();
-    }
-
-    private listenToLinkLabels(fatLinkTypes: {[id: string]: FatLinkType}) {
-        Object.keys(fatLinkTypes).forEach(linkType =>
-            this.listener.listen(fatLinkTypes[linkType].events, 'changeLabel', this.updateAll)
-        );
-    }
-
-    private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
-        const linkTypeId = e.currentTarget.value as LinkTypeIri;
-        this.setState((state): State => ({
-            linkModel: {...state.linkModel, linkTypeId},
-        }));
-    }
-
-    renderType() {
-        const {view} = this.props;
-        const {linkModel, fatLinkTypes} = this.state;
-
-        return (
-            <label>
-                Type
-                <select className='ontodia-form-control' value={linkModel.linkTypeId} onChange={this.onChangeType}>
-                    <option value='' disabled={true}>Select link type</option>
-                    {
-                        Object.keys(fatLinkTypes).map(linkType => {
-                            const fatLinkType = fatLinkTypes[linkType];
-                            const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
-                            return <option key={linkType} value={linkType}>{label}</option>;
-                        })
-                    }
-                </select>
-            </label>
-        );
+        this.state = {linkModel: props.link.data};
     }
 
     render() {
+        const {view, metadataApi, link} = this.props;
+        const {linkModel} = this.state;
+        const source = view.model.getElement(link.sourceId).data;
+        const target = view.model.getElement(link.targetId).data;
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__body`}>
                     <div className={`${CLASS_NAME}__form-row`}>
-                        {this.renderType()}
+                        <SelectLinkType view={view} metadataApi={metadataApi} link={linkModel} source={source}
+                            target={target} onChange={data => this.setState({linkModel: data})}/>
                     </div>
                 </div>
                 <div className={`${CLASS_NAME}__controls`}>

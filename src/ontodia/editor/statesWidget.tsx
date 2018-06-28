@@ -4,6 +4,7 @@ import { boundsOf, computePolyline } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
+import { Link } from '../diagram/elements';
 
 import { EventObserver } from '../viewUtils/events';
 
@@ -46,71 +47,79 @@ export class StatesWidget extends React.Component<Props, {}> {
         });
         this.listener.listen(this.props.editor.model.events, 'changeCells', this.updateAll);
         this.listener.listen(this.props.editor.events, 'changeAuthoringState', this.updateAll);
+        this.listener.listen(this.props.editor.events, 'changeTemporaryState', this.updateAll);
+    }
+
+    private calculateLinkPath(link: Link) {
+        const {editor, view} = this.props;
+
+        const source = editor.model.getElement(link.sourceId);
+        const target = editor.model.getElement(link.targetId);
+
+        const route = view.getRouting(link.id);
+        const verticesDefinedByUser = link.vertices || [];
+        const vertices = route ? route.vertices : verticesDefinedByUser;
+
+        const polyline = computePolyline(source, target, vertices);
+        return 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
     }
 
     private renderLinksStates() {
-        const {editor, view} = this.props;
-
-        const elements: React.ReactElement<SVGPathElement>[] = [];
-
-        editor.model.links.forEach(link => {
+        const {editor} = this.props;
+        return editor.model.links.map(link => {
+            if (editor.temporaryState.links.has(link.data)) {
+                const path = this.calculateLinkPath(link);
+                return (
+                    <path key={link.id} d={path} fill={'none'} stroke={'grey'} strokeWidth={5} strokeOpacity={0.5}
+                        strokeDasharray={'8 8'}/>
+                );
+            }
             const state = (
                 editor.authoringState.index.links.get(link.data) ||
                 editor.authoringState.index.elements.get(link.data.sourceId) ||
                 editor.authoringState.index.elements.get(link.data.targetId)
             );
             if (state) {
-                const source = editor.model.getElement(link.sourceId);
-                const target = editor.model.getElement(link.targetId);
-
-                const route = view.getRouting(link.id);
-                const verticesDefinedByUser = link.vertices || [];
-                const vertices = route ? route.vertices : verticesDefinedByUser;
-
-                const polyline = computePolyline(source, target, vertices);
-                const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
-
+                const path = this.calculateLinkPath(link);
                 let color: string;
                 if (state.type === AuthoringKind.ChangeLink) {
                     color = state.before ? 'blue' : 'green';
                 } else if (state.type === AuthoringKind.DeleteLink || state.type === AuthoringKind.DeleteElement) {
                     color = 'red';
                 }
-
-                elements.push(
+                return (
                     <path key={link.id} d={path} fill={'none'} stroke={color} strokeWidth={5} strokeOpacity={0.5} />
                 );
             }
+            return null;
         });
-
-        return elements;
     }
 
     private renderElementsStates() {
         const {editor} = this.props;
-
-        const elements: React.ReactElement<SVGRectElement>[] = [];
-
-        editor.model.elements.forEach(element => {
+        return editor.model.elements.map(element => {
+            const {x, y, width, height} = boundsOf(element);
+            if (editor.temporaryState.elements.has(element.iri)) {
+                return (
+                    <rect key={element.id} x={x} y={y} width={width} height={height} fill={'none'} stroke={'grey'}
+                        strokeWidth={3} strokeOpacity={0.7} strokeDasharray={'8 8'} />
+                );
+            }
             const state = editor.authoringState.index.elements.get(element.iri);
             if (state) {
-                const {x, y, width, height} = boundsOf(element);
-
                 let color: string;
                 if (state.type === AuthoringKind.ChangeElement) {
                     color = state.before ? 'blue' : 'green';
                 } else if (state.type === AuthoringKind.DeleteElement) {
                     color = 'red';
                 }
-
-                elements.push(
+                return (
                     <rect key={element.id} x={x} y={y} width={width} height={height} fill={'none'} stroke={color}
                         strokeWidth={3} strokeOpacity={0.7} />
                 );
             }
+            return null;
         });
-
-        return elements;
     }
 
     render() {

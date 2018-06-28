@@ -246,6 +246,41 @@ export namespace AuthoringState {
     }
 }
 
+export interface TemporaryState {
+    readonly elements: ReadonlyMap<ElementIri, ElementModel>;
+    readonly links: ReadonlyHashMap<LinkModel, LinkModel>;
+}
+
+export namespace TemporaryState {
+    export const empty: TemporaryState = {
+        elements: new Map<ElementIri, ElementModel>(),
+        links: new HashMap<LinkModel, LinkModel>(hashLink, sameLink),
+    };
+
+    export function addElement(state: TemporaryState, element: ElementModel) {
+        const elements = cloneMap(state.elements);
+        elements.set(element.id, element);
+        return {...state, elements};
+    }
+
+    export function deleteElement(state: TemporaryState, element: ElementModel) {
+        const elements = cloneMap(state.elements);
+        elements.delete(element.id);
+        return {...state, elements};
+    }
+
+    export function addLink(state: TemporaryState, link: LinkModel) {
+        const links = state.links.clone();
+        links.set(link, link);
+        return {...state, links};
+    }
+    export function deleteLink(state: TemporaryState, link: LinkModel) {
+        const links = state.links.clone();
+        links.delete(link);
+        return {...state, links};
+    }
+}
+
 export interface ValidationState {
    readonly elements: ReadonlyMap<ElementIri, ElementValidation>;
    readonly links: ReadonlyHashMap<LinkModel, LinkValidation>;

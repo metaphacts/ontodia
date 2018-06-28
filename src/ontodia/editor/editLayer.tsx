@@ -194,30 +194,34 @@ export class EditLayer extends React.Component<Props, State> {
         editor.model.removeElement(this.temporaryElement.id);
 
         if (targetElement || (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget)) {
-            const link = this.endChangingLink({link: this.temporaryLink, targetElement, canDrop: canDropOnElement});
-            if (link) {
-                editor.setSelection([link]);
-                editor.showEditLinkForm(link);
-            }
+            this.endChangingLink({link: this.temporaryLink, targetElement, canDrop: canDropOnElement}).then(link => {
+                if (link) {
+                    editor.setSelection([link]);
+                    editor.showEditLinkForm(link);
+                }
+            });
         } else if (canDropOnCanvas) {
             const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
-            this.createNewEntity(point).then(element => {
-                const link = this.endChangingLink({
-                    link: this.temporaryLink, targetElement: element, canDrop: canDropOnCanvas,
+            const source = editor.model.getElement(this.temporaryLink.sourceId);
+            this.createNewElement(source.data).then(target => {
+                target.setPosition(point);
+                this.endChangingLink({
+                    link: this.temporaryLink, targetElement: target, canDrop: canDropOnCanvas,
+                }).then(link => {
+                    editor.setSelection([target]);
+                    editor.showEditElementTypeForm({link, source, target});
                 });
-                if (link) {
-                    this.listener.listenOnce(element.events, 'changeData', () => {
-                        editor.setSelection([link]);
-                        editor.showEditLinkForm(link);
-                    });
-                }
             });
         }
 
         editor.finishEditing();
     }
 
-    private endChangingLink(params: { link: Link; targetElement?: Element; canDrop: boolean }): Link | undefined {
+    private endChangingLink(params: {
+        link: Link;
+        targetElement?: Element;
+        canDrop: boolean;
+    }): Promise<Link | undefined> {
         const {editor, mode} = this.props;
         const {link, targetElement, canDrop} = params;
 
@@ -231,54 +235,57 @@ export class EditLayer extends React.Component<Props, State> {
         if (mode === EditMode.establishNewLink) {
             const sourceElement = editor.model.getElement(link.sourceId);
             if (canDrop && targetElement) {
-                const typeId = LINK_TYPE;
-                return editor.createNewLink(new Link({
-                    typeId,
-                    sourceId: sourceElement.id,
-                    targetId: targetElement.id,
-                    data: {
-                        linkTypeId: typeId,
-                        sourceId: sourceElement.iri,
-                        targetId: targetElement.iri,
-                    },
-                }));
+                return this.createNewLink(sourceElement, targetElement);
             }
         } else if (mode === EditMode.moveLinkSource) {
             if (canDrop && targetElement) {
-                return editor.moveLinkSource({link, newSource: targetElement});
+                return Promise.resolve(editor.moveLinkSource({link, newSource: targetElement}));
             }
         } else if (mode === EditMode.moveLinkTarget) {
             if (canDrop && targetElement) {
-                return editor.moveLinkTarget({link, newTarget: targetElement});
+                return Promise.resolve(editor.moveLinkTarget({link, newTarget: targetElement}));
             }
         } else {
             throw new Error('Unknown edit mode');
         }
 
-        return originalLink;
+        return Promise.resolve(originalLink);
     }
 
-    private createNewEntity(point: { x: number; y: number }): Promise<Element | undefined> {
-        const {editor, metadataApi, view} = this.props;
+    private createNewElement(source: ElementModel): Promise<Element | undefined> {
+        const {editor, metadataApi} = this.props;
         if (!metadataApi) {
             return Promise.resolve(undefined);
         }
-
-        const source = editor.model.getElement(this.temporaryLink.sourceId).data;
-
         return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
-            if (!elementTypes.length) { return undefined; }
+            if (elementTypes.length === 1) {
+                return editor.createNewEntity(elementTypes[0]);
+            }
+            return editor.createTemporaryElement(ELEMENT_TYPE);
+        });
+    }
 
-            const batch = editor.model.history.startBatch('Create new entity');
-            const element = editor.createNewEntity(ELEMENT_TYPE);
-            element.setPosition(point);
-            batch.store();
-
-            view.performSyncUpdate();
-            editor.setSelection([element]);
-            editor.showEditElementTypeForm(element, elementTypes);
-
-            return element;
+    private createNewLink(source: Element, target: Element): Promise<Link | undefined> {
+        const {editor, metadataApi} = this.props;
+        if (!metadataApi) {
+            return Promise.resolve(undefined);
+        }
+        return metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
+            const typeId = linkTypes.length === 1 ? linkTypes[0] : LINK_TYPE;
+            const link = new Link({
+                typeId,
+                sourceId: source.id,
+                targetId: target.id,
+                data: {
+                    linkTypeId: typeId,
+                    sourceId: source.iri,
+                    targetId: target.iri,
+                },
+            });
+            if (linkTypes.length === 1) {
+                return editor.createNewLink(link);
+            }
+            return editor.createTemporaryLink(link);
         });
     }
 
