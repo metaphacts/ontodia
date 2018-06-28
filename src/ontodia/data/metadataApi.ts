@@ -1,4 +1,4 @@
-import { ElementModel, LinkType, ElementTypeIri, LinkTypeIri, PropertyTypeIri } from './model';
+import { ElementModel, LinkType, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkModel } from './model';
 import { CancellationToken } from '../viewUtils/async';
 
 export interface MetadataApi {
@@ -26,4 +26,10 @@ export interface MetadataApi {
      * List properties for type meant to be edited in-place.
      */
     propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]>;
+
+    canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
+
+    canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean>;
+
+    canDeleteLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 }

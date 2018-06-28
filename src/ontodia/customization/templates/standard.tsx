@@ -10,7 +10,7 @@ import { getProperty } from './utils';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
 import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
 import { EventObserver } from '../../viewUtils/events';
-import { Spinner } from '../../viewUtils/spinner';
+import { renderSpinnerInRect } from '../../viewUtils/spinner';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
@@ -161,11 +161,4 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
             </div>
         );
     }
-}
-
-function renderSpinnerInRect({width, height}: { width: number; height: number }) {
-    const size = Math.min(width, height);
-    return <svg width={width} height={height}>
-        <Spinner size={15} position={{x: width / 2, y: height / 2}} />
-    </svg>;
 }

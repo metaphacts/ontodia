@@ -276,6 +276,7 @@ export class EditorController {
         if (selectedElement instanceof Element) {
             halo = (
                 <Halo editor={this}
+                    metadataApi={this.options.metadataApi}
                     target={selectedElement}
                     onRemove={() => this.removeSelectedElements()}
                     onExpand={() => {
@@ -303,6 +304,7 @@ export class EditorController {
         } else if (selectedElement instanceof Link) {
             halo = (
                 <HaloLink view={this.view}
+                    metadataApi={this.options.metadataApi}
                     target={selectedElement}
                     onEdit={() => this.showEditLinkForm(selectedElement)}
                     onRemove={() => this.deleteLink(selectedElement.data)}

@@ -29,3 +29,10 @@ export class Spinner extends React.Component<Props, {}> {
         </g>;
     }
 }
+
+export function renderSpinnerInRect({width, height}: { width: number; height: number }) {
+    const size = Math.min(width, height);
+    return <svg width={width} height={height}>
+        <Spinner size={size} position={{x: width / 2, y: height / 2}} />
+    </svg>;
+}

@@ -8,10 +8,14 @@
 
   @mixin halo-button {
     position: absolute;
+    background-color: transparent;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    border: 0 none;
     cursor: pointer;
+    outline: none;
+    padding: 0;
     pointer-events: auto;
     width: $buttonWidth;
     height: $buttonHeight;
@@ -20,6 +24,11 @@
     transition: opacity 0.3s;
     &:hover {
       opacity: 1;
+    }
+
+    &[disabled] {
+      cursor: not-allowed;
+      opacity: 0.2;
     }
   }
 
@@ -80,6 +89,15 @@
     top: -($buttonHeight + $buttonMargin);
     left: 50%;
     margin-left: -($buttonWidth / 2);
+  }
+
+  &__delete-spinner {
+    position: absolute;
+    top: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
+    width: $buttonWidth;
+    height: $buttonHeight;
   }
 
   &__establish-connection {

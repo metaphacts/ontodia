@@ -4,7 +4,10 @@ import { DiagramView } from '../diagram/view';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { Element, Link } from '../diagram/elements';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
+import { Cancellation } from '../viewUtils/async';
+import { renderSpinnerInRect } from '../viewUtils/spinner';
 import { computePolyline, computePolylineLength, getPointAlongPolyline, Vector } from '../diagram/geometry';
+import { MetadataApi } from '../data/metadataApi';
 
 const CLASS_NAME = 'ontodia-halo-link';
 const BUTTON_SIZE = 20;
@@ -12,6 +15,7 @@ const BUTTON_MARGIN = 5;
 
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
+    metadataApi?: MetadataApi;
     target: Link;
     onEdit: () => void;
     onRemove: () => void;
@@ -19,14 +23,25 @@ export interface Props extends PaperWidgetProps {
     onTargetMove: (point: { x: number; y: number }) => void;
 }
 
-export class HaloLink extends React.Component<Props, {}> {
+export interface State {
+    canDelete?: boolean;
+}
+
+export class HaloLink extends React.Component<Props, State> {
     private unsubscribeFromTarget: Unsubscribe | undefined = undefined;
     private readonly handler = new EventObserver();
+    private readonly cancellation = new Cancellation();
+
+    constructor(props: Props) {
+        super(props);
+        this.state = {};
+    }
 
     private updateAll = () => this.forceUpdate();
 
     componentDidMount() {
         this.listenToTarget(this.props.target);
+        this.canDelete(this.props.target);
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -35,8 +50,31 @@ export class HaloLink extends React.Component<Props, {}> {
         }
     }
 
+    componentDidUpdate(prevProps: Props) {
+        if (prevProps.target !== this.props.target) {
+            this.canDelete(this.props.target);
+        }
+    }
+
     componentWillUnmount() {
         this.listenToTarget(undefined);
+        this.cancellation.abort();
+    }
+
+    private canDelete(link: Link) {
+        const {metadataApi, view} = this.props;
+        if (!metadataApi) {
+            this.setState({canDelete: false});
+        } else {
+            this.setState({canDelete: undefined});
+            const source = view.model.getElement(link.sourceId);
+            const target = view.model.getElement(link.targetId);
+            metadataApi.canDeleteLink(link.data, source.data, target.data, this.cancellation.signal).then(canDelete => {
+                if (!this.cancellation.signal.aborted && this.props.target.id === link.id) {
+                    this.setState({canDelete});
+                }
+            });
+        }
     }
 
     private listenToTarget(link: Link | undefined) {
@@ -153,11 +191,16 @@ export class HaloLink extends React.Component<Props, {}> {
         );
     }
 
-    private renderRemoveButton(polyline: ReadonlyArray<Vector>) {
+    private renderDeleteButton(polyline: ReadonlyArray<Vector>) {
+        const {canDelete} = this.state;
         const style = this.getButtonPosition(polyline, 2);
+        if (canDelete === undefined) {
+            return <div style={{...style, position: 'absolute'}}>{renderSpinnerInRect({width: 20, height: 20})}</div>;
+        }
+        const title = canDelete ? 'Delete link' : 'Deletion is unavailable for the selected link';
         return (
-            <div className={`${CLASS_NAME}__button ${CLASS_NAME}__remove`} style={style}
-                onClick={this.props.onRemove} />
+            <button className={`${CLASS_NAME}__button ${CLASS_NAME}__delete`} style={style} title={title}
+                onClick={this.props.onRemove} disabled={!canDelete} />
         );
     }
 
@@ -171,7 +214,7 @@ export class HaloLink extends React.Component<Props, {}> {
                 {this.renderTargetButton(polyline)}
                 {this.renderSourceButton(polyline)}
                 {this.renderEditButton(polyline)}
-                {this.renderRemoveButton(polyline)}
+                {this.renderDeleteButton(polyline)}
             </div>
         );
     }

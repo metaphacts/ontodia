@@ -1,5 +1,6 @@
 import {
     ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, DiagramModel, CancellationToken,
+    LinkModel,
 } from '../../index';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
@@ -55,5 +56,19 @@ export class ExampleMetadataApi implements MetadataApi {
 
     propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {
         return Promise.resolve([]);
+    }
+
+    canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
+        return Promise.resolve(true);
+    }
+
+    canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean> {
+        return Promise.resolve(true);
+    }
+
+    canDeleteLink(
+        link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
+    ): Promise<boolean> {
+        return Promise.resolve(true);
     }
 }

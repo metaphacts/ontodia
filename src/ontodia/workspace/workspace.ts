@@ -165,7 +165,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     private getToolbar = () => {
-        const {languages, onSaveDiagram, onPersistAuthoringState, hidePanels, toolbar} = this.props;
+        const {languages, onSaveDiagram, onPersistAuthoringState, hidePanels, toolbar, metadataApi} = this.props;
         return cloneElement(
             toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
                 onZoomIn: this.zoomIn,
@@ -200,7 +200,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -208,6 +208,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             model: this.model,
             view: this.view,
             editor: this.editor,
+            metadataApi,
             leftPanelInitiallyOpen: this.props.leftPanelInitiallyOpen,
             rightPanelInitiallyOpen: this.props.rightPanelInitiallyOpen,
             searchCriteria: this.state.criteria,

@@ -15,11 +15,14 @@ import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
 
+import { MetadataApi } from '../data/metadataApi';
+
 export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
     model: AsyncModel;
     view: DiagramView;
     editor: EditorController;
+    metadataApi?: MetadataApi;
     hidePanels?: boolean;
     hideToolbar?: boolean;
     searchCriteria?: SearchCriteria;
@@ -111,6 +114,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                     <AccordionItem heading='Authoring Tools'>
                         <AuthoringTools view={this.props.view}
                             editor={this.props.editor}
+                            metadataApi={this.props.metadataApi}
                             selectedElementType={searchCriteria.elementType}
                         />
                     </AccordionItem>
