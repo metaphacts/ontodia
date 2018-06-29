@@ -32,6 +32,12 @@
     }
   }
 
+  @mixin spinner {
+    position: absolute;
+    width: $buttonWidth;
+    height: $buttonHeight;
+  }
+
   &__navigate {
     @include halo-button;
     top: 50%;
@@ -76,28 +82,37 @@
     right: -($buttonWidth + $buttonMargin);
   }
 
-  &__edit {
-    @include halo-button;
-    background-image: url("../images/font-awesome/edit.svg");
+  @mixin edit {
     bottom: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
   }
 
-  &__delete {
+  &__edit {
     @include halo-button;
-    background-image: url("../images/font-awesome/trash-alt.svg");
+    @include edit;
+    background-image: url("../images/font-awesome/edit.svg");
+  }
+
+  &__edit-spinner {
+    @include spinner;
+    @include edit;
+  }
+
+  @mixin delete {
     top: -($buttonHeight + $buttonMargin);
     left: 50%;
     margin-left: -($buttonWidth / 2);
   }
 
+  &__delete {
+    @include halo-button;
+    @include delete;
+    background-image: url("../images/font-awesome/trash-alt.svg");
+  }
+
   &__delete-spinner {
-    position: absolute;
-    top: -($buttonHeight + $buttonMargin);
-    left: 50%;
-    margin-left: -($buttonWidth / 2);
-    width: $buttonWidth;
-    height: $buttonHeight;
+    @include spinner;
+    @include delete;
   }
 
   &__establish-connection {

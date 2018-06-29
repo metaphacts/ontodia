@@ -27,6 +27,7 @@ export interface Props extends PaperWidgetProps {
 
 export interface State {
     canDelete?: boolean;
+    canEdit?: boolean;
 }
 
 export class HaloLink extends React.Component<Props, State> {
@@ -44,6 +45,7 @@ export class HaloLink extends React.Component<Props, State> {
     componentDidMount() {
         this.listenToTarget(this.props.target);
         this.canDelete(this.props.target);
+        this.canEdit(this.props.target);
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -55,6 +57,7 @@ export class HaloLink extends React.Component<Props, State> {
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
             this.canDelete(this.props.target);
+            this.canEdit(this.props.target);
         }
     }
 
@@ -74,6 +77,22 @@ export class HaloLink extends React.Component<Props, State> {
             metadataApi.canDeleteLink(link.data, source.data, target.data, this.cancellation.signal).then(canDelete => {
                 if (!this.cancellation.signal.aborted && this.props.target.id === link.id) {
                     this.setState({canDelete});
+                }
+            });
+        }
+    }
+
+    private canEdit(link: Link) {
+        const {metadataApi, view} = this.props;
+        if (!metadataApi) {
+            this.setState({canEdit: false});
+        } else {
+            this.setState({canEdit: undefined});
+            const source = view.model.getElement(link.sourceId);
+            const target = view.model.getElement(link.targetId);
+            metadataApi.canEditLink(link.data, source.data, target.data, this.cancellation.signal).then(canEdit => {
+                if (!this.cancellation.signal.aborted && this.props.target.id === link.id) {
+                    this.setState({canEdit});
                 }
             });
         }
@@ -187,9 +206,19 @@ export class HaloLink extends React.Component<Props, State> {
     }
 
     private renderEditButton(polyline: ReadonlyArray<Vector>) {
+        const {canEdit} = this.state;
         const style = this.getButtonPosition(polyline, 1);
+        if (canEdit === undefined) {
         return (
-            <div className={`${CLASS_NAME}__button ${CLASS_NAME}__edit`} style={style} onClick={this.props.onEdit} />
+                <div className={`${CLASS_NAME}__spinner`} style={style}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+        );
+    }
+        const title = canEdit ? 'Edit link' : 'Editing is unavailable for the selected link';
+        return (
+            <button className={`${CLASS_NAME}__button ${CLASS_NAME}__edit`} style={style} title={title}
+                onClick={this.props.onEdit} disabled={!canEdit} />
         );
     }
 
@@ -197,7 +226,11 @@ export class HaloLink extends React.Component<Props, State> {
         const {canDelete} = this.state;
         const style = this.getButtonPosition(polyline, 2);
         if (canDelete === undefined) {
-            return <div style={{...style, position: 'absolute'}}><HtmlSpinner width={20} height={20} /></div>;
+            return (
+                <div className={`${CLASS_NAME}__spinner`} style={style}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+            );
         }
         const title = canDelete ? 'Delete link' : 'Deletion is unavailable for the selected link';
         return (

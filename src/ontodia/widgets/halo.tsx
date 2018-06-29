@@ -28,6 +28,7 @@ export interface Props extends PaperWidgetProps {
 
 export interface State {
     canDelete?: boolean;
+    canEdit?: boolean;
 }
 
 const CLASS_NAME = 'ontodia-halo';
@@ -44,6 +45,7 @@ export class Halo extends React.Component<Props, State> {
     componentDidMount() {
         this.listenToElement(this.props.target);
         this.canDelete(this.props.target);
+        this.canEdit(this.props.target);
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -55,6 +57,7 @@ export class Halo extends React.Component<Props, State> {
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
             this.canDelete(this.props.target);
+            this.canEdit(this.props.target);
         }
     }
 
@@ -83,12 +86,27 @@ export class Halo extends React.Component<Props, State> {
         }
     }
 
+    private canEdit(target: DiagramElement) {
+        const {metadataApi} = this.props;
+        if (!metadataApi) {
+            this.setState({canEdit: false});
+        } else {
+            this.setState({canEdit: undefined});
+            metadataApi.canEditElement(target.data, this.cancellation.signal).then(canEdit => {
+                if (!this.cancellation.signal.aborted && this.props.target.iri === target.iri) {
+                    this.setState({canEdit});
+                }
+            });
+        }
+    }
+
     private onElementEvent: AnyListener<ElementEvents> = data => {
         if (data.changePosition || data.changeSize || data.changeExpanded) {
             this.forceUpdate();
         }
         if (data.changeData) {
             this.canDelete(this.props.target);
+            this.canEdit(this.props.target);
         }
     }
 
@@ -119,6 +137,23 @@ export class Halo extends React.Component<Props, State> {
         );
     }
 
+    private renderEditButton() {
+        const {onEdit} = this.props;
+        const {canEdit} = this.state;
+        if (!onEdit) { return null; }
+        if (canEdit === undefined) {
+            return (
+                <div className={`${CLASS_NAME}__edit-spinner`}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+            );
+        }
+        const title = canEdit ? 'Edit entity' : 'Editing is unavailable for the selected element';
+        return (
+            <button className={`${CLASS_NAME}__edit`} title={title} onClick={onEdit} disabled={!canEdit} />
+        );
+    }
+
     render() {
         if (!this.props.target) {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
@@ -126,7 +161,7 @@ export class Halo extends React.Component<Props, State> {
 
         const {
             paperArea, target, navigationMenuOpened, onRemove, onToggleNavigationMenu,
-            onAddToFilter, onExpand, onEdit,
+            onAddToFilter, onExpand,
         } = this.props;
         const cellExpanded = target.isExpanded;
 
@@ -158,10 +193,7 @@ export class Halo extends React.Component<Props, State> {
                     role='button'
                     title={`Expand an element to reveal additional properties`}
                     onClick={onExpand} />}
-                {onEdit && <div className={`${CLASS_NAME}__edit`}
-                     role='button'
-                     title={`Edit entity`}
-                     onClick={onEdit} />}
+                {this.renderEditButton()}
                 {this.renderDeleteButton()}
                 {this.props.onEstablishNewLink && <div className={`${CLASS_NAME}__establish-connection`}
                      role='button'

@@ -36,7 +36,7 @@ export class HtmlSpinner extends React.Component<{ width: number; height: number
         const size = Math.min(width, height);
         return (
             <svg width={width} height={height}>
-                <Spinner size={15} position={{x: width / 2, y: height / 2}} />
+                <Spinner size={size} position={{x: width / 2, y: height / 2}} />
             </svg>
         );
     }

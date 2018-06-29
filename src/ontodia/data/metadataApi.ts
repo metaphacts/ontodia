@@ -31,5 +31,9 @@ export interface MetadataApi {
 
     canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean>;
 
+    canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
+
     canDeleteLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
+
+    canEditLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 }
