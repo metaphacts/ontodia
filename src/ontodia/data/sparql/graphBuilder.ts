@@ -80,7 +80,7 @@ export class GraphBuilder {
 
         const elements: LayoutElement[] = elementsIds.map<LayoutElement>((id, index) => {
             const {x, y} = grid(index);
-            return {'@type': 'element', '@id': generateID(IDKind.element), iri: id, position: {x, y}};
+            return {'@type': 'Element', '@id': generateID(IDKind.element), iri: id, position: {x, y}, isExpanded: false};
         });
 
         const layoutElementsMap: {[iri: string]: LayoutElement} = keyBy(elements, 'iri');
@@ -93,14 +93,14 @@ export class GraphBuilder {
             if (!source || !target) { return; }
 
             links.push({
-                '@type': 'link',
+                '@type': 'Link',
                 '@id': generateID(IDKind.link),
                 property: link.linkTypeId,
                 source: {'@id': source['@id']},
                 target: {'@id': target['@id']},
             });
         });
-        return newSerializedDiagram({layoutData: {'@type': 'layout', elements, links}, linkTypeOptions: []});
+        return newSerializedDiagram({layoutData: {'@type': 'Layout', elements, links}, linkTypeOptions: []});
     }
 }
 

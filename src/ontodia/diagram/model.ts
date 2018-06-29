@@ -195,9 +195,11 @@ export class DiagramModel {
 
     exportLayout(): SerializedDiagram {
         const layoutData = exportLayoutData(this.graph.getElements(), this.graph.getLinks());
-        const linkSettings = this.graph.getLinkTypes()
-            .map(({id, visible, showLabel}) => ({property: id, visible, showLabel}));
-        return newSerializedDiagram({layoutData, linkTypeOptions: linkSettings});
+        const linkTypeOptions = this.graph.getLinkTypes()
+            .map(
+                ({id, visible, showLabel}) =>
+                    ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}) as LinkTypeOptions);
+        return newSerializedDiagram({layoutData, linkTypeOptions});
     }
 
     private setClassTree(rootClasses: ClassModel[]) {
@@ -221,7 +223,7 @@ export class DiagramModel {
         for (const setting of settings) {
             const {visible = true, showLabel = true} = setting;
             const linkTypeId = setting.property as LinkTypeIri;
-            this.linkSettings[linkTypeId] = {property: linkTypeId, visible, showLabel};
+            this.linkSettings[linkTypeId] = {'@type': 'LinkTypeOptions', property: linkTypeId, visible, showLabel};
             const linkType = this.getLinkType(linkTypeId);
             if (linkType) {
                 linkType.setVisibility({visible, showLabel});

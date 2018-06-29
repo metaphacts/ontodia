@@ -7,36 +7,37 @@ import { Vector, Size } from './geometry';
 
 export interface SerializedDiagram {
     '@context': any;
-    '@type': 'diagram';
+    '@type': 'Diagram';
     layoutData: LayoutData;
     linkTypeOptions: LinkTypeOptions[];
 }
 
 export interface LinkTypeOptions {
+    '@type': 'LinkTypeOptions';
     property: LinkTypeIri;
     visible: boolean;
     showLabel?: boolean;
 }
 
 export interface LayoutData {
-    '@type': 'layout';
+    '@type': 'Layout';
     readonly elements: LayoutElement[];
     readonly links: LayoutLink[];
 }
 
 export interface LayoutElement {
-    '@type': 'element';
+    '@type': 'Element';
     '@id': string;
     iri: ElementIri;
     position: Vector;
     size?: Size;
     angle?: number;
-    isExpanded?: boolean;
+    isExpanded: boolean;
     group?: string;
 }
 
 export interface LayoutLink {
-    '@type': 'link';
+    '@type': 'Link';
     '@id': string;
     property: LinkTypeIri;
     source: { '@id': string };
@@ -54,8 +55,8 @@ export function emptyDiagram(): SerializedDiagram {
     return {
         ...diagramContextV1,
         ...{
-            '@type': 'diagram',
-            layoutData: {'@type': 'layout', elements: [], links: []},
+            '@type': 'Diagram',
+            layoutData: {'@type': 'Layout', elements: [], links: []},
             linkTypeOptions: []
         }};
 }
@@ -109,7 +110,7 @@ export function convertToLatest(oldDiagramData: any): SerializedDiagram {
                 break;
         }
     }
-    return {...emptyDiagram(), ...{layoutData: {'@type': 'layout', elements, links}}};
+    return {...emptyDiagram(), ...{layoutData: {'@type': 'Layout', elements, links}}};
 }
 
 export function newSerializedDiagram(
@@ -123,7 +124,7 @@ export function exportLayoutData(
     modelLinks: ReadonlyArray<DiagramLink>,
 ): LayoutData {
     const elements = modelElements.map((element): LayoutElement => ({
-        '@type': 'element',
+        '@type': 'Element',
         '@id': element.id,
         iri: element.iri,
         position: element.position,
@@ -132,37 +133,47 @@ export function exportLayoutData(
         group: element.group,
     }));
     const links = modelLinks.map((link): LayoutLink => ({
-        '@type': 'link',
+        '@type': 'Link',
         '@id': link.id,
         property: link.typeId,
         source: {'@id': link.sourceId},
         target: {'@id': link.targetId},
         vertices: [...link.vertices],
     }));
-    return {'@type': 'layout', elements, links};
+    return {'@type': 'Layout', elements, links};
 }
 
 export const diagramContextV1 = {
     '@context': {
         'ontodia': 'http://ontodia.org/schema/v1#',
-        'diagram': 'ontodia:Diagram',
-        'element': 'ontodia:Element',
-        'link': 'ontodia:Link',
-        'layout': 'ontodia:layout',
+        // classes
+        'Diagram': 'ontodia:Diagram',
+        'Element': 'ontodia:Element',
+        'Link': 'ontodia:Link',
+        'Layout': 'ontodia:Layout',
+        'LinkTypeOptions': 'ontodia:LinkTypeOptions',
+        // properties
+        'layoutData': 'ontodia:layoutData',
         'elements': 'ontodia:hasElement',
+        // 'linkTypeOptions': 'ontodia:linkTypeOptions',
         'links': 'ontodia:hasLink',
-        'height': 'ontodia:height',
+        // element
         'iri': {'@id': 'ontodia:resource', '@type': '@id'},
-        'typeId': {'@id': 'ontodia:property', '@type': '@id'},
-        'isExpanded': 'ontodia:isExpanded',
         'position': 'ontodia:position',
-        'size': 'ontodia:size',
-        'source': 'ontodia:source',
-        'target': 'ontodia:target',
-        'width': 'ontodia:width',
         'x': 'ontodia:xCoordValue',
         'y': 'ontodia:yCoordValue',
+        'size': 'ontodia:size',
+        'height': 'ontodia:height',
+        'width': 'ontodia:width',
+        'isExpanded': 'ontodia:isExpanded',
+        // link
+        'property': {'@id': 'ontodia:property', '@type': '@id'},
+        'source': 'ontodia:source',
+        'target': 'ontodia:target',
         'vertices': {'@id': 'ontodia:vertex', '@container' : '@list'},
-        '@base': 'http://ontodia.org/diagram/',
+        '@base': 'http://ontodia.org/data/',
+        // link type options
+        'visible': 'ontodia:visible',
+        'showLabel': 'ontodia:showLabel',
     }
 };
