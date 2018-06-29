@@ -1,12 +1,14 @@
 import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
-import { ElementModel, ElementTypeIri, LinkModel } from '../data/model';
+import { ElementModel, ElementTypeIri, LinkModel, LinkTypeIri } from '../data/model';
 import { MetadataApi } from '../data/metadataApi';
 import { Cancellation } from '../viewUtils/async';
 import { SelectLinkType } from './selectLinkType';
 
 const CLASS_NAME = 'ontodia-edit-form';
+const ELEMENT_TYPE = '' as ElementTypeIri;
+const LINK_TYPE = '' as LinkTypeIri;
 
 export interface Props {
     view: DiagramView;
@@ -82,7 +84,8 @@ export class EditElementTypeForm extends React.Component<Props, State> {
                 </div>
                 <div className={`${CLASS_NAME}__controls`}>
                     <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__apply-button`}
-                        onClick={() => this.props.onApply(elementData, linkData)}>
+                        onClick={() => this.props.onApply(elementData, linkData)}
+                        disabled={elementData.types.indexOf(ELEMENT_TYPE) >= 0 || linkData.linkTypeId === LINK_TYPE}>
                         Apply
                     </button>
                     <button className='ontodia-btn ontodia-btn-danger'

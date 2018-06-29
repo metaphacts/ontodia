@@ -242,7 +242,6 @@ export class EditorController {
         } else if (!target && triggerAsClick) {
             this.setSelection([]);
             this.hideDialog();
-            this.resetTemporaryState();
             if (document.activeElement) {
                 (document.activeElement as HTMLElement).blur();
             }
@@ -767,16 +766,20 @@ export class EditorController {
     }
 
     private resetTemporaryState() {
-        this.model.elements.forEach(element => {
-            if (this.temporaryState.elements.has(element.iri)) {
-                this.removeTemporaryElement(element);
-            }
-        });
-        this.model.links.forEach(link => {
-            if (this.temporaryState.links.get(link.data)) {
-                this.removeTemporaryLink(link);
-            }
-        });
+        if (this.temporaryState.elements.size) {
+            this.model.elements.forEach(element => {
+                if (this.temporaryState.elements.has(element.iri)) {
+                    this.removeTemporaryElement(element);
+                }
+            });
+        }
+        if (this.temporaryState.links.size) {
+            this.model.links.forEach(link => {
+                if (this.temporaryState.links.get(link.data)) {
+                    this.removeTemporaryLink(link);
+                }
+            });
+        }
     }
 
     private removeTemporaryElement(element: Element) {
