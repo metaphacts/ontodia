@@ -737,12 +737,21 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
     }
 
     private getFilteredObjects(): ReactElementModel[] {
-        return this.props.data.objects.filter(element => {
-            const label = element.model.label;
-            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, this.props.lang);
-            return (!this.props.filterKey) || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
-        });
-    }
+        if (this.props.filterKey) {
+            const filterKey = this.props.filterKey.toLowerCase();
+            return this.props.data.objects.filter(element => {
+                const text  = (formatLocalizedLabel(
+                    element.model.id,
+                    element.model.label.values,
+                    this.props.lang
+                ) || '').toLowerCase();
+                const containsKey = text.indexOf(filterKey) !== -1;
+                return containsKey;
+            });
+        } else {
+            return this.props.data.objects;
+        }
+    };
 
     private getObjects(list: ReadonlyArray<ReactElementModel>) {
         const {checkMap} = this.state;
