@@ -4,7 +4,8 @@ import { CancellationToken } from '../viewUtils/async';
 
 export interface ElementError {
     message: string;
-    relationIri: LinkTypeIri | PropertyTypeIri;
+    linkType?: LinkTypeIri;
+    propertyType?: PropertyTypeIri;
 }
 
 export interface LinkError {

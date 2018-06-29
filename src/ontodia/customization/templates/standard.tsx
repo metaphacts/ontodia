@@ -1,40 +1,69 @@
 import * as React from 'react';
 import { Component } from 'react';
 
-import { ElementIri, LinkTypeIri } from '../../data/model';
+import { ElementIri, LinkTypeIri, PropertyTypeIri, LocalizedString } from '../../data/model';
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
 
+import { formatLocalizedLabel } from '../../diagram/model';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
 import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
 import { EventObserver } from '../../viewUtils/events';
 import { HtmlSpinner } from '../../viewUtils/spinner';
-import { KeyedObserver, createFatLinkTypeObserver } from '../../viewUtils/keyedObserver';
+import { KeyedObserver, observeLinkTypes, observeProperties } from '../../viewUtils/keyedObserver';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
 const CLASS_NAME = 'ontodia-standard-template';
 
-export type TemplateContext = ElementContextWrapper & PaperAreaContextWrapper;
-
 export class StandardTemplate extends Component<TemplateProps, {}> {
     static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
-    context: TemplateContext;
+    context: ElementContextWrapper & PaperAreaContextWrapper;
 
-    private updateAll = () => this.forceUpdate();
+    private linkTypesObserver: KeyedObserver<LinkTypeIri>;
+    private propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
-    private readonly fatLinkTypeObserver: KeyedObserver<LinkTypeIri>;
+    constructor(props: TemplateProps, context: any) {
+        super(props, context);
+    }
 
-    constructor(props: TemplateProps, context: TemplateContext) {
-        super(props);
-        const {editor} = context.ontodiaElement;
-        this.fatLinkTypeObserver = createFatLinkTypeObserver(editor.model, this.updateAll);
+    componentDidMount() {
+        const {editor} = this.context.ontodiaElement;
+        this.linkTypesObserver = observeLinkTypes(
+            editor.model, 'changeLabel', () => this.forceUpdate()
+        );
+        this.propertiesObserver = observeProperties(
+            editor.model, 'changeLabel', () => this.forceUpdate()
+        );
+        this.observeTypes();
+    }
+
+    componentDidUpdate() {
+        this.observeTypes();
+    }
+
+    private observeTypes() {
+        const iri = this.props.iri as ElementIri;
+        const {editor} = this.context.ontodiaElement;
+        const validation = editor.validationState.elements.get(iri);
+        if (validation) {
+            this.linkTypesObserver.observe(
+                validation.errors.map(error => error.linkType).filter(type => type)
+            );
+            this.propertiesObserver.observe(
+                validation.errors.map(error => error.propertyType).filter(type => type)
+            );
+        } else {
+            this.linkTypesObserver.observe([]);
+            this.propertiesObserver.observe([]);
+        }
     }
 
     componentWillUnmount() {
-        this.fatLinkTypeObserver.stopListening();
+        this.linkTypesObserver.stopListening();
+        this.propertiesObserver.stopListening();
     }
 
     private renderProperties() {
@@ -127,28 +156,6 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return getProperty(props, FOAF_NAME) || label;
     }
 
-    private renderInvalidIcon() {
-        const {editor, view} = this.context.ontodiaElement;
-        const iri = this.props.iri as ElementIri;
-        const validation = editor.validationState.elements.get(iri);
-        if (!validation) {
-            return null;
-        }
-        this.fatLinkTypeObserver.observe(validation.errors.map(({relationIri}) => relationIri as LinkTypeIri));
-        const title = validation.errors
-            .map(error => `${view.getLinkLabel(error.relationIri as LinkTypeIri).text}: ${error.message}`)
-            .join('\n');
-        return (
-            <div className={`${CLASS_NAME}__validation`} title={title}>
-                {validation.loading
-                    ? <HtmlSpinner width={15} height={17} />
-                    : <div className={`${CLASS_NAME}__invalid-icon`} />}
-                {(!validation.loading && validation.errors.length > 0)
-                    ? validation.errors.length : undefined}
-            </div>
-        );
-    }
-
     render() {
         const {color, types, isExpanded} = this.props;
         const label = this.getLabel();
@@ -164,7 +171,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             </div>
                             <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
-                        {this.renderInvalidIcon()}
+                        {this.renderValidationStatus()}
                     </div>
                 </div>
                 {isExpanded ? (
@@ -176,6 +183,37 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         </div>
                     </div>
                 ) : null}
+            </div>
+        );
+    }
+
+    private renderValidationStatus() {
+        const {editor, view} = this.context.ontodiaElement;
+        const iri = this.props.iri as ElementIri;
+        const validation = editor.validationState.elements.get(iri);
+        if (!validation) {
+            return null;
+        }
+        const title = validation.errors.map(error => {
+            if (error.linkType) {
+                const {id, label} = view.model.createLinkType(error.linkType);
+                const source = formatLocalizedLabel(id, label, view.getLanguage());
+                return `${source}: ${error.message}`;
+            } else if (error.propertyType) {
+                const {id, label} = view.model.createProperty(error.propertyType);
+                const source = formatLocalizedLabel(id, label, view.getLanguage());
+                return `${source}: ${error.message}`;
+            } else {
+                return error.message;
+            }
+        }).join('\n');
+        return (
+            <div className={`${CLASS_NAME}__validation`} title={title}>
+                {validation.loading
+                    ? <HtmlSpinner width={15} height={17} />
+                    : <div className={`${CLASS_NAME}__invalid-icon`} />}
+                {(!validation.loading && validation.errors.length > 0)
+                    ? validation.errors.length : undefined}
             </div>
         );
     }

@@ -1,4 +1,4 @@
-import {ElementTypeIri, LinkTypeIri, PropertyTypeIri} from '../data/model';
+import { ElementTypeIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
 
 import { FatClassModelEvents, FatLinkTypeEvents, RichPropertyEvents } from '../diagram/elements';
 import { DiagramModel } from '../diagram/model';
@@ -11,6 +11,9 @@ export class KeyedObserver<Key extends string> {
     constructor(readonly subscribe: (key: Key) => Unsubscribe | undefined) {}
 
     observe(keys: ReadonlyArray<Key>) {
+        if (keys.length === 0 && this.observedKeys.size === 0) {
+            return;
+        }
         const newObservedKeys = new Map<string, Unsubscribe>();
 
         for (const key of keys) {
@@ -37,34 +40,40 @@ export class KeyedObserver<Key extends string> {
     }
 }
 
-export function createTypesObserver(model: DiagramModel, listener: Listener<FatClassModelEvents, 'changeLabel'>) {
+export function observeElementTypes<Event extends keyof FatClassModelEvents>(
+    model: DiagramModel, event: Event, listener: Listener<FatClassModelEvents, Event>
+) {
     return new KeyedObserver<ElementTypeIri>(key => {
         const type = model.getClass(key);
         if (type) {
-            type.events.on('changeLabel', listener);
-            return () => type.events.off('changeLabel', listener);
+            type.events.on(event, listener);
+            return () => type.events.off(event, listener);
         }
         return undefined;
     });
 }
 
-export function createPropertiesObserver(model: DiagramModel, listener: Listener<RichPropertyEvents, 'changeLabel'>) {
+export function observeProperties<Event extends keyof RichPropertyEvents>(
+    model: DiagramModel, event: Event, listener: Listener<RichPropertyEvents, Event>
+) {
     return new KeyedObserver<PropertyTypeIri>(key => {
         const property = model.getProperty(key);
         if (property) {
-            property.events.on('changeLabel', listener);
-            return () => property.events.off('changeLabel', listener);
+            property.events.on(event, listener);
+            return () => property.events.off(event, listener);
         }
         return undefined;
     });
 }
 
-export function createFatLinkTypeObserver(model: DiagramModel, listener: Listener<FatLinkTypeEvents, 'changeLabel'>) {
+export function observeLinkTypes<Event extends keyof FatLinkTypeEvents>(
+    model: DiagramModel, event: Event, listener: Listener<FatLinkTypeEvents, Event>
+) {
     return new KeyedObserver<LinkTypeIri>(key => {
         const type = model.createLinkType(key);
         if (type) {
-            type.events.on('changeLabel', listener);
-            return () => type.events.off('changeLabel', listener);
+            type.events.on(event, listener);
+            return () => type.events.off(event, listener);
         }
         return undefined;
     });

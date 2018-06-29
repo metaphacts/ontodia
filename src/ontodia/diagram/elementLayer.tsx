@@ -8,7 +8,7 @@ import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
-import { KeyedObserver, createTypesObserver, createPropertiesObserver } from '../viewUtils/keyedObserver';
+import { KeyedObserver, observeElementTypes, observeProperties } from '../viewUtils/keyedObserver';
 
 import { setElementExpanded } from './commands';
 import { Element } from './elements';
@@ -137,16 +137,14 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private readonly listener = new EventObserver();
     private disposed = false;
 
-    private readonly typesObserver: KeyedObserver<ElementTypeIri>;
-    private readonly propertiesObserver: KeyedObserver<PropertyTypeIri>;
+    private typesObserver: KeyedObserver<ElementTypeIri>;
+    private propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
     constructor(props: OverlayedElementProps) {
         super(props);
         this.state = {
             templateProps: this.templateProps(),
         };
-        this.typesObserver = createTypesObserver(props.view.model, this.rerenderTemplate);
-        this.propertiesObserver = createPropertiesObserver(props.view.model, this.rerenderTemplate);
     }
 
     getChildContext(): ElementContextWrapper {
@@ -166,11 +164,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
     render(): React.ReactElement<any> {
         const {model, view, onResize, onRender} = this.props;
-
-        if (model.temporary) { return <div />; }
-
-        this.typesObserver.observe(model.data.types);
-        this.propertiesObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
+        if (model.temporary) {
+            return <div />;
+        }
 
         const template = view.getElementTemplate(model.data.types);
 
@@ -234,6 +230,13 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             const element = findDOMNode(this) as HTMLElement;
             if (element) { element.focus(); }
         });
+        this.typesObserver = observeElementTypes(
+            this.props.view.model, 'changeLabel', this.rerenderTemplate
+        );
+        this.propertiesObserver = observeProperties(
+            this.props.view.model, 'changeLabel', this.rerenderTemplate
+        );
+        this.observeTypes();
     }
 
     componentWillUnmount() {
@@ -248,7 +251,14 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     }
 
     componentDidUpdate() {
+        this.observeTypes();
         this.props.onResize(this.props.model, findDOMNode(this) as HTMLDivElement);
+    }
+
+    private observeTypes() {
+        const {model} = this.props;
+        this.typesObserver.observe(model.data.types);
+        this.propertiesObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
     }
 
     private templateProps(): TemplateProps {
