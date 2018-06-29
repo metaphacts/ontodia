@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Component } from 'react';
 
-import { ElementIri } from '../../data/model';
+import { ElementIri, LinkTypeIri } from '../../data/model';
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
@@ -11,14 +11,31 @@ import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/pa
 import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
 import { EventObserver } from '../../viewUtils/events';
 import { HtmlSpinner } from '../../viewUtils/spinner';
+import { KeyedObserver, createFatLinkTypeObserver } from '../../viewUtils/keyedObserver';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
 const CLASS_NAME = 'ontodia-standard-template';
 
+export type TemplateContext = ElementContextWrapper & PaperAreaContextWrapper;
+
 export class StandardTemplate extends Component<TemplateProps, {}> {
     static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
-    context: ElementContextWrapper & PaperAreaContextWrapper;
+    context: TemplateContext;
+
+    private updateAll = () => this.forceUpdate();
+
+    private readonly fatLinkTypeObserver: KeyedObserver<LinkTypeIri>;
+
+    constructor(props: TemplateProps, context: TemplateContext) {
+        super(props);
+        const {editor} = context.ontodiaElement;
+        this.fatLinkTypeObserver = createFatLinkTypeObserver(editor.model, this.updateAll);
+    }
+
+    componentWillUnmount() {
+        this.fatLinkTypeObserver.stopListening();
+    }
 
     private renderProperties() {
         const {propsAsList} = this.props;
@@ -117,8 +134,9 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         if (!validation) {
             return null;
         }
+        this.fatLinkTypeObserver.observe(validation.errors.map(({relationIri}) => relationIri as LinkTypeIri));
         const title = validation.errors
-            .map(error => `${view.formatIri(error.relationIri)}: ${error.message}`)
+            .map(error => `${view.getLinkLabel(error.relationIri as LinkTypeIri).text}: ${error.message}`)
             .join('\n');
         return (
             <div className={`${CLASS_NAME}__validation`} title={title}>

@@ -8,6 +8,7 @@ import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
+import { KeyedObserver, createTypesObserver, createPropertiesObserver } from '../viewUtils/keyedObserver';
 
 import { setElementExpanded } from './commands';
 import { Element } from './elements';
@@ -136,29 +137,16 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private readonly listener = new EventObserver();
     private disposed = false;
 
-    private typesObserver = new KeyedObserver<ElementTypeIri>(key => {
-        const type = this.props.view.model.getClass(key);
-        if (type) {
-            type.events.on('changeLabel', this.rerenderTemplate);
-            return () => type.events.off('changeLabel', this.rerenderTemplate);
-        }
-        return undefined;
-    });
-
-    private propertyObserver = new KeyedObserver<PropertyTypeIri>(key => {
-        const property = this.props.view.model.getProperty(key);
-        if (property) {
-            property.events.on('changeLabel', this.rerenderTemplate);
-            return () => property.events.off('changeLabel', this.rerenderTemplate);
-        }
-        return undefined;
-    });
+    private readonly typesObserver: KeyedObserver<ElementTypeIri>;
+    private readonly propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
     constructor(props: OverlayedElementProps) {
         super(props);
         this.state = {
             templateProps: this.templateProps(),
         };
+        this.typesObserver = createTypesObserver(props.view.model, this.rerenderTemplate);
+        this.propertiesObserver = createPropertiesObserver(props.view.model, this.rerenderTemplate);
     }
 
     getChildContext(): ElementContextWrapper {
@@ -182,7 +170,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         if (model.temporary) { return <div />; }
 
         this.typesObserver.observe(model.data.types);
-        this.propertyObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
+        this.propertiesObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
 
         const template = view.getElementTemplate(model.data.types);
 
@@ -251,7 +239,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     componentWillUnmount() {
         this.listener.stopListening();
         this.typesObserver.stopListening();
-        this.propertyObserver.stopListening();
+        this.propertiesObserver.stopListening();
         this.disposed = true;
     }
 
@@ -315,37 +303,5 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             icon: icon ? icon : 'ontodia-default-icon',
             color: hcl(h, c, l).toString(),
         };
-    }
-}
-
-class KeyedObserver<Key extends string> {
-    private observedKeys = createStringMap<Unsubscribe>();
-
-    constructor(readonly subscribe: (key: Key) => Unsubscribe | undefined) {}
-
-    observe(keys: ReadonlyArray<Key>) {
-        const newObservedKeys = createStringMap<Unsubscribe>();
-
-        for (const key of keys) {
-            if (newObservedKeys[key]) { continue; }
-            let token = this.observedKeys[key];
-            if (!token) {
-                token = this.subscribe(key);
-            }
-            newObservedKeys[key] = token;
-        }
-
-        for (const key in this.observedKeys) {
-            if (!newObservedKeys[key]) {
-                const unsubscribe = this.observedKeys[key];
-                unsubscribe();
-            }
-        }
-
-        this.observedKeys = newObservedKeys;
-    }
-
-    stopListening() {
-        this.observe([]);
     }
 }
