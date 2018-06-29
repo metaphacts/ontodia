@@ -11,7 +11,7 @@ import { EditorController } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
-import { renderSpinnerInRect } from '../viewUtils/spinner';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 export interface AuthoringToolsProps {
     editor: EditorController;
@@ -110,7 +110,7 @@ export class AuthoringTools extends React.Component<AuthoringToolsProps, State> 
             <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__create-entity`}
                 onClick={this.onCreateNewEntity} disabled={!canCreate}>
                 {
-                    canCreate === undefined ? renderSpinnerInRect({width: 20, height: 20}) : (
+                    canCreate === undefined ? <HtmlSpinner width={20} height={20} /> : (
                         <span>+ Create new <span className={`${CLASS_NAME}__type-label`}>{typeLabel}</span></span>
                     )
                 }

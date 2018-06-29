@@ -1,13 +1,15 @@
 import * as React from 'react';
 
-import { DiagramView } from '../diagram/view';
-import { PaperWidgetProps } from '../diagram/paperArea';
+import { MetadataApi } from '../data/metadataApi';
+
 import { Element, Link } from '../diagram/elements';
+import { computePolyline, computePolylineLength, getPointAlongPolyline, Vector } from '../diagram/geometry';
+import { PaperWidgetProps } from '../diagram/paperArea';
+import { DiagramView } from '../diagram/view';
+
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
-import { renderSpinnerInRect } from '../viewUtils/spinner';
-import { computePolyline, computePolylineLength, getPointAlongPolyline, Vector } from '../diagram/geometry';
-import { MetadataApi } from '../data/metadataApi';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-halo-link';
 const BUTTON_SIZE = 20;
@@ -195,7 +197,7 @@ export class HaloLink extends React.Component<Props, State> {
         const {canDelete} = this.state;
         const style = this.getButtonPosition(polyline, 2);
         if (canDelete === undefined) {
-            return <div style={{...style, position: 'absolute'}}>{renderSpinnerInRect({width: 20, height: 20})}</div>;
+            return <div style={{...style, position: 'absolute'}}><HtmlSpinner width={20} height={20} /></div>;
         }
         const title = canDelete ? 'Delete link' : 'Deletion is unavailable for the selected link';
         return (

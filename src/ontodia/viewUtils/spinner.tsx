@@ -12,7 +12,7 @@ const CLASS_NAME = 'ontodia-spinner';
 
 export class Spinner extends React.Component<Props, {}> {
     render() {
-        let {position = {x: 0, y: 0}, size = 50, statusText, errorOccured} = this.props;
+        const {position = {x: 0, y: 0}, size = 50, statusText, errorOccured} = this.props;
 
         const textLeftMargin = 5;
         const pathGeometry = 'm3.47,-19.7 a20,20 0 1,1 -6.95,0 m0,0 l-6,5 m6,-5 l-8,-0' +
@@ -30,9 +30,14 @@ export class Spinner extends React.Component<Props, {}> {
     }
 }
 
-export function renderSpinnerInRect({width, height}: { width: number; height: number }) {
-    const size = Math.min(width, height);
-    return <svg width={width} height={height}>
-        <Spinner size={size} position={{x: width / 2, y: height / 2}} />
-    </svg>;
+export class HtmlSpinner extends React.Component<{ width: number; height: number }, {}> {
+    render() {
+        const {width, height} = this.props;
+        const size = Math.min(width, height);
+        return (
+            <svg width={width} height={height}>
+                <Spinner size={15} position={{x: width / 2, y: height / 2}} />
+            </svg>
+        );
+    }
 }

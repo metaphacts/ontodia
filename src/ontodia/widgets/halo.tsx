@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { MetadataApi } from '../data/metadataApi';
+
 import { Element as DiagramElement, ElementEvents } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
@@ -8,8 +10,7 @@ import { EditorController } from '../editor/editorController';
 
 import { AnyListener, Unsubscribe } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
-import { renderSpinnerInRect } from '../viewUtils/spinner';
-import { MetadataApi } from '../data/metadataApi';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
@@ -108,7 +109,7 @@ export class Halo extends React.Component<Props, State> {
         if (canDelete === undefined) {
             return (
                 <div className={`${CLASS_NAME}__delete-spinner`}>
-                    {renderSpinnerInRect({width: 20, height: 20})}
+                    <HtmlSpinner width={20} height={20} />
                 </div>
             );
         }

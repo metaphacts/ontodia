@@ -10,7 +10,7 @@ import { getProperty } from './utils';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
 import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
 import { EventObserver } from '../../viewUtils/events';
-import { renderSpinnerInRect } from '../../viewUtils/spinner';
+import { HtmlSpinner } from '../../viewUtils/spinner';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
@@ -123,7 +123,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return (
             <div className={`${CLASS_NAME}__validation`} title={title}>
                 {validation.loading
-                    ? renderSpinnerInRect({width: 15, height: 17})
+                    ? <HtmlSpinner width={15} height={17} />
                     : <div className={`${CLASS_NAME}__invalid-icon`} />}
                 {(!validation.loading && validation.errors.length > 0)
                     ? validation.errors.length : undefined}
