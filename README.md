@@ -59,13 +59,16 @@ If you use the Ontodia library in your projects, please provide a link to this r
 
 Mouromtsev, D., Pavlov, D., Emelyanov, Y., Morozov, A., Razdyakonov, D. and Galkin, M., 2015. The Simple Web-based Tool for Visualization and Sharing of Semantic Data and Ontologies. In International Semantic Web Conference (Posters & Demos).
 
-> @Inproceedings{Mouromtsev2015,
-> author = {Mouromtsev, Dmitry and Pavlov, Dmitry and Emelyanov, Yury and Morozov, Alexey and Razdyakonov, Daniil and Galkin, Mikhail},
->    year = {2015},
->    month = {10},
->    title = {The Simple Web-based Tool for Visualization and Sharing of Semantic Data and Ontologies},
->    booktitle = {International Semantic Web Conference (Posters & Demos)}
-> }
+```
+@inproceedings{Mouromtsev2015,
+    author = {Mouromtsev, Dmitry and Pavlov, Dmitry and Emelyanov, Yury and
+        Morozov, Alexey and Razdyakonov, Daniil and Galkin, Mikhail},
+    year = {2015},
+    month = {10},
+    title = {The Simple Web-based Tool for Visualization and Sharing of Semantic Data and Ontologies},
+    booktitle = {International Semantic Web Conference (Posters & Demos)}
+}
+```
 
 It really helps our team to gain publicity and acknowledgment for our efforts.
 Thank you for being considerate!
