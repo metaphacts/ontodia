@@ -34,7 +34,7 @@ import {
     AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
     LinkValidation, linkConnectedToElement, isSourceOrTargetChanged, TemporaryState,
 } from './authoringState';
-import { EditLayer, EditMode } from './editLayer';
+import { EditLayer, EditMode, ELEMENT_TYPE, LINK_TYPE } from './editLayer';
 
 import { Cancellation } from '../viewUtils/async';
 import { HashMap } from '../viewUtils/collections';
@@ -384,11 +384,13 @@ export class EditorController {
                         this.changeEntityData(target.iri, elementData);
                     }
                     if (this.temporaryState.links.has(link.data)) {
-                        link.setData(linkData);
-                        this.setTemporaryState(
-                            TemporaryState.deleteLink(this.temporaryState, link.data)
-                        );
-                        this.addNewLink(link.data);
+                        this.removeTemporaryLink(link);
+                        this.createNewLink(new Link({
+                            typeId: linkData.linkTypeId,
+                            sourceId: link.sourceId,
+                            targetId: link.targetId,
+                            data: linkData,
+                        }));
                     } else {
                         this.changeLinkData(link.data, linkData);
                     }
@@ -415,11 +417,13 @@ export class EditorController {
                 link={target}
                 onApply={(data: LinkModel) => {
                     if (this.temporaryState.links.has(target.data)) {
-                        target.setData(data);
-                        this.setTemporaryState(
-                            TemporaryState.deleteLink(this.temporaryState, target.data)
-                        );
-                        this.addNewLink(target.data);
+                        this.removeTemporaryLink(target);
+                        this.createNewLink(new Link({
+                            typeId: data.linkTypeId,
+                            sourceId: target.sourceId,
+                            targetId: target.targetId,
+                            data,
+                        }));
                     } else {
                         this.changeLinkData(target.data, data);
                     }
@@ -428,9 +432,8 @@ export class EditorController {
                 onCancel={() => {
                     if (this.temporaryState.links.has(target.data)) {
                         this.removeTemporaryLink(target);
-                    } else {
-                        this.hideDialog();
                     }
+                    this.hideDialog();
                 }}/>
         );
         this.showDialog({target, dialogType, content});
@@ -517,7 +520,8 @@ export class EditorController {
         });
     }
 
-    createEmptyElement(classIri: ElementTypeIri): Element {
+    createNewEntity(classIri: ElementTypeIri): Element {
+        const batch = this.model.history.startBatch('Create new entity');
         const elementModel = {
             // TODO: change IRI generation
             id: `http://ontodia.org/newEntity_${generate64BitID()}` as ElementIri,
@@ -525,16 +529,18 @@ export class EditorController {
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},
         };
-        return this.model.createElement(elementModel);
-    }
-
-    createNewEntity(classIri: ElementTypeIri): Element {
-        const batch = this.model.history.startBatch('Create new entity');
-        const element = this.createEmptyElement(classIri);
-        this.setAuthoringState(
-            AuthoringState.addElement(this._authoringState, element.data)
-        );
-        batch.store();
+        const element = this.model.createElement(elementModel);
+        if (classIri === ELEMENT_TYPE) {
+            this.setTemporaryState(
+                TemporaryState.addElement(this.temporaryState, element.data)
+            );
+            batch.discard();
+        } else {
+            this.setAuthoringState(
+                AuthoringState.addElement(this._authoringState, element.data)
+            );
+            batch.store();
+        }
         return element;
     }
 
@@ -587,10 +593,17 @@ export class EditorController {
         this.model.createLinks(base.data);
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
-            this.setAuthoringState(
-                AuthoringState.addLink(this._authoringState, base.data)
-            );
-            batch.store();
+            if (base.typeId === LINK_TYPE) {
+                this.setTemporaryState(
+                    TemporaryState.addLink(this.temporaryState, base.data)
+                );
+                batch.discard();
+            } else {
+                this.setAuthoringState(
+                    AuthoringState.addLink(this._authoringState, base.data)
+                );
+                batch.store();
+            }
         } else {
             batch.discard();
         }
@@ -731,38 +744,12 @@ export class EditorController {
         this.setValidationState(newState);
     }
 
-    addNewEntity(element: ElementModel) {
+    private addNewEntity(element: ElementModel) {
         const batch = this.model.history.startBatch('Create new entity');
         this.setAuthoringState(
             AuthoringState.addElement(this._authoringState, element)
         );
         batch.store();
-    }
-
-    addNewLink(link: LinkModel) {
-        const batch = this.model.history.startBatch('Create new link');
-        this.setAuthoringState(
-            AuthoringState.addLink(this._authoringState, link)
-        );
-        batch.store();
-    }
-
-    createTemporaryElement(classIri: ElementTypeIri): Element {
-        const element = this.createEmptyElement(classIri);
-        this.setTemporaryState(
-            TemporaryState.addElement(this.temporaryState, element.data)
-        );
-        return element;
-    }
-
-    createTemporaryLink(link: Link): Link {
-        this.model.createLinks(link.data);
-        this.setTemporaryState(
-            TemporaryState.addLink(this.temporaryState, link.data)
-        );
-        return this.model.links.find(({sourceId, targetId}) =>
-            sourceId === link.sourceId && targetId === link.targetId
-        );
     }
 
     private resetTemporaryState() {

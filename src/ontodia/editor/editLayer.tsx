@@ -37,8 +37,8 @@ export interface State {
     canDropOnElement?: boolean;
 }
 
-const ELEMENT_TYPE = '' as ElementTypeIri;
-const LINK_TYPE = '' as LinkTypeIri;
+export const ELEMENT_TYPE = '' as ElementTypeIri;
+export const LINK_TYPE = '' as LinkTypeIri;
 
 export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
@@ -258,10 +258,8 @@ export class EditLayer extends React.Component<Props, State> {
             return Promise.resolve(undefined);
         }
         return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
-            if (elementTypes.length === 1) {
-                return editor.createNewEntity(elementTypes[0]);
-            }
-            return editor.createTemporaryElement(ELEMENT_TYPE);
+            const type = elementTypes.length === 1 ? elementTypes[0] : ELEMENT_TYPE;
+            return editor.createNewEntity(type);
         });
     }
 
@@ -282,10 +280,7 @@ export class EditLayer extends React.Component<Props, State> {
                     targetId: target.iri,
                 },
             });
-            if (linkTypes.length === 1) {
-                return editor.createNewLink(link);
-            }
-            return editor.createTemporaryLink(link);
+            return editor.createNewLink(link);
         });
     }
 
