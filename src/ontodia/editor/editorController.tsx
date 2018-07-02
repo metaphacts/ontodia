@@ -32,7 +32,7 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
-    LinkValidation, linkConnectedToElement, isSourceOrTargetChanged, TemporaryState,
+    LinkValidation, linkConnectedToElement, TemporaryState, AuthoringEvent,
 } from './authoringState';
 import { EditLayer, EditMode, ELEMENT_TYPE, LINK_TYPE } from './editLayer';
 
@@ -125,21 +125,6 @@ export class EditorController {
             }
         });
 
-        this.listener.listen(this.model.events, 'createLoadedLink', e => {
-            const event = this.authoringState.index.links.get(e.model);
-            const isDeleted = event && event.type === AuthoringKind.DeleteLink;
-
-            let isChanged = false;
-            this.authoringState.index.links.forEach(evt => {
-                if (evt.type === AuthoringKind.ChangeLink && evt.before && sameLink(evt.before, e.model)) {
-                    isChanged = true;
-                }
-            });
-
-            if (isDeleted || isChanged) {
-                e.cancel();
-            }
-        });
         this.listener.listen(this.model.events, 'loadingStart', () => this.setSpinner({}));
         this.listener.listen(this.model.events, 'loadingSuccess', () => {
             this.setSpinner(undefined);
@@ -393,7 +378,7 @@ export class EditorController {
                             data: linkData,
                         }));
                     } else {
-                        this.changeLinkData(link.data, linkData);
+                        this.changeLink(link.data, linkData);
                     }
                     this.hideDialog();
                 }}
@@ -426,7 +411,7 @@ export class EditorController {
                             data,
                         }));
                     } else {
-                        this.changeLinkData(target.data, data);
+                        this.changeLink(target.data, data);
                     }
                     this.hideDialog();
                 }}
@@ -567,24 +552,22 @@ export class EditorController {
         }
 
         const batch = this.model.history.startBatch('Delete entity');
-        this.setAuthoringState(
-            AuthoringState.deleteElement(state, elementIri, this.model)
-        );
+        const model = elements[0].data;
+        const newState = AuthoringState.deleteElement(state, model);
         if (AuthoringState.isNewElement(state, elementIri)) {
             for (const element of elements) {
                 this.model.removeElement(element.id);
             }
         }
-        const newConnectedLinks = this.model.links.filter(link => {
+        const newlyConnectedLinks = this.model.links.filter(link => {
             if (!link.data) { return false; }
-            const event = state.index.links.get(link.data);
-            return event && event.type === AuthoringKind.ChangeLink
-                && (!event.before || isSourceOrTargetChanged(event))
-                && linkConnectedToElement(event.after, elementIri);
+            return linkConnectedToElement(link.data, elementIri)
+                && AuthoringState.isNewLink(state, link.data);
         });
-        for (const link of newConnectedLinks) {
+        for (const link of newlyConnectedLinks) {
             this.model.removeLink(link.id);
         }
+        this.setAuthoringState(newState);
         batch.store();
     }
 
@@ -612,26 +595,31 @@ export class EditorController {
         return links.find(({sourceId, targetId}) => sourceId === base.sourceId && targetId === base.targetId);
     }
 
-    changeLinkData(oldData: LinkModel, newData: LinkModel) {
+    changeLink(oldData: LinkModel, newData: LinkModel) {
         const batch = this.model.history.startBatch('Change link');
         if (sameLink(oldData, newData)) {
             this.model.history.execute(setLinkData(this.model, oldData, newData));
+            this.setAuthoringState(
+                AuthoringState.changeLink(this._authoringState, oldData, newData)
+            );
         } else {
+            let newState = this._authoringState;
+            newState = AuthoringState.deleteLink(newState, oldData);
+            newState = AuthoringState.addLink(newState, newData);
+
             this.model.links
                 .filter(link => sameLink(link.data, oldData))
                 .forEach(link => this.model.removeLink(link.id));
             this.model.createLinks(newData);
+            this.setAuthoringState(newState);
         }
-        this.setAuthoringState(
-            AuthoringState.changeLink(this._authoringState, oldData, newData)
-        );
         batch.store();
     }
 
     moveLinkSource(params: { link: Link; newSource: Element }): Link {
         const {link, newSource} = params;
         const batch = this.model.history.startBatch('Move link to another element');
-        this.changeLinkData(link.data, {...link.data, sourceId: newSource.iri});
+        this.changeLink(link.data, {...link.data, sourceId: newSource.iri});
         const newLink = this.model.findLink(link.typeId, newSource.id, link.targetId);
         newLink.setVertices(link.vertices);
         batch.store();
@@ -641,7 +629,7 @@ export class EditorController {
     moveLinkTarget(params: { link: Link; newTarget: Element }): Link {
         const {link, newTarget} = params;
         const batch = this.model.history.startBatch('Move link to another element');
-        this.changeLinkData(link.data, {...link.data, targetId: newTarget.iri});
+        this.changeLink(link.data, {...link.data, targetId: newTarget.iri});
         const newLink = this.model.findLink(link.typeId, link.sourceId, newTarget.id);
         newLink.setVertices(link.vertices);
         batch.store();
@@ -655,20 +643,13 @@ export class EditorController {
             return;
         }
         const batch = this.model.history.startBatch('Delete link');
-        this.setAuthoringState(
-            AuthoringState.deleteLink(state, model, this.model)
-        );
+        const newState = AuthoringState.deleteLink(state, model);
         if (AuthoringState.isNewLink(state, model)) {
             for (const link of links) {
                 this.model.removeLink(link.id);
             }
-        } else if (AuthoringState.isMovedLink(state, model)) {
-            const event = state.index.links.get(model) as LinkChange;
-            this.model.createLinks(event.before);
-            for (const link of links) {
-                this.model.removeLink(link.id);
-            }
         }
+        this.setAuthoringState(newState);
         batch.store();
     }
 
@@ -782,6 +763,10 @@ export class EditorController {
         this.setTemporaryState(
             TemporaryState.deleteLink(this.temporaryState, link.data)
         );
+    }
+
+    discardChange(change: AuthoringEvent) {
+        
     }
 }
 

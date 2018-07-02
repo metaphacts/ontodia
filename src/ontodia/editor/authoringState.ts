@@ -28,13 +28,11 @@ export enum AuthoringKind {
 export interface ElementDeletion {
     readonly type: AuthoringKind.DeleteElement;
     readonly model: ElementModel;
-    readonly items: ReadonlyArray<Element>;
 }
 
 export interface LinkDeletion {
     readonly type: AuthoringKind.DeleteLink;
     readonly model: LinkModel;
-    readonly items: ReadonlyArray<Link>;
 }
 
 export interface ElementChange {
@@ -123,6 +121,9 @@ export namespace AuthoringState {
     }
 
     export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel) {
+        if (!sameLink(before, after)) {
+            throw new Error('Cannot move link to another element or change its type');
+        }
         let previousBefore: LinkModel | undefined = before;
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeLink) {
@@ -141,49 +142,31 @@ export namespace AuthoringState {
         return AuthoringState.set(state, {events: [...events, event]});
     }
 
-    export function deleteElement(state: AuthoringState, targetIri: ElementIri, model: DiagramModel) {
-        const additional: AuthoringEvent[] = [];
-        const existingElement = !isNewElement(state, targetIri);
+    export function deleteElement(state: AuthoringState, model: ElementModel) {
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeElement) {
-                if (e.after.id === targetIri) {
+                if (e.after.id === model.id) {
                     return false;
                 }
             } else if (e.type === AuthoringKind.ChangeLink) {
-                if (linkConnectedToElement(e.after, targetIri)) {
-                    if (isSourceOrTargetChanged(e)) {
-                        additional.push({
-                            type: AuthoringKind.DeleteLink,
-                            model: e.before,
-                            items: model.links.filter(link => sameLink(link.data, e.before)),
-                        });
-                    }
+                if (linkConnectedToElement(e.after, model.id)) {
                     return false;
                 }
             } else if (e.type === AuthoringKind.DeleteLink) {
-                if (linkConnectedToElement(e.model, targetIri)) {
+                if (linkConnectedToElement(e.model, model.id)) {
                     return false;
                 }
             }
             return true;
         });
 
-        if (existingElement) {
-            const element = model.elements.find(el => Boolean(el.iri === targetIri && el.data));
-            if (element) {
-                additional.push({
-                    type: AuthoringKind.DeleteElement,
-                    model: element.data,
-                    items: model.elements.filter(el => el.iri === targetIri),
-                });
-            }
+        if (!isNewElement(state, model.id)) {
+            events.push({type: AuthoringKind.DeleteElement, model});
         }
-
-        return AuthoringState.set(state, {events: [...events, ...additional]});
+        return AuthoringState.set(state, {events});
     }
 
-    export function deleteLink(state: AuthoringState, target: LinkModel, model: DiagramModel) {
-        const existingLink = !isNewLink(state, target);
+    export function deleteLink(state: AuthoringState, target: LinkModel) {
         const events = state.events.filter(e => {
             if (e.type === AuthoringKind.ChangeLink) {
                 if (sameLink(e.after, target)) {
@@ -196,18 +179,10 @@ export namespace AuthoringState {
             }
             return true;
         });
-        if (AuthoringState.isMovedLink(state, target)) {
-            const event = state.index.links.get(target) as LinkChange;
-            events.push({
-                type: AuthoringKind.DeleteLink,
-                model: event.before,
-                items: model.links.filter(link => sameLink(link.data, event.before)),
-            });
-        } else if (existingLink) {
+        if (!isNewLink(state, target)) {
             events.push({
                 type: AuthoringKind.DeleteLink,
                 model: target,
-                items: model.links.filter(link => sameLink(link.data, target)),
             });
         }
         return AuthoringState.set(state, {events});
@@ -238,11 +213,6 @@ export namespace AuthoringState {
     export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
         const event = state.index.links.get(linkModel);
         return event && event.type === AuthoringKind.ChangeLink && !event.before;
-    }
-
-    export function isMovedLink(state: AuthoringState, linkModel: LinkModel): boolean {
-        const event = state.index.links.get(linkModel);
-        return event && event.type === AuthoringKind.ChangeLink && event.before && !sameLink(event.before, event.after);
     }
 }
 
@@ -323,14 +293,6 @@ export namespace ValidationState {
 
 export function linkConnectedToElement(link: LinkModel, elementIri: ElementIri) {
     return link.sourceId === elementIri || link.targetId === elementIri;
-}
-
-export function isSourceOrTargetChanged(change: LinkChange) {
-    const {before, after} = change;
-    return before && !(
-        before.sourceId === after.sourceId &&
-        before.targetId === after.targetId
-    );
 }
 
 function updateLinkToReferByNewIri(link: LinkModel, oldIri: ElementIri, newIri: ElementIri): LinkModel {
