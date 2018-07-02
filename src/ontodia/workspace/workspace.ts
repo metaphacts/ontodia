@@ -263,7 +263,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
 
         forceLayout({nodes, links, preferredLinkLength: 200});
-        padded(nodes, {x: 10, y: 10}, () => removeOverlaps(nodes));
+        padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
 
         const padding: { x: number; y: number; } = (
             group ? getContentFittingBox(elements, []) : {x: 150, y: 150}
