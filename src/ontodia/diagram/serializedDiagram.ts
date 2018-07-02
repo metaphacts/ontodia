@@ -145,7 +145,9 @@ export function exportLayoutData(
 
 export const diagramContextV1 = {
     '@context': {
+        // schemas
         'ontodia': 'http://ontodia.org/schema/v1#',
+        'xsd': 'http://www.w3.org/2001/XMLSchema#',
         // classes
         'Diagram': 'ontodia:Diagram',
         'Element': 'ontodia:Element',
@@ -155,17 +157,17 @@ export const diagramContextV1 = {
         // properties
         'layoutData': 'ontodia:layoutData',
         'elements': 'ontodia:hasElement',
-        // 'linkTypeOptions': 'ontodia:linkTypeOptions',
+        'linkTypeOptions': 'ontodia:linkTypeOptions',
         'links': 'ontodia:hasLink',
         // element
         'iri': {'@id': 'ontodia:resource', '@type': '@id'},
         'position': 'ontodia:position',
-        'x': 'ontodia:xCoordValue',
-        'y': 'ontodia:yCoordValue',
+        'x': {'@id': 'ontodia:xCoordValue'},
+        'y': {'@id': 'ontodia:yCoordValue'},
         'size': 'ontodia:size',
-        'height': 'ontodia:height',
-        'width': 'ontodia:width',
-        'isExpanded': 'ontodia:isExpanded',
+        'height': {'@id': 'ontodia:height'},
+        'width': {'@id': 'ontodia:width'},
+        'isExpanded': {'@id': 'ontodia:isExpanded'},
         // link
         'property': {'@id': 'ontodia:property', '@type': '@id'},
         'source': 'ontodia:source',

@@ -196,6 +196,8 @@ export class DiagramModel {
     exportLayout(): SerializedDiagram {
         const layoutData = exportLayoutData(this.graph.getElements(), this.graph.getLinks());
         const linkTypeOptions = this.graph.getLinkTypes()
+            // do not serialize default link type options
+            .filter(linkType => !linkType.visible || !linkType.showLabel)
             .map(
                 ({id, visible, showLabel}) =>
                     ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}) as LinkTypeOptions);
