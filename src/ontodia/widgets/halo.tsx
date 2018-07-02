@@ -9,7 +9,7 @@ import { PaperWidgetProps } from '../diagram/paperArea';
 import { EditorController } from '../editor/editorController';
 import { AuthoringKind } from '../editor/authoringState';
 
-import { AnyListener, Unsubscribe } from '../viewUtils/events';
+import { AnyListener, Unsubscribe, EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
@@ -24,6 +24,7 @@ export interface Props extends PaperWidgetProps {
     onAddToFilter?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
+    onRevert?: () => void;
     onEstablishNewLink?: (point: { x: number; y: number; }) => void;
 }
 
@@ -36,7 +37,8 @@ export interface State {
 const CLASS_NAME = 'ontodia-halo';
 
 export class Halo extends React.Component<Props, State> {
-    private unsubscribeFromElement: Unsubscribe | undefined = undefined;
+    private readonly listener = new EventObserver();
+    private targetListener = new EventObserver();
     private readonly cancellation = new Cancellation();
 
     constructor(props: Props) {
@@ -45,31 +47,29 @@ export class Halo extends React.Component<Props, State> {
     }
 
     componentDidMount() {
-        this.listenToElement(this.props.target);
-        this.props.editor.events.on('changeAuthoringState', this.updateAuthoringButtons);
+        const {editor, target} = this.props;
+        this.listener.listen(editor.events, 'changeAuthoringState', this.updateAuthoringButtons);
+        this.listenToElement(target);
         this.updateAuthoringButtons();
-    }
-
-    componentWillReceiveProps(nextProps: Props) {
-        if (nextProps.target !== this.props.target) {
-            this.listenToElement(nextProps.target);
-        }
     }
 
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
+            this.listenToElement(this.props.target);
             this.updateAuthoringButtons();
         }
     }
 
+    componentWillUnmount() {
+        this.listener.stopListening();
+        this.listenToElement(undefined);
+        this.cancellation.abort();
+    }
+
     listenToElement(element: DiagramElement | undefined) {
-        if (this.unsubscribeFromElement) {
-            this.unsubscribeFromElement();
-            this.unsubscribeFromElement = undefined;
-        }
+        this.targetListener.stopListening();
         if (element) {
-            element.events.onAny(this.onElementEvent);
-            this.unsubscribeFromElement = () => element.events.offAny(this.onElementEvent);
+            this.targetListener.listenAny(element.events, this.onElementEvent);
         }
     }
 
@@ -140,38 +140,16 @@ export class Halo extends React.Component<Props, State> {
         }
     }
 
-    componentWillUnmount() {
-        this.listenToElement(undefined);
-        this.props.editor.events.off('changeAuthoringState', this.updateAuthoringButtons);
-        this.cancellation.abort();
-    }
-
     private onEstablishNewLink = (e: React.MouseEvent<HTMLElement>) => {
         const point = this.props.paperArea.pageToPaperCoords(e.pageX, e.pageY);
         this.props.onEstablishNewLink(point);
     }
 
-    private renderDeleteButton() {
-        const {onDelete} = this.props;
-        const {canDelete} = this.state;
-        if (!onDelete) { return null; }
-        if (canDelete === undefined) {
-            return (
-                <div className={`${CLASS_NAME}__delete-spinner`}>
-                    <HtmlSpinner width={20} height={20} />
-                </div>
-            );
-        }
-        const title = canDelete ? 'Delete entity' : 'Deletion is unavailable for the selected element';
-        return (
-            <button className={`${CLASS_NAME}__delete`} title={title} onClick={onDelete} disabled={!canDelete} />
-        );
-    }
-
     private renderEditButton() {
         const {onEdit} = this.props;
-        const {canEdit} = this.state;
         if (!onEdit) { return null; }
+
+        const {canEdit} = this.state;
         if (canEdit === undefined) {
             return (
                 <div className={`${CLASS_NAME}__edit-spinner`}>
@@ -182,6 +160,36 @@ export class Halo extends React.Component<Props, State> {
         const title = canEdit ? 'Edit entity' : 'Editing is unavailable for the selected element';
         return (
             <button className={`${CLASS_NAME}__edit`} title={title} onClick={onEdit} disabled={!canEdit} />
+        );
+    }
+
+    private renderDeleteButton() {
+        const {onDelete} = this.props;
+        if (!onDelete) { return null; }
+
+        const {canDelete} = this.state;
+        if (canDelete === undefined) {
+            return (
+                <div className={`${CLASS_NAME}__delete-spinner`}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+            );
+        }
+        return (
+            <button className={`${CLASS_NAME}__delete`}
+                title={canDelete ? 'Delete entity' : 'Deletion is unavailable for the selected element'}
+                disabled={!canDelete}
+                onClick={onDelete} />
+        );
+    }
+
+    private renderRevertButton() {
+        const {onRevert} = this.props;
+        if (!onRevert) { return null; }
+        return (
+            <button className={`${CLASS_NAME}__revert`}
+                title={`Revert deletion of the selected element`}
+                onClick={onRevert} />
         );
     }
 
@@ -205,15 +213,17 @@ export class Halo extends React.Component<Props, State> {
     }
 
     render() {
-        if (!this.props.target) {
+        const {
+            paperArea, editor, target, navigationMenuOpened, onRemove, onToggleNavigationMenu,
+            onAddToFilter, onExpand,
+        } = this.props;
+
+        if (!target) {
             return <div className={CLASS_NAME} style={{display: 'none'}} />;
         }
 
-        const {
-            paperArea, target, navigationMenuOpened, onRemove, onToggleNavigationMenu,
-            onAddToFilter, onExpand,
-        } = this.props;
-        const cellExpanded = target.isExpanded;
+        const event = editor.authoringState.index.elements.get(target.iri);
+        const isElementDeleted = event && event.type === AuthoringKind.DeleteElement;
 
         const bbox = boundsOf(target);
         const {x: x0, y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
@@ -239,12 +249,12 @@ export class Halo extends React.Component<Props, State> {
                     title='Search for connected elements'
                     onClick={onAddToFilter} />}
                 {onExpand && <div className={`${CLASS_NAME}__expand ` +
-                    `${CLASS_NAME}__expand--${cellExpanded ? 'closed' : 'open'}`}
+                    `${CLASS_NAME}__expand--${target.isExpanded ? 'closed' : 'open'}`}
                     role='button'
                     title={`Expand an element to reveal additional properties`}
                     onClick={onExpand} />}
                 {this.renderEditButton()}
-                {this.renderDeleteButton()}
+                {isElementDeleted ? this.renderRevertButton() : this.renderDeleteButton()}
                 {this.renderEstablishNewLinkButton()}
             </div>
         );

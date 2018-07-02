@@ -266,19 +266,19 @@ export class EditorController {
     }
 
     private renderDefaultHalo() {
-        const selectedElement = this.selection.length === 1 ? this.selection[0] : undefined;
+        const selected = this.selection.length === 1 ? this.selection[0] : undefined;
 
         let halo: React.ReactElement<Halo | HaloLink>;
 
-        if (selectedElement instanceof Element) {
+        if (selected instanceof Element) {
             halo = (
                 <Halo editor={this}
                     metadataApi={this.options.metadataApi}
-                    target={selectedElement}
+                    target={selected}
                     onRemove={() => this.removeSelectedElements()}
                     onExpand={() => {
                         this.model.history.execute(
-                            setElementExpanded(selectedElement, !selectedElement.isExpanded)
+                            setElementExpanded(selected, !selected.isExpanded)
                         );
                     }}
                     navigationMenuOpened={this.dialogType === DialogTypes.ConnectionsMenu}
@@ -286,31 +286,43 @@ export class EditorController {
                         if (this.dialogTarget && this.dialogType === DialogTypes.ConnectionsMenu) {
                             this.hideDialog();
                         } else {
-                            this.showConnectionsMenu(selectedElement);
+                            this.showConnectionsMenu(selected);
                         }
                         this.renderDefaultHalo();
                     }}
-                    onAddToFilter={() => selectedElement.addToFilter()}
-                    onEdit={() => this.showEditEntityForm(selectedElement)}
-                    onDelete={() => this.deleteEntity(selectedElement.iri)}
+                    onAddToFilter={() => selected.addToFilter()}
+                    onEdit={() => this.showEditEntityForm(selected)}
+                    onDelete={() => this.deleteEntity(selected.iri)}
+                    onRevert={() => {
+                        const event = this.authoringState.index.elements.get(selected.iri);
+                        if (event && event.type === AuthoringKind.DeleteElement) {
+                            this.discardChange(event);
+                        }
+                    }}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selectedElement, mode: EditMode.establishNewLink, point})
+                        this.startEditing({target: selected, mode: EditMode.establishNewLink, point})
                     }
                 />
             );
-        } else if (selectedElement instanceof Link) {
+        } else if (selected instanceof Link) {
             halo = (
                 <HaloLink view={this.view}
                     editor={this}
                     metadataApi={this.options.metadataApi}
-                    target={selectedElement}
-                    onEdit={() => this.showEditLinkForm(selectedElement)}
-                    onRemove={() => this.deleteLink(selectedElement.data)}
+                    target={selected}
+                    onEdit={() => this.showEditLinkForm(selected)}
+                    onDelete={() => this.deleteLink(selected.data)}
+                    onRevert={() => {
+                        const deletion = this.authoringState.index.links.get(selected.data);
+                        if (deletion && deletion.type === AuthoringKind.DeleteLink) {
+                            this.discardChange(deletion);
+                        }
+                    }}
                     onSourceMove={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selectedElement, mode: EditMode.moveLinkSource, point})
+                        this.startEditing({target: selected, mode: EditMode.moveLinkSource, point})
                     }
                     onTargetMove={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selectedElement, mode: EditMode.moveLinkTarget, point})
+                        this.startEditing({target: selected, mode: EditMode.moveLinkTarget, point})
                     }
                 />
             );
@@ -553,12 +565,22 @@ export class EditorController {
 
         const batch = this.model.history.startBatch('Delete entity');
         const model = elements[0].data;
-        const newState = AuthoringState.deleteElement(state, model);
-        if (AuthoringState.isNewElement(state, elementIri)) {
-            for (const element of elements) {
-                this.model.removeElement(element.id);
+
+        const event = state.index.elements.get(elementIri);
+        if (event && event.type === AuthoringKind.ChangeElement) {
+            if (event.before) {
+                // restore initial data
+                this.model.history.execute(
+                    setElementData(this.model, elementIri, event.before)
+                );
+            } else {
+                // delete newly created entity
+                for (const element of elements) {
+                    this.model.removeElement(element.id);
+                }
             }
         }
+
         const newlyConnectedLinks = this.model.links.filter(link => {
             if (!link.data) { return false; }
             return linkConnectedToElement(link.data, elementIri)
@@ -567,7 +589,8 @@ export class EditorController {
         for (const link of newlyConnectedLinks) {
             this.model.removeLink(link.id);
         }
-        this.setAuthoringState(newState);
+
+        this.setAuthoringState(AuthoringState.deleteElement(state, model));
         batch.store();
     }
 
@@ -607,9 +630,11 @@ export class EditorController {
             newState = AuthoringState.deleteLink(newState, oldData);
             newState = AuthoringState.addLink(newState, newData);
 
-            this.model.links
-                .filter(link => sameLink(link.data, oldData))
-                .forEach(link => this.model.removeLink(link.id));
+            if (AuthoringState.isNewLink(this._authoringState, oldData)) {
+                this.model.links
+                    .filter(link => sameLink(link.data, oldData))
+                    .forEach(link => this.model.removeLink(link.id));
+            }
             this.model.createLinks(newData);
             this.setAuthoringState(newState);
         }
@@ -638,16 +663,16 @@ export class EditorController {
 
     deleteLink(model: LinkModel) {
         const state = this.authoringState;
-        const links = this.model.links.filter(({data}) => sameLink(data, model));
-        if (links.length === 0) {
+        const event = state.index.links.get(model);
+        if (event && event.type === AuthoringKind.DeleteLink) {
             return;
         }
         const batch = this.model.history.startBatch('Delete link');
         const newState = AuthoringState.deleteLink(state, model);
         if (AuthoringState.isNewLink(state, model)) {
-            for (const link of links) {
-                this.model.removeLink(link.id);
-            }
+            this.model.links
+                .filter(({data}) => sameLink(data, model))
+                .forEach(link => this.model.removeLink(link.id));
         }
         this.setAuthoringState(newState);
         batch.store();
@@ -765,8 +790,34 @@ export class EditorController {
         );
     }
 
-    discardChange(change: AuthoringEvent) {
-        
+    discardChange(event: AuthoringEvent) {
+        const newState = AuthoringState.discard(this._authoringState, event);
+        if (newState === this._authoringState) { return; }
+
+        const batch = this.model.history.startBatch('Discard change');
+        if (event.type === AuthoringKind.ChangeElement) {
+            if (event.before) {
+                this.model.history.execute(
+                    setElementData(this.model, event.after.id, event.before)
+                );
+            } else {
+                this.model.elements
+                    .filter(el => el.iri === event.after.id)
+                    .forEach(el => this.model.removeElement(el.id));
+            }
+        } else if (event.type === AuthoringKind.ChangeLink) {
+            if (event.before) {
+                this.model.history.execute(
+                    setLinkData(this.model, event.after, event.before)
+                );
+            } else {
+                this.model.links
+                    .filter(({data}) => sameLink(data, event.after))
+                    .forEach(link => this.model.removeLink(link.id));
+            }
+        }
+        this.setAuthoringState(newState);
+        batch.store();
     }
 }
 

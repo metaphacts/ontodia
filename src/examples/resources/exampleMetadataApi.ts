@@ -19,70 +19,87 @@ function hasType(model: ElementModel, type: ElementTypeIri) {
     return Boolean(model.types.find(t => t === type));
 }
 
-// function delay(ms: number): Promise<void> {
-//     return new Promise(resolve => setTimeout(resolve, ms));
-// }
+const METADATA_DELAY: number = 0; /* ms */
+function delay(): Promise<void> {
+    if (METADATA_DELAY === 0) {
+        return Promise.resolve();
+    }
+    return new Promise(resolve => setTimeout(resolve, METADATA_DELAY));
+}
 
 export class ExampleMetadataApi implements MetadataApi {
-    canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean> {
-        return new Promise<boolean>(resolve => {
-            this.typesOfElementsDraggedFrom(source, ct).then(elementTypes => resolve(elementTypes.length > 0));
-        });
+    async canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean> {
+        await delay();
+        return true;
+        // return new Promise<boolean>(resolve => {
+        //     this.typesOfElementsDraggedFrom(source, ct).then(elementTypes => resolve(elementTypes.length > 0));
+        // });
     }
 
     async canDropOnElement(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
-        // await delay(1000);
-        return new Promise<boolean>(resolve =>
-            this.possibleLinkTypes(source, target, ct).then(linkTypes => resolve(linkTypes.length > 0))
-        );
+        await delay();
+        return true;
+        // const linkTypes = await this.possibleLinkTypes(source, target, ct);
+        // return linkTypes.length > 0;
     }
 
-    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
-        return Promise.resolve(
-            hasType(source, schema.class) && hasType(target, schema.class) ? [schema.subClassOf] :
-            hasType(source, schema.objectProperty) && hasType(target, schema.class) ? [schema.domain, schema.range] :
-            hasType(source, schema.objectProperty) && hasType(target, schema.objectProperty) ? [schema.subPropertyOf] :
-            []
-        );
+    async possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
+        await delay();
+        return [schema.domain, schema.range, schema.subClassOf, schema.subPropertyOf];
+        // return (
+        //     hasType(source, schema.class) && hasType(target, schema.class) ? [schema.subClassOf] :
+        //     hasType(source, schema.objectProperty) && hasType(target, schema.class) ? [schema.domain, schema.range] :
+        //     hasType(source, schema.objectProperty) && hasType(target, schema.objectProperty) ? [schema.subPropertyOf] :
+        //     []
+        // );
     }
 
-    typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
-        return Promise.resolve(
-            hasType(source, schema.class) ? [schema.class] :
-            hasType(source, schema.objectProperty) ? [schema.class, schema.objectProperty] :
-            []
-        );
+    async typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
+        await delay();
+        return [schema.class, schema.objectProperty];
+        // return (
+        //     hasType(source, schema.class) ? [schema.class] :
+        //     hasType(source, schema.objectProperty) ? [schema.class, schema.objectProperty] :
+        //     []
+        // );
     }
 
-    propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {
-        return Promise.resolve([]);
+    async propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {
+        await delay();
+        return [];
     }
 
-    canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        return Promise.resolve(true);
+    async canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
+        await delay();
+        return true;
     }
 
-    canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean> {
-        return Promise.resolve(true);
+    async canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean> {
+        await delay();
+        return true;
     }
 
-    canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        return Promise.resolve(true);
+    async canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
+        await delay();
+        return true;
     }
 
-    canLinkElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        return Promise.resolve(true);
+    async canLinkElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
+        await delay();
+        return true;
     }
 
-    canDeleteLink(
+    async canDeleteLink(
         link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<boolean> {
-        return Promise.resolve(true);
+        await delay();
+        return true;
     }
 
-    canEditLink(
+    async canEditLink(
         link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<boolean> {
-        return Promise.resolve(true);
+        await delay();
+        return true;
     }
 }

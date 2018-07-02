@@ -38,11 +38,47 @@
     height: $buttonHeight;
   }
 
-  &__navigate {
-    @include halo-button;
+  @mixin n-docked {
+    top: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
+  }
+
+  @mixin nw-docked {
+    top: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin ne-docked {
+    top: -($buttonHeight + $buttonMargin);
+    right: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin e-docked {
     top: 50%;
     margin-top: -($buttonHeight / 2);
     right: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin s-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    left: 50%;
+    margin-left: -($buttonWidth / 2);
+  }
+
+  @mixin sw-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    left: -($buttonWidth + $buttonMargin);
+  }
+
+  @mixin se-docked {
+    bottom: -($buttonHeight + $buttonMargin);
+    right: -($buttonWidth + $buttonMargin);
+  }
+
+  &__navigate {
+    @include halo-button;
+    @include e-docked;
 
     &--open {
       background-image: url("../images/connections.svg");
@@ -55,16 +91,13 @@
 
   &__remove {
     @include halo-button;
+    @include ne-docked;
     background-image: url("../images/delete.svg");
-    top: -($buttonHeight + $buttonMargin);
-    right: -($buttonWidth + $buttonMargin);
   }
 
   &__expand {
     @include halo-button;
-    bottom: -($buttonHeight + $buttonMargin);
-    left: 50%;
-    margin-left: -($buttonWidth / 2);
+    @include s-docked;
 
     &--open {
       background-image: url("../images/expand-properties.png");
@@ -77,57 +110,46 @@
 
   &__add-to-filter {
     @include halo-button;
+    @include se-docked;
     background-image: url("../images/add-to-filter.png");
-    bottom: -($buttonHeight + $buttonMargin);
-    right: -($buttonWidth + $buttonMargin);
-  }
-
-  @mixin edit {
-    bottom: -($buttonHeight + $buttonMargin);
-    left: -($buttonWidth + $buttonMargin);
   }
 
   &__edit {
     @include halo-button;
-    @include edit;
+    @include sw-docked;
     background-image: url("../images/font-awesome/edit.svg");
   }
 
   &__edit-spinner {
     @include spinner;
-    @include edit;
-  }
-
-  @mixin delete {
-    top: -($buttonHeight + $buttonMargin);
-    left: 50%;
-    margin-left: -($buttonWidth / 2);
+    @include sw-docked;
   }
 
   &__delete {
     @include halo-button;
-    @include delete;
+    @include n-docked;
     background-image: url("../images/font-awesome/trash-alt.svg");
   }
 
   &__delete-spinner {
     @include spinner;
-    @include delete;
+    @include n-docked;
   }
 
-  @mixin establish-connection {
-    top: -($buttonHeight + $buttonMargin);
-    left: -($buttonWidth + $buttonMargin);
+  &__revert {
+    @include halo-button;
+    @include n-docked;
+    background-image: url("../images/font-awesome/undo-solid.svg");
   }
 
   &__establish-connection {
     @include halo-button;
-    @include establish-connection;
+    @include nw-docked;
     background-image: url("../images/font-awesome/plug.svg");
   }
 
   &__establish-connection-spinner {
     @include spinner;
-    @include establish-connection;
+    @include nw-docked;
   }
 }

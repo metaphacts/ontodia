@@ -40,6 +40,11 @@
     background-image: url("../images/font-awesome/trash-alt.svg");
   }
 
+  &__revert {
+    @include button;
+    background-image: url("../images/font-awesome/undo-solid.svg");
+  }
+
   &__spinner {
     position: absolute;
   }

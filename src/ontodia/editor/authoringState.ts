@@ -64,6 +64,16 @@ export namespace AuthoringState {
         return {...state, events, index};
     }
 
+    export function discard(state: AuthoringState, event: AuthoringEvent): AuthoringState {
+        const index = state.events.indexOf(event);
+        if (index < 0) {
+            return state;
+        }
+        const events = [...state.events];
+        events.splice(index, 1);
+        return set(state, {events});
+    }
+
     export function addElement(state: AuthoringState, item: ElementModel) {
         const event: ElementChange = {type: AuthoringKind.ChangeElement, after: item};
         return AuthoringState.set(state, {events: [...state.events, event]});
