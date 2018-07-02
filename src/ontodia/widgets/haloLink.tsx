@@ -7,6 +7,9 @@ import { computePolyline, computePolylineLength, getPointAlongPolyline, Vector }
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
+import { EditorController } from '../editor/editorController';
+import { AuthoringKind } from '../editor/authoringState';
+
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
@@ -17,6 +20,7 @@ const BUTTON_MARGIN = 5;
 
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
+    editor: EditorController;
     metadataApi?: MetadataApi;
     target: Link;
     onEdit: () => void;
@@ -44,8 +48,7 @@ export class HaloLink extends React.Component<Props, State> {
 
     componentDidMount() {
         this.listenToTarget(this.props.target);
-        this.canDelete(this.props.target);
-        this.canEdit(this.props.target);
+        this.updateAuthoringButtons();
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -56,8 +59,7 @@ export class HaloLink extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
-            this.canDelete(this.props.target);
-            this.canEdit(this.props.target);
+            this.updateAuthoringButtons();
         }
     }
 
@@ -66,11 +68,20 @@ export class HaloLink extends React.Component<Props, State> {
         this.cancellation.abort();
     }
 
+    private updateAuthoringButtons() {
+        this.canDelete(this.props.target);
+        this.canEdit(this.props.target);
+    }
+
     private canDelete(link: Link) {
         const {metadataApi, view} = this.props;
         if (!metadataApi) {
             this.setState({canDelete: false});
-        } else {
+            return;
+        }
+        if (this.isSourceOrTargetDeleted(link)) {
+            this.setState({canDelete: false});
+        } else  {
             this.setState({canDelete: undefined});
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
@@ -86,6 +97,10 @@ export class HaloLink extends React.Component<Props, State> {
         const {metadataApi, view} = this.props;
         if (!metadataApi) {
             this.setState({canEdit: false});
+            return;
+        }
+        if (this.isDeletedLink(link)) {
+            this.setState({canEdit: false});
         } else {
             this.setState({canEdit: undefined});
             const source = view.model.getElement(link.sourceId);
@@ -96,6 +111,27 @@ export class HaloLink extends React.Component<Props, State> {
                 }
             });
         }
+    }
+
+    private isSourceOrTargetDeleted(link: Link): boolean {
+        const {editor} = this.props;
+        const source = editor.model.getElement(link.sourceId);
+        const target = editor.model.getElement(link.targetId);
+        const sourceEvent = editor.authoringState.index.elements.get(source.iri);
+        const targetEvent = editor.authoringState.index.elements.get(target.iri);
+        return (
+            (sourceEvent && sourceEvent.type === AuthoringKind.DeleteElement) ||
+            (targetEvent && targetEvent.type === AuthoringKind.DeleteElement)
+        );
+    }
+
+    private isDeletedLink(link: Link): boolean {
+        const {editor} = this.props;
+        const event = editor.authoringState.index.links.get(link.data);
+        return (
+            (event && event.type === AuthoringKind.DeleteLink) ||
+            this.isSourceOrTargetDeleted(link)
+        );
     }
 
     private listenToTarget(link: Link | undefined) {
@@ -165,13 +201,14 @@ export class HaloLink extends React.Component<Props, State> {
         const style = {top: y - BUTTON_SIZE / 2, left: x - BUTTON_SIZE / 2};
 
         return (
-            <div className={`${CLASS_NAME}__button`} style={style} onMouseDown={this.onSourceMove}>
+            <button className={`${CLASS_NAME}__button`} style={style} onMouseDown={this.onSourceMove}
+                disabled={this.isDeletedLink(this.props.target)}>
                 <svg width={BUTTON_SIZE} height={BUTTON_SIZE}>
                     <g transform={`scale(${BUTTON_SIZE})`}>
                         <circle r={0.5} cx={0.5} cy={0.5} fill='#198AD3' />
                     </g>
                 </svg>
-            </div>
+            </button>
         );
     }
 
@@ -195,13 +232,14 @@ export class HaloLink extends React.Component<Props, State> {
         const degree = this.calculateDegree(polyline[length - 1], polyline[length - 2]);
 
         return (
-            <div className={`${CLASS_NAME}__button`} style={style} onMouseDown={this.onTargetMove}>
+            <button className={`${CLASS_NAME}__button`} style={style} onMouseDown={this.onTargetMove}
+                disabled={this.isDeletedLink(this.props.target)}>
                 <svg width={BUTTON_SIZE} height={BUTTON_SIZE} style={{transform: `rotate(${degree}deg)`}}>
                     <g transform={`scale(${BUTTON_SIZE})`}>
                         <polygon points={'0,0.5 1,1 1,0'} fill='#198AD3' />
                     </g>
                 </svg>
-            </div>
+            </button>
         );
     }
 

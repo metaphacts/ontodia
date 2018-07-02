@@ -316,6 +316,7 @@ export class EditorController {
         } else if (selectedElement instanceof Link) {
             halo = (
                 <HaloLink view={this.view}
+                    editor={this}
                     metadataApi={this.options.metadataApi}
                     target={selectedElement}
                     onEdit={() => this.showEditLinkForm(selectedElement)}

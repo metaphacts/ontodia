@@ -115,10 +115,19 @@
     @include delete;
   }
 
-  &__establish-connection {
-    @include halo-button;
-    background-image: url("../images/font-awesome/plug.svg");
+  @mixin establish-connection {
     top: -($buttonHeight + $buttonMargin);
     left: -($buttonWidth + $buttonMargin);
+  }
+
+  &__establish-connection {
+    @include halo-button;
+    @include establish-connection;
+    background-image: url("../images/font-awesome/plug.svg");
+  }
+
+  &__establish-connection-spinner {
+    @include spinner;
+    @include establish-connection;
   }
 }

@@ -70,6 +70,10 @@ export class ExampleMetadataApi implements MetadataApi {
         return Promise.resolve(true);
     }
 
+    canLinkElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
+        return Promise.resolve(true);
+    }
+
     canDeleteLink(
         link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<boolean> {

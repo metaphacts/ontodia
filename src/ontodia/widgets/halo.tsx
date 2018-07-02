@@ -7,6 +7,7 @@ import { boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 
 import { EditorController } from '../editor/editorController';
+import { AuthoringKind } from '../editor/authoringState';
 
 import { AnyListener, Unsubscribe } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
@@ -29,6 +30,7 @@ export interface Props extends PaperWidgetProps {
 export interface State {
     canDelete?: boolean;
     canEdit?: boolean;
+    canLink?: boolean;
 }
 
 const CLASS_NAME = 'ontodia-halo';
@@ -44,8 +46,8 @@ export class Halo extends React.Component<Props, State> {
 
     componentDidMount() {
         this.listenToElement(this.props.target);
-        this.canDelete(this.props.target);
-        this.canEdit(this.props.target);
+        this.props.editor.events.on('changeAuthoringState', this.updateAuthoringButtons);
+        this.updateAuthoringButtons();
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -56,8 +58,7 @@ export class Halo extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
-            this.canDelete(this.props.target);
-            this.canEdit(this.props.target);
+            this.updateAuthoringButtons();
         }
     }
 
@@ -70,6 +71,12 @@ export class Halo extends React.Component<Props, State> {
             element.events.onAny(this.onElementEvent);
             this.unsubscribeFromElement = () => element.events.offAny(this.onElementEvent);
         }
+    }
+
+    private updateAuthoringButtons = () => {
+        this.canDelete(this.props.target);
+        this.canEdit(this.props.target);
+        this.canLink(this.props.target);
     }
 
     private canDelete(target: DiagramElement) {
@@ -87,8 +94,13 @@ export class Halo extends React.Component<Props, State> {
     }
 
     private canEdit(target: DiagramElement) {
-        const {metadataApi} = this.props;
+        const {metadataApi, editor} = this.props;
         if (!metadataApi) {
+            this.setState({canEdit: false});
+            return;
+        }
+        const event = editor.authoringState.index.elements.get(target.iri);
+        if (event && event.type === AuthoringKind.DeleteElement) {
             this.setState({canEdit: false});
         } else {
             this.setState({canEdit: undefined});
@@ -100,18 +112,37 @@ export class Halo extends React.Component<Props, State> {
         }
     }
 
+    private canLink(target: DiagramElement) {
+        const {metadataApi, editor} = this.props;
+        if (!metadataApi) {
+            this.setState({canLink: false});
+            return;
+        }
+        const event = editor.authoringState.index.elements.get(target.iri);
+        if (event && event.type === AuthoringKind.DeleteElement) {
+            this.setState({canLink: false});
+        } else {
+            this.setState({canLink: undefined});
+            metadataApi.canLinkElement(target.data, this.cancellation.signal).then(canLink => {
+                if (!this.cancellation.signal.aborted && this.props.target.iri === target.iri) {
+                    this.setState({canLink});
+                }
+            });
+        }
+    }
+
     private onElementEvent: AnyListener<ElementEvents> = data => {
         if (data.changePosition || data.changeSize || data.changeExpanded) {
             this.forceUpdate();
         }
         if (data.changeData) {
-            this.canDelete(this.props.target);
-            this.canEdit(this.props.target);
+            this.updateAuthoringButtons();
         }
     }
 
     componentWillUnmount() {
         this.listenToElement(undefined);
+        this.props.editor.events.off('changeAuthoringState', this.updateAuthoringButtons);
         this.cancellation.abort();
     }
 
@@ -151,6 +182,25 @@ export class Halo extends React.Component<Props, State> {
         const title = canEdit ? 'Edit entity' : 'Editing is unavailable for the selected element';
         return (
             <button className={`${CLASS_NAME}__edit`} title={title} onClick={onEdit} disabled={!canEdit} />
+        );
+    }
+
+    private renderEstablishNewLinkButton() {
+        const {onEstablishNewLink} = this.props;
+        const {canLink} = this.state;
+        if (!onEstablishNewLink) { return null; }
+        if (canLink === undefined) {
+            return (
+                <div className={`${CLASS_NAME}__establish-connection-spinner`}>
+                    <HtmlSpinner width={20} height={20} />
+                </div>
+            );
+        }
+        const title =
+            canLink ? 'Establish connection' : 'Establishing connection is unavailable for the selected element';
+        return (
+            <button className={`${CLASS_NAME}__establish-connection`} title={title}
+                onMouseDown={this.onEstablishNewLink} disabled={!canLink} />
         );
     }
 
@@ -195,10 +245,7 @@ export class Halo extends React.Component<Props, State> {
                     onClick={onExpand} />}
                 {this.renderEditButton()}
                 {this.renderDeleteButton()}
-                {this.props.onEstablishNewLink && <div className={`${CLASS_NAME}__establish-connection`}
-                     role='button'
-                     title={`Establish connection`}
-                     onMouseDown={this.onEstablishNewLink} />}
+                {this.renderEstablishNewLinkButton()}
             </div>
         );
     }

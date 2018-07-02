@@ -33,6 +33,8 @@ export interface MetadataApi {
 
     canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
 
+    canLinkElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
+
     canDeleteLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     canEditLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
