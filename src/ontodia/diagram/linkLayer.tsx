@@ -496,7 +496,10 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
         const markers: Array<ReactElement<LinkMarkerProps>> = [];
 
         view.getLinkTemplates().forEach((template, linkTypeId) => {
-            const typeIndex = view.model.getLinkType(linkTypeId).index;
+            const type = view.model.getLinkType(linkTypeId);
+            if (!type) { return; }
+
+            const typeIndex = type.index;
             if (template.markerSource) {
                 markers.push(
                     <LinkMarker key={typeIndex * 2}
