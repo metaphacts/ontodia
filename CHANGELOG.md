@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+## [0.8.1]
+### Changed
+- **[Breaking]** Introduce nominal types for element, class, link type and property type IRIs.
+
+### Fixed
+- **[Breaking]** Assumption "element ID equals its IRI" when dealing with sources
+and targets of links.
+- Non-updating link labels when changing the language.
+- Extracting link and property types metadata for multiple languages.
+- Filtering in Connections menu for upper-case text.
+- Increase default inter-node distance for force layout.
+
 ## [0.8.0]
 ### Added
 - Nesting (grouping) elements on diagram using `groupBy` option and `<EmbeddedLayer />`
@@ -276,8 +288,9 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...HEAD
-[0.8.0]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.6.1
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/ontodia-org/ontodia/compare/v0.6.1...v0.8.0
 [0.6.1]: https://github.com/ontodia-org/ontodia/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/ontodia-org/ontodia/compare/v0.5.2...v0.5.3
