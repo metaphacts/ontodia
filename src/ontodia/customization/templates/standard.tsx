@@ -1,69 +1,59 @@
 import * as React from 'react';
 import { Component } from 'react';
 
-import { ElementIri, LinkTypeIri, PropertyTypeIri, LocalizedString } from '../../data/model';
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
 
 import { formatLocalizedLabel } from '../../diagram/model';
-import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../../diagram/paperArea';
-import { ElementContextTypes, ElementContextWrapper } from '../../diagram/elementLayer';
-import { EventObserver } from '../../viewUtils/events';
+
+import { AuthoredEntity, AuthoredEntityContext } from '../../editor/authoredEntity';
+
 import { HtmlSpinner } from '../../viewUtils/spinner';
-import { KeyedObserver, observeLinkTypes, observeProperties } from '../../viewUtils/keyedObserver';
 
 const FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
 
 const CLASS_NAME = 'ontodia-standard-template';
 
 export class StandardTemplate extends Component<TemplateProps, {}> {
-    static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
-    context: ElementContextWrapper & PaperAreaContextWrapper;
-
-    private linkTypesObserver: KeyedObserver<LinkTypeIri>;
-    private propertiesObserver: KeyedObserver<PropertyTypeIri>;
-
-    constructor(props: TemplateProps, context: any) {
-        super(props, context);
-    }
-
-    componentDidMount() {
-        const {editor} = this.context.ontodiaElement;
-        this.linkTypesObserver = observeLinkTypes(
-            editor.model, 'changeLabel', () => this.forceUpdate()
+    render() {
+        return (
+            <AuthoredEntity iri={this.props.iri}>
+                {context => this.renderTemplate(context)}
+            </AuthoredEntity>
         );
-        this.propertiesObserver = observeProperties(
-            editor.model, 'changeLabel', () => this.forceUpdate()
+    }
+
+    private renderTemplate(context: AuthoredEntityContext) {
+        const {color, types, isExpanded} = this.props;
+        const label = this.getLabel();
+
+        return (
+            <div className={CLASS_NAME}>
+                <div className={`${CLASS_NAME}__main`} style={{backgroundColor: color, borderColor: color}}>
+                    <div className={`${CLASS_NAME}__body`} style={{borderLeftColor: color}}>
+                        {this.renderThumbnail()}
+                        <div className={`${CLASS_NAME}__body-content`}>
+                            <div title={types} className={`${CLASS_NAME}__type`}>
+                                <div className={`${CLASS_NAME}__type-value`}>{this.getTypesLabel()}</div>
+                            </div>
+                            <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
+                        </div>
+                        {this.renderValidationStatus(context)}
+                    </div>
+                </div>
+                {isExpanded ? (
+                    <div className={`${CLASS_NAME}__dropdown`} style={{borderColor: color}}>
+                        {this.renderPhoto()}
+                        <div className={`${CLASS_NAME}__dropdown-content`}>
+                            {this.renderIri()}
+                            {this.renderProperties()}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
         );
-        this.observeTypes();
-    }
-
-    componentDidUpdate() {
-        this.observeTypes();
-    }
-
-    private observeTypes() {
-        const iri = this.props.iri as ElementIri;
-        const {editor} = this.context.ontodiaElement;
-        const validation = editor.validationState.elements.get(iri);
-        if (validation) {
-            this.linkTypesObserver.observe(
-                validation.errors.map(error => error.linkType).filter(type => type)
-            );
-            this.propertiesObserver.observe(
-                validation.errors.map(error => error.propertyType).filter(type => type)
-            );
-        } else {
-            this.linkTypesObserver.observe([]);
-            this.propertiesObserver.observe([]);
-        }
-    }
-
-    componentWillUnmount() {
-        this.linkTypesObserver.stopListening();
-        this.propertiesObserver.stopListening();
     }
 
     private renderProperties() {
@@ -156,41 +146,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return getProperty(props, FOAF_NAME) || label;
     }
 
-    render() {
-        const {color, types, isExpanded} = this.props;
-        const label = this.getLabel();
-
-        return (
-            <div className={CLASS_NAME}>
-                <div className={`${CLASS_NAME}__main`} style={{backgroundColor: color, borderColor: color}}>
-                    <div className={`${CLASS_NAME}__body`} style={{borderLeftColor: color}}>
-                        {this.renderThumbnail()}
-                        <div className={`${CLASS_NAME}__body-content`}>
-                            <div title={types} className={`${CLASS_NAME}__type`}>
-                                <div className={`${CLASS_NAME}__type-value`}>{this.getTypesLabel()}</div>
-                            </div>
-                            <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
-                        </div>
-                        {this.renderValidationStatus()}
-                    </div>
-                </div>
-                {isExpanded ? (
-                    <div className={`${CLASS_NAME}__dropdown`} style={{borderColor: color}}>
-                        {this.renderPhoto()}
-                        <div className={`${CLASS_NAME}__dropdown-content`}>
-                            {this.renderIri()}
-                            {this.renderProperties()}
-                        </div>
-                    </div>
-                ) : null}
-            </div>
-        );
-    }
-
-    private renderValidationStatus() {
-        const {editor, view} = this.context.ontodiaElement;
-        const iri = this.props.iri as ElementIri;
-        const validation = editor.validationState.elements.get(iri);
+    private renderValidationStatus({editor, view}: AuthoredEntityContext) {
+        const validation = editor.validationState.elements.get(this.props.iri);
         if (!validation) {
             return null;
         }

@@ -11,7 +11,7 @@ import { EditorController } from '../editor/editorController';
 import { AuthoringState, AuthoringKind } from '../editor/authoringState';
 
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
-import { Cancellation } from '../viewUtils/async';
+import { Cancellation, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-halo-link';
@@ -38,7 +38,8 @@ export interface State {
 export class HaloLink extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private targetListener = new EventObserver();
-    private readonly cancellation = new Cancellation();
+    private queryDebouncer = new Debouncer();
+    private queryCancellation = new Cancellation();
 
     constructor(props: Props) {
         super(props);
@@ -49,27 +50,34 @@ export class HaloLink extends React.Component<Props, State> {
 
     componentDidMount() {
         const {target, editor} = this.props;
-        this.listener.listen(editor.events, 'changeAuthoringState', this.updateAll);
+        this.listener.listen(editor.events, 'changeAuthoringState', () => {
+            this.queryAllowedActions();
+        });
         this.listenToTarget(target);
-        this.updateAuthoringButtons();
+        this.queryAllowedActions();
     }
 
     componentDidUpdate(prevProps: Props) {
         if (prevProps.target !== this.props.target) {
             this.listenToTarget(this.props.target);
-            this.updateAuthoringButtons();
+            this.queryAllowedActions();
         }
     }
 
     componentWillUnmount() {
         this.listener.stopListening();
         this.listenToTarget(undefined);
-        this.cancellation.abort();
+        this.queryDebouncer.dispose();
+        this.queryCancellation.abort();
     }
 
-    private updateAuthoringButtons() {
-        this.queryCanDelete(this.props.target);
-        this.queryCanEdit(this.props.target);
+    private queryAllowedActions() {
+        this.queryDebouncer.call(() => {
+            this.queryCancellation.abort();
+            this.queryCancellation = new Cancellation();
+            this.queryCanDelete(this.props.target);
+            this.queryCanEdit(this.props.target);
+        });
     }
 
     private queryCanDelete(link: Link) {
@@ -84,8 +92,10 @@ export class HaloLink extends React.Component<Props, State> {
             this.setState({canDelete: undefined});
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
-            metadataApi.canDeleteLink(link.data, source.data, target.data, this.cancellation.signal).then(canDelete => {
-                if (!this.cancellation.signal.aborted && this.props.target.id === link.id) {
+            const signal = this.queryCancellation.signal;
+            metadataApi.canDeleteLink(link.data, source.data, target.data, signal).then(canDelete => {
+                if (signal.aborted) { return; }
+                if (this.props.target.id === link.id) {
                     this.setState({canDelete});
                 }
             });
@@ -104,8 +114,10 @@ export class HaloLink extends React.Component<Props, State> {
             this.setState({canEdit: undefined});
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
-            metadataApi.canEditLink(link.data, source.data, target.data, this.cancellation.signal).then(canEdit => {
-                if (!this.cancellation.signal.aborted && this.props.target.id === link.id) {
+            const signal = this.queryCancellation.signal;
+            metadataApi.canEditLink(link.data, source.data, target.data, signal).then(canEdit => {
+                if (signal.aborted) { return; }
+                if (this.props.target.id === link.id) {
                     this.setState({canEdit});
                 }
             });
