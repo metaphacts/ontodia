@@ -112,7 +112,7 @@ export class Halo extends React.Component<Props, State> {
 
     render() {
         const {
-            paperArea, target, navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
+            paperArea, editor, target, navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
             onExpand,
         } = this.props;
 
@@ -145,7 +145,7 @@ export class Halo extends React.Component<Props, State> {
                     role='button'
                     title={`Expand an element to reveal additional properties`}
                     onClick={onExpand} />}
-                {this.renderEstablishNewLinkButton()}
+                {editor.inAuthoringMode ? this.renderEstablishNewLinkButton() : null}
             </div>
         );
     }

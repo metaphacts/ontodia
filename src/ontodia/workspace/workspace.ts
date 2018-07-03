@@ -14,7 +14,7 @@ import { DiagramView, ViewOptions } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import {
-    EditorController, EditorOptions, recursiveForceLayout, RenderPropertyEditor,
+    EditorController, EditorOptions, PropertyEditor, recursiveForceLayout,
 } from '../editor/editorController';
 import { AuthoringState } from '../editor/authoringState';
 
@@ -40,6 +40,7 @@ export interface WorkspaceProps {
     onPointerMove?: (e: PointerEvent) => void;
     onPointerUp?: (e: PointerUpEvent) => void;
 
+    toolbar?: ReactElement<any>;
     hidePanels?: boolean;
     hideToolbar?: boolean;
     hideHalo?: boolean;
@@ -70,11 +71,14 @@ export interface WorkspaceProps {
     onZoom?: (scaleX: number, scaleY: number) => void;
 
     history?: CommandHistory;
-    toolbar?: ReactElement<any>;
+    viewOptions?: DiagramViewOptions;
+
+    /**
+     * If provided, switches editor into "authoring mode".
+     */
     metadataApi?: MetadataApi;
     validationApi?: ValidationApi;
-    viewOptions?: DiagramViewOptions;
-    renderPropertyEditor?: RenderPropertyEditor;
+    propertyEditor?: PropertyEditor;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -119,7 +123,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
         super(props);
 
         const {
-            hideHalo, language, history, metadataApi, validationApi, viewOptions = {}, renderPropertyEditor,
+            hideHalo, language, history, viewOptions = {},
+            metadataApi, validationApi, propertyEditor,
         } = this.props;
         const {
             templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
@@ -140,24 +145,18 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.editor = new EditorController({
             model: this.model,
             view: this.view,
-            metadataApi,
-            validationApi,
             disableHalo: hideHalo || disableDefaultHalo,
             suggestProperties,
-            renderPropertyEditor,
+            validationApi,
+            propertyEditor,
         });
+        this.editor.setMetadataApi(metadataApi);
 
         this.view.setLanguage(this.props.language);
         this.state = {
             isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
             isRightPanelOpen: this.props.rightPanelInitiallyOpen,
         };
-    }
-
-    componentWillReceiveProps(nextProps: WorkspaceProps) {
-        if (nextProps.language !== this.view.getLanguage()) {
-            this.view.setLanguage(nextProps.language);
-        }
     }
 
     _getPaperArea(): PaperArea | undefined {
@@ -261,6 +260,16 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
+        }
+    }
+
+    componentWillReceiveProps(nextProps: WorkspaceProps) {
+        if (nextProps.language !== this.view.getLanguage()) {
+            this.view.setLanguage(nextProps.language);
+        }
+
+        if (nextProps.metadataApi !== this.editor.metadataApi) {
+            this.editor.setMetadataApi(nextProps.metadataApi);
         }
     }
 

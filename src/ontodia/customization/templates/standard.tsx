@@ -30,7 +30,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         const {color, types, isExpanded, iri} = this.props;
         const label = this.getLabel();
 
-        const isNewElement = AuthoringState.isNewElement(context.editor.authoringState, iri);
+        const {editor} = context;
+        const isNewElement = AuthoringState.isNewElement(editor.authoringState, iri);
         const leftStripeColor = isNewElement ? 'white' : color;
 
         return (
@@ -44,7 +45,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             </div>
                             <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
-                        {this.renderValidationStatus(context)}
+                        {editor.inAuthoringMode ? this.renderValidationStatus(context) : null}
                     </div>
                 </div>
                 {isExpanded ? (
@@ -53,8 +54,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         <div className={`${CLASS_NAME}__dropdown-content`}>
                             {this.renderIri()}
                             {this.renderProperties()}
-                            <hr className={`${CLASS_NAME}__hr`} />
-                            {this.renderActions(context)}
+                            {editor.inAuthoringMode ? <hr className={`${CLASS_NAME}__hr`} /> : null}
+                            {editor.inAuthoringMode ? this.renderActions(context) : null}
                         </div>
                     </div>
                 ) : null}

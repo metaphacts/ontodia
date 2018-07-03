@@ -34,7 +34,7 @@ import {
     AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
     LinkValidation, linkConnectedToElement, TemporaryState, AuthoringEvent,
 } from './authoringState';
-import { EditLayer, EditMode, ELEMENT_TYPE, LINK_TYPE } from './editLayer';
+import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
 
 import { Cancellation } from '../viewUtils/async';
 import { HashMap } from '../viewUtils/collections';
@@ -43,7 +43,7 @@ export interface PropertyEditorOptions {
     elementData: ElementModel;
     onSubmit: (newData: ElementModel) => void;
 }
-export type RenderPropertyEditor = (options: PropertyEditorOptions) => React.ReactElement<any>;
+export type PropertyEditor = (options: PropertyEditorOptions) => React.ReactElement<any>;
 
 export enum DialogTypes {
     ConnectionsMenu,
@@ -60,14 +60,14 @@ export interface EditorProps extends EditorOptions {
 }
 
 export interface EditorOptions {
-    metadataApi?: MetadataApi;
-    validationApi?: ValidationApi;
     disableHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
-    renderPropertyEditor?: RenderPropertyEditor;
+    validationApi?: ValidationApi;
+    propertyEditor?: PropertyEditor;
 }
 
 export interface EditorEvents {
+    changeMode: { source: EditorController };
     changeSelection: PropertyChange<EditorController, ReadonlyArray<SelectionItem>>;
     changeAuthoringState: PropertyChange<EditorController, AuthoringState>;
     changeValidationState: PropertyChange<EditorController, ValidationState>;
@@ -84,6 +84,7 @@ export class EditorController {
     private readonly view: DiagramView;
     private readonly options: EditorOptions;
 
+    private _metadataApi: MetadataApi | undefined;
     private _authoringState = AuthoringState.empty;
     private _validationState = ValidationState.empty;
     private _temporaryState = TemporaryState.empty;
@@ -145,7 +146,20 @@ export class EditorController {
         }
     }
 
-    get metadataApi() { return this.options.metadataApi; }
+    get inAuthoringMode(): boolean {
+        return Boolean(this._metadataApi);
+    }
+
+    get metadataApi() { return this._metadataApi; }
+    setMetadataApi(value: MetadataApi) {
+        const previous = this._metadataApi;
+        if (value === previous) { return; }
+        this._metadataApi = value;
+        if (Boolean(value) !== Boolean(previous)) {
+            // authoring mode changed
+            this.source.trigger('changeMode', {source: this});
+        }
+    }
 
     get authoringState() { return this._authoringState; }
     setAuthoringState(value: AuthoringState) {
@@ -275,7 +289,7 @@ export class EditorController {
         if (selected instanceof Element) {
             halo = (
                 <Halo editor={this}
-                    metadataApi={this.options.metadataApi}
+                    metadataApi={this.metadataApi}
                     target={selected}
                     onRemove={() => this.removeSelectedElements()}
                     onExpand={() => {
@@ -294,7 +308,7 @@ export class EditorController {
                     }}
                     onAddToFilter={() => selected.addToFilter()}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selected, mode: EditMode.establishNewLink, point})
+                        this.startEditing({target: selected, mode: EditLayerMode.establishLink, point})
                     }
                 />
             );
@@ -302,7 +316,7 @@ export class EditorController {
             halo = (
                 <HaloLink view={this.view}
                     editor={this}
-                    metadataApi={this.options.metadataApi}
+                    metadataApi={this.metadataApi}
                     target={selected}
                     onEdit={() => this.showEditLinkForm(selected)}
                     onDelete={() => this.deleteLink(selected.data)}
@@ -313,10 +327,10 @@ export class EditorController {
                         }
                     }}
                     onSourceMove={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selected, mode: EditMode.moveLinkSource, point})
+                        this.startEditing({target: selected, mode: EditLayerMode.moveLinkSource, point})
                     }
                     onTargetMove={(point: { x: number; y: number }) =>
-                        this.startEditing({target: selected, mode: EditMode.moveLinkTarget, point})
+                        this.startEditing({target: selected, mode: EditLayerMode.moveLinkTarget, point})
                     }
                 />
             );
@@ -339,13 +353,13 @@ export class EditorController {
     }
 
     showEditEntityForm(target: Element) {
-        const {renderPropertyEditor} = this.options;
+        const {propertyEditor} = this.options;
         const dialogType = DialogTypes.EditEntityForm;
         const onSubmit = (newData: ElementModel) => {
             this.hideDialog();
             this.changeEntityData(newData.id, newData);
         };
-        const content = renderPropertyEditor ? renderPropertyEditor({elementData: target.data, onSubmit}) : (
+        const content = propertyEditor ? propertyEditor({elementData: target.data, onSubmit}) : (
             <EditEntityForm view={this.view} entity={target.data} onApply={onSubmit}
                 onCancel={() => this.hideDialog()} />
         );
@@ -361,7 +375,7 @@ export class EditorController {
         const dialogType = DialogTypes.EditEntityTypeForm;
         const content = (
             <EditElementTypeForm view={this.view}
-                metadataApi={this.options.metadataApi}
+                metadataApi={this.metadataApi}
                 link={link.data}
                 source={source.data}
                 target={target.data}
@@ -405,7 +419,7 @@ export class EditorController {
         const dialogType = DialogTypes.EditLinkForm;
         const content = (
             <EditLinkForm view={this.view}
-                metadataApi={this.options.metadataApi}
+                metadataApi={this.metadataApi}
                 link={target}
                 onApply={(data: LinkModel) => {
                     if (this.temporaryState.links.has(target.data)) {
@@ -525,7 +539,7 @@ export class EditorController {
         const element = this.model.createElement(elementModel);
         element.setExpanded(true);
 
-        if (classIri === ELEMENT_TYPE) {
+        if (isPlaceholderElementType(classIri)) {
             this.setTemporaryState(
                 TemporaryState.addElement(this.temporaryState, element.data)
             );
@@ -597,7 +611,7 @@ export class EditorController {
         this.model.createLinks(base.data);
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
-            if (base.typeId === LINK_TYPE) {
+            if (isPlaceholderLinkType(base.typeId)) {
                 this.setTemporaryState(
                     TemporaryState.addLink(this.temporaryState, base.data)
                 );
@@ -675,12 +689,12 @@ export class EditorController {
         batch.store();
     }
 
-    private startEditing(params: { target: Element | Link; mode: EditMode; point: Vector }) {
+    private startEditing(params: { target: Element | Link; mode: EditLayerMode; point: Vector }) {
         const {target, mode, point} = params;
         const editLayer = (
             <EditLayer view={this.view}
                 editor={this}
-                metadataApi={this.options.metadataApi}
+                metadataApi={this.metadataApi}
                 mode={mode}
                 target={target}
                 point={point}

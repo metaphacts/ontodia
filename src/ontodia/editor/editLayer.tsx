@@ -16,8 +16,8 @@ import { Spinner } from '../viewUtils/spinner';
 
 import { EditorController } from './editorController';
 
-export enum EditMode {
-    establishNewLink,
+export enum EditLayerMode {
+    establishLink,
     moveLinkSource,
     moveLinkTarget,
 }
@@ -26,7 +26,7 @@ export interface Props extends PaperWidgetProps {
     view: DiagramView;
     editor: EditorController;
     metadataApi: MetadataApi | undefined;
-    mode: EditMode;
+    mode: EditLayerMode;
     target: Element | Link;
     point: { x: number; y: number };
 }
@@ -37,8 +37,8 @@ export interface State {
     canDropOnElement?: boolean;
 }
 
-export const ELEMENT_TYPE = '' as ElementTypeIri;
-export const LINK_TYPE = '' as LinkTypeIri;
+const PLACEHOLDER_ELEMENT_TYPE = '' as ElementTypeIri;
+const PLACEHOLDER_LINK_TYPE = '' as LinkTypeIri;
 
 export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
@@ -55,9 +55,9 @@ export class EditLayer extends React.Component<Props, State> {
 
     componentDidMount() {
         const {mode, target, point} = this.props;
-        if (mode === EditMode.establishNewLink) {
+        if (mode === EditLayerMode.establishLink) {
             this.beginCreatingLink({sourceId: target.id, point});
-        } else if (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget) {
+        } else if (mode === EditLayerMode.moveLinkSource || mode === EditLayerMode.moveLinkTarget) {
             this.beginMovingLink({link: target as Link, point});
         } else {
             throw new Error('Unknown edit mode');
@@ -81,7 +81,7 @@ export class EditLayer extends React.Component<Props, State> {
 
         const temporaryElement = this.createTemporaryElement(point);
         const temporaryLink = view.model.addLink(new Link({
-            typeId: LINK_TYPE,
+            typeId: PLACEHOLDER_LINK_TYPE,
             sourceId,
             targetId: temporaryElement.id,
         }));
@@ -101,11 +101,11 @@ export class EditLayer extends React.Component<Props, State> {
         const temporaryElement = this.createTemporaryElement(point);
         let temporaryLink: Link;
 
-        if (mode === EditMode.moveLinkSource) {
+        if (mode === EditLayerMode.moveLinkSource) {
             temporaryLink = editor.model.addLink(new Link({
                 id, typeId, sourceId: temporaryElement.id, targetId, data, vertices,
             }));
-        } else if (mode === EditMode.moveLinkTarget) {
+        } else if (mode === EditLayerMode.moveLinkTarget) {
             temporaryLink = editor.model.addLink(new Link({
                 id, typeId, sourceId, targetId: temporaryElement.id, data, vertices,
             }));
@@ -144,7 +144,7 @@ export class EditLayer extends React.Component<Props, State> {
     private canDropOnCanvas() {
         const {mode, editor, metadataApi} = this.props;
 
-        if (!metadataApi || mode !== EditMode.establishNewLink) {
+        if (!metadataApi || mode !== EditLayerMode.establishLink) {
             this.setState({canDropOnCanvas: false});
             return;
         }
@@ -172,10 +172,10 @@ export class EditLayer extends React.Component<Props, State> {
         let source: ElementModel;
         let target: ElementModel;
 
-        if (mode === EditMode.establishNewLink || mode === EditMode.moveLinkTarget) {
+        if (mode === EditLayerMode.establishLink || mode === EditLayerMode.moveLinkTarget) {
             source = editor.model.getElement(this.temporaryLink.sourceId).data;
             target = targetElement.data;
-        } else if (mode === EditMode.moveLinkSource) {
+        } else if (mode === EditLayerMode.moveLinkSource) {
             source = targetElement.data;
             target = editor.model.getElement(this.temporaryLink.targetId).data;
         }
@@ -193,7 +193,7 @@ export class EditLayer extends React.Component<Props, State> {
 
         editor.model.removeElement(this.temporaryElement.id);
 
-        if (targetElement || (mode === EditMode.moveLinkSource || mode === EditMode.moveLinkTarget)) {
+        if (targetElement || (mode === EditLayerMode.moveLinkSource || mode === EditLayerMode.moveLinkTarget)) {
             this.endChangingLink({link: this.temporaryLink, targetElement, canDrop: canDropOnElement}).then(link => {
                 if (link) {
                     editor.setSelection([link]);
@@ -232,16 +232,16 @@ export class EditLayer extends React.Component<Props, State> {
             originalLink = editor.model.addLink(this.oldLink);
         }
 
-        if (mode === EditMode.establishNewLink) {
+        if (mode === EditLayerMode.establishLink) {
             const sourceElement = editor.model.getElement(link.sourceId);
             if (canDrop && targetElement) {
                 return this.createNewLink(sourceElement, targetElement);
             }
-        } else if (mode === EditMode.moveLinkSource) {
+        } else if (mode === EditLayerMode.moveLinkSource) {
             if (canDrop && targetElement) {
                 return Promise.resolve(editor.moveLinkSource({link, newSource: targetElement}));
             }
-        } else if (mode === EditMode.moveLinkTarget) {
+        } else if (mode === EditLayerMode.moveLinkTarget) {
             if (canDrop && targetElement) {
                 return Promise.resolve(editor.moveLinkTarget({link, newTarget: targetElement}));
             }
@@ -258,7 +258,7 @@ export class EditLayer extends React.Component<Props, State> {
             return Promise.resolve(undefined);
         }
         return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
-            const type = elementTypes.length === 1 ? elementTypes[0] : ELEMENT_TYPE;
+            const type = elementTypes.length === 1 ? elementTypes[0] : PLACEHOLDER_ELEMENT_TYPE;
             return editor.createNewEntity(type);
         });
     }
@@ -269,7 +269,7 @@ export class EditLayer extends React.Component<Props, State> {
             return Promise.resolve(undefined);
         }
         return metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
-            const typeId = linkTypes.length === 1 ? linkTypes[0] : LINK_TYPE;
+            const typeId = linkTypes.length === 1 ? linkTypes[0] : PLACEHOLDER_LINK_TYPE;
             const link = new Link({
                 typeId,
                 sourceId: source.id,
@@ -367,4 +367,12 @@ export class EditLayer extends React.Component<Props, State> {
             </TransformedSvgCanvas>
         );
     }
+}
+
+export function isPlaceholderElementType(target: ElementTypeIri) {
+    return target === PLACEHOLDER_ELEMENT_TYPE;
+}
+
+export function isPlaceholderLinkType(target: LinkTypeIri) {
+    return target === PLACEHOLDER_LINK_TYPE;
 }

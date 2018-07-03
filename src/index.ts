@@ -33,7 +33,7 @@ export * from './ontodia/editor/asyncModel';
 export * from './ontodia/editor/authoredEntity';
 export * from './ontodia/editor/authoringState';
 export {
-    EditorOptions, EditorEvents, EditorController, RenderPropertyEditor, PropertyEditorOptions,
+    EditorOptions, EditorEvents, EditorController, PropertyEditor, PropertyEditorOptions,
 } from './ontodia/editor/editorController';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/editor/layoutData';
 

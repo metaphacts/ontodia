@@ -75,9 +75,58 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     }
 
     private renderLeftPanel = () => {
-        if (this.props.hidePanels) { return null; }
+        const {hidePanels, editor, searchCriteria = {}} = this.props;
+        if (hidePanels) {
+            return null;
+        }
 
-        const {searchCriteria = {}} = this.props;
+        const items: Array<React.ReactElement<any>> = [];
+        items.push(
+            <AccordionItem key='classTree'
+                heading='Classes'
+                tutorialProps={{
+                    'data-position': 'right',
+                    'data-step': '1',
+                    'data-intro-id': 'tree-view',
+                    'data-intro': INTRO_CLASSES,
+                }}>
+                <ClassTree view={this.props.view}
+                    editor={this.props.editor}
+                    onClassSelected={classId => {
+                        const elementType = this.props.model.createClass(classId);
+                        this.props.onSearchCriteriaChanged({elementType});
+                    }}
+                />
+            </AccordionItem>
+        );
+        if (editor.inAuthoringMode) {
+            items.push(
+                <AccordionItem key='authoringTools' heading='Authoring Tools'>
+                    <AuthoringTools view={this.props.view}
+                        editor={this.props.editor}
+                        metadataApi={this.props.metadataApi}
+                        selectedElementType={searchCriteria.elementType}
+                    />
+                </AccordionItem>
+            );
+        }
+        items.push(
+            <AccordionItem key='instancesSearch'
+                heading='Instances'
+                tutorialProps={{
+                    'data-position': 'top',
+                    'data-step': '2',
+                    'data-intro-id': 'filter-view',
+                    'data-intro': INTRO_INSTANCES,
+                }}>
+                <InstancesSearch view={this.props.view}
+                    model={this.props.model}
+                    criteria={searchCriteria}
+                    onCriteriaChanged={this.props.onSearchCriteriaChanged}
+                />
+            </AccordionItem>
+        );
+
         return (
             <ResizableSidebar dockSide={DockSide.Left}
                 isOpen={this.props.isLeftPanelOpen}
@@ -92,45 +141,13 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                     'data-intro-id': 'resize',
                     'data-intro': INTRO_RESIZE,
                 }}>
-                <Accordion onStartResize={() => this.untilMouseUp({
-                    preventTextSelection: true,
-                    verticalResizing: true,
-                })}>
-                    <AccordionItem heading='Classes'
-                        tutorialProps={{
-                            'data-position': 'right',
-                            'data-step': '1',
-                            'data-intro-id': 'tree-view',
-                            'data-intro': INTRO_CLASSES,
-                        }}>
-                        <ClassTree view={this.props.view}
-                            editor={this.props.editor}
-                            onClassSelected={classId => {
-                                const elementType = this.props.model.createClass(classId);
-                                this.props.onSearchCriteriaChanged({elementType});
-                            }}
-                        />
-                    </AccordionItem>
-                    <AccordionItem heading='Authoring Tools'>
-                        <AuthoringTools view={this.props.view}
-                            editor={this.props.editor}
-                            metadataApi={this.props.metadataApi}
-                            selectedElementType={searchCriteria.elementType}
-                        />
-                    </AccordionItem>
-                    <AccordionItem heading='Instances'
-                        tutorialProps={{
-                            'data-position': 'top',
-                            'data-step': '2',
-                            'data-intro-id': 'filter-view',
-                            'data-intro': INTRO_INSTANCES,
-                        }}>
-                        <InstancesSearch view={this.props.view}
-                            model={this.props.model}
-                            criteria={searchCriteria}
-                            onCriteriaChanged={this.props.onSearchCriteriaChanged}
-                        />
-                    </AccordionItem>
+                {/* Use different key to update when switching mode */}
+                <Accordion key={`accordion--${editor.inAuthoringMode ? 'exploring' : 'authoring'}`}
+                    onStartResize={() => this.untilMouseUp({
+                        preventTextSelection: true,
+                        verticalResizing: true,
+                    })}>
+                    {items}
                 </Accordion>
             </ResizableSidebar>
         );

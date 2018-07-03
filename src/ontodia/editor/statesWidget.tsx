@@ -114,12 +114,11 @@ export class StatesWidget extends React.Component<Props, {}> {
                 const onCancel = () => editor.discardChange(state);
 
                 if (state.type === AuthoringKind.ChangeElement && !state.before) {
-                    return <g>
+                    return <g key={element.id}>
                         <text x={x} y={y} dy='-1ex' pointerEvents='all'>
                             <tspan className={actionClass}>New</tspan> [
                                 <tspan className={cancelClass}
-                                    onClick={onCancel}
-                                    aria-role='button'>
+                                    onClick={onCancel}>
                                     <title>Revert creation of the element</title>
                                     cancel
                                 </tspan>
@@ -127,12 +126,11 @@ export class StatesWidget extends React.Component<Props, {}> {
                         </text>
                     </g>;
                 } else if (state.type === AuthoringKind.ChangeElement && state.before) {
-                    return <g>
+                    return <g key={element.id}>
                         <text x={x} y={y} dy='-1ex' pointerEvents='all'>
                             <tspan className={actionClass}>Change</tspan> [
                                 <tspan className={cancelClass}
-                                    onClick={onCancel}
-                                    aria-role='button'>
+                                    onClick={onCancel}>
                                     <title>Revert all changes in properties of the element</title>
                                     cancel
                                 </tspan>
@@ -142,12 +140,11 @@ export class StatesWidget extends React.Component<Props, {}> {
                 } else if (state.type === AuthoringKind.DeleteElement) {
                     const right = x + width;
                     const bottom = y + height;
-                    return <g>
+                    return <g key={element.id}>
                         <text x={x} y={y} dy='-1ex' pointerEvents='all'>
                             <tspan className={actionClass}>Delete</tspan> [
                                 <tspan className={cancelClass}
-                                    onClick={onCancel}
-                                    aria-role='button'>
+                                    onClick={onCancel}>
                                     <title>Revert deletion of the element</title>
                                     cancel
                                 </tspan>
