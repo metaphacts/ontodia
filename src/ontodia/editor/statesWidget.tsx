@@ -8,13 +8,15 @@ import { Link } from '../diagram/elements';
 
 import { EventObserver } from '../viewUtils/events';
 
-import { AuthoringKind } from './authoringState';
+import { AuthoringEvent, AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
 
 export interface Props extends PaperWidgetProps {
     editor: EditorController;
     view: DiagramView;
 }
+
+const CLASS_NAME = `ontodia-states-widget`;
 
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
@@ -107,16 +109,57 @@ export class StatesWidget extends React.Component<Props, {}> {
             }
             const state = editor.authoringState.index.elements.get(element.iri);
             if (state) {
-                let color: string;
-                if (state.type === AuthoringKind.ChangeElement) {
-                    color = state.before ? 'blue' : 'green';
+                const actionClass = `${CLASS_NAME}__action`;
+                const cancelClass = `${CLASS_NAME}__cancel`;
+                const onCancel = () => editor.discardChange(state);
+
+                if (state.type === AuthoringKind.ChangeElement && !state.before) {
+                    return <g>
+                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
+                            <tspan className={actionClass}>New</tspan> [
+                                <tspan className={cancelClass}
+                                    onClick={onCancel}
+                                    aria-role='button'>
+                                    <title>Revert creation of the element</title>
+                                    cancel
+                                </tspan>
+                            ]
+                        </text>
+                    </g>;
+                } else if (state.type === AuthoringKind.ChangeElement && state.before) {
+                    return <g>
+                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
+                            <tspan className={actionClass}>Change</tspan> [
+                                <tspan className={cancelClass}
+                                    onClick={onCancel}
+                                    aria-role='button'>
+                                    <title>Revert all changes in properties of the element</title>
+                                    cancel
+                                </tspan>
+                            ]
+                        </text>
+                    </g>;
                 } else if (state.type === AuthoringKind.DeleteElement) {
-                    color = 'red';
+                    const right = x + width;
+                    const bottom = y + height;
+                    return <g>
+                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
+                            <tspan className={actionClass}>Delete</tspan> [
+                                <tspan className={cancelClass}
+                                    onClick={onCancel}
+                                    aria-role='button'>
+                                    <title>Revert deletion of the element</title>
+                                    cancel
+                                </tspan>
+                            ]
+                        </text>
+                        <rect x={x} y={y} width={width} height={height} fill='white' fillOpacity={0.5} />
+                        <line x1={x} y1={y} x2={right} y2={bottom} stroke='red' />
+                        <line x1={right} y1={y} x2={x} y2={bottom} stroke='red' />
+                    </g>;
+                } else {
+                    throw new Error('Unexpected element status');
                 }
-                return (
-                    <rect key={element.id} x={x} y={y} width={width} height={height} fill={'none'} stroke={color}
-                        strokeWidth={3} strokeOpacity={0.7} />
-                );
             }
             return null;
         });

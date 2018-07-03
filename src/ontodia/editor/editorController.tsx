@@ -145,6 +145,8 @@ export class EditorController {
         }
     }
 
+    get metadataApi() { return this.options.metadataApi; }
+
     get authoringState() { return this._authoringState; }
     setAuthoringState(value: AuthoringState) {
         const previous = this._authoringState;
@@ -291,14 +293,6 @@ export class EditorController {
                         this.renderDefaultHalo();
                     }}
                     onAddToFilter={() => selected.addToFilter()}
-                    onEdit={() => this.showEditEntityForm(selected)}
-                    onDelete={() => this.deleteEntity(selected.iri)}
-                    onRevert={() => {
-                        const event = this.authoringState.index.elements.get(selected.iri);
-                        if (event && event.type === AuthoringKind.DeleteElement) {
-                            this.discardChange(event);
-                        }
-                    }}
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selected, mode: EditMode.establishNewLink, point})
                     }
@@ -527,7 +521,10 @@ export class EditorController {
             label: {values: [{text: 'New Entity', lang: ''}]},
             properties: {},
         };
+
         const element = this.model.createElement(elementModel);
+        element.setExpanded(true);
+
         if (classIri === ELEMENT_TYPE) {
             this.setTemporaryState(
                 TemporaryState.addElement(this.temporaryState, element.data)

@@ -9,6 +9,7 @@ import { getProperty } from './utils';
 import { formatLocalizedLabel } from '../../diagram/model';
 
 import { AuthoredEntity, AuthoredEntityContext } from '../../editor/authoredEntity';
+import { AuthoringState } from '../../editor/authoringState';
 
 import { HtmlSpinner } from '../../viewUtils/spinner';
 
@@ -19,19 +20,22 @@ const CLASS_NAME = 'ontodia-standard-template';
 export class StandardTemplate extends Component<TemplateProps, {}> {
     render() {
         return (
-            <AuthoredEntity iri={this.props.iri}>
+            <AuthoredEntity templateProps={this.props}>
                 {context => this.renderTemplate(context)}
             </AuthoredEntity>
         );
     }
 
     private renderTemplate(context: AuthoredEntityContext) {
-        const {color, types, isExpanded} = this.props;
+        const {color, types, isExpanded, iri} = this.props;
         const label = this.getLabel();
+
+        const isNewElement = AuthoringState.isNewElement(context.editor.authoringState, iri);
+        const leftStripeColor = isNewElement ? 'white' : color;
 
         return (
             <div className={CLASS_NAME}>
-                <div className={`${CLASS_NAME}__main`} style={{backgroundColor: color, borderColor: color}}>
+                <div className={`${CLASS_NAME}__main`} style={{backgroundColor: leftStripeColor, borderColor: color}}>
                     <div className={`${CLASS_NAME}__body`} style={{borderLeftColor: color}}>
                         {this.renderThumbnail()}
                         <div className={`${CLASS_NAME}__body-content`}>
@@ -49,6 +53,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         <div className={`${CLASS_NAME}__dropdown-content`}>
                             {this.renderIri()}
                             {this.renderProperties()}
+                            <hr className={`${CLASS_NAME}__hr`} />
+                            {this.renderActions(context)}
                         </div>
                     </div>
                 ) : null}
@@ -171,6 +177,34 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                     : <div className={`${CLASS_NAME}__invalid-icon`} />}
                 {(!validation.loading && validation.errors.length > 0)
                     ? validation.errors.length : undefined}
+            </div>
+        );
+    }
+
+    private renderActions(context: AuthoredEntityContext) {
+        const {canEdit, canDelete, onEdit, onDelete} = context;
+        const SPINNER_WIDTH = 15;
+        const SPINNER_HEIGHT = 12;
+        return (
+            <div className={`${CLASS_NAME}__actions`}>
+                <button type='button'
+                    title={canDelete ? 'Delete entity' : 'Deletion is unavailable for the selected element'}
+                    disabled={!canDelete}
+                    onClick={onDelete}>
+                    <span className='fa fa-trash' />&nbsp;
+                    {canEdit === undefined
+                        ? <HtmlSpinner width={SPINNER_WIDTH} height={SPINNER_HEIGHT} />
+                        : 'Delete'}
+                </button>
+                <button type='button'
+                    title={canEdit ? 'Edit entity' : 'Editing is unavailable for the selected element'}
+                    disabled={!canEdit}
+                    onClick={onEdit}>
+                    <span className='fa fa-edit' />&nbsp;
+                    {canEdit === undefined
+                        ? <HtmlSpinner width={SPINNER_WIDTH} height={SPINNER_HEIGHT} />
+                        : 'Edit'}
+                </button>
             </div>
         );
     }

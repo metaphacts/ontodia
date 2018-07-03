@@ -15,11 +15,12 @@ export interface CustomTypeStyle {
 export type ElementTemplate = ComponentClass<TemplateProps>;
 
 export interface TemplateProps {
+    elementId: string;
+    iri: ElementIri;
     types: string;
     label: string;
     color: any;
     icon: string;
-    iri: ElementIri;
     imgUrl?: string;
     isExpanded?: boolean;
     propsAsList?: PropArray;

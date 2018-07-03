@@ -95,6 +95,12 @@
     background-image: url("../images/delete.svg");
   }
 
+  &__delete {
+    @include halo-button;
+    @include ne-docked;
+    background-image: url("../images/font-awesome/trash-alt.svg");
+  }
+
   &__expand {
     @include halo-button;
     @include s-docked;
@@ -114,28 +120,6 @@
     background-image: url("../images/add-to-filter.png");
   }
 
-  &__edit {
-    @include halo-button;
-    @include sw-docked;
-    background-image: url("../images/font-awesome/edit.svg");
-  }
-
-  &__edit-spinner {
-    @include spinner;
-    @include sw-docked;
-  }
-
-  &__delete {
-    @include halo-button;
-    @include n-docked;
-    background-image: url("../images/font-awesome/trash-alt.svg");
-  }
-
-  &__delete-spinner {
-    @include spinner;
-    @include n-docked;
-  }
-
   &__revert {
     @include halo-button;
     @include n-docked;
@@ -144,12 +128,12 @@
 
   &__establish-connection {
     @include halo-button;
-    @include nw-docked;
+    @include sw-docked;
     background-image: url("../images/font-awesome/plug.svg");
   }
 
   &__establish-connection-spinner {
     @include spinner;
-    @include nw-docked;
+    @include sw-docked;
   }
 }

@@ -271,11 +271,12 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         const propsAsList = this.getPropertyTable();
 
         return {
+            elementId: model.id,
+            iri: model.iri,
             types,
             label,
             color,
             icon,
-            iri: model.iri,
             imgUrl: model.data.image,
             isExpanded: model.isExpanded,
             props: model.data.properties,
