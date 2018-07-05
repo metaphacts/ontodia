@@ -1,15 +1,18 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
+import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+
 import { changeLinkTypeVisibility } from '../diagram/commands';
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { PaperArea, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
-import { restoreLinksBetweenElements, formatLocalizedLabel } from '../diagram/model';
+import { formatLocalizedLabel } from '../diagram/model';
 
-import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+import { restoreLinksBetweenElements } from '../editor/asyncModel';
+import { EditorController } from '../editor/editorController';
+
 import { EventObserver } from '../viewUtils/events';
 
 type Label = { values: LocalizedString[] };
@@ -54,8 +57,9 @@ export interface ObjectsData {
     objects: ReactElementModel[];
 }
 
-export interface ConnectionsMenuProps extends PaperWidgetProps {
+export interface ConnectionsMenuProps {
     view: DiagramView;
+    editor: EditorController;
     target: Element;
     onClose: () => void;
     suggestProperties?: PropertySuggestionHandler;
@@ -76,9 +80,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     private updateAll = () => this.forceUpdate();
 
     componentDidMount() {
-        const {view, target} = this.props;
-        this.handler.listen(target.events, 'changePosition', this.updateAll);
-        this.handler.listen(target.events, 'changeSize', this.updateAll);
+        const {view} = this.props;
         this.handler.listen(view.events, 'changeLanguage', this.updateAll);
 
         this.loadLinks();
@@ -98,12 +100,12 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private loadLinks() {
-        const {view, target} = this.props;
+        const {view, editor, target} = this.props;
 
         this.loadingState = 'loading';
         this.links = [];
         this.countMap = {};
-        view.model.dataProvider.linkTypesOf({elementId: target.iri})
+        editor.model.dataProvider.linkTypesOf({elementId: target.iri})
             .then(linkTypes => {
                 this.loadingState = 'completed';
 
@@ -135,7 +137,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private loadObjects(linkDataChunk: LinkDataChunk) {
-        const {view, target} = this.props;
+        const {view, editor, target} = this.props;
         const {link, direction, expectedCount } = linkDataChunk;
         const offset = (linkDataChunk.offset || 0);
 
@@ -143,7 +145,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         this.linkDataChunk = linkDataChunk;
         this.objects = [];
 
-        view.model.dataProvider.linkElements({
+        editor.model.dataProvider.linkElements({
             elementId: target.iri,
             linkId: (link === ALL_RELATED_ELEMENTS_LINK ? undefined : link.id),
             limit: offset + MAX_LINK_COUNT,
@@ -166,7 +168,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
-        const {view, target, onClose} = this.props;
+        const {view, editor, target, onClose} = this.props;
         const batch = view.model.history.startBatch();
 
         const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
@@ -211,7 +213,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         }
 
         batch.history.execute(
-            restoreLinksBetweenElements(view.model, addedElementIris)
+            restoreLinksBetweenElements(editor.model, addedElementIris)
         );
         batch.store();
         onClose();
@@ -257,15 +259,14 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             };
         }
 
-        const {paperArea, view, target, suggestProperties} = this.props;
+        const {view, target, suggestProperties} = this.props;
         return (
             <ConnectionsMenuMarkup
                 target={target}
-                paperArea={paperArea}
                 connectionsData={connectionsData}
                 objectsData={objectsData}
                 state={this.loadingState}
-                lang={view.getLanguage()}
+                view={view}
                 onExpandLink={this.onExpandLink}
                 onPressAddSelected={this.addSelectedElements}
                 onMoveToFilter={this.onMoveToFilter}
@@ -277,7 +278,6 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
 
 interface ConnectionsMenuMarkupProps {
     target: Element;
-    paperArea: PaperArea;
 
     connectionsData: {
         links: FatLinkType[];
@@ -286,7 +286,7 @@ interface ConnectionsMenuMarkupProps {
 
     objectsData?: ObjectsData;
 
-    lang: string;
+    view: DiagramView;
     state: 'loading' | 'error' | 'completed';
 
     onExpandLink?: (linkDataChunk: LinkDataChunk) => void;
@@ -338,7 +338,8 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     private getBreadCrumbs = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
             const link = this.props.objectsData.linkDataChunk.link;
-            const localizedText = formatLocalizedLabel(link.id, link.label, this.props.lang).toLowerCase();
+            const lang = this.props.view.getLanguage();
+            const localizedText = formatLocalizedLabel(link.id, link.label, lang).toLowerCase();
 
             return <span className='ontodia-connections-menu_bread-crumbs'>
                 <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>
@@ -357,7 +358,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
             return <ObjectsPanel
                 data={this.props.objectsData}
                 onMoveToFilter={this.props.onMoveToFilter}
-                lang={this.props.lang}
+                view={this.props.view}
                 filterKey={this.state.filterKey}
                 loading={this.props.state === 'loading'}
                 onPressAddSelected={this.props.onPressAddSelected}
@@ -370,7 +371,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
             return <ConnectionsList
                 id={this.props.target.id}
                 data={this.props.connectionsData}
-                lang={this.props.lang}
+                view={this.props.view}
                 filterKey={this.state.filterKey}
                 onExpandLink={this.onExpandLink}
                 onMoveToFilter={this.props.onMoveToFilter}
@@ -420,22 +421,8 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     }
 
     render() {
-        const bbox = boundsOf(this.props.target);
-        const {x: x0, y: y0} = this.props.paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
-        const {x: x1, y: y1} = this.props.paperArea.paperToScrollablePaneCoords(
-            bbox.x + bbox.width,
-            bbox.y + bbox.height,
-        );
-
-        const style = {
-            top: (y0 + y1) / 2 - 150,
-            left: x1 + MENU_OFFSET,
-            backgroundColor: 'white',
-            border: '1px solid black',
-        };
-
         return (
-            <div className='ontodia-connections-menu' style={style}>
+            <div className='ontodia-connections-menu'>
                 <label className='ontodia-label ontodia-connections-menu__title-label'>{this.getTitle()}</label>
                 {this.getBreadCrumbs()}
                 <div className='ontodia-connections-menu_search-line'>
@@ -468,7 +455,7 @@ interface ConnectionsListProps {
         links: FatLinkType[];
         countMap: { [linkTypeId: string]: ConnectionCount };
     };
-    lang: string;
+    view: DiagramView;
     filterKey: string;
 
     onExpandLink?: (linkDataChunk: LinkDataChunk) => void;
@@ -491,7 +478,8 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
 
     private updateScores = (props: ConnectionsListProps) => {
         if (props.propertySuggestionCall && (props.filterKey || props.sortMode === 'smart')) {
-            const {id, data, lang, filterKey} = props;
+            const {id, data, view, filterKey} = props;
+            const lang = view.getLanguage();
             const token = filterKey.trim();
             const properties = data.links.map(l => l.id);
             props.propertySuggestionCall({elementId: id, token, properties, lang}).then(scores =>
@@ -505,8 +493,9 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aText = formatLocalizedLabel(a.id, a.label, this.props.lang).toLowerCase();
-        const bText = formatLocalizedLabel(b.id, b.label, this.props.lang).toLowerCase();
+        const lang = this.props.view.getLanguage();
+        const aText = formatLocalizedLabel(a.id, a.label, lang).toLowerCase();
+        const bText = formatLocalizedLabel(b.id, b.label, lang).toLowerCase();
         return (
             aText < bText ? -1 :
             aText > bText ? 1 :
@@ -515,8 +504,9 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const aText = formatLocalizedLabel(a.id, a.label, this.props.lang).toLowerCase();
-        const bText = formatLocalizedLabel(b.id, b.label, this.props.lang).toLowerCase();
+        const lang = this.props.view.getLanguage();
+        const aText = formatLocalizedLabel(a.id, a.label, lang).toLowerCase();
+        const bText = formatLocalizedLabel(b.id, b.label, lang).toLowerCase();
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
@@ -529,8 +519,9 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private getLinks = () => {
+        const lang = this.props.view.getLanguage();
         return (this.props.data.links || []).filter(link => {
-            const text = formatLocalizedLabel(link.id, link.label, this.props.lang).toLowerCase();
+            const text = formatLocalizedLabel(link.id, link.label, lang).toLowerCase();
             return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
         })
         .sort(this.compareLinks);
@@ -544,6 +535,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private getViews = (links: FatLinkType[], notSure?: boolean) => {
+        const {view} = this.props;
         const countMap = this.props.data.countMap || {};
         const views: React.ReactElement<any>[] = [];
 
@@ -564,7 +556,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
                            key={`${direction}-${link.id}-${postfix}`}
                            link={link}
                            onExpandLink={this.props.onExpandLink}
-                           lang={this.props.lang}
+                           view={view}
                            count={count}
                            direction={direction}
                            filterKey={notSure ? '' : this.props.filterKey}
@@ -581,6 +573,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     };
 
     render() {
+        const {view} = this.props;
         const isSmartMode = this.isSmartMode();
 
         const links = isSmartMode ? [] : this.getLinks();
@@ -601,7 +594,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
                         key={ALL_RELATED_ELEMENTS_LINK.id}
                         link={ALL_RELATED_ELEMENTS_LINK}
                         onExpandLink={this.props.onExpandLink}
-                        lang={this.props.lang}
+                        view={view}
                         count={allRelatedElements.inCount + allRelatedElements.outCount}
                         onMoveToFilter={this.props.onMoveToFilter}
                     />,
@@ -629,7 +622,7 @@ interface LinkInPopupMenuProps {
     link: FatLinkType;
     count: number;
     direction?: 'in' | 'out';
-    lang?: string;
+    view: DiagramView;
     filterKey?: string;
     onExpandLink?: (linkDataChunk: LinkDataChunk) => void;
     onMoveToFilter?: (linkDataChunk: LinkDataChunk) => void;
@@ -659,8 +652,8 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
     }
 
     render() {
-        const link = this.props.link;
-        const fullText = formatLocalizedLabel(this.props.link.id, this.props.link.label, this.props.lang);
+        const {view, link} = this.props;
+        const fullText = formatLocalizedLabel(link.id, link.label, view.getLanguage());
         const probability = Math.round(this.props.probability * 100);
         const textLine = getColoredText(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
@@ -670,11 +663,10 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
             this.props.direction === 'in' ? 'source' :
             this.props.direction === 'out' ? 'target' :
             'all connected';
-        const navigationTitle = `Navigate to ${directionName} "${fullText}" elements`;
 
         return (
             <li data-linkTypeId={this.props.link.id}
-                className='link-in-popup-menu' title={navigationTitle}
+                className='link-in-popup-menu' title={`${directionName} of "${fullText}" ${view.formatIri(link.id)}`}
                 onClick={() => this.onExpandLink(this.props.count, this.props.direction)}>
                 {this.props.direction === 'in' || this.props.direction === 'out' ?
                 <div className='link-in-popup-menu_direction'>
@@ -688,7 +680,8 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
                 </span>
                 <a className='filter-button' onClick={this.onMoveToFilter}
                     title='Set as filter in the Instances panel'><img/></a>
-                <div className='link-in-popup-menu__navigate-button' title={navigationTitle} />
+                <div className='link-in-popup-menu__navigate-button'
+                    title={`Navigate to ${directionName} "${fullText}" elements`} />
             </li>
         );
     }
@@ -697,7 +690,7 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 interface ObjectsPanelProps {
     data: ObjectsData;
     loading?: boolean;
-    lang?: string;
+    view: DiagramView;
     filterKey?: string;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
     onMoveToFilter?: (linkDataChunk: LinkDataChunk) => void;
@@ -737,21 +730,17 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
     }
 
     private getFilteredObjects(): ReactElementModel[] {
-        if (this.props.filterKey) {
-            const filterKey = this.props.filterKey.toLowerCase();
-            return this.props.data.objects.filter(element => {
-                const text  = (formatLocalizedLabel(
-                    element.model.id,
-                    element.model.label.values,
-                    this.props.lang
-                ) || '').toLowerCase();
-                const containsKey = text.indexOf(filterKey) !== -1;
-                return containsKey;
-            });
-        } else {
+        if (!this.props.filterKey) {
             return this.props.data.objects;
         }
-    };
+        const filterKey = this.props.filterKey.toLowerCase();
+        const lang = this.props.view.getLanguage();
+        return this.props.data.objects.filter(element => {
+            const label = element.model.label;
+            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang);
+            return text && text.indexOf(filterKey) >= 0;
+        });
+    }
 
     private getObjects(list: ReadonlyArray<ReactElementModel>) {
         const {checkMap} = this.state;
@@ -764,7 +753,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
                 <ElementInPopupMenu
                     key={obj.model.id}
                     element={obj}
-                    lang={this.props.lang}
+                    view={this.props.view}
                     filterKey={this.props.filterKey}
                     checked={checkMap[obj.model.id] || false}
                     onCheckedChanged={this.onCheckboxChanged}
@@ -873,7 +862,7 @@ function allNonPresentedAreSelected(
 
 interface ElementInPopupMenuProps {
     element: ReactElementModel;
-    lang?: string;
+    view: DiagramView;
     filterKey?: string;
     checked: boolean;
     onCheckedChanged: (object: ReactElementModel, value: boolean) => void;
@@ -887,10 +876,10 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, {}> {
     }
 
     render() {
-        const {element, lang, filterKey, checked} = this.props;
+        const {element, view, filterKey, checked} = this.props;
         const {model} = element;
-        const fullText = formatLocalizedLabel(model.id, model.label.values, lang);
-        const textLine = getColoredText(fullText, filterKey);
+        const fullTitle = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
+        const textLine = getColoredText(fullTitle, filterKey);
         return (
             <li data-linkTypeId={model.id}
                 className={'element-in-popup-menu' + (checked ? '' : ' unchecked')}
@@ -898,10 +887,11 @@ class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, {}> {
                 <input type='checkbox' checked={checked}
                     onChange={() => {/*nothing*/}}
                     className='element-in-popup-menu__checkbox'
-                    disabled={this.props.element.presentOnDiagram}/>
-                <div className='element-in-popup-menu__link-label'
+                    disabled={this.props.element.presentOnDiagram}
                     title={this.props.element.presentOnDiagram ?
-                        'Element \'' + fullText + '\' already present on diagram!' : fullText}
+                        `Element "${fullTitle}" already present on diagram` : undefined} />
+                <div className='element-in-popup-menu__link-label'
+                    title={`${fullTitle} ${view.formatIri(model.id)}`}
                     style={{fontStyle: (this.props.element.presentOnDiagram ? 'italic' : 'inherit')}}>
                     {textLine}
                 </div>

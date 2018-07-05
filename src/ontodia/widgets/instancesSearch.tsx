@@ -6,6 +6,9 @@ import { FilterParams } from '../data/provider';
 import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
 import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
+
+import { AsyncModel } from '../editor/asyncModel';
+
 import { isEmptyMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
@@ -16,6 +19,7 @@ const DirectionOutImage = require<string>('../../../images/direction-out.png');
 
 export interface InstancesSearchProps {
     className?: string;
+    model: AsyncModel;
     view: DiagramView;
     criteria: SearchCriteria;
     onCriteriaChanged: (criteria: SearchCriteria) => void;
@@ -276,7 +280,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             moreItemsAvailable: false,
         });
 
-        this.props.view.model.dataProvider.filter(request).then(elements => {
+        this.props.model.dataProvider.filter(request).then(elements => {
             if (this.currentRequest !== request) { return; }
             this.processFilterData(elements);
         }).catch(error => {
@@ -290,7 +294,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         const requestedAdditionalItems = this.currentRequest.offset > 0;
 
         const existingIris: { [iri: string]: true } = {};
-        
+
         if (requestedAdditionalItems) {
             this.state.items.forEach(item => existingIris[item.id] = true);
         }

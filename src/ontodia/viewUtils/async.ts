@@ -1,3 +1,5 @@
+import { Events, EventSource } from './events';
+
 export abstract class BatchingScheduler {
     private useAnimationFrame: boolean;
     private scheduled: number | undefined;
@@ -44,29 +46,19 @@ export abstract class BatchingScheduler {
     }
 }
 
-export class DataFetchingThread<Key extends string> extends BatchingScheduler {
-    private fetchingPromise: Promise<Key[]>;
+export class BufferingQueue<Key extends string> extends BatchingScheduler {
     private fetchingQueue: { [key: string]: true } = Object.create(null);
 
-    private resolve: (queue: Key[]) => void;
-    private reject: (error: any) => void;
-
-    constructor(waitingTime = 200) {
+    constructor(
+        private onFetch: (keys: Key[]) => void,
+        waitingTime = 200
+    ) {
         super(waitingTime);
     }
 
-    push(key: Key): Promise<Key[]> {
+    push(key: Key) {
         this.fetchingQueue[key] = true;
-        if (this.fetchingPromise) {
-            return Promise.resolve([]);
-        } else {
-            this.fetchingPromise = new Promise<Key[]>((resolve, reject) => {
-                this.resolve = resolve;
-                this.reject = reject;
-                this.schedule();
-            });
-            return this.fetchingPromise;
-        }
+        this.schedule();
     }
 
     clear() {
@@ -74,22 +66,9 @@ export class DataFetchingThread<Key extends string> extends BatchingScheduler {
     }
 
     protected run() {
-        const {fetchingQueue, resolve} = this;
-        this.fetchingPromise = undefined;
+        const {fetchingQueue, onFetch} = this;
         this.fetchingQueue = Object.create(null);
-        this.resolve = undefined;
-        this.reject = undefined;
-        resolve(Object.keys(fetchingQueue) as Key[]);
-    }
-
-    dispose() {
-        super.dispose();
-        const {reject} = this;
-        this.resolve = undefined;
-        this.reject = undefined;
-        if (reject) {
-            reject(new Error('DataFetchingThread was disposed'));
-        }
+        onFetch(Object.keys(fetchingQueue) as Key[]);
     }
 }
 
@@ -104,5 +83,54 @@ export class Debouncer extends BatchingScheduler {
     protected run() {
         const callback = this.callback;
         callback();
+    }
+}
+
+export class Cancellation {
+    private source: EventSource<{ abort: undefined }> | undefined = new EventSource();
+    private aborted = false;
+
+    readonly signal: CancellationToken;
+
+    constructor() {
+        this.signal = new (class {
+            constructor(private parent: Cancellation) {}
+            get aborted() { return this.parent.aborted; }
+            addEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.on('abort', handler);
+                } else {
+                    handler();
+                }
+            }
+            removeEventListener(event: 'abort', handler: () => void) {
+                if (event !== 'abort') { return; }
+                if (this.parent.source) {
+                    this.parent.source.off('abort', handler);
+                }
+            }
+        })(this);
+    }
+
+    abort() {
+        if (this.aborted) { return; }
+        this.aborted = true;
+        this.source.trigger('abort', undefined);
+        this.source = undefined;
+    }
+}
+
+export interface CancellationToken {
+    readonly aborted: boolean;
+    addEventListener(event: 'abort', handler: () => void): void;
+    removeEventListener(event: 'abort', handler: () => void): void;
+}
+
+export class CancelledError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = CancelledError.name;
+        Object.setPrototypeOf(this, CancelledError.prototype);
     }
 }

@@ -1,4 +1,6 @@
-import { Element as DiagramElement, Link as DiagramLink, FatLinkType, Cell, LinkVertex } from './elements';
+import { ElementModel, ElementIri, LinkModel, sameLink } from '../data/model';
+
+import { Element, Link, FatLinkType, Cell, LinkVertex } from './elements';
 import { Vector, isPolylineEqual } from './geometry';
 import { Command } from './history';
 import { DiagramModel } from './model';
@@ -7,8 +9,8 @@ export class RestoreGeometry implements Command {
     readonly title = 'Move elements and links';
 
     constructor(
-        private elementState: ReadonlyArray<{ element: DiagramElement; position: Vector; }>,
-        private linkState: ReadonlyArray<{ link: DiagramLink; vertices: ReadonlyArray<Vector>; }>,
+        private elementState: ReadonlyArray<{ element: Element; position: Vector; }>,
+        private linkState: ReadonlyArray<{ link: Link; vertices: ReadonlyArray<Vector>; }>,
     ) {}
 
     static capture(model: DiagramModel) {
@@ -16,8 +18,8 @@ export class RestoreGeometry implements Command {
     }
 
     private static captureElementsAndLinks(
-        elements: ReadonlyArray<DiagramElement>,
-        links: ReadonlyArray<DiagramLink>,
+        elements: ReadonlyArray<Element>,
+        links: ReadonlyArray<Link>,
     ) {
         return new RestoreGeometry(
             elements.map(element => ({element, position: element.position})),
@@ -58,7 +60,7 @@ export class RestoreGeometry implements Command {
     }
 }
 
-export function restoreCapturedLinkGeometry(link: DiagramLink): Command {
+export function restoreCapturedLinkGeometry(link: Link): Command {
     const vertices = link.vertices;
     return Command.create('Change link vertices', () => {
         const capturedInverse = restoreCapturedLinkGeometry(link);
@@ -67,7 +69,7 @@ export function restoreCapturedLinkGeometry(link: DiagramLink): Command {
     });
 }
 
-export function setElementExpanded(element: DiagramElement, expanded: boolean): Command {
+export function setElementExpanded(element: Element, expanded: boolean): Command {
     const title = expanded ? 'Expand element' : 'Collapse element';
     return Command.create(title, () => {
         element.setExpanded(expanded);
@@ -92,5 +94,45 @@ export function changeLinkTypeVisibility(params: {
             showLabel: previousShowLabel,
             preventLoading,
         });
+    });
+}
+
+export function setElementData(model: DiagramModel, target: ElementIri, data: ElementModel): Command {
+    const elements = model.elements.filter(el => el.iri === target);
+    const previous = elements.length > 0 ? elements[0].data : undefined;
+    return Command.create('Set element data', () => {
+        for (const element of model.elements.filter(el => el.iri === target)) {
+            element.setData(data);
+            updateLinksToReferByNewIri(element, previous.id, data.id);
+        }
+        return setElementData(model, target, previous);
+    });
+}
+
+function updateLinksToReferByNewIri(element: Element, oldIri: ElementIri, newIri: ElementIri) {
+    if (oldIri === newIri) { return; }
+    for (const link of element.links) {
+        let data = link.data;
+        if (data.sourceId === oldIri) {
+            data = {...data, sourceId: newIri};
+        }
+        if (data.targetId === oldIri) {
+            data = {...data, targetId: newIri};
+        }
+        link.setData(data);
+    }
+}
+
+export function setLinkData(model: DiagramModel, oldData: LinkModel, newData: LinkModel): Command {
+    if (!sameLink(oldData, newData)) {
+        throw new Error('Cannot change typeId, sourceId or targetId when changing link data');
+    }
+    return Command.create('Set link data', () => {
+        for (const link of model.links) {
+            if (sameLink(link.data, oldData)) {
+                link.setData(newData);
+            }
+        }
+        return setLinkData(model, newData, oldData);
     });
 }

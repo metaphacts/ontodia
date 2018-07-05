@@ -1,0 +1,51 @@
+.ontodia-halo-link {
+
+  &__button {
+    background: transparent;
+    border: 0 none;
+    cursor: pointer;
+    padding: 0;
+    position: absolute;
+    opacity: 0.8;
+    outline: none;
+    transition: opacity 0.3s;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    &[disabled] {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  @mixin button {
+    background-color: #ccc;
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-size: 60%;
+    border-radius: 10px;
+    height: 20px;
+    width: 20px;
+  }
+
+  &__edit {
+    @include button;
+    background-image: url("../images/font-awesome/edit.svg");
+  }
+
+  &__delete {
+    @include button;
+    background-image: url("../images/font-awesome/trash-alt.svg");
+  }
+
+  &__revert {
+    @include button;
+    background-image: url("../images/font-awesome/undo-solid.svg");
+  }
+
+  &__spinner {
+    position: absolute;
+  }
+}

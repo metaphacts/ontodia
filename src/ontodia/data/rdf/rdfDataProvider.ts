@@ -4,7 +4,7 @@ import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { RDFLoader } from './rdfLoader';
 import {
     LocalizedString, Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel, Property,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import { RDFCompositeParser } from './rdfCompositeParser';
 
@@ -125,12 +125,12 @@ export class RDFDataProvider implements DataProvider {
         const classes = rdfClasses.concat(owlClasses).concat(rdfTypes);
         const classIris = classes
             .filter(clazz => clazz.interfaceName !== 'BlankNode')
-            .map(clazz => clazz.nominalValue as ClassIri);
+            .map(clazz => clazz.nominalValue as ElementTypeIri);
 
-        const parents: Dictionary<ClassIri[]> = {};
+        const parents: Dictionary<ElementTypeIri[]> = {};
         for (const triple of subClasses) {
-            const subClassIRI = triple.subject.nominalValue as ClassIri;
-            const classIRI = triple.object.nominalValue as ClassIri;
+            const subClassIRI = triple.subject.nominalValue as ElementTypeIri;
+            const classIRI = triple.object.nominalValue as ElementTypeIri;
             if (isNamedNode(triple.subject) && !parents[subClassIRI]) {
                 parents[subClassIRI] = [];
             }
@@ -211,7 +211,7 @@ export class RDFDataProvider implements DataProvider {
         return propertyInfoResult;
     }
 
-    async classInfo(params: { classIds: ClassIri[] }): Promise<ClassModel[]> {
+    async classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
         await this.waitInitCompleted();
         const queries = params.classIds.map(
             async classId => {
@@ -448,7 +448,7 @@ export class RDFDataProvider implements DataProvider {
     };
 
     private async filterByTypeId(
-        elementTypeId: ClassIri, filter: (node: Node, index: number) => boolean,
+        elementTypeId: ElementTypeIri, filter: (node: Node, index: number) => boolean,
     ): Promise<ElementModel[]> {
         const elementTriples = await this.rdfStorage.match(
             undefined,
@@ -605,14 +605,14 @@ export class RDFDataProvider implements DataProvider {
         });
     }
 
-    private getTypes(el: ElementIri): Promise<ClassIri[]> {
+    private getTypes(el: ElementIri): Promise<ElementTypeIri[]> {
         return this.rdfStorage.match(el, PREFIX_FACTORIES.RDF('type'), null)
             .then(typeTriples => {
-                return typeTriples.toArray().map(t => t.object.nominalValue as ClassIri);
+                return typeTriples.toArray().map(t => t.object.nominalValue as ElementTypeIri);
             });
     }
 
-    private createEmptyClass(classIri: ClassIri): ClassModel {
+    private createEmptyClass(classIri: ElementTypeIri): ClassModel {
         return {
             id: classIri,
             label: {

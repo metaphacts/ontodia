@@ -1,11 +1,13 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 
-import { Dictionary, LocalizedString, ClassIri } from '../data/model';
+import { Dictionary, LocalizedString, ElementTypeIri } from '../data/model';
 import { FatClassModel } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { formatLocalizedLabel } from '../diagram/model';
+
+import { EditorController } from '../editor/editorController';
 
 // bundling jstree to solve issues with multiple jquery packages,
 // when jstree sets itself as plugin to wrong version of jquery
@@ -14,7 +16,8 @@ require('jstree/dist/themes/default/style.css');
 
 export interface ClassTreeProps {
     view: DiagramView;
-    onClassSelected: (classId: ClassIri) => void;
+    editor: EditorController;
+    onClassSelected: (classId: ElementTypeIri) => void;
 }
 
 interface ClassTreeElement {
@@ -25,6 +28,7 @@ interface ClassTreeElement {
     a_attr?: {
         href: string;
         draggable: boolean;
+        title: string;
     };
     text?: string;
     type?: string;
@@ -59,9 +63,9 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
             onClassSelected(data.selected[0]);
         });
 
-        const {view} = this.props;
+        const {view, editor} = this.props;
         this.listener.listen(view.events, 'changeLanguage', () => this.refreshClassTree());
-        this.listener.listen(view.model.events, 'loadingSuccess', () => {
+        this.listener.listen(editor.model.events, 'loadingSuccess', () => {
             this.refreshClassTree();
         });
     }
@@ -103,13 +107,13 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
     }
 
     private refreshClassTree() {
-        const {view} = this.props;
+        const {view, editor} = this.props;
         const iconMap: Dictionary<{ icon: string }> = {
             'default': {icon: 'default-tree-icon'},
             'has-not-children': {icon: 'default-tree-icon'},
             'has-children': {icon: 'parent-tree-icon'},
         };
-        const roots = view.model.getClasses().filter(model => !model.base);
+        const roots = editor.model.getClasses().filter(model => !model.base);
         const mapped = roots.map(root => mapClass(root, view, iconMap));
 
         const jsTree = this.jsTree.jstree(true);
@@ -143,7 +147,11 @@ function mapClass(
         label,
         count,
         children,
-        a_attr: {href: id, draggable: true},
+        a_attr: {
+            href: id,
+            draggable: true,
+            title: `${classLabel} ${view.formatIri(id)}`,
+        },
         text,
         type,
     };

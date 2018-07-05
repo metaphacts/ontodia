@@ -2,8 +2,8 @@ import { pick } from 'lodash';
 
 import { ElementIri, LinkTypeIri } from '../data/model';
 
-import { Element as DiagramElement, Link as DiagramLink } from './elements';
-import { Vector, Size } from './geometry';
+import { Element as DiagramElement, Link as DiagramLink } from '../diagram/elements';
+import { Vector, Size } from '../diagram/geometry';
 
 export interface LayoutData {
     readonly cells: LayoutCell[];

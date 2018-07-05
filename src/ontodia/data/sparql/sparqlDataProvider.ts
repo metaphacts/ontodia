@@ -2,7 +2,7 @@ import * as N3 from 'n3';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import {
     triplesToElementBinding,
@@ -106,7 +106,7 @@ export class SparqlDataProvider implements DataProvider {
         return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
     }
 
-    classInfo(params: { classIds: ClassIri[] }): Promise<ClassModel[]> {
+    classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
         const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const query = this.settings.defaultPrefix + `
             SELECT ?class ?label ?instcount
@@ -155,8 +155,8 @@ export class SparqlDataProvider implements DataProvider {
         }
 
         const ids = elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
-        const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty});
+        const {defaultPrefix, dataLabelProperty, elementInfoQuery, propertyConfigurations} = this.settings;
+        const query = defaultPrefix + resolveTemplate(elementInfoQuery, {ids, dataLabelProperty, propertyConfigurations: this.formatPropertyInfo()});
 
         return this.executeSparqlConstruct(query)
             .then(triplesToElementBinding)
@@ -513,6 +513,19 @@ export class SparqlDataProvider implements DataProvider {
 
     formatLinkPath(path: string, source: string, target: string): string {
         return path.replace(/\$source/g, source).replace(/\$target/g, target);
+    }
+
+    formatPropertyInfo() {
+        return this.settings.propertyConfigurations.map( propConfig =>
+            `{ ${this.formatPropertyPath(propConfig.path, '?inst', '?propValue')} 
+                BIND(<${propConfig.id}> as ?propType )
+            }`).join(`
+            UNION 
+            `);
+    }
+
+    formatPropertyPath(path: string, subject: string, value: string): string {
+        return path.replace(/\$subject/g, subject).replace(/\$value/g, value);
     }
 }
 

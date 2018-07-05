@@ -3,24 +3,23 @@ import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString, LinkTypeIri } from '../data/model';
 import {
-    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle,
-    LinkRouter, RoutedLinks, RoutedLink,
+    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink,
 } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
 import { restoreCapturedLinkGeometry } from './commands';
-import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey } from './elements';
+import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey, FatLinkType } from './elements';
 import {
-    Vector, computePolyline, computePolylineLength, getPointAlongPolyline,
+    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
 } from './geometry';
-import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
     view: DiagramView;
+    links: ReadonlyArray<DiagramLink>;
     group?: string;
 }
 
@@ -41,13 +40,8 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     /** List of link IDs to update at the next flush event */
     private scheduledToUpdate = createStringMap<true>();
 
-    private router: LinkRouter;
-    private routings: RoutedLinks;
-
     constructor(props: LinkLayerProps, context: any) {
         super(props, context);
-        this.router = this.props.view.options.linkRouter || new DefaultLinkRouter();
-        this.updateRoutings();
     }
 
     componentDidMount() {
@@ -74,8 +68,8 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             }
         });
         this.listener.listen(view.model.events, 'linkTypeEvent', ({key, data}) => {
-            if (!data.changeLabel) { return; }
-            const linkTypeId = data.changeLabel.source.id;
+            if (!(data.changeLabel || data.changeVisibility)) { return; }
+            const linkTypeId = data[key].source.id;
             for (const link of view.model.linksOfType(linkTypeId)) {
                 this.scheduleUpdateLink(link.id);
             }
@@ -120,17 +114,11 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     }
 
     private performUpdate = () => {
-        this.updateRoutings();
         this.forceUpdate();
     }
 
-    private updateRoutings() {
-        this.routings = this.router.route(this.props.view.model);
-    }
-
     private getLinks = () => {
-        const {view, group} = this.props;
-        const {links} = view.model;
+        const {view, links, group} = this.props;
 
         if (!group) { return links; }
 
@@ -162,41 +150,19 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
                     view={view}
                     model={model}
                     shouldUpdate={shouldUpdate(model)}
-                    route={this.routings[model.id]}
+                    route={view.getRouting(model.id)}
                 />
             ))}
         </g>;
     }
 }
 
-interface Grouping {
-    [group: string]: DiagramElement[];
-}
-
-function computeGrouping(elements: ReadonlyArray<DiagramElement>): Grouping {
-    const grouping: Grouping = {};
-
-    for (const element of elements) {
-        const group = element.group;
-        if (typeof group === 'string') {
-            let children = grouping[group];
-            if (!children) {
-                children = [];
-                grouping[group] = children;
-            }
-            children.push(element);
-        }
-    }
-
-    return grouping;
-}
-
-function computeDeepNestedElements(grouping: Grouping, groupId: string): { [id: string]: true } {
+function computeDeepNestedElements(grouping: Map<string, DiagramElement[]>, groupId: string): { [id: string]: true } {
     const deepChildren: { [elementId: string]: true } = {};
 
     function collectNestedItems(parentId: string) {
         deepChildren[parentId] = true;
-        const children = grouping[parentId];
+        const children = grouping.get(parentId);
         if (!children) { return; }
         for (const element of children) {
             if (element.group !== parentId) { continue; }
@@ -218,7 +184,7 @@ interface LinkViewProps {
 const LINK_CLASS = 'ontodia-link';
 
 class LinkView extends Component<LinkViewProps, {}> {
-    private templateTypeId: LinkTypeIri;
+    private linkType: FatLinkType;
     private template: LinkTemplate;
 
     constructor(props: LinkViewProps, context: any) {
@@ -227,7 +193,7 @@ class LinkView extends Component<LinkViewProps, {}> {
     }
 
     componentWillReceiveProps(nextProps: LinkViewProps) {
-        if (this.templateTypeId !== nextProps.model.typeId) {
+        if (this.linkType.id !== nextProps.model.typeId) {
             this.grabLinkTemplate(nextProps);
         }
     }
@@ -237,14 +203,12 @@ class LinkView extends Component<LinkViewProps, {}> {
     }
 
     private grabLinkTemplate(props: LinkViewProps) {
-        this.templateTypeId = props.model.typeId;
-        const linkType = props.view.model.getLinkType(this.templateTypeId);
-        this.template = props.view.createLinkTemplate(linkType);
+        this.linkType = props.view.model.getLinkType(props.model.typeId);
+        this.template = props.view.createLinkTemplate(this.linkType);
     }
 
     render() {
         const {view, model, route} = this.props;
-        const typeIndex = model.typeIndex;
         const source = view.model.getElement(model.sourceId);
         const target = view.model.getElement(model.targetId);
         if (!(source && target)) {
@@ -257,6 +221,7 @@ class LinkView extends Component<LinkViewProps, {}> {
 
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
+        const {index: typeIndex, showLabel} = this.linkType;
         const style = this.template.renderLink(model.data);
         const pathAttributes = getPathAttributes(model, style);
 
@@ -266,7 +231,7 @@ class LinkView extends Component<LinkViewProps, {}> {
                     markerStart={`url(#${linkMarkerKey(typeIndex, true)})`}
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />
                 <path className={`${LINK_CLASS}__wrap`} d={path} />
-                {this.renderLabels(polyline, style)}
+                {showLabel ? this.renderLabels(polyline, style) : undefined}
                 {this.renderVertices(verticesDefinedByUser, pathAttributes.stroke)}
             </g>
         );
@@ -532,7 +497,10 @@ export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
         const markers: Array<ReactElement<LinkMarkerProps>> = [];
 
         view.getLinkTemplates().forEach((template, linkTypeId) => {
-            const typeIndex = view.model.getLinkType(linkTypeId).index;
+            const type = view.model.getLinkType(linkTypeId);
+            if (!type) { return; }
+
+            const typeIndex = type.index;
             if (template.markerSource) {
                 markers.push(
                     <LinkMarker key={typeIndex * 2}

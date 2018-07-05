@@ -2,7 +2,7 @@ import { cloneDeep, keyBy, map, each } from 'lodash';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 
 export class DemoDataProvider implements DataProvider {
@@ -27,7 +27,7 @@ export class DemoDataProvider implements DataProvider {
         return this.simulateNetwork(this.allClasses);
     }
 
-    classInfo(params: { classIds: ClassIri[] }) {
+    classInfo(params: { classIds: ElementTypeIri[] }) {
         const classIds = params.classIds || [];
         return this.simulateNetwork(this.allClasses.filter(cl => classIds.indexOf(cl.id)));
     }

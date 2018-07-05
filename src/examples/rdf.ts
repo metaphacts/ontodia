@@ -3,6 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import { Workspace, WorkspaceProps, RDFDataProvider, GroupTemplate } from '../index';
 
+import { ExampleMetadataApi } from './resources/exampleMetadataApi';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
 const N3Parser: any = require('rdf-parser-n3');
@@ -19,7 +20,7 @@ function onWorkspaceMounted(workspace: Workspace) {
             {
                 content: data,
                 type: 'text/turtle',
-                fileName: 'testData.ttl'
+                fileName: 'testData.ttl',
             },
         ],
         acceptBlankNodes: false,
@@ -46,6 +47,11 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
+    onPersistAuthoredChanges: workspace => {
+        const state = workspace.getEditor().authoringState;
+        console.log('Authoring state:', state);
+    },
+    metadataApi: new ExampleMetadataApi(),
     viewOptions: {
         onIriClick: iri => window.open(iri),
         groupBy: [

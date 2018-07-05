@@ -87,3 +87,25 @@
     box-shadow: none;
   }
 }
+
+.ontodia-btn-success {
+  background: #5cb85c;
+  border-color: #5cb85c;
+  color: #fff;
+  transition: 0.3s;
+
+  &:hover {
+    background: darken(#5cb85c, 8%);
+  }
+}
+
+.ontodia-btn-danger {
+  background: #c9302c;
+  border-color: #c9302c;
+  color: #fff;
+  transition: 0.3s;
+
+  &:hover {
+    background: darken(#c9302c, 8%);
+  }
+}

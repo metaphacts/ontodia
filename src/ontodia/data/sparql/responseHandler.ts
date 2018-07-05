@@ -7,7 +7,7 @@ import {
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
-    ElementIri, ClassIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../model';
 import * as _ from 'lodash';
 
@@ -89,7 +89,7 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
     const classes: { [id: string]: ClassModel } = {};
     for (const binding of response.results.bindings) {
         if (!binding.class) { continue; }
-        const id = binding.class.value as ClassIri;
+        const id = binding.class.value as ElementTypeIri;
         const model = classes[id];
         if (model) {
             const newLabel = getLocalizedString(binding.label);
@@ -327,8 +327,8 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
             element.label.values.push(label);
         }
     }
-    if (sInst.class && element.types.indexOf(sInst.class.value as ClassIri) < 0) {
-        element.types.push(sInst.class.value as ClassIri);
+    if (sInst.class && element.types.indexOf(sInst.class.value as ElementTypeIri) < 0) {
+        element.types.push(sInst.class.value as ElementTypeIri);
     }
     if (sInst.propType && sInst.propType.value !== LABEL_URI) {
         mergeProperties(element.properties, sInst.propType, sInst.propValue);
@@ -364,7 +364,7 @@ export interface HierarchicalClassModel extends ClassModel {
 export function getClassModel(node: ClassBinding): HierarchicalClassModel {
     const label = getLocalizedString(node.label);
     return {
-        id: node.class.value as ClassIri,
+        id: node.class.value as ElementTypeIri,
         children: [],
         label: { values: label ? [label] : [] },
         count: getInstCount(node.instcount),
