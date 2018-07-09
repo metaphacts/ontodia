@@ -210,14 +210,28 @@ export class EditorController {
     }
 
     removeSelectedElements() {
-        const elementsToRemove = this.selection;
-        if (elementsToRemove.length === 0) { return; }
+        const itemsToRemove = this.selection;
+        if (itemsToRemove.length === 0) { return; }
 
         this.cancelSelection();
+        this.removeItems(itemsToRemove);
+    }
 
+    removeItems(items: ReadonlyArray<SelectionItem>) {
+        const state = this.authoringState;
         const batch = this.model.history.startBatch();
-        for (const element of elementsToRemove) {
-            this.model.removeElement(element.id);
+        for (const item of items) {
+            if (item instanceof Element) {
+                if (AuthoringState.isNewElement(state, item.iri)) {
+                    this.deleteEntity(item.iri);
+                } else {
+                    this.model.removeElement(item.id);
+                }
+            } else if (item instanceof Link) {
+                if (AuthoringState.isNewLink(state, item.data)) {
+                    this.deleteLink(item.data);
+                }
+            }
         }
         batch.store();
     }

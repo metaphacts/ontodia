@@ -64,13 +64,21 @@ export namespace AuthoringState {
         return {...state, events, index};
     }
 
-    export function discard(state: AuthoringState, event: AuthoringEvent): AuthoringState {
-        const index = state.events.indexOf(event);
+    export function discard(state: AuthoringState, discarded: AuthoringEvent): AuthoringState {
+        const index = state.events.indexOf(discarded);
         if (index < 0) {
             return state;
         }
-        const events = [...state.events];
-        events.splice(index, 1);
+        const newElementIri = discarded.type === AuthoringKind.ChangeElement && !discarded.before
+            ? discarded.after.id : undefined;
+        const events = state.events.filter(e => {
+            if (e.type === AuthoringKind.ChangeLink) {
+                if (newElementIri && isLinkConnectedToElement(e.after, newElementIri)) {
+                    return false;
+                }
+            }
+            return e !== discarded;
+        });
         return set(state, {events});
     }
 
