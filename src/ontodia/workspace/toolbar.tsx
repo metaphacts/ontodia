@@ -3,8 +3,10 @@ import * as React from 'react';
 import { WorkspaceLanguage } from './workspace';
 
 export interface ToolbarProps {
+    canSaveDiagram?: boolean;
     onSaveDiagram?: () => void;
-    onPersistAuthoredChanges?: () => void;
+    canPersistChanges?: boolean;
+    onPersistChanges?: () => void;
     onForceLayout?: () => void;
     onZoomIn?: () => void;
     onZoomOut?: () => void;
@@ -43,17 +45,19 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         if (!this.props.onSaveDiagram) { return null; }
         return (
             <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-primary'
-                    onClick={this.props.onSaveDiagram}>
+                disabled={this.props.canSaveDiagram === false}
+                onClick={this.props.onSaveDiagram}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save diagram
             </button>
         );
     }
 
     private renderPersistAuthoredChangesButton() {
-        if (!this.props.onPersistAuthoredChanges) { return null; }
+        if (!this.props.onPersistChanges) { return null; }
         return (
             <button type='button' className='saveDiagramButton ontodia-btn ontodia-btn-success'
-                    onClick={this.props.onPersistAuthoredChanges}>
+                disabled={this.props.canPersistChanges === false}
+                onClick={this.props.onPersistChanges}>
                 <span className='fa fa-floppy-o' aria-hidden='true' /> Save data
             </button>
         );

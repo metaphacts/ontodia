@@ -47,7 +47,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.hash = saveLayoutToLocalStorage(layoutData);
         window.location.reload();
     },
-    onPersistAuthoredChanges: workspace => {
+    onPersistChanges: workspace => {
         const state = workspace.getEditor().authoringState;
         console.log('Authoring state:', state);
     },

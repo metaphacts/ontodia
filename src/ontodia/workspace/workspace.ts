@@ -29,20 +29,28 @@ import { ClassTree } from '../widgets/classTree';
 import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
 
-import { DefaultToolbar, ToolbarProps as DefaultToolbarProps } from './toolbar';
+import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 
 export interface WorkspaceProps {
+    /** Saves diagram layout (position and state of elements and links). */
     onSaveDiagram?: (workspace: Workspace) => void;
-    onPersistAuthoredChanges?: (workspace: Workspace) => void;
+    /** Persists authored changes in the editor. */
+    onPersistChanges?: (workspace: Workspace) => void;
     onPointerDown?: (e: PointerEvent) => void;
     onPointerMove?: (e: PointerEvent) => void;
     onPointerUp?: (e: PointerUpEvent) => void;
 
+    /**
+     * Custom toolbar to replace the default one.
+     */
     toolbar?: ReactElement<any>;
+    /** @default false */
     hidePanels?: boolean;
+    /** @default false */
     hideToolbar?: boolean;
+    /** @default false */
     hideHalo?: boolean;
     /** @default true */
     hideTutorial?: boolean;
@@ -163,39 +171,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
         return this.markup ? this.markup.paperArea : undefined;
     }
 
-    private getToolbar = () => {
-        const {languages, onSaveDiagram, onPersistAuthoredChanges, hidePanels, toolbar, metadataApi} = this.props;
-        return cloneElement(
-            toolbar || createElement<DefaultToolbarProps>(DefaultToolbar), {
-                onZoomIn: this.zoomIn,
-                onZoomOut: this.zoomOut,
-                onZoomToFit: this.zoomToFit,
-                onPrint: this.print,
-                onExportSVG: this.exportSvg,
-                onExportPNG: this.exportPng,
-                onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(this) : undefined,
-                onPersistAuthoredChanges: onPersistAuthoredChanges ? () => onPersistAuthoredChanges(this) : undefined,
-                onForceLayout: () => {
-                    this.forceLayout();
-                    this.zoomToFit();
-                },
-                languages,
-                selectedLanguage: this.view.getLanguage(),
-                onChangeLanguage: this.changeLanguage,
-                onShowTutorial: this.showTutorial,
-                hidePanels,
-                isLeftPanelOpen: this.state.isLeftPanelOpen,
-                onLeftPanelToggle: () => {
-                    this.setState(prevState => ({isLeftPanelOpen: !prevState.isLeftPanelOpen}));
-                },
-                isRightPanelOpen: this.state.isRightPanelOpen,
-                onRightPanelToggle: () => {
-                    this.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
-                },
-            },
-        );
-    }
-
     render(): ReactElement<any> {
         const {languages, toolbar, hidePanels, hideToolbar, metadataApi} = this.props;
         return createElement(WorkspaceMarkup, {
@@ -216,7 +191,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onToggleLeftPanel: isLeftPanelOpen => this.setState({isLeftPanelOpen}),
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
-            toolbar: this.getToolbar(),
+            toolbar: createElement(ToolbarWrapper, {workspace: this}),
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
@@ -385,6 +360,69 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     showTutorial = () => {
         showTutorial();
+    }
+}
+
+interface ToolbarWrapperProps {
+    workspace: Workspace;
+}
+
+class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
+    private readonly listener = new EventObserver();
+
+    render() {
+        const {workspace} = this.props;
+        const view = workspace.getDiagram();
+        const editor = workspace.getEditor();
+        const {languages, onSaveDiagram, onPersistChanges, hidePanels, toolbar, metadataApi} = workspace.props;
+
+        const canPersistChanges = onPersistChanges ? editor.authoringState.events.length > 0 : undefined;
+        const canSaveDiagram = !canPersistChanges;
+
+        const toolbarProps: ToolbarProps = {
+            onZoomIn: workspace.zoomIn,
+            onZoomOut: workspace.zoomOut,
+            onZoomToFit: workspace.zoomToFit,
+            onPrint: workspace.print,
+            onExportSVG: workspace.exportSvg,
+            onExportPNG: workspace.exportPng,
+            canSaveDiagram,
+            onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(workspace) : undefined,
+            canPersistChanges,
+            onPersistChanges: onPersistChanges ? () => onPersistChanges(workspace) : undefined,
+            onForceLayout: () => {
+                workspace.forceLayout();
+                workspace.zoomToFit();
+            },
+            languages,
+            selectedLanguage: view.getLanguage(),
+            onChangeLanguage: workspace.changeLanguage,
+            onShowTutorial: workspace.showTutorial,
+            hidePanels,
+            isLeftPanelOpen: workspace.state.isLeftPanelOpen,
+            onLeftPanelToggle: () => {
+                workspace.setState(prevState => ({isLeftPanelOpen: !prevState.isLeftPanelOpen}));
+            },
+            isRightPanelOpen: workspace.state.isRightPanelOpen,
+            onRightPanelToggle: () => {
+                workspace.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
+            },
+        };
+        return toolbar
+            ? cloneElement(toolbar, toolbarProps)
+            : createElement(DefaultToolbar, toolbarProps);
+    }
+
+    componentDidMount() {
+        const {workspace} = this.props;
+        const editor = workspace.getEditor();
+        this.listener.listen(editor.events, 'changeAuthoringState', () => {
+            this.forceUpdate();
+        });
+    }
+
+    componentWillUnmount() {
+        this.listener.stopListening();
     }
 }
 
