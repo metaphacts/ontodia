@@ -436,69 +436,59 @@ export class SparqlDataProvider implements DataProvider {
 
     formatLinkTypesStatistics(elementIri: ElementIri, linkIri: LinkTypeIri): string {
         const elementIriConst = escapeIri(elementIri);
-        const linkConfig = this.settings.linkConfigurations.find(link => link.id === linkIri);
-        const linkConfigInverse = this.settings.linkConfigurations.find(link => link.inverseId === linkIri);
 
-        let links: string[] = [];
-        if (linkConfig) {
-            links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?outObject')} 
-                BIND(<${linkIri}> as ?link )
+        const links: string[] = [];
+        this.settings.linkConfigurations.filter(link => link.id === linkIri).forEach(link => {
+            links.push(`{ ${this.formatLinkPath(link.path, elementIriConst, '?outObject')}
+                BIND(<${linkIri}> as ?link)
             }`);
-            links.push(`{ ${this.formatLinkPath(linkConfig.path, '?inObject', elementIriConst)} 
-                BIND(<${linkIri}> as ?link )
+            links.push(`{ ${this.formatLinkPath(link.path, '?inObject', elementIriConst)}
+                BIND(<${linkIri}> as ?link)
             }`);
-        }
-        if (linkConfigInverse) {
-            links.push(`{ ${this.formatLinkPath(linkConfigInverse.path, elementIriConst, '?inObject')} 
-                BIND(<${linkIri}> as ?link )
+        });
+        this.settings.linkConfigurations.filter(link => link.inverseId === linkIri).forEach(link => {
+            links.push(`{ ${this.formatLinkPath(link.path, elementIriConst, '?inObject')}
+                BIND(<${linkIri}> as ?link)
             }`);
-            links.push(`{ ${this.formatLinkPath(linkConfigInverse.path, '?outObject', elementIriConst)} 
-                BIND(<${linkIri}> as ?link )
+            links.push(`{ ${this.formatLinkPath(link.path, '?outObject', elementIriConst)}
+                BIND(<${linkIri}> as ?link)
             }`);
-        }
-        return links.join(`
-            UNION 
-            `);
+        });
+        return links.join(` \n UNION \n `);
     }
 
     formatLinkElements(refElementIri: ElementIri, linkIri?: LinkTypeIri, direction?: 'in' | 'out'): string {
+        const {linkConfigurations} = this.settings;
         const elementIriConst = `<${refElementIri}>`;
         let parts: string[] = [];
         if (!linkIri) {
             if (!direction || direction === 'out') {
-                parts = parts.concat( this.settings.linkConfigurations.map((linkConfig) =>
-                    `{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?inst')} }`));
+                parts = parts.concat(linkConfigurations.map(link =>
+                    `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`)
+                );
             }
             if (!direction || direction === 'in') {
-                parts = parts.concat( this.settings.linkConfigurations.map((linkConfig) =>
-                    `{ ${this.formatLinkPath(linkConfig.path, '?inst', elementIriConst)} }`));
+                parts = parts.concat(linkConfigurations.map(link =>
+                    `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`)
+                );
             }
-            return parts.join(`
-            UNION 
-            `);
         } else {
-            const linkOut = this.settings.linkConfigurations.find((linkConfig) => linkConfig.id === linkIri);
-            const linkIn = this.settings.linkConfigurations.find((linkConfig) => linkConfig.inverseId === linkIri);
+            const outLinks = linkConfigurations.filter(link => link.id === linkIri);
+            const inLinks = linkConfigurations.filter(link => link.inverseId === linkIri);
             if (!direction || direction === 'out') {
-                if (linkOut) {
-                    parts.push(`{ ${this.formatLinkPath(linkOut.path, elementIriConst, '?inst')} }`);
-                }
-                if (linkIn) {
-                    parts.push(`{ ${this.formatLinkPath(linkIn.path, '?inst', elementIriConst)} }`);
-                }
+                parts = parts.concat(
+                    outLinks.map(link => `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`),
+                    inLinks.map(link => `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`),
+                );
             }
             if (!direction || direction === 'in') {
-                if (linkIn) {
-                    parts.push(`{ ${this.formatLinkPath(linkIn.path, elementIriConst, '?inst')} }`);
-                }
-                if (linkOut) {
-                    parts.push(`{ ${this.formatLinkPath(linkOut.path, '?inst', elementIriConst)} }`);
-                }
+                parts = parts.concat(
+                    inLinks.map(link => `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`),
+                    outLinks.map(link => `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`),
+                );
             }
-            return parts.join(`
-            UNION 
-            `);
         }
+        return parts.join(` \n UNION \n `);
     }
 
     formatLinkLinks(): string {
