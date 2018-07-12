@@ -53,8 +53,9 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
     }
 
     componentDidMount() {
-        const {templateProps: {iri}} = this.props;
         const {editor} = this.context.ontodiaWorkspace;
+        const {templateProps} = this.props;
+        const iri = templateProps.data.id;
         this.listener.listen(editor.events, 'changeAuthoringState', ({previous}) => {
             const current = editor.authoringState;
             if (current.index.elements.get(iri) !== previous.index.elements.get(iri)) {
@@ -73,14 +74,18 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
 
     componentDidUpdate(prevProps: AuthoredEntityProps) {
         this.observeTypes();
-        if (this.props.templateProps.isExpanded !== prevProps.templateProps.isExpanded) {
+        const shouldUpdateAllowedActions = !(
+            this.props.templateProps.data === prevProps.templateProps.data &&
+            this.props.templateProps.isExpanded === prevProps.templateProps.isExpanded
+        );
+        if (shouldUpdateAllowedActions) {
             this.queryAllowedActions();
         }
     }
 
     private observeTypes() {
-        const {iri} = this.props.templateProps;
         const {editor} = this.context.ontodiaWorkspace;
+        const iri = this.props.templateProps.data.id;
         const validation = editor.validationState.elements.get(iri);
         if (validation) {
             this.linkTypesObserver.observe(
@@ -103,19 +108,17 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
     }
 
     private queryAllowedActions() {
-        const {isExpanded, elementId, iri} = this.props.templateProps;
+        const {isExpanded, elementId, data} = this.props.templateProps;
         // only fetch whether it's allowed to edit when expanded
-        if (!this.props.templateProps.isExpanded) { return; }
+        if (!isExpanded) { return; }
         this.queryCancellation.abort();
         this.queryCancellation = new Cancellation();
 
         const {editor} = this.context.ontodiaWorkspace;
-        const element = editor.model.getElement(elementId);
 
-        if (!(editor.metadataApi && element) || isDeletedElement(editor.authoringState, iri)) {
+        if (!editor.metadataApi || isDeletedElement(editor.authoringState, data.id)) {
             this.setState({canEdit: false, canDelete: false});
         } else {
-            const data = element.data;
             this.queryCanEdit(data);
             this.queryCanDelete(data);
         }
@@ -164,8 +167,8 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
 
     private onDelete = () => {
         const {editor} = this.context.ontodiaWorkspace;
-        const {iri} = this.props.templateProps;
-        editor.deleteEntity(iri);
+        const {data} = this.props.templateProps;
+        editor.deleteEntity(data.id);
     }
 }
 

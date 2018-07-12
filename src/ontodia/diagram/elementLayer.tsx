@@ -259,6 +259,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
 
         return {
             elementId: model.id,
+            data: model.data,
             iri: model.iri,
             types,
             label,
