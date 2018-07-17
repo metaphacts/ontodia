@@ -22,33 +22,17 @@
     margin-left: -1px;
   }
 
-  > .ontodia-btn:not(:first-child):not(:last-child) {
-    border-radius: 0;
-  }
-
-  > .ontodia-btn:first-child:not(:last-child) {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-
   > .ontodia-btn:first-child {
     margin-left: 0;
   }
 
-  > .ontodia-btn:last-child:not(:first-child) {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-  }
-
   &-sm > .ontodia-btn {
-    border-radius: 3px;
     font-size: 12px;
     line-height: 1.5;
     padding: 5px 10px;
   }
 
   &-xs > .ontodia-btn {
-    border-radius: 3px;
     font-size: 12px;
     line-height: 1.5;
     padding: 1px 5px;

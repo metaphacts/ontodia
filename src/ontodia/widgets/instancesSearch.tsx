@@ -157,8 +157,9 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     }
 
     private renderRemoveCriterionButtons(onClick: () => void) {
-        return <div className={`${CLASS_NAME}__criterion-remove btn-group btn-group-xs`}>
-            <button type='button' className='btn btn-default' title='Remove criteria' onClick={onClick}>
+        return <div className={`${CLASS_NAME}__criterion-remove ontoidia-btn-group ontodia-btn-group-xs`}>
+            <button type='button' className='ontodia-btn ontodia-btn-default' title='Remove criteria'
+                onClick={onClick}>
                 <span className='fa fa-times' aria-hidden='true'></span>
             </button>
         </div>;

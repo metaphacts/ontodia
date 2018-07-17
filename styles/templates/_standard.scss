@@ -4,15 +4,15 @@
   float: left;
 
   &__main {
-    border-radius: 10px;
+    border-radius: 2px;
     border: 1px solid;
   }
 
   &__body {
-    margin-left: 13px;
-    border-radius: 3px 10px 10px 3px;
+    margin-left: 8px;
+    border-radius: 0 2px 2px 0;
     border-left: 1px solid;
-    padding: 3px 0px 3px 0;
+    padding: 3px 0;
     background: #fafaf9;
     display: flex;
     align-items: center;
@@ -55,7 +55,7 @@
 
   &__photo-image {
     width: 100%;
-    border-radius: 10px 10px 0 0;
+    border-radius: 2px 2px 0 0;
   }
 
   &__type {
@@ -138,7 +138,7 @@
   }
 
   &__dropdown {
-    border-radius: 10px;
+    border-radius: 2px;
     background-color: white;
     margin-top: 5px;
     border: 1px solid;
