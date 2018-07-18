@@ -264,7 +264,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             types,
             label,
             color,
-            icon,
+            iconUrl: icon,
             imgUrl: model.data.image,
             isExpanded: model.isExpanded,
             props: model.data.properties,
@@ -299,7 +299,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private styleFor(model: Element) {
         const {color: {h, c, l}, icon} = this.props.view.getTypeStyle(model.data.types);
         return {
-            icon: icon ? icon : 'ontodia-default-icon',
+            icon,
             color: hcl(h, c, l).toString(),
         };
     }

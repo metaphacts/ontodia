@@ -7,7 +7,7 @@ const CLASS = 'ontodia-group-template';
 
 export class GroupTemplate extends React.Component<TemplateProps, {}> {
     render() {
-        const {label, icon, types, color, isExpanded} = this.props;
+        const {label, iconUrl, types, color, isExpanded} = this.props;
 
         return (
             <div className={CLASS}>
@@ -16,7 +16,9 @@ export class GroupTemplate extends React.Component<TemplateProps, {}> {
                     borderColor: color,
                 }}>
                     <div className={`${CLASS}__type-line`} title={label}>
-                        <div className={`${icon} ${CLASS}__type-line-icon`} />
+                        <div className={`${CLASS}__type-line-icon`}>
+                            <img src={iconUrl} />
+                        </div>
                         <div title={types} className={`${CLASS}__type-line-text-container`}>
                             <div className={`${CLASS}__type-line-text`}>
                                 {types}

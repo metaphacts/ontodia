@@ -38,7 +38,8 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
                 borderColor: props.color,
             }} data-expanded={this.props.isExpanded}>
                 <div className='ontodia-default-template_type-line' title={props.label}>
-                    <div className={`${props.icon} ontodia-default-template_type-line__icon`} aria-hidden='true'>
+                    <div className='ontodia-default-template_type-line__icon' aria-hidden='true'>
+                        <img src={props.iconUrl} />
                     </div>
                     <div title={props.types} className='ontodia-default-template_type-line_text-container'>
                         <div className='ontodia-default-template_type-line_text-container__text'>

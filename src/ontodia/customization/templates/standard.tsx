@@ -122,7 +122,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
     }
 
     private renderThumbnail() {
-        const {color, imgUrl, icon} = this.props;
+        const {color, imgUrl, iconUrl} = this.props;
 
         if (imgUrl) {
             return (
@@ -130,18 +130,20 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                     <img src={imgUrl} className={`${CLASS_NAME}__thumbnail-image`} />
                 </div>
             );
-        }
-
-        if (icon === 'ontodia-default-icon') {
-            const label = this.getLabel();
+        } else if (iconUrl) {
             return (
-                <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}}>
-                    {label.charAt(0).toUpperCase()}
+                <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true'>
+                    <img src={iconUrl} className={`${CLASS_NAME}__thumbnail-icon`} />
                 </div>
             );
         }
 
-        return <div className={`${icon} ${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}} />;
+        const label = this.getLabel();
+        return (
+            <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}}>
+                {label.charAt(0).toUpperCase()}
+            </div>
+        );
     }
 
     protected getTypesLabel(): string {
