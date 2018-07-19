@@ -21,7 +21,7 @@ export interface TemplateProps {
     types: string;
     label: string;
     color: any;
-    icon: string;
+    iconUrl: string;
     imgUrl?: string;
     isExpanded?: boolean;
     propsAsList?: PropArray;

@@ -49,6 +49,11 @@
     max-width: 100%;
   }
 
+  &__thumbnail-icon {
+    max-height: 26px;
+    max-width: 26px;
+  }
+
   &__photo {
     border-bottom: 1px solid;
   }

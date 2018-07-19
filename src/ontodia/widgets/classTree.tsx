@@ -32,6 +32,7 @@ interface ClassTreeElement {
     };
     text?: string;
     type?: string;
+    icon?: string;
 }
 
 const CLASS_NAME = 'ontodia-class-tree';
@@ -135,12 +136,7 @@ function mapClass(
     const classLabel = formatLocalizedLabel(id, label, view.getLanguage());
     const text = classLabel + (typeof count === 'number' ? ` (${count})` : '');
 
-    let iconId: string | undefined;
-    if (icon) {
-        iconId = _.uniqueId('iconId');
-        iconMap[iconId] = {icon: icon + ' ontodia-tree-icon'};
-    }
-    const type = iconId || (children.length > 0 ? 'has-children' : 'has-not-children');
+    const type = children.length > 0 ? 'has-children' : 'has-not-children';
 
     return {
         id,
@@ -154,6 +150,7 @@ function mapClass(
         },
         text,
         type,
+        icon,
     };
 }
 
