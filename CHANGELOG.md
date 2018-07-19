@@ -5,7 +5,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
-## [0.8.1]
+## [0.9.0] - 2018-07-19
+### Added
+- Data authoring capabilities (see `AuthoringState`, `MetadataApi`, `ValidationApi`).
+- Support for "pinned" paper widgets (which doesn't move on paper scroll).
+- Tooltips with IRIs to Classes, Instances, Connections and standard template.
+- Patterns for datatype properties through `propertyConfigurations` property of
+`SparqlDataProvider` configuration.
+
+### Changed
+- **[Breaking]** Introduce `AsyncModel` derived from `DiagramModel` managing all async
+operations (e.g. loading labels, links, etc).
+- **[Breaking]** Extract standard widget handling (halo, dialogs) into `EditorController`.
+- **[Breaking]** Use image URLs instead of CSS classes to customize icons.
+- Made `inverseOf` optional and allow multiple items with same `id` or `inverseId` in
+`linkConfigurations` property of `SparqlDataProvider` configuration.
+- Made look and feel of controls and templates more modern.
+
+## [0.8.1] - 2018-07-02
 ### Changed
 - **[Breaking]** Introduce nominal types for element, class, link type and property type IRIs.
 
@@ -17,7 +34,7 @@ and targets of links.
 - Filtering in Connections menu for upper-case text.
 - Increase default inter-node distance for force layout.
 
-## [0.8.0]
+## [0.8.0] - 2018-04-16
 ### Added
 - Nesting (grouping) elements on diagram using `groupBy` option and `<EmbeddedLayer />`
 element in custom templates.
