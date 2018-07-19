@@ -189,6 +189,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         return (
             <div className={`${CLASS_NAME}__actions`}>
                 <button type='button'
+                    className='ontodia-btn ontodia-btn-default'
                     title={canDelete ? 'Delete entity' : 'Deletion is unavailable for the selected element'}
                     disabled={!canDelete}
                     onClick={onDelete}>
@@ -198,6 +199,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         : 'Delete'}
                 </button>
                 <button type='button'
+                    className='ontodia-btn ontodia-btn-default'
                     title={canEdit ? 'Edit entity' : 'Editing is unavailable for the selected element'}
                     disabled={!canEdit}
                     onClick={onEdit}>
