@@ -12,7 +12,7 @@ import { AsyncModel } from '../editor/asyncModel';
 import { isEmptyMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
-import { ListElementView } from './listElementView';
+import { ListElementView, startDragElements } from './listElementView';
 
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
@@ -183,27 +183,23 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 view={this.props.view}
                 disabled={alreadyOnDiagram}
                 selected={this.state.selectedItems[model.id] || false}
-                onClick={alreadyOnDiagram ? undefined : () => this.toggleSelectedItem(model.id)}
+                onSelectedChanged={alreadyOnDiagram ? undefined : this.onSelectedChanged}
                 onDragStart={e => {
-                    const elementIds = Object.keys({...this.state.selectedItems, [model.id]: true});
-                    try {
-                        e.dataTransfer.setData('application/x-ontodia-elements', JSON.stringify(elementIds));
-                    } catch (ex) { // IE fix
-                        e.dataTransfer.setData('text', JSON.stringify(elementIds));
-                    }
-                    return false;
+                    const iris = Object.keys({...this.state.selectedItems, [model.id]: true});
+                    return startDragElements(e, iris);
                 }}
             />
         );
     }
 
-    private toggleSelectedItem(itemId: string) {
+    private onSelectedChanged = (selected: boolean, model: ElementModel) => {
         this.setState((state): State => {
             const selectedItems: Dictionary<true> = {...state.selectedItems};
-            if (selectedItems[itemId]) {
-                delete selectedItems[itemId];
-            } else {
-                selectedItems[itemId] = true;
+            const previouslySelected = Boolean(selectedItems[model.id]);
+            if (previouslySelected && !selected) {
+                delete selectedItems[model.id];
+            } else if (!previouslySelected && selected) {
+                selectedItems[model.id] = true;
             }
             return {selectedItems};
         });

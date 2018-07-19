@@ -501,7 +501,7 @@ export class EditorController {
         if (!elementIris || elementIris.length === 0) { return; }
 
         const batch = this.model.history.startBatch('Drag and drop onto diagram');
-        const placedElements = placeElements(this.model, elementIris, paperPosition);
+        const placedElements = placeElements(this.view, elementIris, paperPosition);
         batch.history.execute(
             restoreLinksBetweenElements(this.model, elementIris)
         );
@@ -867,41 +867,29 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
 }
 
 function placeElements(
-    model: AsyncModel, elementIris: ReadonlyArray<ElementIri>, position: Vector
+    view: DiagramView, elementIris: ReadonlyArray<ElementIri>, position: Vector
 ): Element[] {
-    const elements: Element[] = [];
-    let totalXOffset = 0;
-    const {x, y} = position;
-    for (const elementIri of elementIris) {
-        const center = elementIris.length === 1;
-        const {element, size} = createElementAt(
-            model, elementIri, {x: x + totalXOffset, y, center}
-        );
-        elements.push(element);
-        totalXOffset += size.width + 20;
-    }
-    return elements;
-}
-
-function createElementAt(
-    model: AsyncModel,
-    elementIri: ElementIri,
-    position: { x: number; y: number; center?: boolean; },
-) {
-    const element = model.createElement(elementIri);
+    const elements = elementIris.map(iri => view.model.createElement(iri));
+    view.performSyncUpdate();
 
     let {x, y} = position;
-    let {width, height} = boundsOf(element);
-    if (width === 0) { width = 100; }
-    if (height === 0) { height = 50; }
+    let isFirst = true;
+    for (const element of elements) {
+        let {width, height} = boundsOf(element);
+        if (width === 0) { width = 100; }
+        if (height === 0) { height = 50; }
 
-    if (position.center) {
-        x -= width / 2;
-        y -= height / 2;
+        if (isFirst) {
+            isFirst = false;
+            x -= width / 2;
+            y -= height / 2;
+        }
+
+        element.setPosition({x, y});
+        y += height + 20;
     }
-    element.setPosition({x, y});
 
-    return {element, size: {width, height}};
+    return elements;
 }
 
 export function recursiveForceLayout(model: DiagramModel, grouping: Map<string, Element[]>, group?: string) {

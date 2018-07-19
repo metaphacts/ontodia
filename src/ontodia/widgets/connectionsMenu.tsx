@@ -15,6 +15,8 @@ import { EditorController } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 
+import { ListElementView, highlightSubstring, startDragElements } from './listElementView';
+
 type Label = { values: LocalizedString[] };
 type ConnectionCount = { inCount: number; outCount: number };
 
@@ -337,14 +339,14 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
 
     private getBreadCrumbs = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
-            const link = this.props.objectsData.linkDataChunk.link;
+            const {link, direction} = this.props.objectsData.linkDataChunk;
             const lang = this.props.view.getLanguage();
             const localizedText = formatLocalizedLabel(link.id, link.label, lang).toLowerCase();
 
             return <span className='ontodia-connections-menu_bread-crumbs'>
                 <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>
                 {'\u00A0' + '/' + '\u00A0'}
-                {`${localizedText} (${this.props.objectsData.linkDataChunk.direction})`}
+                {localizedText} {direction ? `(${direction})` : null}
             </span>;
         } else {
             return null;
@@ -655,9 +657,10 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
         const {view, link} = this.props;
         const fullText = formatLocalizedLabel(link.id, link.label, view.getLanguage());
         const probability = Math.round(this.props.probability * 100);
-        const textLine = getColoredText(
+        const textLine = highlightSubstring(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
             this.props.filterKey,
+            {style: {color: 'darkred', fontWeight: 'bold'}}
         );
         const directionName =
             this.props.direction === 'in' ? 'source' :
@@ -703,29 +706,20 @@ interface ObjectsPanelState {
 class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState> {
     constructor(props: ObjectsPanelProps) {
         super(props);
-        this.state = {checkMap: selectNonPreseted(this.props.data.objects)};
+        this.state = {checkMap: {}};
     }
 
     componentWillReceiveProps(nextProps: ObjectsPanelProps) {
         if (this.props.data.objects.length < nextProps.data.objects.length) {
-            this.setState({checkMap: selectNonPreseted(nextProps.data.objects)});
+            this.setState({checkMap: {}});
         }
-    }
-
-    private onCheckboxChanged = (object: ReactElementModel, newValue: boolean) => {
-        const {checkMap} = this.state;
-        if (checkMap[object.model.id] === newValue) {
-            return;
-        }
-        const nextCheckMap = {...checkMap, [object.model.id]: newValue};
-        this.setState({checkMap: nextCheckMap});
     }
 
     private onSelectAll = () => {
         const objects = this.props.data.objects;
         if (objects.length === 0) { return; }
         const allSelected = allNonPresentedAreSelected(objects, this.state.checkMap);
-        const checkMap = allSelected ? {} : selectNonPreseted(this.props.data.objects);
+        const checkMap = allSelected ? {} : selectNonPresented(this.props.data.objects);
         this.setState({checkMap});
     }
 
@@ -742,7 +736,8 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
         });
     }
 
-    private getObjects(list: ReadonlyArray<ReactElementModel>) {
+    private renderObjects(list: ReadonlyArray<ReactElementModel>) {
+        const {view, filterKey} = this.props;
         const {checkMap} = this.state;
         const added: { [id: string]: true } = {};
         const result: React.ReactElement<any>[] = [];
@@ -750,23 +745,36 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
             if (added[obj.model.id]) { continue; }
             added[obj.model.id] = true;
             result.push(
-                <ElementInPopupMenu
+                <ListElementView
                     key={obj.model.id}
-                    element={obj}
-                    view={this.props.view}
-                    filterKey={this.props.filterKey}
-                    checked={checkMap[obj.model.id] || false}
-                    onCheckedChanged={this.onCheckboxChanged}
+                    model={obj.model}
+                    view={view}
+                    disabled={obj.presentOnDiagram}
+                    highlightText={filterKey}
+                    selected={checkMap[obj.model.id] || false}
+                    onSelectedChanged={this.onSelectedChanged}
+                    onDragStart={e => {
+                        const iris = list.filter(item =>
+                            !item.presentOnDiagram && (
+                                this.state.checkMap[item.model.id] ||
+                                item.model.id === obj.model.id
+                            )
+                        ).map(item => item.model.id);
+                        return startDragElements(e, iris);
+                    }}
                 />
             );
         }
         return result;
     }
 
-    private addSelected = () => {
-        this.props.onPressAddSelected(
-            this.getFilteredObjects().filter(el => this.state.checkMap[el.model.id] && !el.presentOnDiagram)
-        );
+    private onSelectedChanged = (selected: boolean, model: ElementModel) => {
+        const {checkMap} = this.state;
+        if (checkMap[model.id] === selected) {
+            return;
+        }
+        const nextCheckMap = {...checkMap, [model.id]: selected};
+        this.setState({checkMap: nextCheckMap});
     }
 
     private counter = (activeObjCount: number) => {
@@ -790,55 +798,55 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
     }
 
     render() {
+        const {onPressAddSelected} = this.props;
         const {checkMap} = this.state;
         const objects = this.getFilteredObjects();
-        const objectViews = this.getObjects(objects);
-        const nonPresentedCount = objects.filter(el => !el.presentOnDiagram).length;
-        const activeCount = objects.filter(el => checkMap[el.model.id]  && !el.presentOnDiagram).length;
-        const allSelected = allNonPresentedAreSelected(objects, checkMap);
+        const isAllSelected = allNonPresentedAreSelected(objects, checkMap);
+
+        const nonPresented = objects.filter(el => !el.presentOnDiagram);
+        const active = nonPresented.filter(el => checkMap[el.model.id]);
 
         return <div className='ontodia-connections-menu_objects-panel'>
             <div className='ontodia-connections-menu_objects-panel__select-all'>
                 <label>
                     <input type='checkbox'
-                        checked={allSelected && nonPresentedCount > 0}
+                        checked={isAllSelected && nonPresented.length > 0}
                         onChange={this.onSelectAll}
-                        disabled={nonPresentedCount === 0} />
+                        disabled={nonPresented.length === 0} />
                     Select All
                 </label>
             </div>
             {(
                 this.props.loading ?
                 <label className='ontodia-label ontodia-connections-menu__loading-objects'>Loading...</label> :
-                objectViews.length === 0 ?
+                objects.length === 0 ?
                 <label className='ontodia-label ontodia-connections-menu__loading-objects'>No available nodes</label> :
                 <div className='ontodia-connections-menu_objects-panel_objects-list'>
-                    {objectViews}
-                    {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ?
-                        <div
-                            className='element-in-popup-menu move-to-filter-line'
-                            onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}
-                        >
-                            The list was truncated, for more data click here to use the filter panel.
-                        </div> : ''}
+                    {this.renderObjects(objects)}
+                    {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ? (
+                        <div className='ontodia-connections-menu__move-to-filter'
+                            onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}>
+                            The list was truncated, for more data click here to use the filter panel
+                        </div>
+                    ) : null}
                 </div>
             )}
             <div className='ontodia-connections-menu_objects-panel_bottom-panel'>
-                {this.counter(activeCount)}
+                {this.counter(active.length)}
                 <button className={
                         'ontodia-btn ontodia-btn-primary pull-right ' +
                         'ontodia-connections-menu_objects-panel_bottom-panel__add-button'
                     }
-                    disabled={this.props.loading || activeCount === 0}
-                    onClick={this.addSelected}>
-                    Add selected
+                    disabled={this.props.loading || nonPresented.length === 0}
+                    onClick={() => onPressAddSelected(active.length > 0 ? active : nonPresented)}>
+                    {active.length > 0 ? 'Add selected' : 'Add all'}
                 </button>
             </div>
         </div>;
     }
 }
 
-function selectNonPreseted(objects: ReadonlyArray<ReactElementModel>) {
+function selectNonPresented(objects: ReadonlyArray<ReactElementModel>) {
     const checkMap: { [id: string]: boolean } = {};
     for (const object of objects) {
         if (object.presentOnDiagram) { continue; }
@@ -858,70 +866,4 @@ function allNonPresentedAreSelected(
         allSelected = allSelected && selected;
     }
     return allSelected;
-}
-
-interface ElementInPopupMenuProps {
-    element: ReactElementModel;
-    view: DiagramView;
-    filterKey?: string;
-    checked: boolean;
-    onCheckedChanged: (object: ReactElementModel, value: boolean) => void;
-}
-
-class ElementInPopupMenu extends React.Component<ElementInPopupMenuProps, {}> {
-    private onToggleCheckbox = () => {
-        const {element, checked, onCheckedChanged} = this.props;
-        if (this.props.element.presentOnDiagram) { return; }
-        onCheckedChanged(element, !checked);
-    }
-
-    render() {
-        const {element, view, filterKey, checked} = this.props;
-        const {model} = element;
-        const fullTitle = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
-        const textLine = getColoredText(fullTitle, filterKey);
-        return (
-            <li data-linkTypeId={model.id}
-                className={'element-in-popup-menu' + (checked ? '' : ' unchecked')}
-                onClick={this.onToggleCheckbox}>
-                <input type='checkbox' checked={checked}
-                    onChange={() => {/*nothing*/}}
-                    className='element-in-popup-menu__checkbox'
-                    disabled={this.props.element.presentOnDiagram}
-                    title={this.props.element.presentOnDiagram ?
-                        `Element "${fullTitle}" already present on diagram` : undefined} />
-                <div className='element-in-popup-menu__link-label'
-                    title={`${fullTitle} ${view.formatIri(model.id)}`}
-                    style={{fontStyle: (this.props.element.presentOnDiagram ? 'italic' : 'inherit')}}>
-                    {textLine}
-                </div>
-            </li>
-        );
-    }
-}
-
-function getColoredText(fullText: string, filterKey: string) {
-    if (filterKey) {
-        filterKey = filterKey.toLowerCase();
-        const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
-        const rightIndex = leftIndex + filterKey.length;
-        let firstPart = '';
-        let selectedPart = '';
-        let lastPart = '';
-
-        if (leftIndex === 0) {
-            selectedPart = fullText.substring(0, rightIndex);
-        } else {
-            firstPart = fullText.substring(0, leftIndex);
-            selectedPart = fullText.substring(leftIndex, rightIndex);
-        }
-        if (rightIndex <= fullText.length) {
-            lastPart = fullText.substring(rightIndex, fullText.length);
-        }
-        return <span>
-            {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
-        </span>;
-    } else {
-        return <span>{fullText}</span>;
-    }
 }
