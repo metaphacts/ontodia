@@ -321,7 +321,7 @@ export class EditorController {
                     }
                 />
             );
-        } else if (selected instanceof Link) {
+        } else if (selected instanceof Link && this.inAuthoringMode) {
             halo = (
                 <HaloLink view={this.view}
                     editor={this}

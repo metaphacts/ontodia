@@ -24,6 +24,7 @@ export * from './ontodia/data/sparql/sparqlGraphBuilder';
 export { RestoreGeometry } from './ontodia/diagram/commands';
 export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell } from './ontodia/diagram/elements';
 export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
+export * from './ontodia/diagram/geometry';
 export * from './ontodia/diagram/history';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
