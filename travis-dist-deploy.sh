@@ -26,6 +26,10 @@ cp -r "$TRAVIS_BUILD_DIR"/dist assets/"$TRAVIS_BRANCH"
 # remove temporary files
 rm -r assets/"$TRAVIS_BRANCH"/temp
 
+# keep examples only for branches, not for tags
+[ -n "$TRAVIS_TAG" ] && [ -e assets/"$TRAVIS_BRANCH"/examples ] \
+  && rm -r assets/"$TRAVIS_BRANCH"/examples
+
 # push it back
 git add assets
 git commit -am "Travis update for $TRAVIS_BRANCH"

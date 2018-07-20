@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Fixed
+- Show halo for links only in authoring mode.
+- Wait until element models loaded when importing layout.
+
 ## [0.9.0] - 2018-07-19
 ### Added
 - Data authoring capabilities (see `AuthoringState`, `MetadataApi`, `ValidationApi`).
@@ -305,7 +309,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.8.1...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.0...HEAD
+[0.8.1]: https://github.com/ontodia-org/ontodia/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/ontodia-org/ontodia/compare/v0.6.1...v0.8.0
 [0.6.1]: https://github.com/ontodia-org/ontodia/compare/v0.6.0...v0.6.1

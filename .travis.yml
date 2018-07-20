@@ -17,6 +17,8 @@ deploy:
     skip_cleanup: true
     on:
       tags: true
+      # only deploy non-dev releases, e.g. vX.Y.Z
+      condition: $TRAVIS_TAG =~ ^v\d+\.\d+\.\d+$
 sudo: false
 cache:
   directories:
