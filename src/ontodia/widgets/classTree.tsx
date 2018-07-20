@@ -66,7 +66,7 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
 
         const {view, editor} = this.props;
         this.listener.listen(view.events, 'changeLanguage', () => this.refreshClassTree());
-        this.listener.listen(editor.model.events, 'loadingSuccess', () => {
+        this.listener.listen(editor.model.events, 'changeClassTree', () => {
             this.refreshClassTree();
         });
     }

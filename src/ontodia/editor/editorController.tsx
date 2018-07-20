@@ -129,7 +129,8 @@ export class EditorController {
             this.view.setPaperWidget({key: 'states', widget});
         });
         this.listener.listen(this.model.events, 'loadingError', ({error}) => {
-            this.setSpinner({statusText: error.message, errorOccured: true});
+            const statusText = error ? error.message : undefined;
+            this.setSpinner({statusText, errorOccured: true});
         });
 
         if (!this.options.disableHalo) {

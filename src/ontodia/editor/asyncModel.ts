@@ -31,6 +31,7 @@ export interface AsyncModelEvents extends DiagramModelEvents {
         source: AsyncModel;
         error: any;
     };
+    changeClassTree: { source: AsyncModel };
     createLoadedLink: {
         source: AsyncModel;
         model: LinkModel;
@@ -117,16 +118,20 @@ export class AsyncModel extends DiagramModel {
             this.setClassTree(classTree);
             const allLinkTypes = this.initLinkTypes(linkTypes);
             this.setLinkSettings(params.linkSettings || []);
-            return this.loadAndRenderLayout({
+            const loadingModels = this.loadAndRenderLayout({
                 layoutData: params.layoutData,
                 preloadedElements: params.preloadedElements || {},
                 markLinksAsLayoutOnly: params.validateLinks || false,
                 allLinkTypes,
                 hideUnusedLinkTypes: params.hideUnusedLinkTypes,
-            }).then(() => {
-                if (params.validateLinks) { this.requestLinksOfType(); }
             });
+            const requestingLinks = params.validateLinks
+                ? this.requestLinksOfType() : Promise.resolve();
+            return Promise.all([loadingModels, requestingLinks]);
+        }).then(() => {
+            this.source.trigger('loadingSuccess', {source: this});
         }).catch(error => {
+            // tslint:disable-next-line:no-console
             console.error(error);
             this.source.trigger('loadingError', {source: this, error});
             return Promise.reject(error);
@@ -158,6 +163,7 @@ export class AsyncModel extends DiagramModel {
         }
 
         this.classTree = this.graph.getClasses();
+        this.source.trigger('changeClassTree', {source: this});
     }
 
     private initLinkTypes(linkTypes: LinkType[]): FatLinkType[] {
@@ -232,13 +238,13 @@ export class AsyncModel extends DiagramModel {
         }
 
         this.subscribeGraph();
-        this.requestElementData(elementIrisToRequestData);
+        const requestingModels = this.requestElementData(elementIrisToRequestData);
 
         if (hideUnusedLinkTypes && params.allLinkTypes) {
             this.hideUnusedLinkTypes(params.allLinkTypes, usedLinkTypes);
         }
-        this.source.trigger('loadingSuccess', {source: this});
-        return Promise.resolve();
+
+        return requestingModels;
     }
 
     private hideUnusedLinkTypes(
