@@ -60,6 +60,12 @@
     right: -($buttonWidth + $buttonMargin);
   }
 
+  @mixin w-docked {
+    top: 50%;
+    margin-top: -($buttonHeight / 2);
+    left: -($buttonWidth + $buttonMargin);
+  }
+
   @mixin s-docked {
     bottom: -($buttonHeight + $buttonMargin);
     left: 50%;
@@ -87,6 +93,13 @@
     &--closed {
       background-image: url("../images/close-connections.svg");
     }
+  }
+
+  &__folow {
+    @include halo-button;
+    @include w-docked;
+
+    background-image: url("../images/link.svg");
   }
 
   &__remove {

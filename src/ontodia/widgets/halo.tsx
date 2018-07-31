@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 
-import { Element as DiagramElement, ElementEvents } from '../diagram/elements';
+import { Element as DiagramElement, ElementEvents, Element } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 
@@ -12,6 +12,7 @@ import { AuthoringState, AuthoringKind } from '../editor/authoringState';
 import { AnyListener, Unsubscribe, EventObserver } from '../viewUtils/events';
 import { Cancellation, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
+import { ElementIri } from '../..';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
@@ -23,6 +24,7 @@ export interface Props extends PaperWidgetProps {
     onToggleNavigationMenu?: () => void;
     onAddToFilter?: () => void;
     onEstablishNewLink?: (point: Vector) => void;
+    onFolowTheLink?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
 }
 
 export interface State {
@@ -112,8 +114,9 @@ export class Halo extends React.Component<Props, State> {
 
     render() {
         const {
-            paperArea, editor, target, navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
-            onExpand,
+            paperArea, editor, target,
+            navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
+            onExpand, onFolowTheLink,
         } = this.props;
 
         if (!target) {
@@ -136,6 +139,10 @@ export class Halo extends React.Component<Props, State> {
                     role='button'
                     title='Open a dialog to navigate to connected elements'
                     onClick={onToggleNavigationMenu} />}
+                {onFolowTheLink && <div className={`${CLASS_NAME}__folow`}
+                    role='button'
+                    title='Jump to resource'
+                    onClick={(event) => onFolowTheLink(target.iri, target, event)} />}
                 {onAddToFilter && <div className={`${CLASS_NAME}__add-to-filter`}
                     role='button'
                     title='Search for connected elements'

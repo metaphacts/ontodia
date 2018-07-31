@@ -320,6 +320,7 @@ export class EditorController {
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selected, mode: EditLayerMode.establishLink, point})
                     }
+                    onFolowTheLink={this.view.options.onIriClick}
                 />
             );
         } else if (selected instanceof Link && this.inAuthoringMode) {
