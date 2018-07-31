@@ -17,8 +17,8 @@ import { Paper, PaperTransform } from './paper';
 export interface Props {
     view: DiagramView;
     zoomOptions?: ZoomOptions;
-    panningRequireModifiers?: boolean;
-    onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number; }) => void;
+    hideScrollBars?: boolean;
+    onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number }) => void;
     onZoom?: (scaleX: number, scaleY: number) => void;
 }
 
@@ -29,6 +29,7 @@ export interface ZoomOptions {
     /** Used when zooming to fit to limit zoom of small diagrams */
     maxFit?: number;
     fitPadding?: number;
+    requireCtrl?: boolean;
 }
 
 export interface ScaleOptions {
@@ -126,9 +127,9 @@ export class PaperArea extends React.Component<Props, State> {
 
     private get zoomOptions(): ZoomOptions {
         const {
-            min = 0.2, max = 2, step = 0.1, maxFit = 1, fitPadding = 20,
+            min = 0.2, max = 2, step = 0.1, maxFit = 1, fitPadding = 20, requireCtrl = true,
         } = this.props.zoomOptions || {};
-        return {min, max, step, maxFit, fitPadding};
+        return {min, max, step, maxFit, fitPadding, requireCtrl};
     }
 
     constructor(props: Props, context: any) {
@@ -161,7 +162,8 @@ export class PaperArea extends React.Component<Props, State> {
         const widgetProps: PaperWidgetProps = {paperArea: this, paperTransform};
         return (
             <div className={CLASS_NAME} ref={this.onOuterMount}>
-                <div className={`${CLASS_NAME}__area`} ref={this.onAreaMount}
+                <div className={`${CLASS_NAME}__area${this.props.hideScrollBars ? ' ontodia-hide-scroll-bars' : ''}`}
+                    ref={this.onAreaMount}
                     onMouseDown={this.onAreaPointerDown}
                     onWheel={this.onWheel}>
                     <Paper view={view}
@@ -358,10 +360,8 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    private shouldStartPanning(e: MouseEvent | React.MouseEvent<any>) {
-        const modifierPressed = e.ctrlKey || e.shiftKey;
-        return e.button === LEFT_MOUSE_BUTTON
-            && Boolean(modifierPressed) === Boolean(this.props.panningRequireModifiers);
+    private shouldStartZooming(e: MouseEvent | React.MouseEvent<any>) {
+        return Boolean(e.ctrlKey) && Boolean(this.zoomOptions.requireCtrl) || !this.zoomOptions.requireCtrl;
     }
 
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
@@ -433,7 +433,7 @@ export class PaperArea extends React.Component<Props, State> {
         restoreGeometry: RestoreGeometry,
     ) {
         if (this.movingState) { return; }
-        const panning = cell === undefined && this.shouldStartPanning(event);
+        const panning = cell === undefined;
         if (panning) {
             this.startPanning(event);
         }
@@ -519,9 +519,9 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     private onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-        if (e.ctrlKey) {
+        if (this.shouldStartZooming(e)) {
             e.preventDefault();
-            const delta = Math.max(-1, Math.min(1, e.deltaY));
+            const delta = Math.max(-1, Math.min(1, e.deltaY || e.deltaX));
             const pivot = this.pageToPaperCoords(e.pageX, e.pageY);
             this.zoomBy(-delta * 0.1, {pivot});
         }

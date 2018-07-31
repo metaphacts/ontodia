@@ -51,6 +51,8 @@ export interface WorkspaceProps {
     /** @default false */
     hideToolbar?: boolean;
     /** @default false */
+    hideScrollBars?: boolean;
+    /** @default false */
     hideHalo?: boolean;
     /** @default true */
     hideTutorial?: boolean;
@@ -172,11 +174,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, metadataApi} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
             hideToolbar,
+            hideScrollBars,
             model: this.model,
             view: this.view,
             editor: this.editor,
