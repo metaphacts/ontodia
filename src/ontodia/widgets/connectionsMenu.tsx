@@ -3,7 +3,6 @@ import * as ReactDOM from 'react-dom';
 
 import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
 
-import { changeLinkTypeVisibility } from '../diagram/commands';
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
@@ -17,8 +16,8 @@ import { EventObserver } from '../viewUtils/events';
 
 import { ListElementView, highlightSubstring, startDragElements } from './listElementView';
 
-type Label = { values: LocalizedString[] };
-type ConnectionCount = { inCount: number; outCount: number };
+interface Label { values: LocalizedString[]; }
+interface ConnectionCount { inCount: number; outCount: number; }
 
 export interface ReactElementModel {
     model: ElementModel;
@@ -64,6 +63,7 @@ export interface ConnectionsMenuProps {
     editor: EditorController;
     target: Element;
     onClose: () => void;
+    onAddElements: (elementIris: ElementIri[], linkType: FatLinkType|undefined) => void;
     suggestProperties?: PropertySuggestionHandler;
 }
 
@@ -170,54 +170,13 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     }
 
     private addSelectedElements = (selectedObjects: ReactElementModel[]) => {
-        const {view, editor, target, onClose} = this.props;
-        const batch = view.model.history.startBatch();
+        const {onClose, onAddElements} = this.props;
 
-        const positionBoxSide = Math.round(Math.sqrt(selectedObjects.length)) + 1;
-        const GRID_STEP = 100;
-        const {x: targetX, y: targetY} = boundsOf(target);
-        const startX = targetX - positionBoxSide * GRID_STEP / 2;
-        const startY = targetY - positionBoxSide * GRID_STEP / 2;
-        let xi = 0;
-        let yi = 0;
-
-        const addedElementIris: ElementIri[] = [];
-        selectedObjects.forEach(el => {
-            const element = view.model.createElement(el.model);
-            addedElementIris.push(element.iri);
-
-            if (xi > positionBoxSide) {
-                xi = 0;
-                yi++;
-            }
-            if (xi === Math.round(positionBoxSide / 2)) {
-                xi++;
-            }
-            if (yi === Math.round(positionBoxSide / 2)) {
-                yi++;
-            }
-            element.setPosition({
-                x: startX + (xi++) * GRID_STEP,
-                y: startY + (yi) * GRID_STEP,
-            });
-        });
-
+        const addedElementsIris = selectedObjects.map(item => item.model.id);
         const linkType = this.linkDataChunk ? this.linkDataChunk.link : undefined;
-
         const hasChosenLinkType = this.linkDataChunk && linkType !== ALL_RELATED_ELEMENTS_LINK;
-        if (hasChosenLinkType && !linkType.visible) {
-            batch.history.execute(changeLinkTypeVisibility({
-                linkType,
-                visible: true,
-                showLabel: true,
-                preventLoading: true,
-            }));
-        }
 
-        batch.history.execute(
-            restoreLinksBetweenElements(editor.model, addedElementIris)
-        );
-        batch.store();
+        onAddElements(addedElementsIris, hasChosenLinkType ? linkType : undefined);
         onClose();
     }
 
