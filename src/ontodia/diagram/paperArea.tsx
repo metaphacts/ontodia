@@ -606,9 +606,9 @@ export class PaperArea extends React.Component<Props, State> {
         );
 
         let scale = width / bbox.width;
-        const {min, max} = this.zoomOptions;
+        const {min, maxFit} = this.zoomOptions;
         scale = Math.max(scale, min);
-        scale = Math.min(scale, max);
+        scale = Math.min(scale, maxFit);
 
         this.setState({scale}, () => {
             this.centerContent();
