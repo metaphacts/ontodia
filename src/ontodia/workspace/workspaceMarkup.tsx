@@ -27,6 +27,7 @@ export interface WorkspaceMarkupProps {
     metadataApi?: MetadataApi;
     hidePanels?: boolean;
     hideToolbar?: boolean;
+    hideScrollBars?: boolean;
     searchCriteria?: SearchCriteria;
     onSearchCriteriaChanged: (criteria: SearchCriteria) => void;
     zoomOptions?: ZoomOptions;
@@ -216,6 +217,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                         <PaperArea ref={el => this.paperArea = el}
                             view={this.props.view}
                             zoomOptions={this.props.zoomOptions}
+                            hideScrollBars={this.props.hideScrollBars}
                             onDragDrop={(e, position) => this.props.editor.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
                         </PaperArea>
