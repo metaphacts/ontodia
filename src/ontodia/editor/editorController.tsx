@@ -981,21 +981,22 @@ function placeElementsAround(params: {
     listener.listen(view.model.events, 'changeCells', () => {
         listener.stopListening();
 
-        const step = Math.PI / elements.length;
+        const step = Math.min(Math.PI / elements.length, Math.PI / 6);
         const elementsSteck: Element[]  = [].concat(elements);
 
-        for (let angle = -Math.PI / 2; angle < Math.PI / 2; angle += step) {
-            const element = elementsSteck.pop();
+        const placeElementFromSteck = (curAngle: number, element: Element) => {
             if (element) {
-                const curAngle = startAngle - angle;
                 const size = element.size;
                 element.setPosition({
                     x: zeroPosition.x + prefferedLinksLength * Math.cos(curAngle) - size.width / 2,
                     y: zeroPosition.y + prefferedLinksLength * Math.sin(curAngle) - size.height / 2,
                 });
-            } else {
-                break;
             }
+        };
+
+        for (let angle = step / 2; elementsSteck.length > 0; angle += step) {
+            placeElementFromSteck(startAngle - angle, elementsSteck.pop());
+            placeElementFromSteck(startAngle + angle, elementsSteck.pop());
         }
 
         const model = view.model;
