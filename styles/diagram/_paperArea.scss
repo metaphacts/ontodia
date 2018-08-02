@@ -25,3 +25,26 @@
 .ontodia-paper {
   position: relative;
 }
+
+.ontodia-logo-export {
+  width: 130px;
+  height: 68px;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+
+.ontodia-logo {
+  background-size: cover;
+  width: 8%;
+  min-width: 50px;
+  position: absolute;
+  top: 15px;
+  right: 25px;
+  opacity: 0.3;
+  cursor: pointer;
+  transition: opacity 0.3s;
+
+  &:hover {
+    opacity: 0.5;
+  }
+}

@@ -5,6 +5,8 @@ import { Rect, boundsOf } from '../diagram/geometry';
 import { isIE11 } from './polyfills';
 import { htmlToSvg } from './htmlToSvg';
 
+const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');
+
 type CanvgRender = (canvas: HTMLCanvasElement, svg: string, options?: CanvgOptions) => void;
 interface CanvgOptions {
     offsetX?: number;
@@ -37,7 +39,8 @@ type Bounds = { width: number; height: number; };
  * mitigate issues with elements body overflow caused by missing styles
  * in exported image.
  */
-const ForeignObjectSizePadding = 2;
+const FOREIGN_OBJECT_SIZE_PADDING = 2;
+const BORDER_PADDING = 100;
 
 export function toSVG(options: ToSVGOptions): Promise<string> {
     return exportSVG(options).then(svg => new XMLSerializer().serializeToString(svg));
@@ -45,7 +48,7 @@ export function toSVG(options: ToSVGOptions): Promise<string> {
 
 function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
     const {contentBox: bbox} = options;
-    const {svgClone, imageBounds} = clonePaperSvg(options, ForeignObjectSizePadding);
+    const {svgClone, imageBounds} = clonePaperSvg(options, FOREIGN_OBJECT_SIZE_PADDING);
     if (isIE11()) { clearAttributes(svgClone); }
 
     if (options.preserveDimensions) {
@@ -55,7 +58,16 @@ function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
         svgClone.setAttribute('width', '100%');
         svgClone.setAttribute('height', '100%');
     }
-    svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+
+    const viewBox: Rect = {
+        x: bbox.x - BORDER_PADDING,
+        y: bbox.y - BORDER_PADDING,
+        width: bbox.width + BORDER_PADDING * 2,
+        height: bbox.height + BORDER_PADDING * 2,
+    };
+    svgClone.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+    addLogo(svgClone, viewBox);
 
     const images: HTMLImageElement[] = [];
     if (!isIE11()) {
@@ -102,6 +114,29 @@ function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
 
         return svgClone;
     });
+}
+
+function addLogo(svg: SVGElement, viewBox: Rect) {
+    const IMAGE_WIDTH = 150;
+    const IMAGE_PADDING = 20;
+    const size = svg.getBoundingClientRect();
+    const image = document.createElementNS(SVG_NAMESPACE, 'image');
+    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', ONTODIA_LOGO_SVG);
+    image.setAttribute('class', 'ontodia-logo-export');
+
+    const imageRect: Rect = {
+        x: viewBox.x + viewBox.width - IMAGE_PADDING - IMAGE_WIDTH,
+        y: viewBox.y + IMAGE_PADDING,
+        width: IMAGE_WIDTH,
+        height: undefined,
+    };
+
+    image.setAttribute('x', imageRect.x.toString());
+    image.setAttribute('y', imageRect.y.toString());
+    image.setAttribute('width', imageRect.width.toString());
+    image.setAttribute('opacity', '0.3');
+
+    svg.insertBefore(image, svg.firstChild);
 }
 
 function clearAttributes(svg: SVGElement) {

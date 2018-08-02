@@ -14,6 +14,9 @@ import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
 
+const ONTODIA_WEBSITE = 'http://app.ontodia.org';
+const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');
+
 export interface Props {
     view: DiagramView;
     zoomOptions?: ZoomOptions;
@@ -175,6 +178,7 @@ export class PaperArea extends React.Component<Props, State> {
                             })}
                         </div>
                     </Paper>
+                    <img className='ontodia-logo' src={ONTODIA_LOGO_SVG} onClick={() => window.open(ONTODIA_WEBSITE)}/>
                 </div>
                 {renderedWidgets.filter(w => w.pinnedToScreen).map(widget => {
                     return React.cloneElement(widget.element, widgetProps);
