@@ -34,6 +34,9 @@ import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
 
+const ONTODIA_WEBSITE = 'https://ontodia.org/';
+const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');
+
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
     onSaveDiagram?: (workspace: Workspace) => void;
@@ -131,6 +134,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private markup: WorkspaceMarkup;
     private tree: ClassTree;
 
+    private _watermarkSvg: string | undefined = ONTODIA_LOGO_SVG;
+    private _watermarkUrl: string | undefined = ONTODIA_WEBSITE;
+
     constructor(props: WorkspaceProps) {
         super(props);
 
@@ -175,6 +181,12 @@ export class Workspace extends Component<WorkspaceProps, State> {
         return this.markup ? this.markup.paperArea : undefined;
     }
 
+    _setWatermark(watermarkSvg: string | undefined, watermarkUrl: string | undefined) {
+        this._watermarkSvg = watermarkSvg;
+        this._watermarkUrl = watermarkUrl;
+        this.forceUpdate();
+    }
+
     render(): ReactElement<any> {
         const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent} = this.props;
         return createElement(WorkspaceMarkup, {
@@ -198,6 +210,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: createElement(ToolbarWrapper, {workspace: this}),
             onWorkspaceEvent,
+            watermarkSvg: this._watermarkSvg,
+            watermarkUrl: this._watermarkUrl,
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 

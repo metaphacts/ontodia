@@ -1,7 +1,7 @@
 import { uniqueId } from 'lodash';
 
 import { DiagramModel } from '../diagram/model';
-import { Rect, boundsOf } from '../diagram/geometry';
+import { Rect, Vector, boundsOf } from '../diagram/geometry';
 import { isIE11 } from './polyfills';
 import { htmlToSvg } from './htmlToSvg';
 
@@ -28,34 +28,51 @@ export interface ToSVGOptions {
     blacklistedCssAttributes?: string[];
     elementsToRemoveSelector?: string;
     mockImages?: boolean;
+    watermarkSvg?: string;
 }
 
-type Bounds = { width: number; height: number; };
+interface Bounds {
+    width: number;
+    height: number;
+}
 
 /**
  * Padding (in px) for <foreignObject> elements of exported SVG to
  * mitigate issues with elements body overflow caused by missing styles
  * in exported image.
  */
-const ForeignObjectSizePadding = 2;
+const FOREIGN_OBJECT_SIZE_PADDING = 2;
+const BORDER_PADDING = 100;
 
 export function toSVG(options: ToSVGOptions): Promise<string> {
     return exportSVG(options).then(svg => new XMLSerializer().serializeToString(svg));
 }
 
 function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
-    const {contentBox: bbox} = options;
-    const {svgClone, imageBounds} = clonePaperSvg(options, ForeignObjectSizePadding);
+    const {contentBox: bbox, watermarkSvg} = options;
+    const {svgClone, imageBounds} = clonePaperSvg(options, FOREIGN_OBJECT_SIZE_PADDING);
     if (isIE11()) { clearAttributes(svgClone); }
 
+    const paddedWidth = bbox.width + 2 * BORDER_PADDING;
+    const paddedHeight = bbox.height + 2 * BORDER_PADDING;
+
     if (options.preserveDimensions) {
-        svgClone.setAttribute('width', bbox.width.toString());
-        svgClone.setAttribute('height', bbox.height.toString());
+        svgClone.setAttribute('width', paddedWidth.toString());
+        svgClone.setAttribute('height', paddedHeight.toString());
     } else {
         svgClone.setAttribute('width', '100%');
         svgClone.setAttribute('height', '100%');
     }
-    svgClone.setAttribute('viewBox', `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+
+    const viewBox: Rect = {
+        x: bbox.x - BORDER_PADDING,
+        y: bbox.y - BORDER_PADDING,
+        width: paddedWidth,
+        height: paddedHeight,
+    };
+    svgClone.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+    addWatermark(svgClone, viewBox, watermarkSvg);
 
     const images: HTMLImageElement[] = [];
     if (!isIE11()) {
@@ -79,8 +96,8 @@ function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
                     img.src = dataUri;
                 }
             }).catch(err => {
-                console.warn('Failed to export image: ' + img.src);
-                console.warn(err);
+                // tslint:disable-next-line:no-console
+                console.warn('Failed to export image: ' + img.src, err);
             });
         } else {
             return Promise.resolve();
@@ -102,6 +119,27 @@ function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
 
         return svgClone;
     });
+}
+
+function addWatermark(svg: SVGElement, viewBox: Rect, watermarkSvg: string) {
+    const WATERMARK_CLASS = 'ontodia-exported-watermark';
+    const WATERMARK_MAX_WIDTH = 120;
+    const WATERMARK_PADDING = 20;
+
+    const image = document.createElementNS(SVG_NAMESPACE, 'image');
+    image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', watermarkSvg);
+    image.setAttribute('class', WATERMARK_CLASS);
+
+    const width = Math.min(viewBox.width * 0.2, WATERMARK_MAX_WIDTH);
+    const x = viewBox.x + viewBox.width - width - WATERMARK_PADDING;
+    const y = viewBox.y + WATERMARK_PADDING;
+
+    image.setAttribute('x', x.toString());
+    image.setAttribute('y', y.toString());
+    image.setAttribute('width', width.toString());
+    image.setAttribute('opacity', '0.3');
+
+    svg.insertBefore(image, svg.firstChild);
 }
 
 function clearAttributes(svg: SVGElement) {
@@ -304,76 +342,65 @@ export interface ToDataURLOptions {
 
 const MAX_CANVAS_LENGTH = 4096;
 
-export function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<string> {
-    return Promise.resolve().then(() => {
-        const {paper, contentBox, mimeType = 'image/png'} = options;
+export async function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<string> {
+    const {paper, mimeType = 'image/png'} = options;
+    const svgOptions = {
+        ...options,
+        convertImagesToDataUris: true,
+        mockImages: isIE11(),
+        preserveDimensions: true,
+    };
+    const svg = await exportSVG(svgOptions);
+    const svgBox: Bounds = {
+        width: Number(svg.getAttribute('width')),
+        height: Number(svg.getAttribute('height')),
+    };
 
-        const containerSize = (typeof options.width === 'number' || typeof options.height === 'number')
-            ? {width: options.width, height: options.height}
-            : fallbackContainerSize(contentBox);
+    const containerSize = (typeof options.width === 'number' || typeof options.height === 'number')
+        ? {width: options.width, height: options.height}
+        : fallbackContainerSize(svgBox);
 
-        const {innerSize, outerSize, offset} = computeAutofit(contentBox, containerSize);
+    const {innerSize, outerSize, offset} = computeAutofit(svgBox, containerSize);
+    svg.setAttribute('width', innerSize.width.toString());
+    svg.setAttribute('height', innerSize.height.toString());
+    const svgString = new XMLSerializer().serializeToString(svg);
 
-        const svgOptions = {
-            ...options,
-            convertImagesToDataUris: true,
-            mockImages: isIE11(),
-            preserveDimensions: true,
-        };
+    const {canvas, context} = createCanvas(
+        outerSize.width,
+        outerSize.height,
+        options.backgroundColor,
+    );
 
-        const exportedTask = exportSVG(svgOptions).then(svg => {
-            // make image centered when rendering using Canvg
-            svg.setAttribute('width', innerSize.width.toString());
-            svg.setAttribute('height', innerSize.height.toString());
-            return new XMLSerializer().serializeToString(svg);
+    if (isIE11()) {
+        if (!canvg) {
+            throw new Error('"canvg-fixed" dependency required to support exporting in the IE.');
+        }
+        canvg(canvas, svgString, {
+            offsetX: offset.x,
+            offsetY: offset.y,
+            scaleWidth: innerSize.width,
+            scaleHeight: innerSize.height,
+            ignoreDimensions: true,
+            ignoreClear: true,
         });
+        return canvas.toDataURL(mimeType, options.quality);
+    } else {
+        const image = await loadImage('data:image/svg+xml,' + encodeURIComponent(svgString));
+        context.drawImage(image, offset.x, offset.y, innerSize.width, innerSize.height);
+        return canvas.toDataURL(mimeType, options.quality);
+    }
 
-        const {canvas, context} = createCanvas(
-            outerSize.width,
-            outerSize.height,
-            options.backgroundColor,
-        );
-
-        if (isIE11()) {
-            if (!canvg) {
-                const error = new Error('"canvg-fixed" dependency required to support exporting in the IE.');
-                console.error(error);
-                throw error;
-            }
-            return exportedTask.then(svgString => {
-                canvg(canvas, svgString, {
-                    offsetX: offset.x,
-                    offsetY: offset.y,
-                    scaleWidth: innerSize.width,
-                    scaleHeight: innerSize.height,
-                    ignoreDimensions: true,
-                    ignoreClear: true,
-                });
-                return canvas.toDataURL(mimeType, options.quality);
-            });
-        } else {
-            return exportedTask
-                .then(svgString => {
-                    return loadImage('data:image/svg+xml,' + encodeURIComponent(svgString));
-                })
-                .then(image => {
-                    context.drawImage(image, offset.x, offset.y, innerSize.width, innerSize.height);
-                    return canvas.toDataURL(mimeType, options.quality);
-                });
+    function createCanvas(canvasWidth: number, canvasHeight: number, backgroundColor?: string) {
+        const cnv = document.createElement('canvas');
+        cnv.width = canvasWidth;
+        cnv.height = canvasHeight;
+        const cnt = cnv.getContext('2d');
+        if (backgroundColor) {
+            cnt.fillStyle = backgroundColor;
+            cnt.fillRect(0, 0, canvasWidth, canvasHeight);
         }
-
-        function createCanvas(canvasWidth: number, canvasHeight: number, backgroundColor?: string) {
-            const cnv = document.createElement('canvas');
-            cnv.width = canvasWidth;
-            cnv.height = canvasHeight;
-            const cnt = cnv.getContext('2d');
-            if (backgroundColor) {
-                cnt.fillStyle = backgroundColor;
-                cnt.fillRect(0, 0, canvasWidth, canvasHeight);
-            }
-            return {canvas: cnv, context: cnt};
-        }
-    });
+        return {canvas: cnv, context: cnt};
+    }
 }
 
 export function loadImage(source: string): Promise<HTMLImageElement> {
@@ -404,7 +431,7 @@ function computeAutofit(itemSize: Bounds, containerSize: Bounds) {
         width: typeof containerSize.width === 'number' ? containerSize.width : innerSize.width,
         height: typeof containerSize.height === 'number' ? containerSize.height : innerSize.height,
     };
-    const offset = {
+    const offset: Vector = {
         x: Math.round((outerSize.width - innerSize.width) / 2),
         y: Math.round((outerSize.height - innerSize.height) / 2),
     };
@@ -427,7 +454,7 @@ export function fitRectKeepingAspectRatio(
     sourceHeight: number,
     targetWidth: number | undefined,
     targetHeight: number | undefined,
-): { width: number; height: number; } {
+): { width: number; height: number } {
     if (!(typeof targetWidth === 'number' || typeof targetHeight === 'number')) {
         return {width: sourceWidth, height: sourceHeight};
     }
