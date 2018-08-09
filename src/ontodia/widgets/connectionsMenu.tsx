@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri, LinkCount } from '../data/model';
 
 import { FatLinkType, Element } from '../diagram/elements';
 import { boundsOf } from '../diagram/geometry';
@@ -12,9 +12,15 @@ import { formatLocalizedLabel } from '../diagram/model';
 import { restoreLinksBetweenElements } from '../editor/asyncModel';
 import { EditorController } from '../editor/editorController';
 
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, EventSource, Events } from '../viewUtils/events';
 
 import { ListElementView, highlightSubstring, startDragElements } from './listElementView';
+
+export interface ConnectionsMenuEvents {
+    loadLinks: LinkCount[];
+    expandLink: LinkDataChunk;
+    loadElements: Dictionary<ElementModel>;
+}
 
 interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
@@ -71,6 +77,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     private container: HTMLElement;
     private readonly handler = new EventObserver();
     private readonly linkTypesListener = new EventObserver();
+    private readonly source = new EventSource<ConnectionsMenuEvents>();
+    readonly events: Events<ConnectionsMenuEvents> = this.source;
     private loadingState: 'loading' | 'error' | 'completed';
 
     private links: FatLinkType[];
@@ -129,6 +137,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
                 this.resubscribeOnLinkTypeEvents(this.links);
 
                 this.updateAll();
+
+                this.source.trigger('loadLinks', linkTypes);
             })
             .catch(err => {
                 console.error(err);
@@ -162,6 +172,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
                 ) >= 0,
             }));
             this.updateAll();
+
+            this.source.trigger('loadElements', elements);
         }).catch(err => {
             console.error(err);
             this.loadingState = 'error';
@@ -191,6 +203,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             this.loadObjects(linkDataChunk);
         }
         this.updateAll();
+
+        this.source.trigger('expandLink', linkDataChunk);
     }
 
     private onMoveToFilter = (linkDataChunk: LinkDataChunk) => {

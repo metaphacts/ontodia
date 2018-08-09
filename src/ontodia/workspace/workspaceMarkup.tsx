@@ -80,6 +80,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     classTreePanel: HTMLElement;
     linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
+    instancesSearch: InstancesSearch;
 
     private untilMouseUpClasses: string[] = [];
 
@@ -142,7 +143,8 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                     'data-intro-id': 'filter-view',
                     'data-intro': INTRO_INSTANCES,
                 }}>
-                <InstancesSearch view={this.props.view}
+                <InstancesSearch ref={instancesSearch => this.instancesSearch = instancesSearch}
+                    view={this.props.view}
                     model={this.props.model}
                     criteria={searchCriteria}
                     onCriteriaChanged={this.props.onSearchCriteriaChanged}

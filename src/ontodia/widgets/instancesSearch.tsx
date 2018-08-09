@@ -10,12 +10,16 @@ import { DiagramView } from '../diagram/view';
 import { AsyncModel } from '../editor/asyncModel';
 
 import { isEmptyMap } from '../viewUtils/collections';
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, EventSource, Events } from '../viewUtils/events';
 
 import { ListElementView, startDragElements } from './listElementView';
 
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
+
+export interface InstancesSearchEvents {
+    queryItems: Dictionary<ElementModel>;
+}
 
 export interface InstancesSearchProps {
     className?: string;
@@ -47,6 +51,8 @@ const CLASS_NAME = 'ontodia-instances-search';
 
 export class InstancesSearch extends React.Component<InstancesSearchProps, State> {
     private readonly listener = new EventObserver();
+    private readonly source = new EventSource<InstancesSearchEvents>();
+    readonly events: Events<InstancesSearchEvents> = this.source;
 
     private currentRequest: FilterParams;
 
@@ -280,6 +286,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.props.model.dataProvider.filter(request).then(elements => {
             if (this.currentRequest !== request) { return; }
             this.processFilterData(elements);
+            this.source.trigger('queryItems', elements);
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);

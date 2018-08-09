@@ -18,7 +18,7 @@ import {
 } from '../editor/editorController';
 import { AuthoringState } from '../editor/authoringState';
 
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, EventSource, Events, AnyEvent } from '../viewUtils/events';
 import {
     forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
     LayoutNode, LayoutLink, translateToCenter,
@@ -27,11 +27,15 @@ import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';
 import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
-import { SearchCriteria } from '../widgets/instancesSearch';
+import { SearchCriteria, InstancesSearchEvents } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
+
+export interface WorkspaceEvents {
+    instancesSearchEvent: AnyEvent<InstancesSearchEvents>;
+}
 
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
@@ -121,6 +125,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
     };
 
     private readonly listener = new EventObserver();
+    private readonly source = new EventSource<WorkspaceEvents>();
+    readonly events: Events<WorkspaceEvents> = this.source;
 
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
@@ -233,6 +239,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 this.props.onPointerDown(e);
             }
         });
+
+        this.listener.listenAny(this.markup.instancesSearch.events, (data, key) =>
+            this.source.trigger('instancesSearchEvent', {key, data})
+        );
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();

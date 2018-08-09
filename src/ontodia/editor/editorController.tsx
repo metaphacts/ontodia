@@ -12,10 +12,10 @@ import {DiagramModel, generateID, IDKind} from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
-import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
+import { Events, EventSource, EventObserver, PropertyChange, AnyEvent } from '../viewUtils/events';
 
 import { Dialog } from '../widgets/dialog';
-import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
+import { ConnectionsMenu, PropertySuggestionHandler, ConnectionsMenuEvents } from '../widgets/connectionsMenu';
 import { EditEntityForm } from '../widgets/editEntityForm';
 import { EditElementTypeForm } from '../widgets/editElementTypeForm';
 import { EditLinkForm } from '../widgets/editLinkForm';
@@ -74,6 +74,7 @@ export interface EditorEvents {
     changeTemporaryState: PropertyChange<EditorController, TemporaryState>;
     toggleDialog: { isOpened: boolean };
     addElements: { elements: ReadonlyArray<Element> };
+    connectionsMenuEvent: AnyEvent<ConnectionsMenuEvents>;
 }
 
 export class EditorController {
@@ -353,8 +354,16 @@ export class EditorController {
 
     showConnectionsMenu(target: Element) {
         const dialogType = DialogTypes.ConnectionsMenu;
+        const listener = new EventObserver();
         const content = (
-            <ConnectionsMenu view={this.view}
+            <ConnectionsMenu ref={connectionsMenu => {
+                if (connectionsMenu) {
+                    listener.listenAny(connectionsMenu.events, (data, key) =>
+                        this.source.trigger('connectionsMenuEvent', {key, data}));
+                } else {
+                    listener.stopListening();
+                }
+            }} view={this.view}
                 editor={this}
                 target={target}
                 onAddElements={(iris, linkType) =>
