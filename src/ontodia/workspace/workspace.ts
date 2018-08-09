@@ -31,7 +31,7 @@ import { SearchCriteria } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
-import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
+import { WorkspaceMarkup, WorkspaceMarkupProps, UserActionHandler } from './workspaceMarkup';
 
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
@@ -89,6 +89,7 @@ export interface WorkspaceProps {
     metadataApi?: MetadataApi;
     validationApi?: ValidationApi;
     propertyEditor?: PropertyEditor;
+    onUserAction?: UserActionHandler;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -174,7 +175,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onUserAction} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -195,6 +196,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: createElement(ToolbarWrapper, {workspace: this}),
+            onUserAction,
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
@@ -233,6 +235,11 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 this.props.onPointerDown(e);
             }
         });
+
+        const {onUserAction} = this.props;
+        if (onUserAction) {
+            this.editor.events.onAny((data, key) => onUserAction(key));
+        }
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();

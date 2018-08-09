@@ -8,11 +8,17 @@ import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 
 import { AsyncModel } from '../editor/asyncModel';
-import { EventObserver } from '../viewUtils/events';
+import { EventObserver, EventSource, Events } from '../viewUtils/events';
 import { SearchResults } from './searchResults';
+
+import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
 
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
+
+export interface InstancesSearchEvents {
+    queryItems: Dictionary<ElementModel>;
+}
 
 export interface InstancesSearchProps {
     className?: string;
@@ -43,12 +49,17 @@ export interface State {
 const CLASS_NAME = 'ontodia-instances-search';
 
 export class InstancesSearch extends React.Component<InstancesSearchProps, State> {
+    static contextTypes = WorkspaceContextTypes;
+    readonly context: WorkspaceContextWrapper;
+
     private readonly listener = new EventObserver();
+    private readonly source = new EventSource<InstancesSearchEvents>();
+    readonly events: Events<InstancesSearchEvents> = this.source;
 
     private currentRequest: FilterParams;
 
-    constructor(props: InstancesSearchProps) {
-        super(props);
+    constructor(props: InstancesSearchProps, context: any) {
+        super(props, context);
         this.state = {
             resultId: 0,
             selection: new Set<ElementIri>(),
@@ -181,6 +192,11 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     componentDidMount() {
         this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
         this.queryItems(false);
+
+        const {onUserAction} = this.context.ontodiaWorkspace;
+        if (onUserAction) {
+            this.events.onAny((data, key) => onUserAction(key));
+        }
     }
 
     componentWillReceiveProps(nextProps: InstancesSearchProps) {
@@ -230,6 +246,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.props.model.dataProvider.filter(request).then(elements => {
             if (this.currentRequest !== request) { return; }
             this.processFilterData(elements);
+            this.source.trigger('queryItems', elements);
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);
