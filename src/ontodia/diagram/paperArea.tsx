@@ -364,6 +364,11 @@ export class PaperArea extends React.Component<Props, State> {
         return Boolean(e.ctrlKey) && Boolean(this.zoomOptions.requireCtrl) || !this.zoomOptions.requireCtrl;
     }
 
+    private shouldStartPanning(e: MouseEvent | React.MouseEvent<any>) {
+        const modifierPressed = e.ctrlKey || e.shiftKey || e.altKey;
+        return e.button === LEFT_MOUSE_BUTTON && !modifierPressed;
+    }
+
     private onPaperPointerDown = (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => {
         if (this.movingState) { return; }
 
@@ -433,7 +438,7 @@ export class PaperArea extends React.Component<Props, State> {
         restoreGeometry: RestoreGeometry,
     ) {
         if (this.movingState) { return; }
-        const panning = cell === undefined;
+        const panning = cell === undefined && this.shouldStartPanning(event);
         if (panning) {
             this.startPanning(event);
         }
