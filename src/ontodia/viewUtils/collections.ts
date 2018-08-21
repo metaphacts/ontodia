@@ -20,9 +20,21 @@ export function isEmptyMap(map: object) {
     return true;
 }
 
+/**
+ * Clones Map collection. Required due to IE11 not supporing `new Map(map)`.
+ */
 export function cloneMap<K, V>(map: ReadonlyMap<K, V>): Map<K, V> {
     const clone = new Map<K, V>();
     map.forEach((value, key) => clone.set(key, value));
+    return clone;
+}
+
+/**
+ * Clones Set collection. Required due to IE11 not supporing `new Set(set)`.
+ */
+export function cloneSet<T>(set: ReadonlySet<T>): Set<T> {
+    const clone = new Set<T>();
+    set.forEach(item => clone.add(item));
     return clone;
 }
 

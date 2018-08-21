@@ -12,7 +12,7 @@ export interface ListElementViewProps {
     highlightText?: string;
     disabled?: boolean;
     selected?: boolean;
-    onSelectedChanged?: (selected: boolean, model: ElementModel) => void;
+    onClick?: (event: React.MouseEvent<any>, model: ElementModel) => void;
     onDragStart?: React.HTMLProps<HTMLElement>['onDragStart'];
 }
 
@@ -28,7 +28,6 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
         let classNames = `${CLASS_NAME}`;
         classNames += disabled ? ` ${CLASS_NAME}--disabled` : '';
         classNames += className ? ` ${className}` : '';
-
         const localizedText = formatLocalizedLabel(model.id, model.label.values, view.getLanguage());
         const classesString = model.types.length > 0 ? `\nClasses: ${view.getElementTypeString(model)}` : '';
 
@@ -48,10 +47,11 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
         </li>;
     }
 
-    private onClick = () => {
-        const {disabled, selected, model, onSelectedChanged} = this.props;
-        if (!disabled && onSelectedChanged) {
-            onSelectedChanged(!selected, model);
+    private onClick = (event: React.MouseEvent<any>) => {
+        const {disabled, model, onClick} = this.props;
+        if (!disabled && onClick) {
+            event.persist();
+            onClick(event, model);
         }
     }
 }
