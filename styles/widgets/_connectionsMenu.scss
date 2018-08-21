@@ -276,6 +276,11 @@
   overflow-y: scroll;
   padding: 5px;
   margin-bottom: 5px;
+
+  > ul {
+    margin: 0;
+    padding: 0;
+  }
 }
 
 .ontodia-connections-menu__link {

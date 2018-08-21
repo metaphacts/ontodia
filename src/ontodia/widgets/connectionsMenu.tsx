@@ -1,20 +1,15 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 
 import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
 
 import { FatLinkType, Element } from '../diagram/elements';
-import { boundsOf } from '../diagram/geometry';
-import { Command } from '../diagram/history';
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
-import { restoreLinksBetweenElements } from '../editor/asyncModel';
 import { EditorController } from '../editor/editorController';
-
 import { EventObserver } from '../viewUtils/events';
-
-import { ListElementView, highlightSubstring, startDragElements } from './listElementView';
+import { highlightSubstring } from './listElementView';
+import { SearchResults } from './searchResults';
 
 interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
@@ -24,7 +19,6 @@ export interface ReactElementModel {
     presentOnDiagram: boolean;
 }
 
-const MENU_OFFSET = 40;
 const MAX_LINK_COUNT = 100;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     id: 'allRelatedElements' as LinkTypeIri,
@@ -689,51 +683,24 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
         const filterKey = this.props.filterKey.toLowerCase();
         const lang = this.props.view.getLanguage();
         return this.props.data.objects.filter(element => {
-            const label = element.model.label;
-            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang);
+            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang).toLowerCase();
             return text && text.indexOf(filterKey) >= 0;
         });
     }
 
-    private renderObjects(list: ReadonlyArray<ReactElementModel>) {
-        const {view, filterKey} = this.props;
-        const {checkMap} = this.state;
+    private getItems(list: ReadonlyArray<ReactElementModel>) {
         const added: { [id: string]: true } = {};
-        const result: React.ReactElement<any>[] = [];
+        const result: ElementModel[] = [];
         for (const obj of list) {
             if (added[obj.model.id]) { continue; }
             added[obj.model.id] = true;
-            result.push(
-                <ListElementView
-                    key={obj.model.id}
-                    model={obj.model}
-                    view={view}
-                    disabled={obj.presentOnDiagram}
-                    highlightText={filterKey}
-                    selected={checkMap[obj.model.id] || false}
-                    onSelectedChanged={this.onSelectedChanged}
-                    onDragStart={e => {
-                        const iris = list.filter(item =>
-                            !item.presentOnDiagram && (
-                                this.state.checkMap[item.model.id] ||
-                                item.model.id === obj.model.id
-                            )
-                        ).map(item => item.model.id);
-                        return startDragElements(e, iris);
-                    }}
-                />
-            );
+            result.push(obj.model);
         }
         return result;
     }
 
-    private onSelectedChanged = (selected: boolean, model: ElementModel) => {
-        const {checkMap} = this.state;
-        if (checkMap[model.id] === selected) {
-            return;
-        }
-        const nextCheckMap = {...checkMap, [model.id]: selected};
-        this.setState({checkMap: nextCheckMap});
+    private updateSelection = (selection: Readonly<Dictionary<true>>) => {
+        this.setState({checkMap: selection});
     }
 
     private counter = (activeObjCount: number) => {
@@ -757,7 +724,7 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
     }
 
     render() {
-        const {onPressAddSelected} = this.props;
+        const {onPressAddSelected, filterKey} = this.props;
         const {checkMap} = this.state;
         const objects = this.getFilteredObjects();
         const isAllSelected = allNonPresentedAreSelected(objects, checkMap);
@@ -781,7 +748,13 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
                 objects.length === 0 ?
                 <label className='ontodia-label ontodia-connections-menu__loading-objects'>No available nodes</label> :
                 <div className='ontodia-connections-menu_objects-panel_objects-list'>
-                    {this.renderObjects(objects)}
+                    <SearchResults
+                        view={this.props.view}
+                        items={this.getItems(objects)}
+                        selection={this.state.checkMap as Dictionary<true>}
+                        searchKey={filterKey}
+                        insteadOfUpdateSelection={this.updateSelection}
+                    />
                     {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ? (
                         <div className='ontodia-connections-menu__move-to-filter'
                             onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}>

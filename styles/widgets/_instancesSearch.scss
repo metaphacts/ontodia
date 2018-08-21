@@ -64,6 +64,7 @@
     padding-left: 0;
     padding-top: 10px;
     margin: 0 10px 0 10px;
+    outline: none;
   }
 
   &[data-state='finished'] &__results:empty:before {
