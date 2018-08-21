@@ -20,7 +20,7 @@ import { AuthoringState } from '../editor/authoringState';
 
 import { EventObserver } from '../viewUtils/events';
 import {
-    forceLayout, removeOverlaps, padded, translateToPositiveQuadrant,
+    padded, translateToPositiveQuadrant,
     LayoutNode, LayoutLink, translateToCenter,
 } from '../viewUtils/layout';
 import { dataURLToBlob } from '../viewUtils/toSvg';

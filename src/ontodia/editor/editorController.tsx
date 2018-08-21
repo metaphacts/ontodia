@@ -1,13 +1,13 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { ValidationApi, ElementError } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, LinkTypeIri, ElementTypeIri, sameLink, sameElement } from '../data/model';
+import { ValidationApi } from '../data/validationApi';
+import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
 import { generate64BitID } from '../data/utils';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
-import { Vector, Size, boundsOf, computeGrouping } from '../diagram/geometry';
+import { Vector, boundsOf, computeGrouping } from '../diagram/geometry';
 import { Command } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
@@ -25,20 +25,18 @@ import { HaloLink } from '../widgets/haloLink';
 import { StatesWidget } from './statesWidget';
 
 import {
-    LayoutNode, LayoutLink, forceLayout, padded, removeOverlaps, translateToPositiveQuadrant,
+    forceLayout, padded, removeOverlaps, recursiveLayout, translateToPositiveQuadrant, placeElementsAround,
 } from '../viewUtils/layout';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, ElementChange, LinkChange, ValidationState, ElementValidation,
-    LinkValidation, isLinkConnectedToElement, TemporaryState, AuthoringEvent,
+    AuthoringState, AuthoringKind, ValidationState,
+    isLinkConnectedToElement, TemporaryState, AuthoringEvent,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
 
 import { Cancellation } from '../viewUtils/async';
-import { HashMap } from '../viewUtils/collections';
-import { Dictionary } from 'lodash';
 
 export interface PropertyEditorOptions {
     elementData: ElementModel;
@@ -528,42 +526,17 @@ export class EditorController {
         linkType: FatLinkType|undefined,
     ) {
         const batch = this.view.model.history.startBatch();
-        const targetBounds = boundsOf(targetElement);
-        const targetPosition: Vector = {
-            x: targetBounds.x + targetBounds.width / 2,
-            y: targetBounds.y + targetBounds.height / 2,
-        };
-        let startAngle: number;
-        if (targetElement.links.length > 0) {
-            let xSum = 0;
-            let ySum = 0;
-            for (const link of targetElement.links) {
-                const linkSource = this.model.sourceOf(link);
-                const source = linkSource !== targetElement ? linkSource : this.model.targetOf(link);
 
-                xSum += source.position.x + source.size.width / 2;
-                ySum += source.position.y + source.size.height / 2;
-            }
-            const averageSourcePosition: Vector = {
-                x: xSum / targetElement.links.length,
-                y: ySum / targetElement.links.length,
-            };
-            const vectorDiff: Vector = {
-                x: targetPosition.x - averageSourcePosition.x,
-                y: targetPosition.y - averageSourcePosition.y,
-            };
-            if (vectorDiff.x !== 0 || vectorDiff.y !== 0) {
-                startAngle = Math.atan2(vectorDiff.y, vectorDiff.x);
-            }
-        }
-        const placedElements = placeElementsAround({
-            view: this.view,
-            elementIris,
-            zeroPosition: targetPosition,
-            startAngle,
-            callBack: (elements) => {
-                this.source.trigger('addElements', { elements });
-            },
+        const elements = elementIris.map(iri => this.model.createElement(iri));
+        this.view.performSyncUpdate();
+
+        placeElementsAround({
+            model: this.model,
+            elements,
+            targetElement,
+            prefferedLinksLength: 300,
+        }).then(() => {
+            this.source.trigger('addElements', { elements });
         });
 
         if (linkType && !linkType.visible) {
@@ -959,140 +932,18 @@ function placeElements(
     return elements;
 }
 
-function placeElementsAround(params: {
-    view: DiagramView;
-    elementIris: ReadonlyArray<ElementIri>;
-    zeroPosition: Vector;
-    startAngle?: number;
-    callBack?: (elements: Element[]) => void;
-}) {
-    const {
-        elementIris,
-        view,
-        zeroPosition,
-        startAngle = 0,
-        callBack,
-    } = params;
-
-    const prefferedLinksLength = 300;
-    const elements = elementIris.map(iri => view.model.createElement(iri));
-
-    const listener = new EventObserver();
-    listener.listen(view.model.events, 'changeCells', () => {
-        listener.stopListening();
-
-        const step = Math.min(Math.PI / elements.length, Math.PI / 6);
-        const elementsSteck: Element[]  = [].concat(elements);
-
-        const placeElementFromSteck = (curAngle: number, element: Element) => {
-            if (element) {
-                const size = element.size;
-                element.setPosition({
-                    x: zeroPosition.x + prefferedLinksLength * Math.cos(curAngle) - size.width / 2,
-                    y: zeroPosition.y + prefferedLinksLength * Math.sin(curAngle) - size.height / 2,
-                });
-            }
-        };
-
-        for (let angle = step / 2; elementsSteck.length > 0; angle += step) {
-            placeElementFromSteck(startAngle - angle, elementsSteck.pop());
-            placeElementFromSteck(startAngle + angle, elementsSteck.pop());
-        }
-
-        const model = view.model;
-        const grouping = computeGrouping(model.elements);
-        recursivePadded({
-            model,
-            grouping,
-            padding: { x: 15, y: 15 },
-        });
-
-        if (callBack) {
-            callBack(elements);
-        }
-    });
-
-    view.performSyncUpdate();
-}
-
-export function recursivePadded(params: {
-    model: DiagramModel;
-    grouping: Map<string, Element[]>;
-    padding?: Vector;
-    group?: string;
-}) {
-    const { model, grouping, padding = { x: 50, y: 50 }, group } = params;
-    const elements = group
-        ? grouping.get(group)
-        : model.elements.filter(el => el.group === undefined);
-
-    for (const element of elements) {
-        if (grouping.has(element.id)) {
-            recursiveForceLayout(model, grouping, element.id);
-        }
-    }
-
-    const nodes: LayoutNode[] = [];
-    const nodeById: { [id: string]: LayoutNode } = {};
-    for (const element of elements) {
-        const {x, y, width, height} = boundsOf(element);
-        const node: LayoutNode = {id: element.id, x, y, width, height};
-        nodeById[element.id] = node;
-        nodes.push(node);
-    }
-
-    padded(nodes, padding, () => removeOverlaps(nodes));
-
-    for (const node of nodes) {
-        const element = model.getElement(node.id);
-        element.setPosition({x: node.x, y: node.y});
-    }
-}
-
 export function recursiveForceLayout(model: DiagramModel, grouping: Map<string, Element[]>, group?: string) {
-    const elements = group
-        ? grouping.get(group)
-        : model.elements.filter(el => el.group === undefined);
+    recursiveLayout({
+        model,
+        grouping,
+        group,
+        layoutFunction: (nodes, links) => {
+            forceLayout({nodes, links, preferredLinkLength: 200});
+            padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
 
-    for (const element of elements) {
-        if (grouping.has(element.id)) {
-            recursiveForceLayout(model, grouping, element.id);
-        }
-    }
-
-    const nodes: LayoutNode[] = [];
-    const nodeById: { [id: string]: LayoutNode } = {};
-    for (const element of elements) {
-        const {x, y, width, height} = boundsOf(element);
-        const node: LayoutNode = {id: element.id, x, y, width, height};
-        nodeById[element.id] = node;
-        nodes.push(node);
-    }
-
-    const links: LayoutLink[] = [];
-    for (const link of model.links) {
-        if (!model.isSourceAndTargetVisible(link)) {
-            continue;
-        }
-        const source = model.sourceOf(link);
-        const target = model.targetOf(link);
-
-        const sourceNode = nodeById[source.id];
-        const targetNode = nodeById[target.id];
-
-        if (sourceNode && targetNode) {
-            links.push({source: sourceNode, target: targetNode});
-        }
-    }
-
-    forceLayout({nodes, links, preferredLinkLength: 200});
-    padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
-
-    const padding: Vector = group ? getContentFittingBox(elements, []) : {x: 150, y: 150};
-    translateToPositiveQuadrant({nodes, padding});
-
-    for (const node of nodes) {
-        const element = model.getElement(node.id);
-        element.setPosition({x: node.x, y: node.y});
-    }
+            const elements: Element[] = nodes.map(node => model.getElement(node.id));
+            const padding: Vector = group ? getContentFittingBox(elements, []) : {x: 150, y: 150};
+            translateToPositiveQuadrant({nodes, padding});
+        },
+    });
 }
