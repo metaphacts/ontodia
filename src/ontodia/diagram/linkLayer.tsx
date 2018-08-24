@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
-import { LocalizedString, LinkTypeIri } from '../data/model';
+import { LocalizedString } from '../data/model';
 import {
     LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink,
 } from '../customization/props';
@@ -14,7 +14,6 @@ import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerK
 import {
     Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
 } from './geometry';
-import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
 export interface LinkLayerProps {
@@ -182,6 +181,10 @@ interface LinkViewProps {
 }
 
 const LINK_CLASS = 'ontodia-link';
+const LABEL_GROUPING_PRECISION = 100;
+// temporary, cleared-before-render map to hold line numbers for labels
+// grouped on the same link offset
+const TEMPORARY_LABEL_LINES = new Map<number, number>();
 
 class LinkView extends Component<LinkViewProps, {}> {
     private linkType: FatLinkType;
@@ -283,13 +286,22 @@ class LinkView extends Component<LinkViewProps, {}> {
         }
 
         const polylineLength = computePolylineLength(polyline);
+        TEMPORARY_LABEL_LINES.clear();
+
         return (
             <g className={`${LINK_CLASS}__labels`}>
                 {labels.map((label, index) => {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
+                    const groupKey = Math.round(label.offset * LABEL_GROUPING_PRECISION) / LABEL_GROUPING_PRECISION;
+                    const line = TEMPORARY_LABEL_LINES.get(groupKey) || 0;
+                    TEMPORARY_LABEL_LINES.set(groupKey, line + 1);
                     return (
-                        <LinkLabel key={index} x={x} y={y}
-                            label={label} textAnchor={textAnchor} />
+                        <LinkLabel key={index}
+                            x={x} y={y}
+                            line={line}
+                            label={label}
+                            textAnchor={textAnchor}
+                        />
                     );
                 })}
             </g>
@@ -357,7 +369,7 @@ function getLabelTextAttributes(label: LinkLabelProperties): CSSProperties {
     } = label.attrs ? label.attrs.text : {};
     return {
         fill, stroke, strokeWidth, fontFamily, fontSize,
-        fontWeight: fontWeight as CSSProperties['fontWeight']
+        fontWeight: fontWeight as CSSProperties['fontWeight'],
     };
 }
 
@@ -366,7 +378,7 @@ function getLabelRectAttributes(label: LinkLabelProperties): CSSProperties {
         fill = 'white',
         stroke = 'none',
         'stroke-width': strokeWidth = 0,
-    } = label.attrs ? label.attrs.rect : {};
+    } = label.attrs && label.attrs.rect ? label.attrs.rect : {};
     return {fill, stroke, strokeWidth};
 }
 
@@ -382,6 +394,7 @@ interface LabelAttributes {
 interface LinkLabelProps {
     x: number;
     y: number;
+    line: number;
     label: LabelAttributes;
     textAnchor: 'start' | 'middle' | 'end';
 }
@@ -390,6 +403,8 @@ interface LinkLabelState {
     readonly width?: number;
     readonly height?: number;
 }
+
+const GROUPED_LABEL_MARGIN = 2;
 
 class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
     private text: SVGTextElement | undefined;
@@ -401,7 +416,7 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
     }
 
     render() {
-        const {x, y, label, textAnchor} = this.props;
+        const {x, y, label, textAnchor, line} = this.props;
         const {width, height} = this.state;
 
         const rectPosition = {x, y: y - height / 2};
@@ -411,11 +426,13 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
             rectPosition.x -= width;
         }
 
+        const transform = line === 0 ? undefined :
+            `translate(0, ${line * (height + GROUPED_LABEL_MARGIN)}px)`;
         // HACK: 'alignment-baseline' and 'dominant-baseline' are not supported in Edge and IE
         const dy = '0.6ex';
 
         return (
-          <g>
+          <g style={transform ? {transform} : undefined}>
               <rect x={rectPosition.x} y={rectPosition.y}
                   width={width} height={height}
                   style={label.attributes.rect}
@@ -469,7 +486,7 @@ class VertexTools extends Component<{
 }, {}> {
     render() {
         const {className, vertexIndex, vertexRadius, x, y} = this.props;
-        let transform = `translate(${x + 2 * vertexRadius},${y - 2 * vertexRadius})scale(${vertexRadius})`;
+        const transform = `translate(${x + 2 * vertexRadius},${y - 2 * vertexRadius})scale(${vertexRadius})`;
         return (
             <g className={className} transform={transform} onMouseDown={this.onRemoveVertex}>
                 <title>Remove vertex</title>
@@ -572,7 +589,7 @@ class LinkMarker extends Component<LinkMarkerProps, {}> {
         marker.setAttribute('markerHeight', style.height.toString());
         marker.setAttribute('orient', 'auto');
 
-        let xOffset = isStartMarker ? 0 : (style.width - 1);
+        const xOffset = isStartMarker ? 0 : (style.width - 1);
         marker.setAttribute('refX', xOffset.toString());
         marker.setAttribute('refY', (style.height / 2).toString());
         marker.setAttribute('markerUnits', 'userSpaceOnUse');

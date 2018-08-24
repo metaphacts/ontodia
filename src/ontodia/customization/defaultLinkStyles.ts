@@ -1,5 +1,24 @@
 import { LinkTemplate, LinkTemplateResolver } from './props';
 
+export const LINK_SHOW_IRI: LinkTemplate = {
+    renderLink: link => ({
+        properties: [{
+            position: 0.5,
+            attrs: {
+                text: {
+                    text: [{
+                        text: link.linkTypeId,
+                        lang: '',
+                    }],
+                    fill: 'gray',
+                    'font-size': 12,
+                    'font-weight': 'lighter',
+                },
+            },
+        }],
+    }),
+};
+
 const LINK_SUB_CLASS_OF: LinkTemplate = {
     markerTarget: {
         fill: '#f8a485',
