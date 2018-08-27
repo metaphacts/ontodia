@@ -8,6 +8,7 @@ export interface ToolbarProps {
     canPersistChanges?: boolean;
     onPersistChanges?: () => void;
     onForceLayout?: () => void;
+    onClearAll?: () => void;
     onZoomIn?: () => void;
     onZoomOut?: () => void;
     onZoomToFit?: () => void;
@@ -119,6 +120,12 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
                     data-position='bottom' data-step='6' data-intro={intro}>
                     {this.renderSaveDiagramButton()}
                     {this.renderPersistAuthoredChangesButton()}
+                    {this.props.onClearAll ? (
+                        <button type='button' className='ontodia-btn ontodia-btn-default'
+                            title='Clear All' onClick={this.props.onClearAll}>
+                            <span className='fa fa-trash' aria-hidden='true'/>&nbsp;Clear All
+                        </button>
+                    ) : null}
                     <button type='button' className='ontodia-btn ontodia-btn-default'
                             title='Force layout' onClick={this.props.onForceLayout}>
                         <span className='fa fa-sitemap' aria-hidden='true'/> Layout

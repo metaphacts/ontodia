@@ -264,6 +264,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.markup.paperArea.zoomToFit();
     }
 
+    clearAll = () => {
+        this.editor.removeItems([...this.model.elements]);
+    }
+
     showWaitIndicatorWhile(operation: Promise<any>) {
         this.markup.paperArea.centerTo();
         this.editor.setSpinner({});
@@ -397,6 +401,7 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
                 workspace.forceLayout();
                 workspace.zoomToFit();
             },
+            onClearAll: workspace.clearAll,
             languages,
             selectedLanguage: view.getLanguage(),
             onChangeLanguage: workspace.changeLanguage,
