@@ -5,6 +5,7 @@ import { Element } from '../diagram/elements';
 import { ElementIri } from '../data/model';
 import { EventObserver } from './events';
 import { DiagramView } from '../diagram/view';
+import { getContentFittingBox } from '../diagram/paperArea';
 
 export interface LayoutNode {
     id?: string;
@@ -131,51 +132,57 @@ export function padded(
 
 export function recursiveLayout(params: {
     model: DiagramModel;
-    grouping: Map<string, Element[]>;
+    layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], group: string) => void;
     group?: string;
-    layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], model: DiagramModel) => void;
 }) {
-    const {model, grouping, group, layoutFunction} = params;
-    const elements = group
-        ? grouping.get(group)
-        : model.elements.filter(el => el.group === undefined);
+    const grouping = computeGrouping(params.model.elements);
+    const {layoutFunction, model} = params;
+    internalRecursion(params.group);
 
-    for (const element of elements) {
-        if (grouping.has(element.id)) {
-            recursiveLayout({model, grouping, group: element.id, layoutFunction});
+    function internalRecursion(group: string) {
+        const elements = group
+            ? grouping.get(group)
+            : model.elements.filter(el => el.group === undefined);
+
+        for (const element of elements) {
+            if (grouping.has(element.id)) {
+                internalRecursion(element.id);
+            }
         }
-    }
 
-    const nodes: LayoutNode[] = [];
-    const nodeById: { [id: string]: LayoutNode } = {};
-    for (const element of elements) {
-        const {x, y, width, height} = boundsOf(element);
-        const node: LayoutNode = {id: element.id, x, y, width, height};
-        nodeById[element.id] = node;
-        nodes.push(node);
-    }
-
-    const links: LayoutLink[] = [];
-    for (const link of model.links) {
-        if (!model.isSourceAndTargetVisible(link)) {
-            continue;
+        const nodes: LayoutNode[] = [];
+        const nodeById: { [id: string]: LayoutNode } = {};
+        for (const element of elements) {
+            const {x, y, width, height} = boundsOf(element);
+            const node: LayoutNode = {id: element.id, x, y, width, height};
+            nodeById[element.id] = node;
+            nodes.push(node);
         }
-        const source = model.sourceOf(link);
-        const target = model.targetOf(link);
 
-        const sourceNode = nodeById[source.id];
-        const targetNode = nodeById[target.id];
-
-        if (sourceNode && targetNode) {
-            links.push({source: sourceNode, target: targetNode});
+        const links: LayoutLink[] = [];
+        for (const link of model.links) {
+            if (!model.isSourceAndTargetVisible(link)) {
+                continue;
+            }
+            const source = model.sourceOf(link);
+            const target = model.targetOf(link);
+            const sourceNode = nodeById[source.id];
+            const targetNode = nodeById[target.id];
+            if (sourceNode && targetNode) {
+                links.push({source: sourceNode, target: targetNode});
+            }
         }
-    }
+        layoutFunction(nodes, links, group);
 
-    layoutFunction(nodes, links, model);
+        for (const node of nodes) {
+            const element = model.getElement(node.id);
+            element.setPosition({x: node.x, y: node.y});
+        }
 
-    for (const node of nodes) {
-        const element = model.getElement(node.id);
-        element.setPosition({x: node.x, y: node.y});
+        if (group) {
+            const padding: Vector = getContentFittingBox(elements, []);
+            translateToPositiveQuadrant({nodes, padding});
+        }
     }
 }
 
@@ -245,10 +252,8 @@ export function placeElementsAround(params: {
         listener.listen(model.events, 'changeCells', () => {
             listener.stopListening();
 
-            const grouping = computeGrouping(model.elements);
             recursiveRemoveOverlaps({
                 model,
-                grouping,
                 padding: { x: 15, y: 15 },
             });
             resolve();
@@ -258,14 +263,12 @@ export function placeElementsAround(params: {
 
 export function recursiveRemoveOverlaps(params: {
     model: DiagramModel;
-    grouping: Map<string, Element[]>;
     padding?: Vector;
     group?: string;
 }) {
-    const {padding, model, grouping, group} = params;
+    const {padding, model, group} = params;
     recursiveLayout({
         model,
-        grouping,
         group,
         layoutFunction: (nodes) => {
             padded(nodes, padding, () => removeOverlaps(nodes));

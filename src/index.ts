@@ -37,6 +37,7 @@ export {
     EditorOptions, EditorEvents, EditorController, PropertyEditor, PropertyEditorOptions,
 } from './ontodia/editor/editorController';
 export { LayoutData, LayoutCell, LayoutElement, LayoutLink } from './ontodia/editor/layoutData';
+export { recursiveLayout } from './ontodia/viewUtils/layout';
 
 export { CancellationToken } from './ontodia/viewUtils/async';
 export * from './ontodia/viewUtils/events';
