@@ -14,6 +14,7 @@ export interface LayoutNode {
     width: number;
     height: number;
     bounds?: any;
+    fixed?: boolean;
     innerBounds?: any;
 }
 
@@ -26,10 +27,12 @@ export function forceLayout(params: {
     nodes: LayoutNode[];
     links: LayoutLink[];
     preferredLinkLength: number;
+    avoidOvelaps?: boolean;
 }) {
     const layout = new cola.Layout()
         .nodes(params.nodes)
         .links(params.links)
+        .avoidOverlaps(params.avoidOvelaps)
         .convergenceThreshold(1e-9)
         .jaccardLinkLengths(params.preferredLinkLength)
         .handleDisconnected(true);
@@ -133,10 +136,11 @@ export function padded(
 export function recursiveLayout(params: {
     model: DiagramModel;
     layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], group: string) => void;
+    fixedElementIds?: ReadonlySet<string>;
     group?: string;
 }) {
     const grouping = computeGrouping(params.model.elements);
-    const {layoutFunction, model} = params;
+    const {layoutFunction, model, fixedElementIds} = params;
     internalRecursion(params.group);
 
     function internalRecursion(group: string) {
@@ -154,7 +158,11 @@ export function recursiveLayout(params: {
         const nodeById: { [id: string]: LayoutNode } = {};
         for (const element of elements) {
             const {x, y, width, height} = boundsOf(element);
-            const node: LayoutNode = {id: element.id, x, y, width, height};
+            const node: LayoutNode = {
+                id: element.id,
+                x, y, width, height,
+                fixed: fixedElementIds && fixedElementIds.has(element.id),
+            };
             nodeById[element.id] = node;
             nodes.push(node);
         }
@@ -263,13 +271,15 @@ export function placeElementsAround(params: {
 
 export function recursiveRemoveOverlaps(params: {
     model: DiagramModel;
+    fixedElementIds?: ReadonlySet<string>;
     padding?: Vector;
     group?: string;
 }) {
-    const {padding, model, group} = params;
+    const {padding, model, group, fixedElementIds} = params;
     recursiveLayout({
         model,
         group,
+        fixedElementIds,
         layoutFunction: (nodes) => {
             padded(nodes, padding, () => removeOverlaps(nodes));
         },
