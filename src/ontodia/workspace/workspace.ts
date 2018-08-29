@@ -286,7 +286,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         batch.history.registerToUndo(this.makeSyncAndZoom());
         batch.history.registerToUndo(RestoreGeometry.capture(this.model));
 
-        recursiveForceLayout(this.model);
+        recursiveForceLayout({model: this.model});
 
         for (const link of this.model.links) {
             link.setVertices([]);
