@@ -568,7 +568,10 @@ export class EditorController {
                 this.model.requestLinksOfType(),
             ]).then(() => {
                 this.view.performSyncUpdate();
-                recursiveForceLayout(this.model, element.id);
+                recursiveForceLayout({
+                    model: this.model,
+                    group: element.id,
+                });
                 this.model.triggerChangeGroupContent(element.id);
             });
         });
@@ -931,13 +934,26 @@ function placeElements(
     return elements;
 }
 
-export function recursiveForceLayout(model: DiagramModel, group?: string) {
+export function recursiveForceLayout(params: {
+    model: DiagramModel;
+    fixedElementIds?: ReadonlySet<string>;
+    group?: string;
+}) {
+    const {model, group, fixedElementIds} = params;
     recursiveLayout({
         model,
         group,
+        fixedElementIds,
         layoutFunction: (nodes, links) => {
-            forceLayout({nodes, links, preferredLinkLength: 200});
-            padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
+            if (fixedElementIds && fixedElementIds.size > 0) {
+                padded(nodes, {x: 50, y: 50}, () => forceLayout({
+                    nodes, links, preferredLinkLength: 200,
+                    avoidOvelaps: true,
+                }));
+            } else {
+                forceLayout({nodes, links, preferredLinkLength: 200});
+                padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
+            }
         },
     });
 }
