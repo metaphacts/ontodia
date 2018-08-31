@@ -24,7 +24,7 @@ export interface Props extends PaperWidgetProps {
     onToggleNavigationMenu?: () => void;
     onAddToFilter?: () => void;
     onEstablishNewLink?: (point: Vector) => void;
-    onFolowTheLink?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
+    onFolowLink?: (element: Element, event: React.MouseEvent<any>) => void;
 }
 
 export interface State {
@@ -114,9 +114,8 @@ export class Halo extends React.Component<Props, State> {
 
     render() {
         const {
-            paperArea, editor, target,
-            navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
-            onExpand, onFolowTheLink,
+            paperArea, editor, target, navigationMenuOpened, onToggleNavigationMenu, onAddToFilter,
+            onExpand, onFolowLink,
         } = this.props;
 
         if (!target) {
@@ -139,10 +138,11 @@ export class Halo extends React.Component<Props, State> {
                     role='button'
                     title='Open a dialog to navigate to connected elements'
                     onClick={onToggleNavigationMenu} />}
-                {onFolowTheLink && <div className={`${CLASS_NAME}__folow`}
+                {onFolowLink && <a className={`${CLASS_NAME}__folow`}
+                    href={target.iri}
                     role='button'
                     title='Jump to resource'
-                    onClick={(event) => onFolowTheLink(target.iri, target, event)} />}
+                    onClick={e => onFolowLink(target, e)} />}
                 {onAddToFilter && <div className={`${CLASS_NAME}__add-to-filter`}
                     role='button'
                     title='Search for connected elements'
