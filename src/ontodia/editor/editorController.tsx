@@ -7,10 +7,10 @@ import { generate64BitID } from '../data/utils';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
-import { Vector, boundsOf, computeGrouping } from '../diagram/geometry';
+import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
-import { PaperArea, PointerUpEvent, PaperWidgetProps, getContentFittingBox } from '../diagram/paperArea';
+import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
@@ -25,7 +25,7 @@ import { HaloLink } from '../widgets/haloLink';
 import { StatesWidget } from './statesWidget';
 
 import {
-    forceLayout, padded, removeOverlaps, recursiveLayout, translateToPositiveQuadrant, placeElementsAround,
+    forceLayout, padded, removeOverlaps, recursiveLayout, placeElementsAround,
 } from '../viewUtils/layout';
 import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
@@ -568,8 +568,7 @@ export class EditorController {
                 this.model.requestLinksOfType(),
             ]).then(() => {
                 this.view.performSyncUpdate();
-                const grouping = computeGrouping(this.model.elements);
-                recursiveForceLayout(this.model, grouping, element.id);
+                recursiveForceLayout(this.model, element.id);
                 this.model.triggerChangeGroupContent(element.id);
             });
         });
@@ -932,18 +931,13 @@ function placeElements(
     return elements;
 }
 
-export function recursiveForceLayout(model: DiagramModel, grouping: Map<string, Element[]>, group?: string) {
+export function recursiveForceLayout(model: DiagramModel, group?: string) {
     recursiveLayout({
         model,
-        grouping,
         group,
         layoutFunction: (nodes, links) => {
             forceLayout({nodes, links, preferredLinkLength: 200});
             padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
-
-            const elements: Element[] = nodes.map(node => model.getElement(node.id));
-            const padding: Vector = group ? getContentFittingBox(elements, []) : {x: 150, y: 150};
-            translateToPositiveQuadrant({nodes, padding});
         },
     });
 }
