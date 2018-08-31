@@ -53,7 +53,7 @@ const serializedCellProperties = [
 
 export function emptyDiagram(): SerializedDiagram {
     return {
-        ...diagramContextV1,
+        ...diagramContextV1AsUrl,
         '@type': 'Diagram',
         layoutData: emptyLayoutData(),
         linkTypeOptions: []
@@ -149,6 +149,10 @@ export function makeLayoutData(
     }));
     return {'@type': 'Layout', elements, links};
 }
+
+export const diagramContextV1AsUrl = {
+    '@context': 'https://ontodia.org/context/v1.json'
+};
 
 export const diagramContextV1 = {
     '@context': {
