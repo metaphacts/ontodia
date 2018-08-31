@@ -1,20 +1,15 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 
 import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
 
 import { FatLinkType, Element } from '../diagram/elements';
-import { boundsOf } from '../diagram/geometry';
-import { Command } from '../diagram/history';
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
-import { restoreLinksBetweenElements } from '../editor/asyncModel';
 import { EditorController } from '../editor/editorController';
-
 import { EventObserver } from '../viewUtils/events';
-
-import { ListElementView, highlightSubstring, startDragElements } from './listElementView';
+import { highlightSubstring } from './listElementView';
+import { SearchResults } from './searchResults';
 
 interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
@@ -24,7 +19,6 @@ export interface ReactElementModel {
     presentOnDiagram: boolean;
 }
 
-const MENU_OFFSET = 40;
 const MAX_LINK_COUNT = 100;
 const ALL_RELATED_ELEMENTS_LINK: FatLinkType = new FatLinkType({
     id: 'allRelatedElements' as LinkTypeIri,
@@ -659,27 +653,27 @@ interface ObjectsPanelProps {
 }
 
 interface ObjectsPanelState {
-    checkMap: { readonly [id: string]: boolean };
+    selection: ReadonlySet<ElementIri>;
 }
 
 class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState> {
     constructor(props: ObjectsPanelProps) {
         super(props);
-        this.state = {checkMap: {}};
+        this.state = {selection: new Set<ElementIri>()};
     }
 
     componentWillReceiveProps(nextProps: ObjectsPanelProps) {
         if (this.props.data.objects.length < nextProps.data.objects.length) {
-            this.setState({checkMap: {}});
+            this.setState({selection: new Set<ElementIri>()});
         }
     }
 
     private onSelectAll = () => {
         const objects = this.props.data.objects;
         if (objects.length === 0) { return; }
-        const allSelected = allNonPresentedAreSelected(objects, this.state.checkMap);
-        const checkMap = allSelected ? {} : selectNonPresented(this.props.data.objects);
-        this.setState({checkMap});
+        const allSelected = allNonPresentedAreSelected(objects, this.state.selection);
+        const newSelection = allSelected ? new Set<ElementIri>() : selectNonPresented(this.props.data.objects);
+        this.updateSelection(newSelection);
     }
 
     private getFilteredObjects(): ReactElementModel[] {
@@ -689,51 +683,24 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
         const filterKey = this.props.filterKey.toLowerCase();
         const lang = this.props.view.getLanguage();
         return this.props.data.objects.filter(element => {
-            const label = element.model.label;
-            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang);
+            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang).toLowerCase();
             return text && text.indexOf(filterKey) >= 0;
         });
     }
 
-    private renderObjects(list: ReadonlyArray<ReactElementModel>) {
-        const {view, filterKey} = this.props;
-        const {checkMap} = this.state;
+    private getItems(list: ReadonlyArray<ReactElementModel>) {
         const added: { [id: string]: true } = {};
-        const result: React.ReactElement<any>[] = [];
+        const result: ElementModel[] = [];
         for (const obj of list) {
             if (added[obj.model.id]) { continue; }
             added[obj.model.id] = true;
-            result.push(
-                <ListElementView
-                    key={obj.model.id}
-                    model={obj.model}
-                    view={view}
-                    disabled={obj.presentOnDiagram}
-                    highlightText={filterKey}
-                    selected={checkMap[obj.model.id] || false}
-                    onSelectedChanged={this.onSelectedChanged}
-                    onDragStart={e => {
-                        const iris = list.filter(item =>
-                            !item.presentOnDiagram && (
-                                this.state.checkMap[item.model.id] ||
-                                item.model.id === obj.model.id
-                            )
-                        ).map(item => item.model.id);
-                        return startDragElements(e, iris);
-                    }}
-                />
-            );
+            result.push(obj.model);
         }
         return result;
     }
 
-    private onSelectedChanged = (selected: boolean, model: ElementModel) => {
-        const {checkMap} = this.state;
-        if (checkMap[model.id] === selected) {
-            return;
-        }
-        const nextCheckMap = {...checkMap, [model.id]: selected};
-        this.setState({checkMap: nextCheckMap});
+    private updateSelection = (newSelection: ReadonlySet<ElementIri>) => {
+        this.setState({selection: newSelection});
     }
 
     private counter = (activeObjCount: number) => {
@@ -757,13 +724,13 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
     }
 
     render() {
-        const {onPressAddSelected} = this.props;
-        const {checkMap} = this.state;
+        const {onPressAddSelected, filterKey} = this.props;
+        const {selection} = this.state;
         const objects = this.getFilteredObjects();
-        const isAllSelected = allNonPresentedAreSelected(objects, checkMap);
+        const isAllSelected = allNonPresentedAreSelected(objects, selection);
 
         const nonPresented = objects.filter(el => !el.presentOnDiagram);
-        const active = nonPresented.filter(el => checkMap[el.model.id]);
+        const active = nonPresented.filter(el => selection.has(el.model.id));
 
         return <div className='ontodia-connections-menu_objects-panel'>
             <div className='ontodia-connections-menu_objects-panel__select-all'>
@@ -781,7 +748,13 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
                 objects.length === 0 ?
                 <label className='ontodia-label ontodia-connections-menu__loading-objects'>No available nodes</label> :
                 <div className='ontodia-connections-menu_objects-panel_objects-list'>
-                    {this.renderObjects(objects)}
+                    <SearchResults
+                        view={this.props.view}
+                        items={this.getItems(objects)}
+                        selection={this.state.selection}
+                        onSelectionChanged={this.updateSelection}
+                        highlightText={filterKey}
+                    />
                     {this.props.data.linkDataChunk.expectedCount > MAX_LINK_COUNT ? (
                         <div className='ontodia-connections-menu__move-to-filter'
                             onClick={() => this.props.onMoveToFilter(this.props.data.linkDataChunk)}>
@@ -806,23 +779,22 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
 }
 
 function selectNonPresented(objects: ReadonlyArray<ReactElementModel>) {
-    const checkMap: { [id: string]: boolean } = {};
+    const selection = new Set<ElementIri>();
     for (const object of objects) {
         if (object.presentOnDiagram) { continue; }
-        checkMap[object.model.id] = true;
+        selection.add(object.model.id);
     }
-    return checkMap;
+    return selection;
 }
 
 function allNonPresentedAreSelected(
     objects: ReadonlyArray<ReactElementModel>,
-    checkMap: { readonly [id: string]: boolean }
+    selection: ReadonlySet<ElementIri>
 ): boolean {
     let allSelected = true;
     for (const object of objects) {
         if (object.presentOnDiagram) { continue; }
-        const selected = Boolean(checkMap[object.model.id]);
-        allSelected = allSelected && selected;
+        allSelected = allSelected && selection.has(object.model.id);
     }
     return allSelected;
 }
