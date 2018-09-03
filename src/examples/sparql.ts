@@ -2,13 +2,7 @@ import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
 import {
-    Workspace,
-    WorkspaceProps,
-    SparqlDataProvider,
-    OWLStatsSettings,
-    SparqlQueryMethod,
-    GroupTemplate,
-    LinkTypeIri
+    Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod, GroupTemplate, LinkTypeIri
 } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -18,13 +12,16 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
-        diagram: {...diagram, ...{linkTypeOptions: [
-                    {
-                        '@type': 'LinkTypeOptions',
-                        property: 'http://www.researchspace.org/ontology/group' as LinkTypeIri,
-                        visible: false
-                    },
-                ]}},
+        diagram: {
+            ...diagram,
+            linkTypeOptions: [
+                {
+                    '@type': 'LinkTypeOptions',
+                    property: 'http://www.researchspace.org/ontology/group' as LinkTypeIri,
+                    visible: false,
+                },
+            ],
+        },
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
             endpointUrl: '/sparql',

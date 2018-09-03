@@ -140,9 +140,8 @@ export class AsyncModel extends DiagramModel {
         const linkTypeOptions = this.graph.getLinkTypes()
             // do not serialize default link type options
             .filter(linkType => !linkType.visible || !linkType.showLabel)
-            .map(
-                ({id, visible, showLabel}): LinkTypeOptions =>
-                    ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}));
+            .map(({id, visible, showLabel}): LinkTypeOptions =>
+                ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}));
         return makeSerializedDiagram({layoutData, linkTypeOptions});
     }
 
@@ -174,7 +173,7 @@ export class AsyncModel extends DiagramModel {
         return types;
     }
 
-    private setLinkSettings(settings: LinkTypeOptions[]) {
+    private setLinkSettings(settings: ReadonlyArray<LinkTypeOptions>) {
         for (const setting of settings) {
             const {visible = true, showLabel = true} = setting;
             const linkTypeId = setting.property as LinkTypeIri;
@@ -204,7 +203,7 @@ export class AsyncModel extends DiagramModel {
         const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
         for (const layoutElement of layoutData.elements) {
-            const {'@id' : id, iri, position, size, isExpanded, group} = layoutElement;
+            const {'@id': id, iri, position, size, isExpanded, group} = layoutElement;
             const template = preloadedElements[iri];
             const data = template || placeholderDataFromIri(iri);
             const element = new Element({id, data, position, size, expanded: isExpanded, group});
@@ -215,7 +214,7 @@ export class AsyncModel extends DiagramModel {
         }
 
         for (const layoutLink of layoutData.links) {
-            const {'@id' : id, property, source, target, vertices} = layoutLink;
+            const {'@id': id, property, source, target, vertices} = layoutLink;
             const linkType = this.createLinkType(property);
             usedLinkTypes[linkType.id] = linkType;
             const link = this.addLink(new Link({

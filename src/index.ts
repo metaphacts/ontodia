@@ -38,8 +38,8 @@ export {
 } from './ontodia/editor/editorController';
 
 export {
-    LayoutData, LayoutElement, LayoutLink, SerializedDiagram, diagramContextV1, diagramContextV1AsUrl,
-    convertToSerializedDiagram
+    LayoutData, LayoutElement, LayoutLink, SerializedDiagram, DIAGRAM_CONTEXT_URL_V1,
+    convertToSerializedDiagram, makeSerializedDiagram
 } from './ontodia/editor/serializedDiagram';
 export { recursiveLayout } from './ontodia/viewUtils/layout';
 

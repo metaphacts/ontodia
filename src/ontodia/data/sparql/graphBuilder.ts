@@ -1,5 +1,6 @@
 import { keyBy } from 'lodash';
 
+import { GenerateID } from '../../diagram/elements';
 import {
     LayoutElement, LayoutLink, SerializedDiagram, makeSerializedDiagram
 } from '../../editor/serializedDiagram';
@@ -9,7 +10,6 @@ import { Dictionary, ElementModel, LinkModel, ElementIri, LinkTypeIri } from '..
 import { DataProvider } from '../provider';
 import { Triple } from './sparqlModels';
 import { parseTurtleText } from './turtle';
-import { GenerateID } from '../../..';
 
 const GREED_STEP = 150;
 
@@ -71,7 +71,10 @@ export function makeGraphItems(response: ReadonlyArray<Triple>): {
     return {elementIds: Object.keys(elements) as ElementIri[], links};
 }
 
-export function makeLayout(elementsIds: ReadonlyArray<ElementIri>, linksInfo: ReadonlyArray<LinkModel>): SerializedDiagram {
+export function makeLayout(
+    elementsIds: ReadonlyArray<ElementIri>,
+    linksInfo: ReadonlyArray<LinkModel>
+): SerializedDiagram {
     const rows = Math.ceil(Math.sqrt(elementsIds.length));
     const grid = uniformGrid({rows, cellSize: {x: GREED_STEP, y: GREED_STEP}});
 
@@ -80,7 +83,7 @@ export function makeLayout(elementsIds: ReadonlyArray<ElementIri>, linksInfo: Re
         return {'@type': 'Element', '@id': GenerateID.forElement(), iri: id, position: {x, y}};
     });
 
-    const layoutElementsMap: {[iri: string]: LayoutElement} = keyBy(elements, 'iri');
+    const layoutElementsMap: { [iri: string]: LayoutElement } = keyBy(elements, 'iri');
     const links: LayoutLink[] = [];
 
     linksInfo.forEach((link, index) => {

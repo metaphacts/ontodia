@@ -1,13 +1,13 @@
 import {
     LocalizedString, ElementModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
-import {generate128BitID, uri2name} from '../data/utils';
+import { uri2name } from '../data/utils';
 
-import { EventSource, Events, EventObserver, AnyEvent} from '../viewUtils/events';
+import { EventSource, Events, EventObserver, AnyEvent } from '../viewUtils/events';
 
 import {
     Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
-    FatClassModel, FatClassModelEvents, RichProperty,
+    FatClassModel, FatClassModelEvents, RichProperty, GenerateID
 } from './elements';
 import { Graph } from './graph';
 import { CommandHistory, Command } from './history';
@@ -271,10 +271,4 @@ export function formatLocalizedLabel(
     return labels.length > 0
         ? chooseLocalizedText(labels, language).text
         : uri2name(fallbackIri);
-}
-
-export namespace GenerateID {
-    export function forElement() { return 'e_' + generate128BitID(); }
-    export function forLink() { return 'l_' + generate128BitID(); }
-    export function forNewEntity() { return 'entity_' + generate128BitID(); }
 }

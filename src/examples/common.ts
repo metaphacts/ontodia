@@ -1,5 +1,4 @@
-import {convertToSerializedDiagram, LayoutData, SerializedDiagram} from '../index';
-import {makeSerializedDiagram} from '../ontodia/editor/serializedDiagram';
+import { LayoutData, SerializedDiagram, convertToSerializedDiagram, makeSerializedDiagram } from '../index';
 
 export function onPageLoad(callback: (container: HTMLDivElement) => void) {
     document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +14,7 @@ export function tryLoadLayoutFromLocalStorage(): SerializedDiagram | undefined {
         try {
             const key = window.location.hash.substring(1);
             const unparsedLayout = localStorage.getItem(key);
-            let entry = unparsedLayout && JSON.parse(unparsedLayout);
+            const entry = unparsedLayout && JSON.parse(unparsedLayout);
 
             // backward compatibility test. If we encounder old diagram,
             // wrap it into Diagram interface, jsonld - pass through

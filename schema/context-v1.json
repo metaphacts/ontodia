@@ -1,0 +1,36 @@
+{
+  "@context": {
+    "ontodia": "http://ontodia.org/schema/v1#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "@base": "http://ontodia.org/data/",
+
+    "Diagram": "ontodia:Diagram",
+    "layoutData": "ontodia:layoutData",
+    "linkTypeOptions": "ontodia:linkTypeOptions",
+
+    "Layout": "ontodia:Layout",
+    "elements": {"@id": "ontodia:hasElement", "@container": "@set"},
+    "links": {"@id": "ontodia:hasLink", "@container": "@set"},
+
+    "Element": "ontodia:Element",
+    "iri": {"@id": "ontodia:resource", "@type": "@id"},
+    "position": "ontodia:position",
+    "x": {"@id": "ontodia:xCoordValue"},
+    "y": {"@id": "ontodia:yCoordValue"},
+    "size": "ontodia:size",
+    "height": {"@id": "ontodia:height"},
+    "width": {"@id": "ontodia:width"},
+    "isExpanded": {"@id": "ontodia:isExpanded"},
+
+    "Link": "ontodia:Link",
+    "property": {"@id": "ontodia:property", "@type": "@id"},
+    "source": "ontodia:source",
+    "target": "ontodia:target",
+    "vertices": {"@id": "ontodia:vertex", "@container" : "@list"},
+
+    "LinkTypeOptions": "ontodia:LinkTypeOptions",
+    "visible": "ontodia:visible",
+    "showLabel": "ontodia:showLabel"
+  }
+}

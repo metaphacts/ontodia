@@ -9,7 +9,7 @@ export interface SerializedDiagram {
     '@context': any;
     '@type': 'Diagram';
     layoutData: LayoutData;
-    linkTypeOptions: LinkTypeOptions[];
+    linkTypeOptions: ReadonlyArray<LinkTypeOptions>;
 }
 
 export interface LinkTypeOptions {
@@ -21,8 +21,8 @@ export interface LinkTypeOptions {
 
 export interface LayoutData {
     '@type': 'Layout';
-    readonly elements: LayoutElement[];
-    readonly links: LayoutLink[];
+    elements: ReadonlyArray<LayoutElement>;
+    links: ReadonlyArray<LayoutLink>;
 }
 
 export interface LayoutElement {
@@ -45,18 +45,25 @@ export interface LayoutLink {
     vertices?: ReadonlyArray<Vector>;
 }
 
+// context could be imported directly from NPM package, e.g.
+//   import OntodiaContextV1 from 'ontodia/schema/context-v1.json';
+export const DIAGRAM_CONTEXT_URL_V1 = 'https://ontodia.org/context/v1.json';
+
 const serializedCellProperties = [
-    'id', 'type',                              // common properties
-    'size', 'angle', 'isExpanded', 'position', 'iri', 'group', // element properties
-    'typeId', 'source', 'target', 'vertices',  // link properties
+    // common properties
+    'id', 'type',
+    // element properties
+    'size', 'angle', 'isExpanded', 'position', 'iri', 'group',
+    // link properties
+    'typeId', 'source', 'target', 'vertices',
 ];
 
 export function emptyDiagram(): SerializedDiagram {
     return {
-        ...diagramContextV1AsUrl,
+        '@context': DIAGRAM_CONTEXT_URL_V1,
         '@type': 'Diagram',
         layoutData: emptyLayoutData(),
-        linkTypeOptions: []
+        linkTypeOptions: [],
     };
 }
 
@@ -64,14 +71,16 @@ export function emptyLayoutData(): LayoutData {
     return {'@type': 'Layout', elements: [], links: []};
 }
 
-export function convertToSerializedDiagram(params: {layoutData: any, linkTypeOptions: any}): SerializedDiagram {
-    let elements: LayoutElement[] = [];
-    let links: LayoutLink[] = [];
+export function convertToSerializedDiagram(params: {
+    layoutData: any;
+    linkTypeOptions: any;
+}): SerializedDiagram {
+    const elements: LayoutElement[] = [];
+    const links: LayoutLink[] = [];
 
     for (const cell of params.layoutData.cells) {
-
         // get rid of unused properties
-        let newCell: any = pick(cell, serializedCellProperties);
+        const newCell: any = pick(cell, serializedCellProperties);
 
         // normalize type
         if (newCell.type === 'Ontodia.Element' || newCell.type === 'element') {
@@ -116,14 +125,19 @@ export function convertToSerializedDiagram(params: {layoutData: any, linkTypeOpt
     return {
         ...emptyDiagram(),
         layoutData: {'@type': 'Layout', elements, links},
-        linkTypeOptions: params.linkTypeOptions
+        linkTypeOptions: params.linkTypeOptions,
     };
 }
 
-export function makeSerializedDiagram(
-        params: {layoutData: LayoutData, linkTypeOptions: LinkTypeOptions[]}
-    ): SerializedDiagram {
-    return {...emptyDiagram(), layoutData: params.layoutData, linkTypeOptions: params.linkTypeOptions};
+export function makeSerializedDiagram(params: {
+    layoutData: LayoutData;
+    linkTypeOptions: ReadonlyArray<LinkTypeOptions>;
+}): SerializedDiagram {
+    return {
+        ...emptyDiagram(),
+        layoutData: params.layoutData,
+        linkTypeOptions: params.linkTypeOptions,
+    };
 }
 
 export function makeLayoutData(
@@ -149,44 +163,3 @@ export function makeLayoutData(
     }));
     return {'@type': 'Layout', elements, links};
 }
-
-export const diagramContextV1AsUrl = {
-    '@context': 'https://ontodia.org/context/v1.json'
-};
-
-export const diagramContextV1 = {
-    '@context': {
-        // schemas
-        'ontodia': 'http://ontodia.org/schema/v1#',
-        'xsd': 'http://www.w3.org/2001/XMLSchema#',
-        // classes
-        'Diagram': 'ontodia:Diagram',
-        'Element': 'ontodia:Element',
-        'Link': 'ontodia:Link',
-        'Layout': 'ontodia:Layout',
-        'LinkTypeOptions': 'ontodia:LinkTypeOptions',
-        // properties
-        'layoutData': 'ontodia:layoutData',
-        'elements': {'@id': 'ontodia:hasElement', '@container': '@set'},
-        'linkTypeOptions': 'ontodia:linkTypeOptions',
-        'links': {'@id': 'ontodia:hasLink', '@container': '@set'},
-        // element
-        'iri': {'@id': 'ontodia:resource', '@type': '@id'},
-        'position': 'ontodia:position',
-        'x': {'@id': 'ontodia:xCoordValue'},
-        'y': {'@id': 'ontodia:yCoordValue'},
-        'size': 'ontodia:size',
-        'height': {'@id': 'ontodia:height'},
-        'width': {'@id': 'ontodia:width'},
-        'isExpanded': {'@id': 'ontodia:isExpanded'},
-        // link
-        'property': {'@id': 'ontodia:property', '@type': '@id'},
-        'source': 'ontodia:source',
-        'target': 'ontodia:target',
-        'vertices': {'@id': 'ontodia:vertex', '@container' : '@list'},
-        '@base': 'http://ontodia.org/data/',
-        // link type options
-        'visible': 'ontodia:visible',
-        'showLabel': 'ontodia:showLabel',
-    }
-};
