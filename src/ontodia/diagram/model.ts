@@ -1,17 +1,14 @@
 import {
-    Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel,
-    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    LocalizedString, ElementModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
-import { DataProvider } from '../data/provider';
-import { generate64BitID, uri2name } from '../data/utils';
+import { uri2name } from '../data/utils';
 
-import { EventSource, Events, EventObserver, AnyEvent, AnyListener, Listener } from '../viewUtils/events';
+import { EventSource, Events, EventObserver, AnyEvent } from '../viewUtils/events';
 
 import {
     Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
-    FatClassModel, FatClassModelEvents, RichProperty,
+    FatClassModel, FatClassModelEvents, RichProperty, GenerateID
 } from './elements';
-import { Vector } from './geometry';
 import { Graph } from './graph';
 import { CommandHistory, Command } from './history';
 
@@ -105,7 +102,7 @@ export class DiagramModel {
             ? placeholderDataFromIri(elementIri)
             : elementIriOrModel as ElementModel;
         data = {...data, id: data.id};
-        const element = new Element({id: `element_${generate64BitID()}`, data, group});
+        const element = new Element({id: GenerateID.forElement(), data, group});
         this.history.execute(
             addElement(this.graph, element, [])
         );
@@ -204,7 +201,7 @@ export class DiagramModel {
 
     createTemporaryElement(): Element {
         const target = new Element({
-            id: `element_${generate64BitID()}`,
+            id: GenerateID.forElement(),
             data: placeholderDataFromIri('' as ElementIri),
             temporary: true,
         });

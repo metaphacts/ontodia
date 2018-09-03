@@ -33,8 +33,8 @@ function onWorkspaceMounted(workspace: Workspace) {
     );
     workspace.showWaitIndicatorWhile(loadingGraph);
 
-    loadingGraph.then(({layoutData, preloadedElements}) => model.importLayout({
-        layoutData,
+    loadingGraph.then(({diagram, preloadedElements}) => model.importLayout({
+        diagram,
         preloadedElements,
         dataProvider: sparqlDataProvider,
     })).then(() => {

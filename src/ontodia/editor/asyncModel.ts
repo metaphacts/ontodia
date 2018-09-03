@@ -11,17 +11,14 @@ import { DiagramModel, DiagramModelEvents, placeholderDataFromIri } from '../dia
 import { EventSource, Events, Listener } from '../viewUtils/events';
 
 import { DataFetcher } from './dataFetcher';
-import { LayoutData, LayoutElement, normalizeImportedCell, exportLayoutData } from './layoutData';
+import {
+    LayoutData, LayoutElement, makeLayoutData, convertToSerializedDiagram, emptyDiagram,
+    LinkTypeOptions, SerializedDiagram, makeSerializedDiagram, emptyLayoutData
+} from './serializedDiagram';
 
 export interface GroupBy {
     linkType: string;
     linkDirection: 'in' | 'out';
-}
-
-export interface LinkTypeOptions {
-    id: string; // LinkTypeIri
-    visible: boolean;
-    showLabel?: boolean;
 }
 
 export interface AsyncModelEvents extends DiagramModelEvents {
@@ -102,9 +99,8 @@ export class AsyncModel extends DiagramModel {
     importLayout(params: {
         dataProvider: DataProvider;
         preloadedElements?: Dictionary<ElementModel>;
-        layoutData?: LayoutData;
         validateLinks?: boolean;
-        linkSettings?: LinkTypeOptions[];
+        diagram?: SerializedDiagram;
         hideUnusedLinkTypes?: boolean;
     }): Promise<void> {
         this.resetGraph();
@@ -117,9 +113,10 @@ export class AsyncModel extends DiagramModel {
         ]).then(([classTree, linkTypes]) => {
             this.setClassTree(classTree);
             const allLinkTypes = this.initLinkTypes(linkTypes);
-            this.setLinkSettings(params.linkSettings || []);
+            const diagram = params.diagram ? params.diagram : emptyDiagram();
+            this.setLinkSettings(diagram.linkTypeOptions);
             const loadingModels = this.loadAndRenderLayout({
-                layoutData: params.layoutData,
+                layoutData: diagram.layoutData,
                 preloadedElements: params.preloadedElements || {},
                 markLinksAsLayoutOnly: params.validateLinks || false,
                 allLinkTypes,
@@ -138,14 +135,14 @@ export class AsyncModel extends DiagramModel {
         });
     }
 
-    exportLayout(): {
-        layoutData: LayoutData;
-        linkSettings: LinkTypeOptions[];
-    } {
-        const layoutData = exportLayoutData(this.graph.getElements(), this.graph.getLinks());
-        const linkSettings = this.graph.getLinkTypes()
-            .map(({id, visible, showLabel}) => ({id, visible, showLabel}));
-        return {layoutData, linkSettings};
+    exportLayout(): SerializedDiagram {
+        const layoutData = makeLayoutData(this.graph.getElements(), this.graph.getLinks());
+        const linkTypeOptions = this.graph.getLinkTypes()
+            // do not serialize default link type options
+            .filter(linkType => !linkType.visible || !linkType.showLabel)
+            .map(({id, visible, showLabel}): LinkTypeOptions =>
+                ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}));
+        return makeSerializedDiagram({layoutData, linkTypeOptions});
     }
 
     private setClassTree(rootClasses: ClassModel[]) {
@@ -176,11 +173,11 @@ export class AsyncModel extends DiagramModel {
         return types;
     }
 
-    private setLinkSettings(settings: LinkTypeOptions[]) {
+    private setLinkSettings(settings: ReadonlyArray<LinkTypeOptions>) {
         for (const setting of settings) {
             const {visible = true, showLabel = true} = setting;
-            const linkTypeId = setting.id as LinkTypeIri;
-            this.linkSettings[linkTypeId] = {id: linkTypeId, visible, showLabel};
+            const linkTypeId = setting.property as LinkTypeIri;
+            this.linkSettings[linkTypeId] = {'@type': 'LinkTypeOptions', property: linkTypeId, visible, showLabel};
             const linkType = this.getLinkType(linkTypeId);
             if (linkType) {
                 linkType.setVisibility({visible, showLabel});
@@ -196,7 +193,7 @@ export class AsyncModel extends DiagramModel {
         hideUnusedLinkTypes?: boolean;
     }) {
         const {
-            layoutData = {cells: []},
+            layoutData = emptyLayoutData(),
             preloadedElements = {},
             markLinksAsLayoutOnly,
             hideUnusedLinkTypes,
@@ -205,35 +202,30 @@ export class AsyncModel extends DiagramModel {
         const elementIrisToRequestData: ElementIri[] = [];
         const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
-        const normalizedCells = layoutData.cells.map(normalizeImportedCell);
-        for (const cell of normalizedCells) {
-            if (cell.type === 'element') {
-                const {id, iri, position, size, isExpanded, group} = cell;
-                const template = preloadedElements[iri];
-                const data = template || placeholderDataFromIri(iri);
-                const element = new Element({id, data, position, size, expanded: isExpanded, group});
-                this.graph.addElement(element);
-                if (!template) {
-                    elementIrisToRequestData.push(element.iri);
-                }
+        for (const layoutElement of layoutData.elements) {
+            const {'@id': id, iri, position, size, isExpanded, group} = layoutElement;
+            const template = preloadedElements[iri];
+            const data = template || placeholderDataFromIri(iri);
+            const element = new Element({id, data, position, size, expanded: isExpanded, group});
+            this.graph.addElement(element);
+            if (!template) {
+                elementIrisToRequestData.push(element.iri);
             }
         }
 
-        for (const cell of normalizedCells) {
-            if (cell.type === 'link') {
-                const {id, typeId, source, target, vertices} = cell;
-                const linkType = this.createLinkType(typeId);
-                usedLinkTypes[linkType.id] = linkType;
-                const link = this.addLink(new Link({
-                    id,
-                    typeId: linkType.id,
-                    sourceId: source.id,
-                    targetId: target.id,
-                    vertices,
-                }));
-                if (link) {
-                    link.setLayoutOnly(markLinksAsLayoutOnly);
-                }
+        for (const layoutLink of layoutData.links) {
+            const {'@id': id, property, source, target, vertices} = layoutLink;
+            const linkType = this.createLinkType(property);
+            usedLinkTypes[linkType.id] = linkType;
+            const link = this.addLink(new Link({
+                id,
+                typeId: linkType.id,
+                sourceId: source['@id'],
+                targetId: target['@id'],
+                vertices,
+            }));
+            if (link) {
+                link.setLayoutOnly(markLinksAsLayoutOnly);
             }
         }
 
