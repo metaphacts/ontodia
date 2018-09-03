@@ -129,9 +129,11 @@ export class DiagramModel {
         }
 
         const existingLink = this.findLink(typeId, sourceId, targetId);
-        if (existingLink && link.data) {
-            existingLink.setLayoutOnly(false);
-            existingLink.setData(data);
+        if (existingLink) {
+            if (link.data) {
+                existingLink.setLayoutOnly(false);
+                existingLink.setData(data);
+            }
             return existingLink;
         }
 
