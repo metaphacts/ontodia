@@ -8,17 +8,13 @@ import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 
 import { AsyncModel } from '../editor/asyncModel';
-import { EventObserver, EventSource, Events } from '../viewUtils/events';
+import { EventObserver } from '../viewUtils/events';
 import { SearchResults } from './searchResults';
 
-import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
+import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } from '../workspace/workspaceContext';
 
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
-
-export interface InstancesSearchEvents {
-    queryItems: Dictionary<ElementModel>;
-}
 
 export interface InstancesSearchProps {
     className?: string;
@@ -53,8 +49,6 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     readonly context: WorkspaceContextWrapper;
 
     private readonly listener = new EventObserver();
-    private readonly source = new EventSource<InstancesSearchEvents>();
-    readonly events: Events<InstancesSearchEvents> = this.source;
 
     private currentRequest: FilterParams;
 
@@ -192,11 +186,6 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     componentDidMount() {
         this.listener.listen(this.props.view.events, 'changeLanguage', () => this.forceUpdate());
         this.queryItems(false);
-
-        const {onUserAction} = this.context.ontodiaWorkspace;
-        if (onUserAction) {
-            this.events.onAny((data, key) => onUserAction(key));
-        }
     }
 
     componentWillReceiveProps(nextProps: InstancesSearchProps) {
@@ -246,7 +235,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.props.model.dataProvider.filter(request).then(elements => {
             if (this.currentRequest !== request) { return; }
             this.processFilterData(elements);
-            this.source.trigger('queryItems', elements);
+            this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.searchQueryItem);
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);

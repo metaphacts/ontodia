@@ -11,15 +11,15 @@ import { LinkTypesToolbox } from '../widgets/linksToolbox';
 import { AsyncModel } from '../editor/asyncModel';
 import { EditorController } from '../editor/editorController';
 
-import { WorkspaceContextWrapper, WorkspaceContext, WorkspaceContextTypes } from './workspaceContext';
+import {
+    WorkspaceContextWrapper, WorkspaceContext, WorkspaceContextTypes, WorkspaceEventHandler, WorkspaceEventKey,
+} from './workspaceContext';
 
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
 
 import { MetadataApi } from '../data/metadataApi';
-
-export type UserActionHandler = (key: string) => void;
 
 export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
@@ -38,7 +38,7 @@ export interface WorkspaceMarkupProps {
     onToggleLeftPanel?: (toggle: boolean) => void;
     isRightPanelOpen?: boolean;
     onToggleRightPanel?: (toggle: boolean) => void;
-    onUserAction?: UserActionHandler;
+    onWorkspaceEvent?: WorkspaceEventHandler;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -75,9 +75,16 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     private untilMouseUpClasses: string[] = [];
 
     getChildContext(): WorkspaceContextWrapper {
-        const {editor, onUserAction} = this.props;
-        const ontodiaWorkspace: WorkspaceContext = {editor, onUserAction};
+        const {editor} = this.props;
+        const ontodiaWorkspace: WorkspaceContext = {editor, triggerWorkspaceEvent: this.triggerWorkspaceEvent};
         return {ontodiaWorkspace};
+    }
+
+    private triggerWorkspaceEvent = (key: WorkspaceEventKey) => {
+        const {onWorkspaceEvent} = this.props;
+        if (onWorkspaceEvent) {
+            onWorkspaceEvent(key);
+        }
     }
 
     private renderToolbar = () => {

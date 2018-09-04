@@ -1,6 +1,17 @@
 import { PropTypes } from '../viewUtils/react';
 import { EditorController } from '../editor/editorController';
-import { UserActionHandler } from './workspaceMarkup';
+
+export type WorkspaceEventHandler = (key: WorkspaceEventKey) => void;
+export enum WorkspaceEventKey {
+    searchQueryItem = 'search:queryItems',
+    connectionsLoadLinks = 'connections:loadLinks',
+    connectionsExpandLink = 'connections:expandLink',
+    connectionsLoadElements = 'connections:loadElements',
+    editorChangeSelection = 'editor:changeSelection',
+    editorToggleDialog = 'editor:toggleDialog',
+    editorAddElements = 'editor:addElements',
+    elementRequestedAddToFilter = 'element:requestedAddToFilter',
+}
 
 export interface WorkspaceContextWrapper {
     ontodiaWorkspace: WorkspaceContext;
@@ -8,7 +19,7 @@ export interface WorkspaceContextWrapper {
 
 export interface WorkspaceContext {
     editor: EditorController;
-    onUserAction?: UserActionHandler;
+    triggerWorkspaceEvent: WorkspaceEventHandler;
 }
 
 export const WorkspaceContextTypes: { [K in keyof WorkspaceContextWrapper]: any } = {

@@ -14,8 +14,6 @@ import { Cancellation, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 import { ElementIri } from '../..';
 
-import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
-
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
     editor: EditorController;
@@ -36,16 +34,13 @@ export interface State {
 const CLASS_NAME = 'ontodia-halo';
 
 export class Halo extends React.Component<Props, State> {
-    static contextTypes = WorkspaceContextTypes;
-    readonly context: WorkspaceContextWrapper;
-
     private readonly listener = new EventObserver();
     private targetListener = new EventObserver();
     private queryDebouncer = new Debouncer();
     private queryCancellation = new Cancellation();
 
-    constructor(props: Props, context: any) {
-        super(props, context);
+    constructor(props: Props) {
+        super(props);
         this.state = {};
     }
 
@@ -108,17 +103,12 @@ export class Halo extends React.Component<Props, State> {
         }
     }
 
-    private onElementEvent: AnyListener<ElementEvents> = (data, key) => {
+    private onElementEvent: AnyListener<ElementEvents> = data => {
         if (data.changePosition || data.changeSize || data.changeExpanded) {
             this.forceUpdate();
         }
         if (data.changeData) {
             this.queryAllowedActions();
-        }
-
-        const {onUserAction} = this.context.ontodiaWorkspace;
-        if (onUserAction) {
-            onUserAction(key);
         }
     }
 

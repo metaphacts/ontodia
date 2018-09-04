@@ -31,7 +31,8 @@ import { SearchCriteria } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
-import { WorkspaceMarkup, WorkspaceMarkupProps, UserActionHandler } from './workspaceMarkup';
+import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
+import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
 
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
@@ -89,7 +90,7 @@ export interface WorkspaceProps {
     metadataApi?: MetadataApi;
     validationApi?: ValidationApi;
     propertyEditor?: PropertyEditor;
-    onUserAction?: UserActionHandler;
+    onWorkspaceEvent?: WorkspaceEventHandler;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -122,6 +123,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     };
 
     private readonly listener = new EventObserver();
+    private readonly worspaceEventListener = new EventObserver();
 
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
@@ -175,7 +177,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onUserAction} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -196,7 +198,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: createElement(ToolbarWrapper, {workspace: this}),
-            onUserAction,
+            onWorkspaceEvent,
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
@@ -236,10 +238,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             }
         });
 
-        const {onUserAction} = this.props;
-        if (onUserAction) {
-            this.editor.events.onAny((data, key) => onUserAction(key));
-        }
+        this.listenToWorkspaceEvents();
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
@@ -258,6 +257,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     componentWillUnmount() {
         this.listener.stopListening();
+        this.worspaceEventListener.stopListening();
         this.view.dispose();
     }
 
@@ -373,6 +373,26 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     showTutorial = () => {
         showTutorial();
+    }
+
+    private listenToWorkspaceEvents() {
+        const {onWorkspaceEvent} = this.props;
+        if (onWorkspaceEvent) {
+            this.worspaceEventListener.listen(this.editor.events, 'changeSelection', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorChangeSelection)
+            );
+            this.worspaceEventListener.listen(this.editor.events, 'toggleDialog', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorToggleDialog)
+            );
+            this.worspaceEventListener.listen(this.editor.events, 'addElements', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorAddElements)
+            );
+            this.worspaceEventListener.listen(this.model.events, 'elementEvent', data => {
+                if (data.key === 'requestedAddToFilter') {
+                    onWorkspaceEvent(WorkspaceEventKey.elementRequestedAddToFilter);
+                }
+            });
+        }
     }
 }
 
