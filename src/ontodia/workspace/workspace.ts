@@ -123,7 +123,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
     };
 
     private readonly listener = new EventObserver();
-    private readonly worspaceEventListener = new EventObserver();
 
     private readonly model: AsyncModel;
     private readonly view: DiagramView;
@@ -203,6 +202,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentDidMount() {
+        const {onWorkspaceEvent} = this.props;
+
         this.editor._initializePaperComponents(this.markup.paperArea);
 
         this.listener.listen(this.model.events, 'loadingSuccess', () => {
@@ -220,6 +221,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     linkDirection: direction,
                 },
             });
+            if (onWorkspaceEvent) {
+                onWorkspaceEvent(WorkspaceEventKey.searchUpdateCriteria);
+            }
         });
 
         this.listener.listen(this.markup.paperArea.events, 'pointerUp', e => {
@@ -238,7 +242,17 @@ export class Workspace extends Component<WorkspaceProps, State> {
             }
         });
 
-        this.listenToWorkspaceEvents();
+        if (onWorkspaceEvent) {
+            this.listener.listen(this.editor.events, 'changeSelection', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorChangeSelection)
+            );
+            this.listener.listen(this.editor.events, 'toggleDialog', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorToggleDialog)
+            );
+            this.listener.listen(this.editor.events, 'addElements', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorAddElements)
+            );
+        }
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();
@@ -257,7 +271,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.worspaceEventListener.stopListening();
         this.view.dispose();
     }
 
@@ -373,26 +386,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     showTutorial = () => {
         showTutorial();
-    }
-
-    private listenToWorkspaceEvents() {
-        const {onWorkspaceEvent} = this.props;
-        if (onWorkspaceEvent) {
-            this.worspaceEventListener.listen(this.editor.events, 'changeSelection', () =>
-                onWorkspaceEvent(WorkspaceEventKey.editorChangeSelection)
-            );
-            this.worspaceEventListener.listen(this.editor.events, 'toggleDialog', () =>
-                onWorkspaceEvent(WorkspaceEventKey.editorToggleDialog)
-            );
-            this.worspaceEventListener.listen(this.editor.events, 'addElements', () =>
-                onWorkspaceEvent(WorkspaceEventKey.editorAddElements)
-            );
-            this.worspaceEventListener.listen(this.model.events, 'elementEvent', data => {
-                if (data.key === 'requestedAddToFilter') {
-                    onWorkspaceEvent(WorkspaceEventKey.elementRequestedAddToFilter);
-                }
-            });
-        }
     }
 }
 

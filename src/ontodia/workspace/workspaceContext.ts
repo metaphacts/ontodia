@@ -3,6 +3,7 @@ import { EditorController } from '../editor/editorController';
 
 export type WorkspaceEventHandler = (key: WorkspaceEventKey) => void;
 export enum WorkspaceEventKey {
+    searchUpdateCriteria = 'search:updateCriteria',
     searchQueryItem = 'search:queryItems',
     connectionsLoadLinks = 'connections:loadLinks',
     connectionsExpandLink = 'connections:expandLink',
@@ -10,7 +11,6 @@ export enum WorkspaceEventKey {
     editorChangeSelection = 'editor:changeSelection',
     editorToggleDialog = 'editor:toggleDialog',
     editorAddElements = 'editor:addElements',
-    elementRequestedAddToFilter = 'element:requestedAddToFilter',
 }
 
 export interface WorkspaceContextWrapper {
