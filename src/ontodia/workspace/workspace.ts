@@ -32,6 +32,7 @@ import { SearchCriteria } from '../widgets/instancesSearch';
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
+import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
 
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
@@ -89,6 +90,7 @@ export interface WorkspaceProps {
     metadataApi?: MetadataApi;
     validationApi?: ValidationApi;
     propertyEditor?: PropertyEditor;
+    onWorkspaceEvent?: WorkspaceEventHandler;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -174,7 +176,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars} = this.props;
+        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent} = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -195,10 +197,13 @@ export class Workspace extends Component<WorkspaceProps, State> {
             isRightPanelOpen: this.state.isRightPanelOpen,
             onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
             toolbar: createElement(ToolbarWrapper, {workspace: this}),
+            onWorkspaceEvent,
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
     componentDidMount() {
+        const {onWorkspaceEvent} = this.props;
+
         this.editor._initializePaperComponents(this.markup.paperArea);
 
         this.listener.listen(this.model.events, 'loadingSuccess', () => {
@@ -216,6 +221,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
                     linkDirection: direction,
                 },
             });
+            if (onWorkspaceEvent) {
+                onWorkspaceEvent(WorkspaceEventKey.searchUpdateCriteria);
+            }
         });
 
         this.listener.listen(this.markup.paperArea.events, 'pointerUp', e => {
@@ -233,6 +241,18 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 this.props.onPointerDown(e);
             }
         });
+
+        if (onWorkspaceEvent) {
+            this.listener.listen(this.editor.events, 'changeSelection', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorChangeSelection)
+            );
+            this.listener.listen(this.editor.events, 'toggleDialog', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorToggleDialog)
+            );
+            this.listener.listen(this.editor.events, 'addElements', () =>
+                onWorkspaceEvent(WorkspaceEventKey.editorAddElements)
+            );
+        }
 
         if (!this.props.hideTutorial) {
             showTutorialIfNotSeen();

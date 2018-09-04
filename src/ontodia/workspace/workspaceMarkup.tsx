@@ -11,7 +11,9 @@ import { LinkTypesToolbox } from '../widgets/linksToolbox';
 import { AsyncModel } from '../editor/asyncModel';
 import { EditorController } from '../editor/editorController';
 
-import { PropTypes } from '../viewUtils/react';
+import {
+    WorkspaceContextWrapper, WorkspaceContext, WorkspaceContextTypes, WorkspaceEventHandler, WorkspaceEventKey,
+} from './workspaceContext';
 
 import { ResizableSidebar, DockSide } from './resizableSidebar';
 import { Accordion } from './accordion';
@@ -36,6 +38,7 @@ export interface WorkspaceMarkupProps {
     onToggleLeftPanel?: (toggle: boolean) => void;
     isRightPanelOpen?: boolean;
     onToggleRightPanel?: (toggle: boolean) => void;
+    onWorkspaceEvent?: WorkspaceEventHandler;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -61,18 +64,6 @@ const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present
 
 const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
 
-export interface WorkspaceContextWrapper {
-    ontodiaWorkspace: WorkspaceContext;
-}
-
-export interface WorkspaceContext {
-    editor: EditorController;
-}
-
-export const WorkspaceContextTypes: { [K in keyof WorkspaceContextWrapper]: any } = {
-    ontodiaWorkspace: PropTypes.anything,
-};
-
 export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     static childContextTypes = WorkspaceContextTypes;
 
@@ -85,8 +76,15 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
 
     getChildContext(): WorkspaceContextWrapper {
         const {editor} = this.props;
-        const ontodiaWorkspace: WorkspaceContext = {editor};
+        const ontodiaWorkspace: WorkspaceContext = {editor, triggerWorkspaceEvent: this.triggerWorkspaceEvent};
         return {ontodiaWorkspace};
+    }
+
+    private triggerWorkspaceEvent = (key: WorkspaceEventKey) => {
+        const {onWorkspaceEvent} = this.props;
+        if (onWorkspaceEvent) {
+            onWorkspaceEvent(key);
+        }
     }
 
     private renderToolbar = () => {

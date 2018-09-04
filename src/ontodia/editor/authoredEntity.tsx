@@ -11,7 +11,7 @@ import { Cancellation } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { KeyedObserver, observeLinkTypes, observeProperties } from '../viewUtils/keyedObserver';
 
-import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceMarkup';
+import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
 
 import { AuthoringKind, AuthoringState } from './authoringState';
 import { EditorController } from './editorController';

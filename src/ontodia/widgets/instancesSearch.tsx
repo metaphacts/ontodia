@@ -11,6 +11,8 @@ import { AsyncModel } from '../editor/asyncModel';
 import { EventObserver } from '../viewUtils/events';
 import { SearchResults } from './searchResults';
 
+import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } from '../workspace/workspaceContext';
+
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
 
@@ -43,12 +45,15 @@ export interface State {
 const CLASS_NAME = 'ontodia-instances-search';
 
 export class InstancesSearch extends React.Component<InstancesSearchProps, State> {
+    static contextTypes = WorkspaceContextTypes;
+    readonly context: WorkspaceContextWrapper;
+
     private readonly listener = new EventObserver();
 
     private currentRequest: FilterParams;
 
-    constructor(props: InstancesSearchProps) {
-        super(props);
+    constructor(props: InstancesSearchProps, context: any) {
+        super(props, context);
         this.state = {
             resultId: 0,
             selection: new Set<ElementIri>(),
@@ -230,6 +235,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
         this.props.model.dataProvider.filter(request).then(elements => {
             if (this.currentRequest !== request) { return; }
             this.processFilterData(elements);
+            this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.searchQueryItem);
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
             console.error(error);

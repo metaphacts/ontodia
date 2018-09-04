@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
+import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri, LinkCount } from '../data/model';
 
 import { FatLinkType, Element } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
@@ -10,6 +10,8 @@ import { EditorController } from '../editor/editorController';
 import { EventObserver } from '../viewUtils/events';
 import { highlightSubstring } from './listElementView';
 import { SearchResults } from './searchResults';
+
+import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } from '../workspace/workspaceContext';
 
 interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
@@ -62,6 +64,9 @@ export interface ConnectionsMenuProps {
 }
 
 export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
+    static contextTypes = WorkspaceContextTypes;
+    readonly context: WorkspaceContextWrapper;
+
     private container: HTMLElement;
     private readonly handler = new EventObserver();
     private readonly linkTypesListener = new EventObserver();
@@ -123,6 +128,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
                 this.resubscribeOnLinkTypeEvents(this.links);
 
                 this.updateAll();
+
+                this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.connectionsLoadLinks);
             })
             .catch(err => {
                 console.error(err);
@@ -156,6 +163,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
                 ) >= 0,
             }));
             this.updateAll();
+
+            this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.connectionsLoadElements);
         }).catch(err => {
             console.error(err);
             this.loadingState = 'error';
@@ -185,6 +194,8 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             this.loadObjects(linkDataChunk);
         }
         this.updateAll();
+
+        this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.connectionsExpandLink);
     }
 
     private onMoveToFilter = (linkDataChunk: LinkDataChunk) => {

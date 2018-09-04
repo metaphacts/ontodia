@@ -3,4 +3,4 @@ export * from './ontodia/diagram/paperArea';
 
 export {
     WorkspaceContext, WorkspaceContextWrapper, WorkspaceContextTypes,
-} from './ontodia/workspace/workspaceMarkup';
+} from './ontodia/workspace/workspaceContext';
