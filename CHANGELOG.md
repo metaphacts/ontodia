@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.9.2] - 2018-09-05
+### Added
+- Introduce new workspace events 
+
+### Changed
+- **[Breaking]** Export and loading of the diagram changed to `SerializedDiagram` interface, compatible with JSON-LD.
+
 ## [0.9.1] - 2018-07-20
 ### Fixed
 - Show halo for links only in authoring mode.
