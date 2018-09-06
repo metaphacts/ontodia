@@ -8,10 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.9.2] - 2018-09-05
 ### Added
-- Introduce new workspace events 
+- "Clear All" button to the toolbar.
+- "Jump to resource" button to the halo.
+- `WorkspaceProps.hideScrollBars` and `ZoomOptions.requireCtrl` options.
+- Workspace events on various user actions and operations completion.
 
 ### Changed
-- **[Breaking]** Export and loading of the diagram changed to `SerializedDiagram` interface, compatible with JSON-LD.
+- **[Breaking]** Export and import diagrams using new `SerializedDiagram` interface,
+compatible with JSON-LD.
+- Select a range of items in a search result using Shift and Control keys.
+
+### Fixed
+- Limit zoom to fit level by `ZoomOptions.maxFit`.
 
 ## [0.9.1] - 2018-07-20
 ### Fixed
@@ -318,7 +326,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.1...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/ontodia-org/ontodia/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/ontodia-org/ontodia/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/ontodia-org/ontodia/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.8.1
