@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as _ from 'lodash';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
@@ -483,24 +484,32 @@ export class EditorController {
         }
     }
 
-    onDragDrop(e: DragEvent, paperPosition: Vector) {
-        e.preventDefault();
+    onDragDrop(e: DragEvent|string|Array<ElementIri>, paperPosition: Vector) {
         let elementIris: ElementIri[];
-        try {
-            elementIris = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
-        } catch (ex) {
+
+        if (e instanceof DragEvent) {
+            e.preventDefault();
             try {
-                elementIris = JSON.parse(e.dataTransfer.getData('text')); // IE fix
+                elementIris = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
             } catch (ex) {
-                const draggedUri = e.dataTransfer.getData('text/uri-list');
-                // element dragged from the class tree has URI of the form:
-                // <window.location without hash>#<class URI>
-                const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
-                const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
-                    ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
-                elementIris = [uri as ElementIri];
+                try {
+                    elementIris = JSON.parse(e.dataTransfer.getData('text')); // IE fix
+                } catch (ex) {
+                    const draggedUri = e.dataTransfer.getData('text/uri-list');
+                    // element dragged from the class tree has URI of the form:
+                    // <window.location without hash>#<class URI>
+                    const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
+                    const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
+                        ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
+                    elementIris = [uri as ElementIri];
+                }
             }
+        } else if (_.isString(e)) {
+            elementIris = [e as ElementIri];
+        } else {
+            elementIris = e;
         }
+
         if (!elementIris || elementIris.length === 0) { return; }
 
         const batch = this.model.history.startBatch('Drag and drop onto diagram');
