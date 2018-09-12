@@ -4,6 +4,7 @@
 /*.sh
 /*.bat
 
+.circleci/
 .idea/
 .vscode/
 

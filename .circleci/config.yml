@@ -1,0 +1,100 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/node:7.10
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: yarn install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      # run tests!
+      - run: yarn test
+
+      - run:
+          name: cleanup node_modules
+          command: rm -rf node_modules
+
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - ontodia
+
+  publish:
+    docker:
+      - image: circleci/node:7.10
+    working_directory: /tmp/workspace/ontodia
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: prepare npm config
+          command: |
+             echo "//registry.npmjs.org/:_authToken=$NPM_PUBLISH" >> ~/.npmrc
+      - run:
+          name: specify correct version for npm
+          command: npm --no-git-tag-version version $CIRCLE_TAG
+      - run:
+          name: publish npm package
+          command: |
+            [[ $CIRCLE_TAG =~ "-dev" ]] && npm publish --tag=dev || npm publish
+
+  trigger-publish:
+    docker:
+      - image: circleci/node:7.10
+    working_directory: /tmp/workspace/ontodia
+    steps:
+      - run:
+          name: trigger publishing workflow
+          command: $PUBLISH_CMD
+
+workflows:
+  version: 2
+  untagged-build:
+    jobs:
+      - build
+  tagged-build:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - publish:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - trigger-publish:
+          requires:
+            - publish
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+
