@@ -5,6 +5,7 @@ import { DiagramView } from '../diagram/view';
 import { cloneSet } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 import { ListElementView, startDragElements } from './listElementView';
+import * as _ from 'lodash';
 
 const CLASS_NAME = 'ontodia-search-results';
 
@@ -59,17 +60,31 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
                 disabled={alreadyOnDiagram}
                 selected={this.props.selection.has(model.id)}
                 onClick={alreadyOnDiagram ? undefined : this.onItemClick}
-                onDragStart={e => {
-                    const {selection} = this.props;
-                    const iris: ElementIri[] = [];
-                    selection.forEach(iri => iris.push(iri));
-                    if (!selection.has(model.id)) {
-                        iris.push(model.id);
-                    }
-                    return startDragElements(e, iris);
+                onDragStart={e => startDragElements(e, this.getIris(model.id))}
+                onTouchStart={alreadyOnDiagram ? undefined : event => (event.target as any).click()}
+                onTouchEnd={e => {
+                    const touch = _.head(e.changedTouches);
+                    (touch.target as HTMLDivElement).dataset.iris = JSON.stringify(this.getIris(model.id));
+                    const globalTreeItemTouchEndEvent = new CustomEvent(
+                        'globalTreeItemTouchEndEvent',
+                        { detail: touch }
+                    );
+                    document.dispatchEvent(globalTreeItemTouchEndEvent);
                 }}
             />
         );
+    }
+
+    private getIris = (modelId: ElementIri) => {
+        const {selection} = this.props;
+        const iris: ElementIri[] = [];
+
+        selection.forEach(iri => iris.push(iri));
+        if (!selection.has(modelId)) {
+            iris.push(modelId);
+        }
+
+        return iris;
     }
 
     componentDidMount() {

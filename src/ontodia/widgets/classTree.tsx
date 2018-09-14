@@ -73,6 +73,8 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
 
     componentWillUnmount() {
         this.listener.stopListening();
+        this.treeRoot.removeEventListener('touchstart', ClassTree.onTreeRootTouchStart);
+        this.treeRoot.removeEventListener('touchend', ClassTree.onTreeRootTouchEnd);
     }
 
     render() {
@@ -105,6 +107,8 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
     private onTreeRootMount = (treeRoot: HTMLElement) => {
         this.treeRoot = treeRoot;
         this.jsTree = jstreeJQuery(this.treeRoot);
+        this.treeRoot.addEventListener('touchstart', ClassTree.onTreeRootTouchStart);
+        this.treeRoot.addEventListener('touchend', ClassTree.onTreeRootTouchEnd);
     }
 
     private refreshClassTree() {
@@ -121,6 +125,29 @@ export class ClassTree extends React.Component<ClassTreeProps, {}> {
         (jsTree as any).settings.core.data = mapped;
         (jsTree as any).settings.types = iconMap;
         jsTree.refresh(/* do not show loading indicator */ true, undefined);
+    }
+
+    private static onTreeRootTouchStart(e: TouchEvent) {
+        e.preventDefault();
+        const { changedTouches } = e;
+
+        if (_.isEmpty(changedTouches)) {
+            return;
+        }
+
+        const { target } = _.head(changedTouches);
+        (target as HTMLAnchorElement).click();
+    }
+
+    private static onTreeRootTouchEnd(e: TouchEvent) {
+        e.preventDefault();
+        const touch = _.head(e.changedTouches);
+        (touch.target as HTMLAnchorElement).dataset.iris = JSON.stringify((touch.target as HTMLAnchorElement).href);
+        const globalTreeItemTouchEndEvent = new CustomEvent(
+            'globalTreeItemTouchEndEvent',
+            { detail: _.head(e.changedTouches) }
+        );
+        document.dispatchEvent(globalTreeItemTouchEndEvent);
     }
 }
 

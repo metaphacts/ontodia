@@ -12,6 +12,9 @@ export interface PaperProps {
     view: DiagramView;
     paperTransform: PaperTransform;
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
+    onPointerTouchStart?: (e: React.TouchEvent<HTMLDivElement>, cell: Cell | undefined) => void;
+    onPointerTouchMove?: (e: React.TouchEvent<HTMLDivElement>) => void;
+    onPointerTouchEnd?: () => void;
     group?: string;
 }
 
@@ -19,7 +22,7 @@ const CLASS_NAME = 'ontodia-paper';
 
 export class Paper extends Component<PaperProps, {}> {
     render() {
-        const {view, group, paperTransform} = this.props;
+        const {view, group, paperTransform, onPointerTouchMove, onPointerTouchEnd} = this.props;
         const {width, height, originX, originY, scale, paddingX, paddingY} = paperTransform;
 
         const scaledWidth = width * scale;
@@ -41,10 +44,16 @@ export class Paper extends Component<PaperProps, {}> {
         };
 
         return (
-            <div className={CLASS_NAME} style={style} onMouseDown={this.onMouseDown}>
+            <div
+                className={CLASS_NAME}
+                style={style}
+                onMouseDown={this.onMouseDown}
+                onTouchStart={this.onTouchStart}
+                onTouchMove={event => onPointerTouchMove(event)}
+                onTouchEnd={onPointerTouchEnd}>
                 <TransformedSvgCanvas className={`${CLASS_NAME}__canvas`}
-                    style={{overflow: 'visible'}}
-                    paperTransform={paperTransform}>
+                                      style={{overflow: 'visible'}}
+                                      paperTransform={paperTransform}>
                     <LinkMarkers view={view} />
                     <LinkLayer view={view} links={view.model.links} group={group} />
                 </TransformedSvgCanvas>
@@ -60,6 +69,15 @@ export class Paper extends Component<PaperProps, {}> {
             ? findCell(e.target, e.currentTarget, view.model) : undefined;
         if (onPointerDown) {
             onPointerDown(e, cell);
+        }
+    }
+
+    private onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        const {view, onPointerTouchStart} = this.props;
+        const cell = e.target instanceof Element
+            ? findCell(e.target, e.currentTarget, view.model) : undefined;
+        if (onPointerTouchStart) {
+            onPointerTouchStart(e, cell);
         }
     }
 }

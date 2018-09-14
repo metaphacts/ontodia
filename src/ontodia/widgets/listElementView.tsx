@@ -14,13 +14,25 @@ export interface ListElementViewProps {
     selected?: boolean;
     onClick?: (event: React.MouseEvent<any>, model: ElementModel) => void;
     onDragStart?: React.HTMLProps<HTMLElement>['onDragStart'];
+    onTouchStart?: (event: React.TouchEvent<any>) => void;
+    onTouchEnd?: (event: React.TouchEvent<any>) => void;
 }
 
 const CLASS_NAME = 'ontodia-list-element-view';
 
 export class ListElementView extends React.Component<ListElementViewProps, {}> {
     render() {
-        const {className, view, model, highlightText, disabled, selected, onDragStart} = this.props;
+        const {
+            className,
+            view,
+            model,
+            highlightText,
+            disabled,
+            selected,
+            onDragStart,
+            onTouchStart,
+            onTouchEnd,
+        } = this.props;
 
         const {h, c, l} = view.getTypeStyle(model.types).color;
         const frontColor = (selected && !disabled) ? hcl(h, c, l * 1.2) : hcl('white');
@@ -36,7 +48,9 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
             title={`${localizedText} ${view.formatIri(model.id)}${classesString}`}
             style={{background: hcl(h, c, l)}}
             onClick={this.onClick}
-            onDragStart={onDragStart}>
+            onDragStart={onDragStart}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}>
             <div className={`${CLASS_NAME}__label`} style={{background: frontColor}}>
                 {highlightSubstring(
                     localizedText,

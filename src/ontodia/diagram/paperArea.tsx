@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ReactElement } from 'react';
+import * as _ from 'lodash';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
@@ -97,6 +98,14 @@ interface PointerMoveState {
 const CLASS_NAME = 'ontodia-paper-area';
 const LEFT_MOUSE_BUTTON = 0;
 
+// helper function
+const preventDefaulter = (closerEvent: TouchEvent) => {
+    if (closerEvent.cancelable) {
+        closerEvent.preventDefault();
+    }
+    return false;
+};
+
 export class PaperArea extends React.Component<Props, State> {
     static childContextTypes = PaperAreaContextTypes;
 
@@ -163,12 +172,16 @@ export class PaperArea extends React.Component<Props, State> {
         return (
             <div className={CLASS_NAME} ref={this.onOuterMount}>
                 <div className={`${CLASS_NAME}__area${this.props.hideScrollBars ? ' ontodia-hide-scroll-bars' : ''}`}
-                    ref={this.onAreaMount}
-                    onMouseDown={this.onAreaPointerDown}
-                    onWheel={this.onWheel}>
+                     ref={this.onAreaMount}
+                     onMouseDown={this.onAreaPointerDown}
+                     onWheel={this.onWheel}>
                     <Paper view={view}
-                        paperTransform={paperTransform}
-                        onPointerDown={this.onPaperPointerDown}>
+                           paperTransform={paperTransform}
+                           onPointerDown={this.onPaperPointerDown}
+                           onPointerTouchStart={this.onPaperPointerTouchStart}
+                           onPointerTouchMove={this.onPaperPointerTouchMove}
+                           onPointerTouchEnd={this.onPaperPointerTouchEnd}
+                    >
                         <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
                             {renderedWidgets.filter(w => !w.pinnedToScreen).map(widget => {
                                 return React.cloneElement(widget.element, widgetProps);
@@ -212,6 +225,8 @@ export class PaperArea extends React.Component<Props, State> {
 
         this.area.addEventListener('dragover', this.onDragOver);
         this.area.addEventListener('drop', this.onDragDrop);
+
+        document.addEventListener('globalTreeItemTouchEndEvent', this.onDragDropFromTreeRoot);
     }
 
     componentDidUpdate(prevProps: Props, prevState: State) {
@@ -235,6 +250,7 @@ export class PaperArea extends React.Component<Props, State> {
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
+        document.removeEventListener('globalTreeItemTouchEndEvent', this.onDragDropFromTreeRoot);
     }
 
     private updateWidgets(update: { [key: string]: WidgetDescription }) {
@@ -390,6 +406,71 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
+    private onPaperPointerTouchStart = (e: React.TouchEvent<HTMLDivElement>, cell: Cell | undefined) => {
+        if (this.movingState || typeof cell === 'undefined') { return; }
+
+        this.area.addEventListener('touchmove', preventDefaulter);
+
+        const restoreGeometry = RestoreGeometry.capture(this.props.view.model);
+        const batch = this.props.view.model.history.startBatch(restoreGeometry.title);
+
+        if (cell instanceof Element) {
+            const { clientX, clientY } = _.head(e.touches);
+
+            this.movingElementOrigin = {
+                pointerX: clientX,
+                pointerY: clientY,
+                elementX: cell.position.x,
+                elementY: cell.position.y,
+            };
+            this.movingState = {
+                origin: {
+                    pageX: clientX,
+                    pageY: clientY,
+                },
+                target: cell,
+                panning: false,
+                pointerMoved: false,
+                batch,
+                restoreGeometry,
+            };
+        }
+    }
+
+    private onPaperPointerTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!this.movingState) { return; }
+
+        const { target } = this.movingState;
+
+        if (target instanceof Element) {
+            const { clientX, clientY } = _.head(e.touches);
+            const { pointerX, pointerY, elementX, elementY } = this.movingElementOrigin;
+
+            target.setPosition({
+                x: elementX + (clientX - pointerX),
+                y: elementY + (clientY - pointerY),
+            });
+            this.props.view.performSyncUpdate();
+        }
+    }
+
+    private onPaperPointerTouchEnd = () => {
+        const { movingState } = this;
+        this.movingState = undefined;
+
+        if (movingState) {
+            const { batch, restoreGeometry } = movingState;
+
+            this.area.removeEventListener('touchmove', preventDefaulter);
+
+            const restore = restoreGeometry.filterOutUnchanged();
+            if (restore.hasChanges()) {
+                batch.history.registerToUndo(restore);
+            }
+            batch.store();
+        }
+    }
+
     private onAreaPointerDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === this.area) {
             this.onPaperPointerDown(e, undefined);
@@ -456,6 +537,18 @@ export class PaperArea extends React.Component<Props, State> {
         this.source.trigger('pointerDown', {
             source: this, sourceEvent: event, target: cell, panning,
         });
+    }
+
+    private onDragDropFromTreeRoot = (e: CustomEvent) => {
+        const { clientX, clientY, target } = e.detail;
+
+        const { left, top, width, height } = this.area.getBoundingClientRect();
+        const isInsidePaperArea = clientX >= left && clientX <= width && clientY >= top && clientY <= height;
+
+        if (!this.props.onDragDrop || !isInsidePaperArea || !target.dataset.iris) { return; }
+
+        const paperPosition = this.clientToPaperCoords(clientX - left, clientY - top);
+        this.props.onDragDrop(JSON.parse(target.dataset.iris), paperPosition);
     }
 
     private onPointerMove = (e: MouseEvent) => {
