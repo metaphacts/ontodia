@@ -1,4 +1,4 @@
-# Ontodia [![npm](https://img.shields.io/npm/v/ontodia.svg)](https://www.npmjs.com/package/ontodia) [![Travis CI](https://img.shields.io/travis/ontodia-org/ontodia/master.svg)](https://travis-ci.org/ontodia-org/ontodia) #
+# Ontodia [![npm](https://img.shields.io/npm/v/ontodia.svg)](https://www.npmjs.com/package/ontodia) [![CircleCI](https://circleci.com/gh/sputniq-space/ontodia.svg?style=svg)](https://circleci.com/gh/sputniq-space/ontodia) #
 
 Ontodia is a JavaScript library that allows to visualize, navigate and explore data in the form of an interactive graph based on underlying data sources. The library is a major front-end component in <a href="http://ontodia.org">ontodia.org</a> web application that provides semantic data visualization services.
 
