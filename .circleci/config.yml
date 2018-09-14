@@ -35,6 +35,10 @@ jobs:
           name: cleanup node_modules
           command: rm -rf node_modules
 
+      - store_artifacts:
+          path: /tmp/workspace/ontodia/dist/examples
+          destination: ontodia
+
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
