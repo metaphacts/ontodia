@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: circleci/node:7.10
+      - image: circleci/node:8.12
 
     working_directory: /tmp/workspace/ontodia
 
@@ -46,7 +46,7 @@ jobs:
 
   publish:
     docker:
-      - image: circleci/node:7.10
+      - image: circleci/node:8.12
     working_directory: /tmp/workspace/ontodia
     steps:
       - attach_workspace:
@@ -65,7 +65,7 @@ jobs:
 
   trigger-publish:
     docker:
-      - image: circleci/node:7.10
+      - image: circleci/node:8.12
     working_directory: /tmp/workspace/ontodia
     steps:
       - run:
