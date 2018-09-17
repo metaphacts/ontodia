@@ -1,10 +1,9 @@
 import * as cola from 'webcola';
+
 import { DiagramModel } from '../diagram/model';
 import { boundsOf, Vector, computeGrouping } from '../diagram/geometry';
 import { Element } from '../diagram/elements';
-import { ElementIri } from '../data/model';
 import { EventObserver } from './events';
-import { DiagramView } from '../diagram/view';
 import { getContentFittingBox } from '../diagram/paperArea';
 
 export interface LayoutNode {
@@ -14,7 +13,7 @@ export interface LayoutNode {
     width: number;
     height: number;
     bounds?: any;
-    fixed?: boolean;
+    fixed?: number;
     innerBounds?: any;
 }
 
@@ -40,14 +39,14 @@ export function forceLayout(params: {
 }
 
 export function removeOverlaps(nodes: LayoutNode[]) {
-    const nodeRectangles: cola.vpsc.Rectangle[] = [];
+    const nodeRectangles: cola.Rectangle[] = [];
     for (const node of nodes) {
-        nodeRectangles.push(new cola.vpsc.Rectangle(
+        nodeRectangles.push(new cola.Rectangle(
             node.x, node.x + node.width,
             node.y, node.y + node.height));
     }
 
-    cola.vpsc.removeOverlaps(nodeRectangles);
+    cola.removeOverlaps(nodeRectangles);
 
     for (let i = 0; i < nodeRectangles.length; i++) {
         const node = nodes[i];
@@ -141,7 +140,7 @@ export function recursiveLayout(params: {
             const node: LayoutNode = {
                 id: element.id,
                 x, y, width, height,
-                fixed: fixedElementIds && fixedElementIds.has(element.id),
+                fixed: fixedElementIds && fixedElementIds.has(element.id) ? 1 : 0,
             };
             nodeById[element.id] = node;
             nodes.push(node);
