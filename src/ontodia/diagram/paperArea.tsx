@@ -18,6 +18,8 @@ export interface Props {
     view: DiagramView;
     zoomOptions?: ZoomOptions;
     hideScrollBars?: boolean;
+    watermarkSvg?: string;
+    watermarkUrl?: string;
     onDragDrop?: (e: DragEvent, paperPosition: { x: number; y: number }) => void;
     onZoom?: (scaleX: number, scaleY: number) => void;
 }
@@ -153,16 +155,22 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     render() {
-        const {view} = this.props;
+        const {view, watermarkSvg, watermarkUrl} = this.props;
         const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
         const paperTransform: PaperTransform = {
             width: paperWidth, height: paperHeight,
             originX, originY, scale, paddingX, paddingY,
         };
         const widgetProps: PaperWidgetProps = {paperArea: this, paperTransform};
+
+        let areaClass = `${CLASS_NAME}__area`;
+        if (this.props.hideScrollBars) {
+            areaClass += ` ${CLASS_NAME}--hide-scrollbars`;
+        }
+
         return (
             <div className={CLASS_NAME} ref={this.onOuterMount}>
-                <div className={`${CLASS_NAME}__area${this.props.hideScrollBars ? ' ontodia-hide-scroll-bars' : ''}`}
+                <div className={areaClass}
                     ref={this.onAreaMount}
                     onMouseDown={this.onAreaPointerDown}
                     onWheel={this.onWheel}>
@@ -175,6 +183,11 @@ export class PaperArea extends React.Component<Props, State> {
                             })}
                         </div>
                     </Paper>
+                    {watermarkSvg ? (
+                        <a href={watermarkUrl} target='_blank' rel='noopener'>
+                            <img className={`${CLASS_NAME}__watermark`} src={watermarkSvg} draggable={false} />
+                        </a>
+                    ) : null}
                 </div>
                 {renderedWidgets.filter(w => w.pinnedToScreen).map(widget => {
                     return React.cloneElement(widget.element, widgetProps);
@@ -652,6 +665,7 @@ export class PaperArea extends React.Component<Props, State> {
             preserveDimensions: true,
             convertImagesToDataUris: true,
             elementsToRemoveSelector: '.ontodia-link__vertex-tools',
+            watermarkSvg: this.props.watermarkSvg,
         };
     }
 

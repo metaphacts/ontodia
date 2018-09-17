@@ -39,6 +39,8 @@ export interface WorkspaceMarkupProps {
     isRightPanelOpen?: boolean;
     onToggleRightPanel?: (toggle: boolean) => void;
     onWorkspaceEvent?: WorkspaceEventHandler;
+    watermarkSvg?: string;
+    watermarkUrl?: string;
 }
 
 const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
@@ -216,6 +218,8 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                             view={this.props.view}
                             zoomOptions={this.props.zoomOptions}
                             hideScrollBars={this.props.hideScrollBars}
+                            watermarkSvg={this.props.watermarkSvg}
+                            watermarkUrl={this.props.watermarkUrl}
                             onDragDrop={(e, position) => this.props.editor.onDragDrop(e, position)}
                             onZoom={this.props.onZoom}>
                         </PaperArea>

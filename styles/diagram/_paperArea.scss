@@ -17,11 +17,33 @@
     top: 0;
   }
 
-  .ontodia-hide-scroll-bars {
+  &__watermark {
+    background-size: cover;
+    width: 8%;
+    max-width: 130px;
+    min-width: 50px;
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+
+    &:hover {
+      opacity: 0.5;
+    }
+  }
+
+  &--hide-scrollbars {
     overflow: hidden;
   }
 }
 
 .ontodia-paper {
   position: relative;
+}
+
+.ontodia-exported-watermark {
+  opacity: 0.3;
+  transition: opacity 0.3s;
 }
