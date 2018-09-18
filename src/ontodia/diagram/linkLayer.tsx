@@ -48,27 +48,27 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
         this.listener.listen(view.events, 'changeLanguage', this.scheduleUpdateAll);
         this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
-        this.listener.listen(view.model.events, 'elementEvent', ({key, data}) => {
-            if (!(data.changePosition || data.changeSize)) { return; }
-            const element = data[key].source;
-            for (const link of element.links) {
+        this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
+            const elementEvent = data.changePosition || data.changeSize;
+            if (!elementEvent) { return; }
+            for (const link of elementEvent.source.links) {
                 this.scheduleUpdateLink(link.id);
             }
         });
-        this.listener.listen(view.model.events, 'linkEvent', ({key, data}) => {
-            const anyPropertyChanged = (
+        this.listener.listen(view.model.events, 'linkEvent', ({data}) => {
+            const linkEvent = (
                 data.changeData ||
                 data.changeLayoutOnly ||
                 data.changeVertices
             );
-            if (anyPropertyChanged) {
-                const link = data[key].source;
-                this.scheduleUpdateLink(link.id);
+            if (linkEvent) {
+                this.scheduleUpdateLink(linkEvent.source.id);
             }
         });
-        this.listener.listen(view.model.events, 'linkTypeEvent', ({key, data}) => {
-            if (!(data.changeLabel || data.changeVisibility)) { return; }
-            const linkTypeId = data[key].source.id;
+        this.listener.listen(view.model.events, 'linkTypeEvent', ({data}) => {
+            const linkTypeEvent = data.changeLabel || data.changeVisibility;
+            if (!linkTypeEvent) { return; }
+            const linkTypeId = linkTypeEvent.source.id;
             for (const link of view.model.linksOfType(linkTypeId)) {
                 this.scheduleUpdateLink(link.id);
             }

@@ -45,15 +45,13 @@ export class EditEntityForm extends React.Component<Props, State> {
 
     private renderProperties() {
         const {properties} = this.props.entity;
-
+        const propertyIris = Object.keys(properties) as PropertyTypeIri[];
         return (
             <div>
-                {
-                    Object.keys(properties).map((key: PropertyTypeIri) => {
-                        const {values} = properties[key];
-                        return this.renderProperty(key, values);
-                    })
-                }
+                {propertyIris.map(iri => {
+                    const {values} = properties[iri];
+                    return this.renderProperty(iri, values);
+                })}
             </div>
         );
     }

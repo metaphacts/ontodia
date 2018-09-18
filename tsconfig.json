@@ -9,10 +9,9 @@
         ],
         "declaration": true,
         "declarationDir": "./dist/temp/dts",
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "noImplicitReturns": true,
-        "importHelpers": true
+        "importHelpers": true,
+        "strict": true,
+        "strictNullChecks": false
     },
     "include": [
         "./index.ts",

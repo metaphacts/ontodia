@@ -1,7 +1,7 @@
 import { createNumberMap, createStringMap, hasOwnProperty } from './collections';
 
 export type Listener<Data, Key extends keyof Data> = (data: Data[Key], key: Key) => void;
-export type AnyListener<Data> = (data: Partial<Data>, key: keyof Data) => void;
+export type AnyListener<Data> = (data: Partial<Data>, key: string) => void;
 export type Unsubscribe = () => void;
 
 export interface PropertyChange<Source, Value> {
@@ -10,7 +10,7 @@ export interface PropertyChange<Source, Value> {
 }
 
 export interface AnyEvent<Data> {
-    key: keyof Data;
+    key: string;
     data: Partial<Data>;
 }
 
@@ -71,7 +71,7 @@ export class EventSource<Data> implements Events<Data> {
 
         if (this.anyListeners) {
             for (const anyListener of this.anyListeners) {
-                anyListener({[eventKey as string]: data} as any, eventKey);
+                anyListener({[eventKey]: data} as any, eventKey as string);
             }
         }
     }
