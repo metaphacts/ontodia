@@ -7,8 +7,6 @@
             "dom",
             "es2015"
         ],
-        "declaration": true,
-        "declarationDir": "./dist/temp/dts",
         "importHelpers": true,
         "strict": true,
         "strictNullChecks": false
