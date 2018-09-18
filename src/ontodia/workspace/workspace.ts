@@ -19,10 +19,6 @@ import {
 import { AuthoringState } from '../editor/authoringState';
 
 import { EventObserver } from '../viewUtils/events';
-import {
-    padded, translateToPositiveQuadrant,
-    LayoutNode, LayoutLink, translateToCenter,
-} from '../viewUtils/layout';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { ClassTree } from '../widgets/classTree';

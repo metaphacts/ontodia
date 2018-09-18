@@ -57,43 +57,23 @@ export function removeOverlaps(nodes: LayoutNode[]) {
     }
 }
 
-export function translateToPositiveQuadrant(params: {
-    nodes: LayoutNode[];
-    padding?: { x: number; y: number; };
-}) {
+export function translateToPositiveQuadrant(nodes: ReadonlyArray<LayoutNode>, offset: Vector) {
     let minX = Infinity, minY = Infinity;
-    for (const node of params.nodes) {
+    for (const node of nodes) {
         minX = Math.min(minX, node.x);
         minY = Math.min(minY, node.y);
     }
 
-    const {padding = {x: 0, y: 0}} = params;
-    for (const node of params.nodes) {
-        node.x = node.x - minX + padding.x;
-        node.y = node.y - minY + padding.y;
-    }
-}
-
-export function translateToCenter(params: {
-    nodes: LayoutNode[];
-    paperSize: { width: number; height: number; };
-    contentBBox: { x: number, y: number, width: number; height: number; };
-}) {
-    const {paperSize, contentBBox} = params;
-    const graphPos = {
-        x: (paperSize.width - contentBBox.width) / 2 - contentBBox.x,
-        y: (paperSize.height - contentBBox.height) / 2 - contentBBox.y,
-    };
-
-    for (const node of params.nodes) {
-        node.x = graphPos.x + node.x;
-        node.y = graphPos.y + node.y;
+    const {x, y} = offset;
+    for (const node of nodes) {
+        node.x = node.x - minX + x;
+        node.y = node.y - minY + y;
     }
 }
 
 export function uniformGrid(params: {
     rows: number;
-    cellSize: { x: number; y: number; };
+    cellSize: Vector;
 }): (cellIndex: number) => LayoutNode {
     return cellIndex => {
         const row = Math.floor(cellIndex / params.rows);
@@ -182,14 +162,14 @@ export function recursiveLayout(params: {
         }
         layoutFunction(nodes, links, group);
 
+        if (group) {
+            const offset = getContentFittingBox(elements, []);
+            translateToPositiveQuadrant(nodes, offset);
+        }
+
         for (const node of nodes) {
             const element = model.getElement(node.id);
             element.setPosition({x: node.x, y: node.y});
-        }
-
-        if (group) {
-            const padding: Vector = getContentFittingBox(elements, []);
-            translateToPositiveQuadrant({nodes, padding});
         }
     }
 }
