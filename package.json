@@ -25,9 +25,8 @@
   "scripts": {
     "build": "npm run _webpack && npm run _typings",
     "demo": "./node_modules/.bin/webpack-dev-server --port 10444 --config webpack.demo.config.js",
-    "_typings-tsc": "./node_modules/.bin/tsc --declaration --emitDeclarationOnly --outDir dist/temp/dts",
     "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/temp/dts/index.d.ts --name ontodia --out ../../ontodia.d.ts",
-    "_typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
+    "_typings": "npm run _typings-dts-bundle",
     "test": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings && npm run _webpack-examples",
     "_webpack": "./node_modules/.bin/webpack",
     "_webpack-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",

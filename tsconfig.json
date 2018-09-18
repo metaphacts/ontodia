@@ -7,6 +7,8 @@
             "dom",
             "es2015"
         ],
+        "declaration": true,
+        "declarationDir": "./dist/temp/dts",
         "noImplicitAny": true,
         "noImplicitThis": true,
         "noImplicitReturns": true,
