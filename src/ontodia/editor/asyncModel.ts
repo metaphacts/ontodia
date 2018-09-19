@@ -37,7 +37,6 @@ export interface AsyncModelEvents extends DiagramModelEvents {
 }
 
 export class AsyncModel extends DiagramModel {
-    protected readonly source: EventSource<AsyncModelEvents>;
     readonly events: Events<AsyncModelEvents>;
 
     private _dataProvider: DataProvider;
@@ -51,6 +50,10 @@ export class AsyncModel extends DiagramModel {
         private groupByProperties: ReadonlyArray<GroupBy>,
     ) {
         super(history);
+    }
+
+    private get asyncSource(): EventSource<AsyncModelEvents> {
+        return this.source as EventSource<any>;
     }
 
     get dataProvider() { return this._dataProvider; }
@@ -77,9 +80,9 @@ export class AsyncModel extends DiagramModel {
     createNewDiagram(dataProvider: DataProvider): Promise<void> {
         this.resetGraph();
         this.setDataProvider(dataProvider);
-        this.source.trigger('loadingStart', {source: this});
+        this.asyncSource.trigger('loadingStart', {source: this});
 
-        return Promise.all<any>([
+        return Promise.all([
             this.dataProvider.classTree(),
             this.dataProvider.linkTypes(),
         ]).then(([classTree, linkTypes]: [ClassModel[], LinkType[]]) => {
@@ -91,7 +94,7 @@ export class AsyncModel extends DiagramModel {
             });
         }).catch(error => {
             console.error(error);
-            this.source.trigger('loadingError', {source: this, error});
+            this.asyncSource.trigger('loadingError', {source: this, error});
             return Promise.reject(error);
         });
     }
@@ -105,7 +108,7 @@ export class AsyncModel extends DiagramModel {
     }): Promise<void> {
         this.resetGraph();
         this.setDataProvider(params.dataProvider);
-        this.source.trigger('loadingStart', {source: this});
+        this.asyncSource.trigger('loadingStart', {source: this});
 
         return Promise.all<ClassModel[], LinkType[]>([
             this.dataProvider.classTree(),
@@ -126,11 +129,11 @@ export class AsyncModel extends DiagramModel {
                 ? this.requestLinksOfType() : Promise.resolve();
             return Promise.all([loadingModels, requestingLinks]);
         }).then(() => {
-            this.source.trigger('loadingSuccess', {source: this});
+            this.asyncSource.trigger('loadingSuccess', {source: this});
         }).catch(error => {
             // tslint:disable-next-line:no-console
             console.error(error);
-            this.source.trigger('loadingError', {source: this, error});
+            this.asyncSource.trigger('loadingError', {source: this, error});
             return Promise.reject(error);
         });
     }
@@ -160,7 +163,7 @@ export class AsyncModel extends DiagramModel {
         }
 
         this.classTree = this.graph.getClasses();
-        this.source.trigger('changeClassTree', {source: this});
+        this.asyncSource.trigger('changeClassTree', {source: this});
     }
 
     private initLinkTypes(linkTypes: LinkType[]): FatLinkType[] {
@@ -318,7 +321,7 @@ export class AsyncModel extends DiagramModel {
         for (const linkModel of links) {
             this.createLinkType(linkModel.linkTypeId);
             allowToCreate = true;
-            this.source.trigger('createLoadedLink', {source: this, model: linkModel, cancel});
+            this.asyncSource.trigger('createLoadedLink', {source: this, model: linkModel, cancel});
             if (allowToCreate) {
                 this.createLinks(linkModel);
             }

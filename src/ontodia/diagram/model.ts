@@ -25,7 +25,7 @@ export interface DiagramModelEvents {
  * Model of diagram.
  */
 export class DiagramModel {
-    protected source = new EventSource<DiagramModelEvents>();
+    protected readonly source = new EventSource<DiagramModelEvents>();
     readonly events: Events<DiagramModelEvents> = this.source;
 
     protected graph = new Graph();

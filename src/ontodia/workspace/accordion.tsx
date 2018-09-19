@@ -75,7 +75,10 @@ export class Accordion extends React.Component<Props, State> {
         const {sizes, percents, collapsed} = this.state;
         const {children} = this.props;
 
-        return React.Children.map(children, (child: React.ReactElement<ItemProps>, index: number) => {
+        return React.Children.map(children, (child, index) => {
+            if (typeof child !== 'object') {
+                throw new Error('Accordion should have only AccordionItem elements as children');
+            }
             const lastChild = index === React.Children.count(children) - 1;
             const height = collapsed[index] ? sizes[index] : percents[index];
 

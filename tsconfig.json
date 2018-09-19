@@ -7,10 +7,9 @@
             "dom",
             "es2015"
         ],
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "noImplicitReturns": true,
-        "importHelpers": true
+        "importHelpers": true,
+        "strict": true,
+        "strictNullChecks": false
     },
     "include": [
         "./index.ts",

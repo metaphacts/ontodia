@@ -503,38 +503,38 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     private getViews = (links: FatLinkType[], notSure?: boolean) => {
         const {view} = this.props;
         const countMap = this.props.data.countMap || {};
-        const views: React.ReactElement<any>[] = [];
+
+        const views: JSX.Element[] = [];
+        const addView = (link: FatLinkType, direction: 'in' | 'out') => {
+            const count = direction === 'in'
+                ? countMap[link.id].inCount
+                : countMap[link.id].outCount;
+            if (count === 0) {
+                return;
+            }
+            const postfix = notSure ? '-probable' : '';
+            views.push(
+                <LinkInPopupMenu
+                    key={`${direction}-${link.id}-${postfix}`}
+                    link={link}
+                    onExpandLink={this.props.onExpandLink}
+                    view={view}
+                    count={count}
+                    direction={direction}
+                    filterKey={notSure ? '' : this.props.filterKey}
+                    onMoveToFilter={this.props.onMoveToFilter}
+                    probability={
+                        (this.state.scores[link.id] && notSure ? this.state.scores[link.id].score : 0)
+                    }
+                />,
+            );
+        };
 
         for (const link of links) {
-            ['in', 'out'].forEach((direction: 'in' | 'out') => {
-               let count = 0;
-
-               if (direction === 'in') {
-                   count = countMap[link.id].inCount;
-               } else if (direction === 'out') {
-                   count = countMap[link.id].outCount;
-               }
-
-               if (count !== 0) {
-                   const postfix = notSure ? '-probable' : '';
-                   views.push(
-                       <LinkInPopupMenu
-                           key={`${direction}-${link.id}-${postfix}`}
-                           link={link}
-                           onExpandLink={this.props.onExpandLink}
-                           view={view}
-                           count={count}
-                           direction={direction}
-                           filterKey={notSure ? '' : this.props.filterKey}
-                           onMoveToFilter={this.props.onMoveToFilter}
-                           probability={
-                               (this.state.scores[link.id] && notSure ? this.state.scores[link.id].score : 0)
-                           }
-                       />,
-                   );
-               }
-            });
+            addView(link, 'in');
+            addView(link, 'out');
         }
+
         return views;
     };
 
