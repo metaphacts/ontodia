@@ -81,7 +81,7 @@
     "webpack-dev-server": "3.1.8"
   },
   "resolutions": {
-    "@types/react": "*"
+    "@types/react": "15.6.9"
   },
   "main": "dist/ontodia.js",
   "typings": "dist/ontodia.d.ts"
