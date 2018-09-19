@@ -1,0 +1,24 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix logic: <test://logic/schema#> .
+@prefix data: <test://data/dataset1#> .
+
+data:SPBWoman a logic:LogicClass ;
+    logic:hasExpression [
+        a logic:Conjunction ;
+        rdfs:label "∧" ;
+        logic:conjunct
+            [
+                a logic:Negation ;
+                rdfs:label "¬" ;
+                logic:negate data:Man
+            ] ,
+            [
+                a logic:Existential ;
+                rdfs:label "∃" ;
+                data:livesIn data:SaintPetersburg
+            ]
+    ] .
+
+data:Man a logic:LogicClass .
+data:SaintPetersburg a logic:LogicClass .

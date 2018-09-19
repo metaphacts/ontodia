@@ -126,6 +126,9 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
         return links.filter(link => {
             const {sourceId, targetId} = link;
+            if (sourceId === group || targetId === group) {
+                return false;
+            }
 
             const source = view.model.getElement(sourceId);
             const target = view.model.getElement(targetId);
