@@ -54,4 +54,8 @@ module.exports = {
         'webcola',
         'whatwg-fetch',
     ],
+    performance: {
+        maxEntrypointSize: 2048000,
+        maxAssetSize: 2048000,
+    },
 };
