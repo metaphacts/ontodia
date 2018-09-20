@@ -1,24 +1,22 @@
 import { hcl } from 'd3-color';
 import { defaultsDeep, cloneDeep } from 'lodash';
-import { ReactElement, createElement } from 'react';
+import { ReactElement } from 'react';
 
 import {
     LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
-    CustomTypeStyle, ElementTemplate, LinkTemplate, LinkMarkerStyle, RoutedLink, RoutedLinks,
+    CustomTypeStyle, ElementTemplate, LinkTemplate, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
 import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
 
-import { Dictionary, ElementModel, LocalizedString, ElementIri, ElementTypeIri, LinkTypeIri } from '../data/model';
+import { ElementModel, LocalizedString, ElementTypeIri, LinkTypeIri } from '../data/model';
 import { isEncodedBlank } from '../data/sparql/blankNodes';
 import { hashFnv32a, uri2name } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
-import { Element, Link, FatLinkType, FatClassModel, linkMarkerKey } from './elements';
-import { Vector, Size, boundsOf } from './geometry';
-import { Batch, Command } from './history';
+import { Element, FatLinkType, FatClassModel } from './elements';
 import { DiagramModel, chooseLocalizedText } from './model';
 
 import { DefaultLinkRouter } from './linkRouter';
@@ -41,9 +39,10 @@ export enum RenderingLayer {
     ElementSize,
     PaperArea,
     Link,
+    Editor,
 
     FirstToUpdate = Element,
-    LastToUpdate = Link,
+    LastToUpdate = Editor,
 }
 
 export interface DiagramViewEvents {
