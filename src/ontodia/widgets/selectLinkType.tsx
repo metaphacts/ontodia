@@ -9,6 +9,7 @@ import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 
+/** @hidden */
 export interface Props {
     view: DiagramView;
     metadataApi: MetadataApi | undefined;
@@ -18,10 +19,12 @@ export interface Props {
     onChange: (data: LinkModel) => void;
 }
 
+/** @hidden */
 export interface State {
     fatLinkTypes?: {[id: string]: FatLinkType};
 }
 
+/** @hidden */
 export class SelectLinkType extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();

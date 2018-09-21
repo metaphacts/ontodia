@@ -21,6 +21,7 @@ import { AccordionItem } from './accordionItem';
 
 import { MetadataApi } from '../data/metadataApi';
 
+/** @hidden */
 export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
     model: AsyncModel;
@@ -66,6 +67,7 @@ const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present
 
 const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
 
+/** @hidden */
 export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     static childContextTypes = WorkspaceContextTypes;
 

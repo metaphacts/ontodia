@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+/** @hidden */
 export interface Props {
     size?: number;
     position?: { x: number; y: number; };
@@ -10,6 +11,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-spinner';
 
+/** @hidden */
 export class Spinner extends React.Component<Props, {}> {
     render() {
         const {position = {x: 0, y: 0}, size = 50, statusText, errorOccured} = this.props;
@@ -30,6 +32,7 @@ export class Spinner extends React.Component<Props, {}> {
     }
 }
 
+/** @hidden */
 export class HtmlSpinner extends React.Component<{ width: number; height: number }, {}> {
     render() {
         const {width, height} = this.props;

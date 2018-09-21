@@ -14,6 +14,7 @@ import { EditorController } from '../editor/editorController';
 const jstreeJQuery = require<JQueryStatic>('exports-loader?require("jquery")!jstree');
 require('jstree/dist/themes/default/style.css');
 
+/** @hidden */
 export interface ClassTreeProps {
     view: DiagramView;
     editor: EditorController;
@@ -37,6 +38,7 @@ interface ClassTreeElement {
 
 const CLASS_NAME = 'ontodia-class-tree';
 
+/** @hidden */
 export class ClassTree extends React.Component<ClassTreeProps, {}> {
     private readonly listener = new EventObserver();
 

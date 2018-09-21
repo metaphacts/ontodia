@@ -10,6 +10,7 @@ import { SelectLinkType } from './selectLinkType';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
+/** @hidden */
 export interface Props {
     view: DiagramView;
     metadataApi: MetadataApi | undefined;
@@ -18,10 +19,12 @@ export interface Props {
     onCancel: () => void;
 }
 
+/** @hidden */
 export interface State {
     linkModel?: LinkModel;
 }
 
+/** @hidden */
 export class EditLinkForm extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);

@@ -16,7 +16,7 @@ import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } fro
 interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
 
-export interface ReactElementModel {
+interface ReactElementModel {
     model: ElementModel;
     presentOnDiagram: boolean;
 }
@@ -42,18 +42,19 @@ export interface PropertyScore {
     score: number;
 }
 
-export interface LinkDataChunk {
+interface LinkDataChunk {
     link: FatLinkType;
     direction?: 'in' | 'out';
     expectedCount: number;
     offset?: number;
 }
 
-export interface ObjectsData {
+interface ObjectsData {
     linkDataChunk: LinkDataChunk;
     objects: ReactElementModel[];
 }
 
+/** @hidden */
 export interface ConnectionsMenuProps {
     view: DiagramView;
     editor: EditorController;
@@ -63,6 +64,7 @@ export interface ConnectionsMenuProps {
     suggestProperties?: PropertySuggestionHandler;
 }
 
+/** @hidden */
 export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     static contextTypes = WorkspaceContextTypes;
     readonly context: WorkspaceContextWrapper;

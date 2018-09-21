@@ -11,6 +11,7 @@ import { EventObserver } from '../viewUtils/events';
 import { AuthoringEvent, AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
 
+/** @hidden */
 export interface Props extends PaperWidgetProps {
     editor: EditorController;
     view: DiagramView;
@@ -18,6 +19,7 @@ export interface Props extends PaperWidgetProps {
 
 const CLASS_NAME = `ontodia-states-widget`;
 
+/** @hidden */
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
 

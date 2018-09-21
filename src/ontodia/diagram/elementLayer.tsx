@@ -15,6 +15,7 @@ import { Element } from './elements';
 import { formatLocalizedLabel } from './model';
 import { DiagramView, RenderingLayer } from './view';
 
+/** @hidden */
 export interface Props {
     view: DiagramView;
     group?: string;
@@ -26,6 +27,7 @@ interface BatchUpdateItem {
     node: HTMLDivElement;
 }
 
+/** @hidden */
 export class ElementLayer extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
 
@@ -112,11 +114,14 @@ interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
 }
 
+/** @hidden */
 export type ElementContextWrapper = { ontodiaElement: ElementContext };
+/** @hidden */
 export const ElementContextTypes: { [K in keyof ElementContextWrapper]: any } = {
     ontodiaElement: PropTypes.anything,
 };
 
+/** @hidden */
 export interface ElementContext {
     element: Element;
 }

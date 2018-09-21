@@ -1,0 +1,9 @@
+{
+  "mode": "file",
+  "out": "dist/docs",
+  "readme": "none",
+  "excludeNotExported": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "exclude": ["**/src/examples/*+(ts|tsx)"]
+}

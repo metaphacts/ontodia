@@ -16,6 +16,7 @@ import {
 } from './geometry';
 import { DiagramView, RenderingLayer } from './view';
 
+/** @hidden */
 export interface LinkLayerProps {
     view: DiagramView;
     links: ReadonlyArray<DiagramLink>;
@@ -31,6 +32,7 @@ enum UpdateRequest {
 
 const CLASS_NAME = 'ontodia-link-layer';
 
+/** @hidden */
 export class LinkLayer extends Component<LinkLayerProps, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();
@@ -505,6 +507,7 @@ class VertexTools extends Component<{
     }
 }
 
+/** @hidden */
 export class LinkMarkers extends Component<{ view: DiagramView }, {}> {
     private readonly listener = new EventObserver();
     private readonly delayedUpdate = new Debouncer();

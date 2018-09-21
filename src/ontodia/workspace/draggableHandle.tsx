@@ -1,11 +1,13 @@
 import * as React from 'react';
 
+/** @hidden */
 export interface Props extends React.HTMLAttributes<HTMLDivElement> {
     onBeginDragHandle: (e: React.MouseEvent<HTMLDivElement>) => void;
     onDragHandle: (e: MouseEvent, dx: number, dy: number) => void;
     onEndDragHandle?: (e: MouseEvent) => void;
 }
 
+/** @hidden */
 export class DraggableHandle extends React.Component<Props, {}> {
     private isHoldingMouse = false;
     private originPageX: number;

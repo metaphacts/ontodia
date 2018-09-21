@@ -10,6 +10,7 @@ import { Graph } from '../diagram/graph';
 import { BufferingQueue } from '../viewUtils/async';
 import { hasOwnProperty } from '../viewUtils/collections';
 
+/** @hidden */
 export class DataFetcher {
     private classQueue = new BufferingQueue<ElementTypeIri>(classIds => {
         this.dataProvider.classInfo({classIds}).then(this.onClassesLoaded);

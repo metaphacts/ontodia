@@ -1,4 +1,7 @@
-/** Generates random 32-digit hexadecimal string. */
+/**
+ * Generates random 32-digit hexadecimal string.
+ * @hidden
+ */
 export function generate128BitID() {
     function random32BitDigits() {
         return Math.floor((1 + Math.random()) * 0x100000000)
@@ -16,6 +19,7 @@ export function generate128BitID() {
  * @param {string} str the input value
  * @param {integer} [seed] optionally pass the hash of the previous chunk
  * @returns {integer}
+ * @hidden
  */
 export function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:disable:no-bitwise */
@@ -29,6 +33,7 @@ export function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:enable:no-bitwise */
 }
 
+/** @hidden */
 export function uri2name(uri: string): string {
     const hashIndex = uri.lastIndexOf('#');
     if (hashIndex !== -1 && hashIndex !== uri.length - 1) {

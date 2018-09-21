@@ -7,6 +7,7 @@ import { uniqueId } from 'lodash';
 const DEFAULT_STORAGE_TYPE = 'text/turtle';
 const DEFAULT_STORAGE_URI = 'http://ontodia.org/defaultGraph';
 
+/** @hidden */
 export function prefixFactory(prefix: string): ((id: string) => string) {
     const lastSymbol = prefix[prefix.length - 1];
     const _prefix = lastSymbol === '/' || lastSymbol === '#' ? prefix : prefix + '/';
@@ -15,26 +16,17 @@ export function prefixFactory(prefix: string): ((id: string) => string) {
     };
 }
 
-export interface RDFStore {
-    add: (id: string, graph: RDFGraph) => void;
-    match: (
-        subject?: string,
-        predicate?: string,
-        object?: string,
-        iri?: string,
-        callback?: (result: any) => void,
-        limit?: number,
-    ) => Promise<RDFGraph>;
-}
-
+/** @hidden */
 export function isLiteral(el: Node): el is Literal {
     return el.interfaceName === 'Literal';
 }
 
+/** @hidden */
 export function isNamedNode(el: Node): el is NamedNode {
     return el.interfaceName === 'NamedNode';
 }
 
+/** @hidden */
 export type MatchStatement = {
     subject?: string,
     predicate?: string,
@@ -44,7 +36,7 @@ export type MatchStatement = {
     limit?: number,
 };
 
-export const LABEL_URIS = [
+const LABEL_URIS = [
     'http://www.w3.org/2004/02/skos/core#prefLabel',
     'http://www.w3.org/2004/02/skos/core#label',
     'http://www.w3.org/2004/02/skos/core#altLabel',
@@ -54,7 +46,7 @@ export const LABEL_URIS = [
     'http://schema.org/name',
 ];
 
-export const LABEL_POSTFIXES = [
+const LABEL_POSTFIXES = [
     'prefLabel',
     'prefName',
     'label',
@@ -62,11 +54,13 @@ export const LABEL_POSTFIXES = [
     'title',
 ];
 
+/** @hidden */
 export interface RDFStoreOptions {
     parser: RDFCompositeParser;
     acceptBlankNodes?: boolean;
 }
 
+/** @hidden */
 export class RDFCacheableStore {
     private readonly parser: RDFCompositeParser;
     private readonly acceptBlankNodes: boolean;

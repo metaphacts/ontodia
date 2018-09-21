@@ -6,6 +6,7 @@ import { ElementModel, ElementTypeIri, LocalizedString, PropertyTypeIri } from '
 
 const CLASS_NAME = 'ontodia-edit-form';
 
+/** @hidden */
 export interface Props {
     view: DiagramView;
     entity: ElementModel;
@@ -13,10 +14,12 @@ export interface Props {
     onCancel: () => void;
 }
 
+/** @hidden */
 export interface State {
     elementModel?: ElementModel;
 }
 
+/** @hidden */
 export class EditEntityForm extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);

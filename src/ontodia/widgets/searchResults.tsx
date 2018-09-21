@@ -8,6 +8,7 @@ import { ListElementView, startDragElements } from './listElementView';
 
 const CLASS_NAME = 'ontodia-search-results';
 
+/** @hidden */
 export interface SearchResultProps {
     view: DiagramView;
     items: ReadonlyArray<ElementModel>;
@@ -18,6 +19,7 @@ export interface SearchResultProps {
 
 const enum Direction { Up, Down }
 
+/** @hidden */
 export class SearchResults extends React.Component<SearchResultProps, {}> {
     private readonly listener = new EventObserver();
 

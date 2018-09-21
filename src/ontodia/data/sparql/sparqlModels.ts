@@ -35,6 +35,7 @@ export function isRdfLiteral(e: RdfNode): e is RdfLiteral {
     return e && e.type === 'literal';
 }
 
+/** @hidden */
 export interface BlankBinding extends ElementBinding {
     blankType: {
         value: 'listHead' | 'blankNode',
@@ -46,6 +47,7 @@ export interface BlankBinding extends ElementBinding {
     newInst?: RdfIri | RdfBlank;
 }
 
+/** @hidden */
 export function isBlankBinding(binding: ElementBinding | BlankBinding): binding is BlankBinding {
     const blank = binding as BlankBinding;
     return blank.blankTrgProp !== undefined
@@ -54,6 +56,7 @@ export function isBlankBinding(binding: ElementBinding | BlankBinding): binding 
         || blank.blankSrc !== undefined;
 }
 
+/** @hidden */
 export interface ElementBinding {
     inst: RdfIri | RdfBlank;
     class?: RdfIri;
@@ -62,6 +65,7 @@ export interface ElementBinding {
     propValue?: RdfLiteral;
 }
 
+/** @hidden */
 export interface ClassBinding {
     class: RdfIri;
     instcount?: RdfLiteral;
@@ -69,11 +73,13 @@ export interface ClassBinding {
     parent?: RdfIri;
 }
 
+/** @hidden */
 export interface PropertyBinding {
     prop: RdfIri;
     label?: RdfLiteral;
 }
 
+/** @hidden */
 export interface LinkBinding {
     source: RdfIri | RdfBlank;
     type: RdfIri;
@@ -82,24 +88,28 @@ export interface LinkBinding {
     propValue?: RdfLiteral;
 }
 
+/** @hidden */
 export interface LinkCountBinding {
     link: RdfIri | RdfBlank;
     inCount: RdfLiteral;
     outCount: RdfLiteral;
 }
 
+/** @hidden */
 export interface LinkTypeBinding {
     link: RdfIri;
     label?: RdfLiteral;
     instcount?: RdfLiteral;
 }
 
+/** @hidden */
 export interface ElementImageBinding {
     inst: RdfIri;
     linkType: RdfIri;
     image: RdfIri;
 }
 
+/** @hidden */
 export interface SparqlResponse<Binding> {
     head: { vars: string[] };
     results: { bindings: Binding[] };

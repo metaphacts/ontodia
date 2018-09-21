@@ -43,6 +43,7 @@ export interface PropertyEditorOptions {
 }
 export type PropertyEditor = (options: PropertyEditorOptions) => React.ReactElement<any>;
 
+/** @hidden */
 export enum DialogTypes {
     ConnectionsMenu,
     EditEntityForm,
@@ -457,7 +458,7 @@ export class EditorController {
         this.showDialog({target, dialogType, content});
     }
 
-    showDialog(params: {
+    private showDialog(params: {
         target: SelectionItem;
         dialogType: DialogTypes;
         content: React.ReactElement<any>;
@@ -474,7 +475,7 @@ export class EditorController {
         this.source.trigger('toggleDialog', {isOpened: false});
     }
 
-    hideDialog() {
+    private hideDialog() {
         if (this.dialogTarget) {
             this.dialogType = undefined;
             this.dialogTarget = undefined;

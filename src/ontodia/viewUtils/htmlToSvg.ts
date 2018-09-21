@@ -1,5 +1,6 @@
 import { uniqueId } from 'lodash';
 
+/** @hidden */
 export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boolean) {
     blackList = blackList || [];
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');

@@ -25,6 +25,7 @@ function getMimeTypeByFileName(fileName: string): string {
     return postfix ? POSTFIX_TO_MIME[postfix] : undefined;
 }
 
+/** @hidden */
 export class RDFCompositeParser {
     constructor(public parserMap: Dictionary<any>) { }
 

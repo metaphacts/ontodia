@@ -5,6 +5,7 @@ import { DiagramModel } from '../diagram/model';
 
 import { Unsubscribe, Listener } from './events';
 
+/** @hidden */
 export class KeyedObserver<Key extends string> {
     private observedKeys = new Map<string, Unsubscribe>();
 
@@ -40,6 +41,7 @@ export class KeyedObserver<Key extends string> {
     }
 }
 
+/** @hidden */
 export function observeElementTypes<Event extends keyof FatClassModelEvents>(
     model: DiagramModel, event: Event, listener: Listener<FatClassModelEvents, Event>
 ) {
@@ -53,6 +55,7 @@ export function observeElementTypes<Event extends keyof FatClassModelEvents>(
     });
 }
 
+/** @hidden */
 export function observeProperties<Event extends keyof RichPropertyEvents>(
     model: DiagramModel, event: Event, listener: Listener<RichPropertyEvents, Event>
 ) {
@@ -66,6 +69,7 @@ export function observeProperties<Event extends keyof RichPropertyEvents>(
     });
 }
 
+/** @hidden */
 export function observeLinkTypes<Event extends keyof FatLinkTypeEvents>(
     model: DiagramModel, event: Event, listener: Listener<FatLinkTypeEvents, Event>
 ) {

@@ -2,8 +2,10 @@ import { RDFGraph } from 'rdf-ext';
 import { Dictionary } from '../model';
 import { RDFCompositeParser } from './rdfCompositeParser';
 
+/** @hidden */
 export const DEFAULT_PROXY = '/lod-proxy/';
 
+/** @hidden */
 export class RDFLoader {
     private fetchingFileCatche: Dictionary<Promise<RDFGraph>> = {};
     public parser: RDFCompositeParser;

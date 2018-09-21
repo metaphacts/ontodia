@@ -11,6 +11,7 @@ import { Vector, Rect } from './geometry';
 import { getContentFittingBox } from './paperArea';
 import { DiagramView } from './view';
 
+/** @hidden */
 export interface State {
     paperWidth?: number;
     paperHeight?: number;
@@ -18,6 +19,7 @@ export interface State {
     offsetY?: number;
 }
 
+/** @hidden */
 export class EmbeddedLayer extends React.Component<{}, State> {
     static contextTypes = {...ElementContextTypes, ...PaperAreaContextTypes};
 

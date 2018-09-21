@@ -3,6 +3,7 @@ import * as React from 'react';
 import { DraggableHandle } from './draggableHandle';
 import { TutorialProps } from './tutorial';
 
+/** @hidden */
 export interface Props {
     heading: string;
     bodyClassName?: string;
@@ -21,6 +22,7 @@ export interface Props {
 
 const CLASS_NAME = 'ontodia-accordion-item';
 
+/** @hidden */
 export class AccordionItem extends React.Component<Props, {}> {
     private _element: HTMLDivElement;
     private _header: HTMLDivElement;

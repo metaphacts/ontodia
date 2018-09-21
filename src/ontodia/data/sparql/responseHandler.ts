@@ -14,6 +14,7 @@ import * as _ from 'lodash';
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 const RDF_TYPE_URI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
+/** @hidden */
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
@@ -85,6 +86,7 @@ function calcCounts(children: ClassModel[]) {
     }
 }
 
+/** @hidden */
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const classes: { [id: string]: ClassModel } = {};
     for (const binding of response.results.bindings) {
@@ -121,6 +123,7 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
     return classesList;
 }
 
+/** @hidden */
 export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dictionary<PropertyModel> {
     const models: Dictionary<PropertyModel> = {};
 
@@ -141,6 +144,7 @@ export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dict
     return models;
 }
 
+/** @hidden */
 export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkType[] {
     const sInst = response.results.bindings;
     const linkTypes: LinkType[] = [];
@@ -165,6 +169,7 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
     return linkTypes;
 }
 
+/** @hidden */
 export function triplesToElementBinding(
     tripples: Triple[],
 ): SparqlResponse<ElementBinding> {
@@ -216,6 +221,7 @@ export function triplesToElementBinding(
     return convertedResponse;
 }
 
+/** @hidden */
 export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: string[]): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
@@ -231,6 +237,7 @@ export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: s
     return instancesMap;
 }
 
+/** @hidden */
 export function getEnrichedElementsInfo(
     response: SparqlResponse<ElementImageBinding>,
     elementsInfo: Dictionary<ElementModel>,
@@ -245,6 +252,7 @@ export function getEnrichedElementsInfo(
     return elementsInfo;
 }
 
+/** @hidden */
 export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
     const sparqlLinks = response.results.bindings;
     const linksMap: Dictionary<LinkModel> = {};
@@ -265,21 +273,25 @@ export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[]
     return _.values(linksMap);
 }
 
+/** @hidden */
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
     const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
+/** @hidden */
 export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): LinkTypeIri[] {
     const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
     return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value as LinkTypeIri);
 }
 
+/** @hidden */
 export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount {
     const sparqlLinkCount = response.results.bindings.filter(b => !isRdfBlank(b.link))[0];
     return  getLinkCount(sparqlLinkCount);
 }
 
+/** @hidden */
 export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
     const sInstances = response.results.bindings;
     const instancesMap: Dictionary<ElementModel> = {};
@@ -317,7 +329,7 @@ function mergeProperties(properties: { [id: string]: Property }, propType: RdfIr
     }
 }
 
-export function enrichElement(element: ElementModel, sInst: ElementBinding) {
+function enrichElement(element: ElementModel, sInst: ElementBinding) {
     if (!element) { return; }
     if (sInst.label) {
         const label = getLocalizedString(sInst.label);
@@ -339,7 +351,7 @@ function isLocalizedEqual(left: LocalizedString, right: LocalizedString) {
     return left.lang === right.lang && left.text === right.text;
 }
 
-export function getLocalizedString(label: RdfLiteral): LocalizedString | undefined {
+function getLocalizedString(label: RdfLiteral): LocalizedString | undefined {
     if (label) {
         return {
             text: label.value,
@@ -350,18 +362,18 @@ export function getLocalizedString(label: RdfLiteral): LocalizedString | undefin
     }
 }
 
-export function getInstCount(instcount: RdfLiteral): number | undefined {
+function getInstCount(instcount: RdfLiteral): number | undefined {
     return (instcount ? +instcount.value : undefined);
 }
 
 /**
  * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
  */
-export interface HierarchicalClassModel extends ClassModel {
+interface HierarchicalClassModel extends ClassModel {
     parent: string;
 }
 
-export function getClassModel(node: ClassBinding): HierarchicalClassModel {
+function getClassModel(node: ClassBinding): HierarchicalClassModel {
     const label = getLocalizedString(node.label);
     return {
         id: node.class.value as ElementTypeIri,
@@ -372,7 +384,7 @@ export function getClassModel(node: ClassBinding): HierarchicalClassModel {
     };
 }
 
-export function getPropertyModel(node: PropertyBinding): PropertyModel {
+function getPropertyModel(node: PropertyBinding): PropertyModel {
     const label = getLocalizedString(node.label);
     return {
         id: node.prop.value as PropertyTypeIri,
@@ -380,7 +392,7 @@ export function getPropertyModel(node: PropertyBinding): PropertyModel {
     };
 }
 
-export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
+function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     return {
         id: sLinkType.link.value as LinkTypeIri,
         inCount: getInstCount(sLinkType.inCount),
@@ -388,7 +400,7 @@ export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     };
 }
 
-export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
+function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
     if (!propValue) { return undefined; }
     return {
         lang: propValue['xml:lang'],
@@ -396,7 +408,7 @@ export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
     };
 }
 
-export function emptyElementInfo(id: ElementIri): ElementModel {
+function emptyElementInfo(id: ElementIri): ElementModel {
     const elementInfo: ElementModel = {
         id: id,
         label: { values: [] },
@@ -406,7 +418,7 @@ export function emptyElementInfo(id: ElementIri): ElementModel {
     return elementInfo;
 }
 
-export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
+function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     if (!sLinkInfo) { return undefined; }
     const linkModel: LinkModel = {
         linkTypeId: sLinkInfo.type.value as LinkTypeIri,
@@ -423,7 +435,7 @@ export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     return linkModel;
 }
 
-export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
+function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     const label = getLocalizedString(sLinkInfo.label);
     return {

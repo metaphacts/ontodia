@@ -30,6 +30,7 @@ export interface AuthoredEntityContext {
     onDelete: () => void;
 }
 
+/** @hidden */
 export interface State {
     canEdit?: boolean;
     canDelete?: boolean;

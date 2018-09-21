@@ -6,6 +6,7 @@ import { Element } from '../diagram/elements';
 import { EventObserver } from './events';
 import { getContentFittingBox } from '../diagram/paperArea';
 
+/** @hidden */
 export interface LayoutNode {
     id?: string;
     x: number;
@@ -17,11 +18,13 @@ export interface LayoutNode {
     innerBounds?: any;
 }
 
+/** @hidden */
 export interface LayoutLink {
     source: LayoutNode;
     target: LayoutNode;
 }
 
+/** @hidden */
 export function forceLayout(params: {
     nodes: LayoutNode[];
     links: LayoutLink[];
@@ -38,6 +41,7 @@ export function forceLayout(params: {
     layout.start(30, 0, 10, undefined, false);
 }
 
+/** @hidden */
 export function removeOverlaps(nodes: LayoutNode[]) {
     const nodeRectangles: cola.Rectangle[] = [];
     for (const node of nodes) {
@@ -56,6 +60,7 @@ export function removeOverlaps(nodes: LayoutNode[]) {
     }
 }
 
+/** @hidden */
 export function translateToPositiveQuadrant(nodes: ReadonlyArray<LayoutNode>, offset: Vector) {
     let minX = Infinity, minY = Infinity;
     for (const node of nodes) {
@@ -70,6 +75,7 @@ export function translateToPositiveQuadrant(nodes: ReadonlyArray<LayoutNode>, of
     }
 }
 
+/** @hidden */
 export function uniformGrid(params: {
     rows: number;
     cellSize: Vector;
@@ -86,6 +92,7 @@ export function uniformGrid(params: {
     };
 }
 
+/** @hidden */
 export function padded(
     nodes: LayoutNode[],
     padding: { x: number; y: number; } | undefined,
@@ -112,6 +119,7 @@ export function padded(
     }
 }
 
+/** @hidden */
 export function recursiveLayout(params: {
     model: DiagramModel;
     layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], group: string) => void;
@@ -173,6 +181,7 @@ export function recursiveLayout(params: {
     }
 }
 
+/** @hidden */
 export function placeElementsAround(params: {
     model: DiagramModel;
     elements: ReadonlyArray<Element>;
@@ -248,6 +257,7 @@ export function placeElementsAround(params: {
     });
 }
 
+/** @hidden */
 export function recursiveRemoveOverlaps(params: {
     model: DiagramModel;
     fixedElementIds?: ReadonlySet<string>;

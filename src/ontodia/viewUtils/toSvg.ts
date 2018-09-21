@@ -18,6 +18,7 @@ const canvg = require<CanvgRender>('canvg-fixed');
 
 const SVG_NAMESPACE: 'http://www.w3.org/2000/svg' = 'http://www.w3.org/2000/svg';
 
+/** @hidden */
 export interface ToSVGOptions {
     model: DiagramModel;
     paper: SVGSVGElement;
@@ -44,6 +45,7 @@ interface Bounds {
 const FOREIGN_OBJECT_SIZE_PADDING = 2;
 const BORDER_PADDING = 100;
 
+/** @hidden */
 export function toSVG(options: ToSVGOptions): Promise<string> {
     return exportSVG(options).then(svg => new XMLSerializer().serializeToString(svg));
 }
@@ -330,6 +332,7 @@ function foreachNode<T extends Node>(nodeList: NodeListOf<T>, callback: (node?: 
     }
 }
 
+/** @hidden */
 export interface ToDataURLOptions {
     /** 'image/png' | 'image/jpeg' | ... */
     mimeType?: string;
@@ -342,6 +345,7 @@ export interface ToDataURLOptions {
 
 const MAX_CANVAS_LENGTH = 4096;
 
+/** @hidden */
 export async function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promise<string> {
     const {paper, mimeType = 'image/png'} = options;
     const svgOptions = {
@@ -403,7 +407,7 @@ export async function toDataURL(options: ToSVGOptions & ToDataURLOptions): Promi
     }
 }
 
-export function loadImage(source: string): Promise<HTMLImageElement> {
+function loadImage(source: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = function () {
@@ -449,6 +453,7 @@ function fallbackContainerSize(itemSize: Bounds): Bounds {
     return {width, height};
 }
 
+/** @hidden */
 export function fitRectKeepingAspectRatio(
     sourceWidth: number,
     sourceHeight: number,
@@ -473,6 +478,7 @@ export function fitRectKeepingAspectRatio(
  *
  * @param {string} dataURL The data URL to convert.
  * @return {Blob} A blob representing the array buffer data.
+ * @hidden
  */
 export function dataURLToBlob(dataURL: string): Blob {
     const BASE64_MARKER = ';base64,';

@@ -5,6 +5,7 @@ import { ElementModel } from '../data/model';
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel } from '../diagram/model';
 
+/** @hidden */
 export interface ListElementViewProps {
     className?: string;
     view: DiagramView;
@@ -18,6 +19,7 @@ export interface ListElementViewProps {
 
 const CLASS_NAME = 'ontodia-list-element-view';
 
+/** @hidden */
 export class ListElementView extends React.Component<ListElementViewProps, {}> {
     render() {
         const {className, view, model, highlightText, disabled, selected, onDragStart} = this.props;
@@ -56,6 +58,7 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
     }
 }
 
+/** @hidden */
 export function startDragElements(e: React.DragEvent<{}>, iris: ReadonlyArray<string>) {
     try {
         e.dataTransfer.setData('application/x-ontodia-elements', JSON.stringify(iris));
@@ -65,6 +68,7 @@ export function startDragElements(e: React.DragEvent<{}>, iris: ReadonlyArray<st
     return false;
 }
 
+/** @hidden */
 export function highlightSubstring(
     text: string,
     substring: string | undefined,

@@ -313,6 +313,7 @@ export class Link {
     }
 }
 
+/** @hidden */
 export function linkMarkerKey(linkTypeIndex: number, startMarker: boolean) {
     return `ontodia-${startMarker ? 'mstart' : 'mend'}-${linkTypeIndex}`;
 }
@@ -426,6 +427,7 @@ export class LinkVertex {
     }
 }
 
+/** @hidden */
 export namespace GenerateID {
     export function forElement() { return 'e_' + generate128BitID(); }
     export function forLink() { return 'l_' + generate128BitID(); }

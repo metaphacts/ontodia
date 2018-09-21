@@ -13,12 +13,14 @@ import {
 
 const DATA_PROVIDER_PROPERTY = 'http://ontodia.org/property/DataProvider';
 
+/** @hidden */
 export interface CompositeResponse<Type> {
     dataSourceName: string;
     useInStats?: boolean;
     response: Type;
 }
 
+/** @hidden */
 export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): ClassModel[] {
     const lists = response.filter(r => r.response).map(({useInStats, response}) =>
         ({useInStats, classes: classTreeToArray(response)})
@@ -64,6 +66,7 @@ export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): Cla
     return Object.keys(topLevelModels).map(key => topLevelModels[key]);
 }
 
+/** @hidden */
 export function mergePropertyInfo(
     response: CompositeResponse<Dictionary<PropertyModel>>[],
 ): Dictionary<PropertyModel> {
@@ -83,6 +86,7 @@ export function mergePropertyInfo(
     return result;
 }
 
+/** @hidden */
 export function mergeClassInfo(response: CompositeResponse<ClassModel[]>[]): ClassModel[] {
     const dictionaries = response.filter(r => r.response).map(r => r.response);
     const dictionary: Dictionary<ClassModel> = {};
@@ -99,6 +103,7 @@ export function mergeClassInfo(response: CompositeResponse<ClassModel[]>[]): Cla
     return Object.keys(dictionary).map(key => dictionary[key]);
 }
 
+/** @hidden */
 export function mergeLinkTypesInfo(response: CompositeResponse<LinkType[]>[]): LinkType[] {
     const lists = response.filter(r => r.response).map(r => r.response);
 
@@ -124,10 +129,12 @@ export function mergeLinkTypesInfo(response: CompositeResponse<LinkType[]>[]): L
     return Object.keys(dictionary).map(key => dictionary[key]);
 }
 
+/** @hidden */
 export function mergeLinkTypes(response: CompositeResponse<LinkType[]>[]): LinkType[] {
     return mergeLinkTypesInfo(response);
 }
 
+/** @hidden */
 export function mergeElementInfo(response: CompositeResponse<Dictionary<ElementModel>>[]): Dictionary<ElementModel> {
     const mergeElementModels = (a: ElementModel, b: ElementModel): ElementModel => {
         const types = a.types;
@@ -181,6 +188,7 @@ export function mergeElementInfo(response: CompositeResponse<Dictionary<ElementM
     return dictionary;
 }
 
+/** @hidden */
 export function mergeProperties(a: Dictionary<Property>, b: Dictionary<Property>): Dictionary<Property> {
     const aLists = Object.keys(a);
     const bLists = Object.keys(b);
@@ -215,6 +223,7 @@ export function mergeProperties(a: Dictionary<Property>, b: Dictionary<Property>
     return result;
 }
 
+/** @hidden */
 export function mergeLinksInfo(response: CompositeResponse<LinkModel[]>[]): LinkModel[] {
     const lists = response.filter(r => r.response).map(r => r.response);
     const resultInfo: LinkModel[] = [];
@@ -235,6 +244,7 @@ export function mergeLinksInfo(response: CompositeResponse<LinkModel[]>[]): Link
     return resultInfo;
 }
 
+/** @hidden */
 export function mergeLinkTypesOf(response: CompositeResponse<LinkCount[]>[]): LinkCount[] {
     const lists = response.filter(r => r.response).map(r => r.response);
     const dictionary: Dictionary<LinkCount> = {};
@@ -259,15 +269,17 @@ export function mergeLinkTypesOf(response: CompositeResponse<LinkCount[]>[]): Li
     return Object.keys(dictionary).map(key => dictionary[key]);
 }
 
+/** @hidden */
 export function mergeLinkElements(response: CompositeResponse<Dictionary<ElementModel>>[]): Dictionary<ElementModel> {
     return mergeElementInfo(response);
 }
 
+/** @hidden */
 export function mergeFilter(response: CompositeResponse<Dictionary<ElementModel>>[]): Dictionary<ElementModel> {
     return mergeElementInfo(response);
 }
 
-export function classTreeToArray(models: ClassModel[]): ClassModel[] {
+function classTreeToArray(models: ClassModel[]): ClassModel[] {
     let resultArray: ClassModel[] = models;
 
     function getDescendants(model: ClassModel): ClassModel[] {
@@ -287,7 +299,7 @@ export function classTreeToArray(models: ClassModel[]): ClassModel[] {
     return resultArray;
 }
 
-export function mergeLabels(
+function mergeLabels(
     a: { values: LocalizedString[] },
     b: { values: LocalizedString[] },
 ): { values: LocalizedString[] } {
@@ -309,13 +321,13 @@ export function mergeLabels(
     };
 }
 
-export function mergeCounts(a?: number, b?: number): number | undefined {
+function mergeCounts(a?: number, b?: number): number | undefined {
     if (a === undefined && b === undefined) { return undefined; }
 
     return (a || 0) + (b || 0);
 }
 
-export function mergeClassModel(a: ClassModel, b: ClassModel): ClassModel {
+function mergeClassModel(a: ClassModel, b: ClassModel): ClassModel {
     const childrenDictionary: Dictionary<ClassModel> = {};
     for (const child of a.children.concat(b.children)) {
         if (!childrenDictionary[child.id]) {

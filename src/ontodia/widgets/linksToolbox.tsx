@@ -244,11 +244,13 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
     }
 }
 
+/** @hidden */
 export interface LinkTypesToolboxProps {
     view: DiagramView;
     editor: EditorController;
 }
 
+/** @hidden */
 export interface LinkTypesToolboxState {
     readonly dataState?: 'querying' | 'error' | 'finished';
     readonly selectedElement?: Element;
@@ -256,6 +258,7 @@ export interface LinkTypesToolboxState {
     readonly countMap?: { readonly [linkTypeId: string]: number };
 }
 
+/** @hidden */
 export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, LinkTypesToolboxState> {
     private readonly listener = new EventObserver();
     private readonly linkListener = new EventObserver();

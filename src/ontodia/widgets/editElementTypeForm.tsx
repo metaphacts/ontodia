@@ -10,6 +10,7 @@ const CLASS_NAME = 'ontodia-edit-form';
 const ELEMENT_TYPE = '' as ElementTypeIri;
 const LINK_TYPE = '' as LinkTypeIri;
 
+/** @hidden */
 export interface Props {
     view: DiagramView;
     metadataApi?: MetadataApi;
@@ -20,12 +21,14 @@ export interface Props {
     onCancel: () => void;
 }
 
+/** @hidden */
 export interface State {
     elementData?: ElementModel;
     linkData?: LinkModel;
     elementTypes?: ReadonlyArray<ElementTypeIri>;
 }
 
+/** @hidden */
 export class EditElementTypeForm extends React.Component<Props, State> {
     private readonly cancellation = new Cancellation();
 

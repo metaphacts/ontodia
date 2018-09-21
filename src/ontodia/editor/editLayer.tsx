@@ -16,12 +16,14 @@ import { Spinner } from '../viewUtils/spinner';
 
 import { EditorController } from './editorController';
 
+/** @hidden */
 export enum EditLayerMode {
     establishLink,
     moveLinkSource,
     moveLinkTarget,
 }
 
+/** @hidden */
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     editor: EditorController;
@@ -31,6 +33,7 @@ export interface Props extends PaperWidgetProps {
     point: { x: number; y: number };
 }
 
+/** @hidden */
 export interface State {
     targetElement?: Element;
     canDropOnCanvas?: boolean;
@@ -40,6 +43,7 @@ export interface State {
 const PLACEHOLDER_ELEMENT_TYPE = '' as ElementTypeIri;
 const PLACEHOLDER_LINK_TYPE = '' as LinkTypeIri;
 
+/** @hidden */
 export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();
@@ -369,10 +373,12 @@ export class EditLayer extends React.Component<Props, State> {
     }
 }
 
+/** @hidden */
 export function isPlaceholderElementType(target: ElementTypeIri) {
     return target === PLACEHOLDER_ELEMENT_TYPE;
 }
 
+/** @hidden */
 export function isPlaceholderLinkType(target: LinkTypeIri) {
     return target === PLACEHOLDER_LINK_TYPE;
 }

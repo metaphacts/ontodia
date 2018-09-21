@@ -1,5 +1,6 @@
 import { Events, EventSource } from './events';
 
+/** @hidden */
 export abstract class BatchingScheduler {
     private useAnimationFrame: boolean;
     private scheduled: number | undefined;
@@ -46,6 +47,7 @@ export abstract class BatchingScheduler {
     }
 }
 
+/** @hidden */
 export class BufferingQueue<Key extends string> extends BatchingScheduler {
     private fetchingQueue: { [key: string]: true } = Object.create(null);
 
@@ -72,6 +74,7 @@ export class BufferingQueue<Key extends string> extends BatchingScheduler {
     }
 }
 
+/** @hidden */
 export class Debouncer extends BatchingScheduler {
     private callback: (() => void) | undefined;
 
@@ -86,6 +89,7 @@ export class Debouncer extends BatchingScheduler {
     }
 }
 
+/** @hidden */
 export class Cancellation {
     private source: EventSource<{ abort: undefined }> | undefined = new EventSource();
     private aborted = false;
@@ -127,6 +131,7 @@ export interface CancellationToken {
     removeEventListener(event: 'abort', handler: () => void): void;
 }
 
+/** @hidden */
 export class CancelledError extends Error {
     constructor(message: string) {
         super(message);

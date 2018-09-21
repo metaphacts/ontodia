@@ -16,11 +16,13 @@ interface Position {
     left: number;
 }
 
+/** @hidden */
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     target: Element | Link;
 }
 
+/** @hidden */
 export class Dialog extends React.Component<Props, {}> {
     private unsubscribeFromTarget: Unsubscribe | undefined = undefined;
     private readonly handler = new EventObserver();

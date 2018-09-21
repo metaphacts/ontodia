@@ -8,6 +8,7 @@ import { LinkLayer, LinkMarkers } from './linkLayer';
 import { DiagramModel } from './model';
 import { DiagramView } from './view';
 
+/** @hidden */
 export interface PaperProps {
     view: DiagramView;
     paperTransform: PaperTransform;
@@ -17,6 +18,7 @@ export interface PaperProps {
 
 const CLASS_NAME = 'ontodia-paper';
 
+/** @hidden */
 export class Paper extends Component<PaperProps, {}> {
     render() {
         const {view, group, paperTransform} = this.props;

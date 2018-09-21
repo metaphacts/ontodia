@@ -1,3 +1,4 @@
+/** @hidden */
 export function createStringMap<V>(): { [key: string]: V } {
     const map = Object.create(null);
     // tslint:disable-next-line:no-string-literal
@@ -5,14 +6,17 @@ export function createStringMap<V>(): { [key: string]: V } {
     return map;
 }
 
+/** @hidden */
 export function createNumberMap<V>(): { [key: number]: V } {
     return createStringMap() as { [key: number]: V };
 }
 
+/** @hidden */
 export function hasOwnProperty(collection: object, key: string | number) {
     return Object.prototype.hasOwnProperty.call(collection, key);
 }
 
+/** @hidden */
 export function isEmptyMap(map: object) {
     for (const key in map) {
         if (hasOwnProperty(map, key)) { return false; }
@@ -22,6 +26,7 @@ export function isEmptyMap(map: object) {
 
 /**
  * Clones Map collection. Required due to IE11 not supporing `new Map(map)`.
+ * @hidden
  */
 export function cloneMap<K, V>(map: ReadonlyMap<K, V>): Map<K, V> {
     const clone = new Map<K, V>();
@@ -31,6 +36,7 @@ export function cloneMap<K, V>(map: ReadonlyMap<K, V>): Map<K, V> {
 
 /**
  * Clones Set collection. Required due to IE11 not supporing `new Set(set)`.
+ * @hidden
  */
 export function cloneSet<T>(set: ReadonlySet<T>): Set<T> {
     const clone = new Set<T>();
@@ -38,6 +44,7 @@ export function cloneSet<T>(set: ReadonlySet<T>): Set<T> {
     return clone;
 }
 
+/** @hidden */
 export class OrderedMap<V> {
     private mapping: { [key: string]: V };
     private ordered: V[];
@@ -78,6 +85,7 @@ export class OrderedMap<V> {
     }
 }
 
+/** @hidden */
 export interface ReadonlyHashMap<K, V> {
     readonly size: number;
     has(key: K): boolean;
@@ -86,6 +94,7 @@ export interface ReadonlyHashMap<K, V> {
     clone(): HashMap<K, V>;
 }
 
+/** @hidden */
 export class HashMap<K, V> implements ReadonlyHashMap<K, V> {
     private readonly map = new Map<number, Array<{ key: K; value: V }>>();
     private _size = 0;

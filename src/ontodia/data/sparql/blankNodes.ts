@@ -9,12 +9,14 @@ import {
 
 import { executeSparqlQuery } from './sparqlDataProvider';
 
-export const MAX_RECURSION_DEEP = 3;
+const MAX_RECURSION_DEEP = 3;
 
-export const ENCODED_PREFIX = 'sparql-blank:';
+const ENCODED_PREFIX = 'sparql-blank:';
 
+/** @hidden */
 export const BLANK_NODE_QUERY_PARAMETERS = '?blankTrgProp ?blankTrg ?blankSrc ?blankSrcProp ?listHead';
 
+/** @hidden */
 export const BLANK_NODE_QUERY = `
     OPTIONAL {
         FILTER (ISBLANK(?inst)).
@@ -43,10 +45,12 @@ export const BLANK_NODE_QUERY = `
     }
 `;
 
+/** @hidden */
 export function isEncodedBlank(id: string): boolean {
     return id.startsWith(ENCODED_PREFIX);
 }
 
+/** @hidden */
 export class QueryExecutor {
     queryDictionary: Dictionary<Promise<SparqlResponse<BlankBinding>>> = {};
     constructor (
@@ -67,6 +71,7 @@ export class QueryExecutor {
     }
 }
 
+/** @hidden */
 export function updateFilterResults (
     result: SparqlResponse<ElementBinding | BlankBinding>,
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
@@ -92,6 +97,7 @@ export function updateFilterResults (
     });
 }
 
+/** @hidden */
 export function processBlankBindings(
     blankBindings: BlankBinding[],
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
@@ -155,6 +161,7 @@ function updateGroupIds(group: BlankBinding[], newId: string) {
     }
 }
 
+/** @hidden */
 export function encodeId(blankBindings: BlankBinding[]): string {
     const bindingSet: Dictionary<BlankBinding> = {};
     for (const binding of blankBindings) {
@@ -168,6 +175,7 @@ export function encodeId(blankBindings: BlankBinding[]): string {
     return ENCODED_PREFIX + encodeURI(JSON.stringify(normalizedBindings));
 }
 
+/** @hidden */
 export function decodeId(id: string): BlankBinding[] {
     if (!isEncodedBlank(id)) {
         return undefined;
@@ -187,7 +195,7 @@ export function decodeId(id: string): BlankBinding[] {
     }
 }
 
-export function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
+function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
     if (bn.blankType.value === 'listHead') {
         return {
             type: 'literal',
@@ -340,6 +348,7 @@ function getQueryForChain(blankNodes: BlankBinding[]): string {
     return query;
 }
 
+/** @hidden */
 export function elementInfo(elementIds: string[]): SparqlResponse<ElementBinding> {
     const ids = elementIds.filter(id => isEncodedBlank(id));
 
@@ -349,6 +358,7 @@ export function elementInfo(elementIds: string[]): SparqlResponse<ElementBinding
     };
 }
 
+/** @hidden */
 export function linksInfo(elementIds: string[]): SparqlResponse<LinkBinding> {
     return {
         head: undefined,
@@ -356,6 +366,7 @@ export function linksInfo(elementIds: string[]): SparqlResponse<LinkBinding> {
     };
 }
 
+/** @hidden */
 export function linkTypesOf(params: { elementId: string; }): SparqlResponse<LinkCountBinding> {
     return {
         head: undefined,
@@ -363,6 +374,7 @@ export function linkTypesOf(params: { elementId: string; }): SparqlResponse<Link
     };
 }
 
+/** @hidden */
 export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
     const filterResponse: SparqlResponse<ElementBinding> = {
         head: undefined,

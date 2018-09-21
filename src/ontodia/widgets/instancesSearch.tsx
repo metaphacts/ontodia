@@ -16,6 +16,7 @@ import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } fro
 const DirectionInImage = require<string>('../../../images/direction-in.png');
 const DirectionOutImage = require<string>('../../../images/direction-out.png');
 
+/** @hidden */
 export interface InstancesSearchProps {
     className?: string;
     model: AsyncModel;
@@ -24,6 +25,7 @@ export interface InstancesSearchProps {
     onCriteriaChanged: (criteria: SearchCriteria) => void;
 }
 
+/** @hidden */
 export interface SearchCriteria {
     readonly text?: string;
     readonly elementType?: FatClassModel;
@@ -32,6 +34,7 @@ export interface SearchCriteria {
     readonly linkDirection?: 'in' | 'out';
 }
 
+/** @hidden */
 export interface State {
     readonly inputText?: string;
     readonly quering?: boolean;
@@ -44,6 +47,7 @@ export interface State {
 
 const CLASS_NAME = 'ontodia-instances-search';
 
+/** @hidden */
 export class InstancesSearch extends React.Component<InstancesSearchProps, State> {
     static contextTypes = WorkspaceContextTypes;
     readonly context: WorkspaceContextWrapper;

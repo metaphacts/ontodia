@@ -2,12 +2,14 @@ import * as React from 'react';
 
 import { AccordionItem, Props as ItemProps } from './accordionItem';
 
+/** @hidden */
 export interface Props {
     onStartResize?: () => void;
     /** AccordionItem[] */
     children?: React.ReactElement<ItemProps> | ReadonlyArray<React.ReactElement<ItemProps>>;
 }
 
+/** @hidden */
 export interface State {
     readonly height?: number;
     /**
@@ -29,6 +31,7 @@ export interface State {
 
 const CLASS_NAME = 'ontodia-accordion';
 
+/** @hidden */
 export class Accordion extends React.Component<Props, State> {
     private element: HTMLDivElement;
 

@@ -13,6 +13,7 @@ import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
+/** @hidden */
 export interface AuthoringToolsProps {
     editor: EditorController;
     metadataApi?: MetadataApi;
@@ -20,6 +21,7 @@ export interface AuthoringToolsProps {
     selectedElementType: FatClassModel;
 }
 
+/** @hidden */
 export interface State {
     canCreate?: boolean;
 }
@@ -28,6 +30,7 @@ const CLASS_NAME = 'ontodia-authoring-tools';
 
 const DEFAULT_ELEMENT_TYPE = 'http://www.w3.org/2002/07/owl#Thing' as ElementTypeIri;
 
+/** @hidden */
 export class AuthoringTools extends React.Component<AuthoringToolsProps, State> {
     private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();

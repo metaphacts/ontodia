@@ -44,7 +44,7 @@ export class GraphBuilder {
 
 export default GraphBuilder;
 
-export function makeGraphItems(response: ReadonlyArray<Triple>): {
+function makeGraphItems(response: ReadonlyArray<Triple>): {
     elementIds: ElementIri[];
     links: LinkModel[];
 } {
@@ -71,7 +71,7 @@ export function makeGraphItems(response: ReadonlyArray<Triple>): {
     return {elementIds: Object.keys(elements) as ElementIri[], links};
 }
 
-export function makeLayout(
+function makeLayout(
     elementsIds: ReadonlyArray<ElementIri>,
     linksInfo: ReadonlyArray<LinkModel>
 ): SerializedDiagram {

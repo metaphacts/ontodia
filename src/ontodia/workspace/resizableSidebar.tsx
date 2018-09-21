@@ -3,6 +3,7 @@ import * as React from 'react';
 import { DraggableHandle } from './draggableHandle';
 import { TutorialProps } from './tutorial';
 
+/** @hidden */
 export interface Props {
     className?: string;
     dockSide?: DockSide;
@@ -16,11 +17,13 @@ export interface Props {
     children?: React.ReactNode;
 }
 
+/** @hidden */
 export enum DockSide {
     Left = 1,
     Right,
 }
 
+/** @hidden */
 export interface State {
     readonly open?: boolean;
     readonly width?: number;
@@ -28,6 +31,7 @@ export interface State {
 
 const CLASS_NAME = 'ontodia-drag-resizable-column';
 
+/** @hidden */
 export class ResizableSidebar extends React.Component<Props, State> {
     static readonly defaultProps: Partial<Props> = {
         dockSide: DockSide.Left,

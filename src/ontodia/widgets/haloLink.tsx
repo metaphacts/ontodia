@@ -18,6 +18,7 @@ const CLASS_NAME = 'ontodia-halo-link';
 const BUTTON_SIZE = 20;
 const BUTTON_MARGIN = 5;
 
+/** @hidden */
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     editor: EditorController;
@@ -30,11 +31,13 @@ export interface Props extends PaperWidgetProps {
     onTargetMove: (point: { x: number; y: number }) => void;
 }
 
+/** @hidden */
 export interface State {
     canDelete?: boolean;
     canEdit?: boolean;
 }
 
+/** @hidden */
 export class HaloLink extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private targetListener = new EventObserver();

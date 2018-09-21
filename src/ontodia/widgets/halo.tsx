@@ -14,6 +14,7 @@ import { Cancellation, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 import { ElementIri } from '../..';
 
+/** @hidden */
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
     editor: EditorController;
@@ -27,12 +28,14 @@ export interface Props extends PaperWidgetProps {
     onFolowLink?: (element: Element, event: React.MouseEvent<any>) => void;
 }
 
+/** @hidden */
 export interface State {
     canLink?: boolean;
 }
 
 const CLASS_NAME = 'ontodia-halo';
 
+/** @hidden */
 export class Halo extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private targetListener = new EventObserver();

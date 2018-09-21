@@ -2,6 +2,7 @@ import * as N3 from 'n3';
 
 import { RdfNode, Triple } from './sparqlModels';
 
+/** @hidden */
 export function parseTurtleText(turtleText: string): Promise<Triple[]> {
     return new Promise<Triple[]>((resolve, reject) => {
         const triples: Triple[] = [];
@@ -21,6 +22,7 @@ export function parseTurtleText(turtleText: string): Promise<Triple[]> {
     });
 }
 
+/** @hidden */
 export function n3toRdfNode(entity: string): RdfNode {
     if (N3.Util.isLiteral(entity)) {
         return {

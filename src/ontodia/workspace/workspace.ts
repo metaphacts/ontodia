@@ -103,6 +103,7 @@ export interface WorkspaceLanguage {
     label: string;
 }
 
+/** @hidden */
 export interface State {
     readonly criteria?: SearchCriteria;
     readonly isLeftPanelOpen?: boolean;

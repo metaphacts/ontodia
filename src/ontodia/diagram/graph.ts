@@ -10,6 +10,7 @@ import {
     RichProperty,
 } from './elements';
 
+/** @hidden */
 export interface GraphEvents {
     changeCells: {};
     elementEvent: AnyEvent<ElementEvents>;
@@ -18,6 +19,7 @@ export interface GraphEvents {
     classEvent: AnyEvent<FatClassModelEvents>;
 }
 
+/** @hidden */
 export class Graph {
     private readonly source = new EventSource<GraphEvents>();
     readonly events: Events<GraphEvents> = this.source;
