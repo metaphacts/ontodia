@@ -3,12 +3,13 @@ import * as React from 'react';
 import { boundsOf, computePolyline } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
-import { DiagramView } from '../diagram/view';
+import { DiagramView, RenderingLayer } from '../diagram/view';
 import { Link } from '../diagram/elements';
 
+import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 
-import { AuthoringEvent, AuthoringKind } from './authoringState';
+import { AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
 
 export interface Props extends PaperWidgetProps {
@@ -20,16 +21,21 @@ const CLASS_NAME = `ontodia-states-widget`;
 
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
-
-    private updateAll = () => this.forceUpdate();
+    private readonly delayedUpdate = new Debouncer();
 
     componentDidMount() {
         this.listenEvents();
     }
 
-    componentWillReceiveProps() {
-        this.listener.stopListening();
-        this.listenEvents();
+    componentDidUpdate(prevProps: Props) {
+        const sameEventSources = (
+            this.props.editor === prevProps.editor &&
+            this.props.view === prevProps.view
+        );
+        if (!sameEventSources) {
+            this.listener.stopListening();
+            this.listenEvents();
+        }
     }
 
     componentWillUnmount() {
@@ -37,19 +43,33 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     private listenEvents() {
-        this.listener.listen(this.props.editor.model.events, 'elementEvent',  ({key, data}) => {
+        const {editor, view} = this.props;
+        this.listener.listen(editor.model.events, 'elementEvent',  ({data}) => {
             if (data.changeSize || data.changePosition) {
-                this.updateAll();
+                this.scheduleUpdate();
             }
         });
-        this.listener.listen(this.props.editor.model.events, 'linkEvent', ({key, data}) => {
+        this.listener.listen(editor.model.events, 'linkEvent', ({data}) => {
             if (data.changeVertices) {
-                this.updateAll();
+                this.scheduleUpdate();
             }
         });
-        this.listener.listen(this.props.editor.model.events, 'changeCells', this.updateAll);
-        this.listener.listen(this.props.editor.events, 'changeAuthoringState', this.updateAll);
-        this.listener.listen(this.props.editor.events, 'changeTemporaryState', this.updateAll);
+        this.listener.listen(editor.model.events, 'changeCells', this.scheduleUpdate);
+        this.listener.listen(editor.events, 'changeAuthoringState', this.scheduleUpdate);
+        this.listener.listen(editor.events, 'changeTemporaryState', this.scheduleUpdate);
+        this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
+            if (layer === RenderingLayer.Editor) {
+                this.delayedUpdate.runSynchronously();
+            }
+        });
+    }
+
+    private scheduleUpdate = () => {
+        this.delayedUpdate.call(this.performUpdate);
+    }
+
+    private performUpdate = () => {
+        this.forceUpdate();
     }
 
     private calculateLinkPath(link: Link) {
@@ -163,7 +183,10 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     render() {
-        const {paperTransform} = this.props;
+        const {editor, paperTransform} = this.props;
+        if (!editor.inAuthoringMode) {
+            return null;
+        }
         return (
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible', pointerEvents: 'none'}}>
                 {this.renderLinksStates()}
