@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ElementModel, ElementTypeIri, LinkTypeIri } from '../data/model';
+import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 import { DiagramView } from '../diagram/view';
 import { LinkLayer, LinkMarkers } from '../diagram/linkLayer';
@@ -36,9 +37,6 @@ export interface State {
     canDropOnCanvas?: boolean;
     canDropOnElement?: boolean;
 }
-
-const PLACEHOLDER_ELEMENT_TYPE = '' as ElementTypeIri;
-const PLACEHOLDER_LINK_TYPE = '' as LinkTypeIri;
 
 export class EditLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();

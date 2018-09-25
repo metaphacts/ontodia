@@ -2,7 +2,7 @@ import {
     ClassModel, ElementModel, LinkModel, LocalizedString, Property,
     ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
-import { generate128BitID } from '../data/utils';
+import { GenerateID } from '../data/schema';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
@@ -423,13 +423,5 @@ export class LinkVertex {
         const vertices = [...this.link.vertices];
         const [location] = vertices.splice(this.vertexIndex, 1);
         this.link.setVertices(vertices);
-    }
-}
-
-export namespace GenerateID {
-    export function forElement() { return 'e_' + generate128BitID(); }
-    export function forLink() { return 'l_' + generate128BitID(); }
-    export function forNewEntity(): ElementIri {
-        return `http://ontodia.org/newEntity_${generate128BitID()}` as ElementIri;
     }
 }

@@ -3,9 +3,10 @@ import * as React from 'react';
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
 import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
+import { GenerateID } from '../data/schema';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
-import { Element, Link, LinkVertex, FatLinkType, GenerateID } from '../diagram/elements';
+import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
 import { DiagramModel } from '../diagram/model';
@@ -277,8 +278,14 @@ export class EditorController {
         this.listener.listen(this.events, 'changeSelection', () => {
             const selected = this.selection.length === 1 ? this.selection[0] : undefined;
             if (this.dialogTarget && selected !== this.dialogTarget) {
+                const isTemporaryElement =
+                    this.dialogTarget instanceof Element && this.temporaryState.elements.has(this.dialogTarget.iri);
+                const isTemporaryLink =
+                    this.dialogTarget instanceof Link && this.temporaryState.links.has(this.dialogTarget.data);
+                if (isTemporaryElement || isTemporaryLink) {
+                    this.resetTemporaryState();
+                }
                 this.hideDialog();
-                this.resetTemporaryState();
             }
             this.renderDefaultHalo();
         });

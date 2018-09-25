@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from '../data/schema';
+
 import { DiagramView } from '../diagram/view';
 import { ElementModel, ElementTypeIri, LinkModel, LinkTypeIri } from '../data/model';
 import { MetadataApi } from '../data/metadataApi';
@@ -7,8 +9,6 @@ import { Cancellation } from '../viewUtils/async';
 import { SelectLinkType } from './selectLinkType';
 
 const CLASS_NAME = 'ontodia-edit-form';
-const ELEMENT_TYPE = '' as ElementTypeIri;
-const LINK_TYPE = '' as LinkTypeIri;
 
 export interface Props {
     view: DiagramView;
@@ -71,6 +71,8 @@ export class EditElementTypeForm extends React.Component<Props, State> {
     render() {
         const {view, metadataApi, source} = this.props;
         const {elementData, linkData} = this.state;
+        const isDisabled =
+            elementData.types.indexOf(PLACEHOLDER_ELEMENT_TYPE) >= 0 || linkData.linkTypeId === PLACEHOLDER_LINK_TYPE;
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__body`}>
@@ -85,7 +87,7 @@ export class EditElementTypeForm extends React.Component<Props, State> {
                 <div className={`${CLASS_NAME}__controls`}>
                     <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__apply-button`}
                         onClick={() => this.props.onApply(elementData, linkData)}
-                        disabled={elementData.types.indexOf(ELEMENT_TYPE) >= 0 || linkData.linkTypeId === LINK_TYPE}>
+                        disabled={isDisabled}>
                         Apply
                     </button>
                     <button className='ontodia-btn ontodia-btn-danger'

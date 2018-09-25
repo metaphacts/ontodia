@@ -1,6 +1,7 @@
 import { pick } from 'lodash';
 
 import { ElementIri, LinkTypeIri } from '../data/model';
+import { DIAGRAM_CONTEXT_URL_V1 } from '../data/schema';
 
 import { Element as DiagramElement, Link as DiagramLink } from '../diagram/elements';
 import { Vector, Size } from '../diagram/geometry';
@@ -47,7 +48,6 @@ export interface LayoutLink {
 
 // context could be imported directly from NPM package, e.g.
 //   import OntodiaContextV1 from 'ontodia/schema/context-v1.json';
-export const DIAGRAM_CONTEXT_URL_V1 = 'https://ontodia.org/context/v1.json';
 
 const serializedCellProperties = [
     // common properties

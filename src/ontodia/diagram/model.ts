@@ -2,12 +2,13 @@ import {
     LocalizedString, ElementModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { uri2name } from '../data/utils';
+import { GenerateID } from '../data/schema';
 
 import { EventSource, Events, EventObserver, AnyEvent } from '../viewUtils/events';
 
 import {
     Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
-    FatClassModel, FatClassModelEvents, RichProperty, GenerateID
+    FatClassModel, FatClassModelEvents, RichProperty,
 } from './elements';
 import { Graph } from './graph';
 import { CommandHistory, Command } from './history';
