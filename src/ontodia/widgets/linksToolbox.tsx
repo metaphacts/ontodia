@@ -101,7 +101,7 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
                 </span>
                 <div className='link-title'>{this.getText()}</div>
                 {badgeContainer}
-                <a className='filter-button' onClick={this.onPressFilter}><img/></a>
+                <div className='linkInToolBox__filter-button' onClick={this.onPressFilter} />
             </li>
         );
     }
