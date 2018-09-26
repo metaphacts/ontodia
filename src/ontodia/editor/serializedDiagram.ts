@@ -46,9 +46,6 @@ export interface LayoutLink {
     vertices?: ReadonlyArray<Vector>;
 }
 
-// context could be imported directly from NPM package, e.g.
-//   import OntodiaContextV1 from 'ontodia/schema/context-v1.json';
-
 const serializedCellProperties = [
     // common properties
     'id', 'type',

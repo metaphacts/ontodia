@@ -278,13 +278,6 @@ export class EditorController {
         this.listener.listen(this.events, 'changeSelection', () => {
             const selected = this.selection.length === 1 ? this.selection[0] : undefined;
             if (this.dialogTarget && selected !== this.dialogTarget) {
-                const isTemporaryElement =
-                    this.dialogTarget instanceof Element && this.temporaryState.elements.has(this.dialogTarget.iri);
-                const isTemporaryLink =
-                    this.dialogTarget instanceof Link && this.temporaryState.links.has(this.dialogTarget.data);
-                if (isTemporaryElement || isTemporaryLink) {
-                    this.resetTemporaryState();
-                }
                 this.hideDialog();
             }
             this.renderDefaultHalo();
@@ -420,6 +413,7 @@ export class EditorController {
                         this.changeLink(link.data, linkData);
                     }
                     this.hideDialog();
+                    this.showEditEntityForm(target);
                 }}
                 onCancel={() => {
                     if (this.temporaryState.elements.has(target.iri)) {
@@ -483,6 +477,13 @@ export class EditorController {
 
     hideDialog() {
         if (this.dialogTarget) {
+            const isTemporaryElement =
+                this.dialogTarget instanceof Element && this.temporaryState.elements.has(this.dialogTarget.iri);
+            const isTemporaryLink =
+                this.dialogTarget instanceof Link && this.temporaryState.links.has(this.dialogTarget.data);
+            if (isTemporaryElement || isTemporaryLink) {
+                this.resetTemporaryState();
+            }
             this.dialogType = undefined;
             this.dialogTarget = undefined;
             this.view.setPaperWidget({key: 'dialog', widget: undefined});

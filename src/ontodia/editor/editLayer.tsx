@@ -74,15 +74,17 @@ export class EditLayer extends React.Component<Props, State> {
     }
 
     private beginCreatingLink = (params: { sourceId: string; point: Vector }) => {
-        const {editor, view} = this.props;
+        const {model} = this.props.view;
         const {sourceId, point} = params;
 
         const temporaryElement = this.createTemporaryElement(point);
-        const temporaryLink = view.model.addLink(new Link({
+        const temporaryLink = model.addLink(new Link({
             typeId: PLACEHOLDER_LINK_TYPE,
             sourceId,
             targetId: temporaryElement.id,
         }));
+        const fatLinkType = model.createLinkType(temporaryLink.typeId);
+        fatLinkType.setVisibility({visible: true, showLabel: false});
 
         this.temporaryElement = temporaryElement;
         this.temporaryLink = temporaryLink;

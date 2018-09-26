@@ -3,6 +3,7 @@ import {
     ElementIri, LinkTypeIri, ElementTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { DataProvider } from '../data/provider';
+import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 import { Element, FatLinkType, FatClassModel, RichProperty, FatLinkTypeEvents, Link } from '../diagram/elements';
 import { CommandHistory, Command } from '../diagram/history';
@@ -142,7 +143,7 @@ export class AsyncModel extends DiagramModel {
         const layoutData = makeLayoutData(this.graph.getElements(), this.graph.getLinks());
         const linkTypeOptions = this.graph.getLinkTypes()
             // do not serialize default link type options
-            .filter(linkType => !linkType.visible || !linkType.showLabel)
+            .filter(linkType => (!linkType.visible || !linkType.showLabel) && linkType.id !== PLACEHOLDER_LINK_TYPE)
             .map(({id, visible, showLabel}): LinkTypeOptions =>
                 ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}));
         return makeSerializedDiagram({layoutData, linkTypeOptions});
