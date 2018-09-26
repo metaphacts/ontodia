@@ -134,7 +134,7 @@ export class SparqlDataProvider implements DataProvider {
 
     linkTypes(): Promise<LinkType[]> {
         const query = this.settings.defaultPrefix + `
-            SELECT ?link ?instcount ?label
+            SELECT DISTINCT ?link ?instcount ?label
             WHERE {
                   ${this.settings.linkTypesPattern}
                   OPTIONAL { ?link ${this.settings.schemaLabelProperty} ?label. }
