@@ -107,21 +107,19 @@
     border-color: rgb(195, 195, 195);
   }
 
-  .filter-button {
+  &__filter-button {
     display: none;
     float: right;
+    background-image: url("../images/add-to-filter.png");
+    background-size: 20px 20px;
+    width: 20px;
+    height: 20px;
     margin: 3px;
     cursor: pointer;
     opacity: 0.4;
     transition: opacity 200ms 0ms;
-    img {
-      content: url("../images/add-to-filter.png");
-      width: 20px;
-      height: 20px;
-      vertical-align: middle;
-    }
   }
-  &:hover .filter-button {
+  &:hover &__filter-button {
     opacity: 1.0;
     transition: opacity 200ms 0ms;
   }
@@ -131,19 +129,7 @@
   /* show connection count badge only in "Connected to Element" list */
   display: inline;
 }
-.connected-links .linkInToolBox .filter-button {
+.connected-links .linkInToolBox__filter-button {
   /* show filter button only in "Connected to Element" list */
   display: inline;
-}
-
-.link-in-popup-menu .filter-button img {
-  opacity: 0.4;
-  margin-left: 10px;
-  content: url("../images/add-to-filter.png");
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
-}
-.link-in-popup-menu .filter-button img:hover {
-  opacity: 1;
 }

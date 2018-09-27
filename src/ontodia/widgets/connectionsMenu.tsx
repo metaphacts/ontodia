@@ -645,8 +645,9 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
                 <span className='ontodia-badge link-in-popup-menu__count'>
                     {this.props.count <= MAX_LINK_COUNT ? this.props.count : '100+'}
                 </span>
-                <a className='filter-button' onClick={this.onMoveToFilter}
-                    title='Set as filter in the Instances panel'><img/></a>
+                <div className='link-in-popup-menu__filter-button'
+                    onClick={this.onMoveToFilter}
+                    title='Set as filter in the Instances panel' />
                 <div className='link-in-popup-menu__navigate-button'
                     title={`Navigate to ${directionName} "${fullText}" elements`} />
             </li>
