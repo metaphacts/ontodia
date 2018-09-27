@@ -9,8 +9,8 @@ export class RestoreGeometry implements Command {
     readonly title = 'Move elements and links';
 
     constructor(
-        private elementState: ReadonlyArray<{ element: Element; position: Vector; }>,
-        private linkState: ReadonlyArray<{ link: Link; vertices: ReadonlyArray<Vector>; }>,
+        private elementState: ReadonlyArray<{ element: Element; position: Vector }>,
+        private linkState: ReadonlyArray<{ link: Link; vertices: ReadonlyArray<Vector> }>,
     ) {}
 
     static capture(model: DiagramModel) {

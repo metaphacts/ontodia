@@ -196,6 +196,7 @@ export class RDFDataProvider implements DataProvider {
                         label: { values: labels },
                     };
                 } catch (error) {
+                    // tslint:disable-next-line:no-console
                     console.warn(error);
                     return null;
                 }
@@ -226,6 +227,7 @@ export class RDFDataProvider implements DataProvider {
                         children: [],
                     };
                 } catch (error) {
+                    // tslint:disable-next-line:no-console
                     console.warn(error);
                     return null;
                 }
@@ -249,6 +251,7 @@ export class RDFDataProvider implements DataProvider {
                         count: this.rdfStorage.getTypeCount(typeId),
                     };
                 } catch (error) {
+                    // tslint:disable-next-line:no-console
                     console.warn(error);
                     return null;
                 }
@@ -295,6 +298,7 @@ export class RDFDataProvider implements DataProvider {
                 await this.fetchIfNecessary(elementId, isExists);
                 return this.getElementInfo(elementId);
             } catch (error) {
+                // tslint:disable-next-line:no-console
                 console.warn(error);
                 return null;
             }
@@ -325,6 +329,7 @@ export class RDFDataProvider implements DataProvider {
                 ]).then(() => (
                     {subject: source, object: target}
                 )).catch(error => {
+                    // tslint:disable-next-line:no-console
                     console.warn(error);
                     return null;
                 }));
@@ -395,7 +400,7 @@ export class RDFDataProvider implements DataProvider {
             }
         }
         return links;
-    };
+    }
 
     async linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         await this.waitInitCompleted();
@@ -445,7 +450,7 @@ export class RDFDataProvider implements DataProvider {
 
         const elements = await elementsPromise;
         return this.filterByKey(params.text, elements);
-    };
+    }
 
     private async filterByTypeId(
         elementTypeId: ElementTypeIri, filter: (node: Node, index: number) => boolean,
@@ -552,6 +557,7 @@ export class RDFDataProvider implements DataProvider {
                 this.rdfStorage.add(rdfGraph);
                 return;
             }).catch(error => {
+                // tslint:disable-next-line:no-console
                 console.warn(error);
                 return;
             });
@@ -571,7 +577,7 @@ export class RDFDataProvider implements DataProvider {
                 properties: props,
             };
         });
-    };
+    }
 
     private getLabels(id: string): Promise<LocalizedString[]> {
         return this.rdfStorage.getLabels(id).then(labelTriples => {

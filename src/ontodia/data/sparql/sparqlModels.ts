@@ -37,7 +37,7 @@ export function isRdfLiteral(e: RdfNode): e is RdfLiteral {
 
 export interface BlankBinding extends ElementBinding {
     blankType: {
-        value: 'listHead' | 'blankNode',
+        value: 'listHead' | 'blankNode';
     };
     blankTrgProp: RdfNode;
     blankTrg: RdfNode;

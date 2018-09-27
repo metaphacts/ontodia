@@ -59,7 +59,7 @@ export interface ConnectionsMenuProps {
     editor: EditorController;
     target: Element;
     onClose: () => void;
-    onAddElements: (elementIris: ElementIri[], linkType: FatLinkType|undefined) => void;
+    onAddElements: (elementIris: ElementIri[], linkType: FatLinkType | undefined) => void;
     suggestProperties?: PropertySuggestionHandler;
 }
 
@@ -132,6 +132,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
                 this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.connectionsLoadLinks);
             })
             .catch(err => {
+                // tslint:disable-next-line:no-console
                 console.error(err);
                 this.loadingState = 'error';
                 this.updateAll();
@@ -166,6 +167,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
 
             this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.connectionsLoadElements);
         }).catch(err => {
+            // tslint:disable-next-line:no-console
             console.error(err);
             this.loadingState = 'error';
             this.updateAll();
@@ -269,7 +271,7 @@ interface ConnectionsMenuMarkupState {
 }
 
 class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, ConnectionsMenuMarkupState> {
-    constructor (props: ConnectionsMenuMarkupProps) {
+    constructor(props: ConnectionsMenuMarkupProps) {
         super(props);
         this.state = {
             filterKey: '',
@@ -281,7 +283,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     private onChangeFilter = (e: React.FormEvent<HTMLInputElement>) => {
         const filterKey = e.currentTarget.value;
         this.setState({filterKey});
-    };
+    }
 
     private getTitle = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
@@ -290,16 +292,16 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
             return 'Connections';
         }
         return 'Error';
-    };
+    }
 
     private onExpandLink = (linkDataChunk: LinkDataChunk) => {
         this.setState({ filterKey: '',  panel: 'objects' });
         this.props.onExpandLink(linkDataChunk);
-    };
+    }
 
     private onCollapseLink = () => {
         this.setState({ filterKey: '',  panel: 'connections' });
-    };
+    }
 
     private getBreadCrumbs = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
@@ -315,7 +317,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
         } else {
             return null;
         }
-    };
+    }
 
     private getBody = () => {
         if (this.props.state === 'error') {
@@ -346,7 +348,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
         } else {
             return <div/>;
         }
-    };
+    }
 
     private onSortChange = (e: React.FormEvent<HTMLInputElement>) => {
         const value = (e.target as HTMLInputElement).value as SortMode;
@@ -360,15 +362,15 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
         return (
             <div>
                 <input
-                    type="radio"
-                    name="sort"
+                    type='radio'
+                    name='sort'
                     id={id}
                     value={id}
-                    className="ontodia-connections-menu__sort-switch"
+                    className='ontodia-connections-menu__sort-switch'
                     onChange={this.onSortChange}
                     checked={this.state.sortMode === id}
                 />
-                <label htmlFor={id} className="ontodia-connections-menu__sort-switch-label" title={title}>
+                <label htmlFor={id} className='ontodia-connections-menu__sort-switch-label' title={title}>
                     <i className={`fa ${icon}`}/>
                 </label>
             </div>
@@ -379,7 +381,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
         if (this.state.panel !== 'connections' || !this.props.propertySuggestionCall) { return null; }
 
         return (
-            <div className="ontodia-connections-menu_search-line-sort-switches">
+            <div className='ontodia-connections-menu_search-line-sort-switches'>
                 {this.renderSortSwitch('alphabet', 'fa-sort-alpha-asc', 'Sort alphabetically')}
                 {this.renderSortSwitch('smart', 'fa-lightbulb-o', 'Smart sort')}
             </div>
@@ -432,7 +434,7 @@ interface ConnectionsListProps {
 }
 
 class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Dictionary<PropertyScore> }> {
-    constructor (props: ConnectionsListProps) {
+    constructor(props: ConnectionsListProps) {
         super(props);
         this.state = { scores: {} };
         this.updateScores(props);
@@ -536,7 +538,7 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
         }
 
         return views;
-    };
+    }
 
     render() {
         const {view} = this.props;

@@ -270,5 +270,3 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         this.untilMouseUpClasses = [];
     }
 }
-
-export default WorkspaceMarkup;

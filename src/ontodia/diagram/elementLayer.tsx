@@ -112,7 +112,7 @@ interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
 }
 
-export type ElementContextWrapper = { ontodiaElement: ElementContext };
+export interface ElementContextWrapper { ontodiaElement: ElementContext; }
 export const ElementContextTypes: { [K in keyof ElementContextWrapper]: any } = {
     ontodiaElement: PropTypes.anything,
 };
@@ -272,7 +272,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         };
     }
 
-    private getPropertyTable(): Array<{ id: string; name: string; property: Property; }> {
+    private getPropertyTable(): Array<{ id: string; name: string; property: Property }> {
         const {model, view} = this.props;
 
         if (!model.data.properties) { return []; }

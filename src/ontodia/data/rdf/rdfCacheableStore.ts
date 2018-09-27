@@ -35,14 +35,14 @@ export function isNamedNode(el: Node): el is NamedNode {
     return el.interfaceName === 'NamedNode';
 }
 
-export type MatchStatement = {
-    subject?: string,
-    predicate?: string,
-    object?: string,
-    iri?: string,
-    callback?: (...args: any[]) => void,
-    limit?: number,
-};
+export interface MatchStatement {
+    subject?: string;
+    predicate?: string;
+    object?: string;
+    iri?: string;
+    callback?: (...args: any[]) => void;
+    limit?: number;
+}
 
 export const LABEL_URIS = [
     'http://www.w3.org/2004/02/skos/core#prefLabel',

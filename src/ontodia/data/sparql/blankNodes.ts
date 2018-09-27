@@ -49,7 +49,7 @@ export function isEncodedBlank(id: string): boolean {
 
 export class QueryExecutor {
     queryDictionary: Dictionary<Promise<SparqlResponse<BlankBinding>>> = {};
-    constructor (
+    constructor(
         public queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
     ) { }
 
@@ -67,7 +67,7 @@ export class QueryExecutor {
     }
 }
 
-export function updateFilterResults (
+export function updateFilterResults(
     result: SparqlResponse<ElementBinding | BlankBinding>,
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
 ): Promise<SparqlResponse<ElementBinding | BlankBinding>> {
@@ -283,7 +283,7 @@ function loadRelatedBlankNodes(
 
 function getQueryForChain(blankNodes: BlankBinding[]): string {
 
-    function getQueryBlock (
+    function getQueryBlock(
         blankNode: BlankBinding,
         index: number,
         maxIndex: number,
@@ -307,7 +307,7 @@ function getQueryForChain(blankNodes: BlankBinding[]): string {
             ` :
             `?blankSrc${index} ${targetPropId} ?inst${instPostfix}.`;
 
-        return ` 
+        return `
             # ======================
             ${sourceId} ${sourcePropId} ?blankSrc${index}.
             ${firstRelation}
@@ -356,7 +356,7 @@ export function linksInfo(elementIds: string[]): SparqlResponse<LinkBinding> {
     };
 }
 
-export function linkTypesOf(params: { elementId: string; }): SparqlResponse<LinkCountBinding> {
+export function linkTypesOf(params: { elementId: string }): SparqlResponse<LinkCountBinding> {
     return {
         head: undefined,
         results: {bindings: getLinkCountBinding(params.elementId)},
@@ -388,7 +388,7 @@ export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
     }
 
     return filterResponse;
-};
+}
 
 function getAllRelatedByLinkTypeElements(
     refElementId: string, refElementLinkId: string, linkDirection: string,

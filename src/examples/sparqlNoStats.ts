@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import {Workspace, WorkspaceProps, SparqlDataProvider, OWLRDFSSettings, SparqlQueryMethod} from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, OWLRDFSSettings } from '../index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
@@ -21,12 +21,12 @@ function onWorkspaceMounted(workspace: Workspace) {
         }, {...OWLRDFSSettings, ...{
             fullTextSearch: {
                 prefix: 'PREFIX bds: <http://www.bigdata.com/rdf/search#>' + '\n',
-                queryPattern: ` 
-              ?inst rdfs:label ?searchLabel. 
+                queryPattern: `
+              ?inst rdfs:label ?searchLabel.
               SERVICE bds:search {
                      ?searchLabel bds:search "\${text}*" ;
                                   bds:minRelevance '0.5' ;
-                                  
+
                                   bds:matchAllTerms 'true';
                                   bds:relevance ?score.
               }

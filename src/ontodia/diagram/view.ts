@@ -30,7 +30,7 @@ export interface ViewOptions {
 }
 
 export interface TypeStyle {
-    color: { h: number; c: number; l: number; };
+    color: { h: number; c: number; l: number };
     icon?: string;
 }
 
@@ -202,7 +202,7 @@ export class DiagramView {
         }
 
         const icon = customStyle ? customStyle.icon : undefined;
-        let color: { h: number; c: number; l: number; };
+        let color: { h: number; c: number; l: number };
         if (customStyle && customStyle.color) {
             color = hcl(customStyle.color);
         } else {

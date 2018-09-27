@@ -18,8 +18,8 @@ export class SparqlGraphBuilder {
     }
 
     getGraphFromConstruct(constructQuery: string): Promise<{
-        preloadedElements: Dictionary<ElementModel>,
-        diagram: SerializedDiagram,
+        preloadedElements: Dictionary<ElementModel>;
+        diagram: SerializedDiagram;
     }> {
         const query = DEFAULT_PREFIX + constructQuery;
         return this.dataProvider.executeSparqlConstruct(query)

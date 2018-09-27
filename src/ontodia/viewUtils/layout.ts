@@ -88,7 +88,7 @@ export function uniformGrid(params: {
 
 export function padded(
     nodes: LayoutNode[],
-    padding: { x: number; y: number; } | undefined,
+    padding: { x: number; y: number } | undefined,
     transform: () => void,
 ) {
     if (padding) {

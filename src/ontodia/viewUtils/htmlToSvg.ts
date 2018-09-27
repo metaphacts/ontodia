@@ -72,9 +72,9 @@ export function htmlToSvg(htmlView: Node, blackList?: string[], mockImages?: boo
             const nestedParts = breakIntoPrimitives(child);
             if (nestedParts.length > 0) {
                 for (const p of nestedParts) {
-                    const { x, y, width, height } = getElementBoundingBox(p);
-                    contentSize.width = Math.max(contentSize.width, x + width);
-                    contentSize.height = Math.max(contentSize.height, y + height);
+                    const bbox = getElementBoundingBox(p);
+                    contentSize.width = Math.max(contentSize.width, bbox.x + bbox.width);
+                    contentSize.height = Math.max(contentSize.height, bbox.y + bbox.height);
                 }
                 parts = parts.concat(nestedParts);
             }
@@ -227,7 +227,7 @@ function getOffsetLeft(element: HTMLElement): number {
 
 function breakInLines(
     text: string,
-    textSize: { width: number, height: number },
+    textSize: { width: number; height: number },
     prefferedWidth: number,
     elipsis?: boolean,
 ): string[] {

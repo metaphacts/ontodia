@@ -17,9 +17,9 @@ export namespace Command {
         return {title, invoke: action};
     }
 
-    export function effect(title: string, effect: () => void): Command {
+    export function effect(title: string, body: () => void): Command {
         const perform = create(title, () => {
-            effect();
+            body();
             return create(title, () => perform);
         });
         return perform;
@@ -27,7 +27,7 @@ export namespace Command {
 }
 
 export interface CommandHistoryEvents {
-    historyChanged: {},
+    historyChanged: {};
 }
 
 export interface CommandHistory {
@@ -55,7 +55,9 @@ export class NonRememberingHistory implements CommandHistory {
     readonly undoStack: ReadonlyArray<Command> = [];
     readonly redoStack: ReadonlyArray<Command> = [];
 
-    reset() {}
+    reset() {
+        // do nothing
+    }
     undo() {
         throw new Error('Undo is unsupported');
     }
@@ -66,7 +68,9 @@ export class NonRememberingHistory implements CommandHistory {
     execute(command: Command) {
         command.invoke();
     }
-    registerToUndo(command: Command) {}
+    registerToUndo(command: Command) {
+        // do nothing
+    }
     startBatch(title?: string): Batch {
         return {
             history: this,
@@ -74,6 +78,6 @@ export class NonRememberingHistory implements CommandHistory {
             discard: this.discardBatch,
         };
     }
-    private storeBatch = () => {}
-    private discardBatch = () => {}
+    private storeBatch = () => {/* nothing */};
+    private discardBatch = () => {/* nothing */};
 }

@@ -83,17 +83,20 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         return (
             <li data-linkTypeId={this.props.link.id} className='ontodia-list-group-item linkInToolBox clearfix'>
                 <span className='ontodia-btn-group ontodia-btn-group-xs' data-toggle='buttons'>
-                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('invisible') ? ' active' : '')}
+                    <label className={
+                            'ontodia-btn ontodia-btn-default' + (this.isChecked('invisible') ? ' active' : '')}
                         id='invisible' title='Hide links and labels'
                         onClick={() => this.changeState('invisible')}>
                         <span className='fa fa-times' aria-hidden='true' />
                     </label>
-                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
+                    <label className={
+                            'ontodia-btn ontodia-btn-default' + (this.isChecked('withoutLabels') ? ' active' : '')}
                         id='withoutLabels' title='Show links without labels'
                         onClick={() => this.changeState('withoutLabels')}>
                         <span className='fa fa-arrows-h' aria-hidden='true' />
                     </label>
-                    <label className={'ontodia-btn ontodia-btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
+                    <label className={
+                            'ontodia-btn ontodia-btn-default' + (this.isChecked('allVisible') ? ' active' : '')}
                         id='allVisible' title='Show links with labels'
                         onClick={() => this.changeState('allVisible')}>
                         <span className='fa fa-text-width' aria-hidden='true' />
@@ -307,6 +310,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
                 this.setState({dataState: 'finished', linksOfElement, countMap});
             }).catch(error => {
                 if (this.currentRequest !== request) { return; }
+                // tslint:disable-next-line:no-console
                 console.error(error);
                 this.setState({dataState: 'error', linksOfElement: undefined, countMap: {}});
             });

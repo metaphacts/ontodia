@@ -238,6 +238,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             this.context.ontodiaWorkspace.triggerWorkspaceEvent(WorkspaceEventKey.searchQueryItem);
         }).catch(error => {
             if (this.currentRequest !== request) { return; }
+            // tslint:disable-next-line:no-console
             console.error(error);
             this.setState({quering: false, error});
         });

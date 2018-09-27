@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { ReactElement } from 'react';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
@@ -10,7 +9,6 @@ import { RestoreGeometry } from './commands';
 import { Element, Link, Cell, LinkVertex } from './elements';
 import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
-import { DiagramModel } from './model';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
 
@@ -35,7 +33,7 @@ export interface ZoomOptions {
 }
 
 export interface ScaleOptions {
-    pivot?: { x: number; y: number; };
+    pivot?: { x: number; y: number };
 }
 
 export interface PaperAreaEvents {
@@ -113,7 +111,7 @@ export class PaperArea extends React.Component<Props, State> {
     private readonly pageSize = {x: 1500, y: 800};
 
     private movingState: PointerMoveState | undefined;
-    private panningScrollOrigin: { scrollLeft: number; scrollTop: number; };
+    private panningScrollOrigin: { scrollLeft: number; scrollTop: number };
     private movingElementOrigin: {
         pointerX: number;
         pointerY: number;
@@ -308,7 +306,7 @@ export class PaperArea extends React.Component<Props, State> {
     }
 
     /** Returns paper size in paper coordinates. */
-    getPaperSize(): { width: number; height: number; } {
+    getPaperSize(): { width: number; height: number } {
         const {paperWidth: width, paperHeight: height, scale} = this.state;
         return {width: width / scale, height: height / scale};
     }
@@ -545,7 +543,7 @@ export class PaperArea extends React.Component<Props, State> {
         }
     }
 
-    centerTo(paperPosition?: { x: number; y: number; }) {
+    centerTo(paperPosition?: { x: number; y: number }) {
         const {paperWidth, paperHeight, scale, originX, originY, paddingX, paddingY} = this.state;
         const paperCenter = paperPosition || {x: paperWidth / 2, y: paperHeight / 2};
         const clientCenterX = (paperCenter.x + originX) * scale;
@@ -576,7 +574,7 @@ export class PaperArea extends React.Component<Props, State> {
 
         const center = this.clientToPaperCoords(
             this.area.clientWidth / 2, this.area.clientHeight / 2);
-        let pivot: { x: number; y: number; };
+        let pivot: { x: number; y: number };
         if (options.pivot) {
             const {x, y} = options.pivot;
             const previousScale = this.state.scale;
@@ -691,7 +689,7 @@ function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
 
 export function getContentFittingBox(
     elements: ReadonlyArray<Element>, links: ReadonlyArray<Link>
-): { x: number; y: number; width: number; height: number; } {
+): { x: number; y: number; width: number; height: number } {
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
 

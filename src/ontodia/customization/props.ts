@@ -49,7 +49,7 @@ export interface LinkStyle {
     };
     label?: LinkLabel;
     properties?: LinkLabel[];
-    connector?: { name?: string; args?: {}; };
+    connector?: { name?: string; args?: {} };
 }
 
 export interface LinkRouter {

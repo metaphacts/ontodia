@@ -56,13 +56,13 @@ function wikidataSuggestProperties(params: PropertySuggestionParams) {
         }
     }).then(json => {
         const dictionary: { [id: string]: PropertyScore } = {};
-        for (const term of json.data) {
-            const propertyIri = idMap[term.id];
+        for (const scoredItem of json.data) {
+            const propertyIri = idMap[scoredItem.id];
             const item = dictionary[propertyIri];
 
-            if (item && item.score > term.value) { continue; }
+            if (item && item.score > scoredItem.value) { continue; }
 
-            dictionary[propertyIri] = {propertyIri, score: term.value};
+            dictionary[propertyIri] = {propertyIri, score: scoredItem.value};
         }
 
         Object.keys(idMap).forEach(key => {
@@ -97,8 +97,8 @@ function onWorkspaceMounted(wspace: Workspace) {
 
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
-    onSaveDiagram: workspace => {
-        const diagram = workspace.getModel().exportLayout();
+    onSaveDiagram: self => {
+        const diagram = self.getModel().exportLayout();
         window.location.hash = saveLayoutToLocalStorage(diagram);
         window.location.reload();
     },

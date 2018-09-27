@@ -2,7 +2,7 @@ import * as React from 'react';
 
 export interface Props {
     size?: number;
-    position?: { x: number; y: number; };
+    position?: { x: number; y: number };
     maxWidth?: number;
     statusText?: string;
     errorOccured?: boolean;

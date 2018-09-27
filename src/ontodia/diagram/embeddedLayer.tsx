@@ -31,7 +31,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
 
     private isApplyingParentMove = false;
     private isNestedElementMoving = false;
-    private previousPositions: Array<{ id: string; position: Vector; }> = [];
+    private previousPositions: Array<{ id: string; position: Vector }> = [];
 
     constructor(props: {}) {
         super(props);
@@ -120,7 +120,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
         batch.discard();
     }
 
-    private getOffset(): { offsetX: number; offsetY: number; } {
+    private getOffset(): { offsetX: number; offsetY: number } {
         const {element} = this.context.ontodiaElement;
         const {x: elementX, y: elementY} = element.position;
 
@@ -172,7 +172,7 @@ export class EmbeddedLayer extends React.Component<{}, State> {
         }
     }
 
-    private calculateOffset(layer: HTMLElement): { left: number; top: number; } {
+    private calculateOffset(layer: HTMLElement): { left: number; top: number } {
         const {paperArea} = this.context.ontodiaPaperArea;
         const scale = paperArea.getScale();
         const parent = findParentElement(layer);

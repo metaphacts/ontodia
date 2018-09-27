@@ -49,6 +49,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     onPersistChanges: workspace => {
         const state = workspace.getEditor().authoringState;
+        // tslint:disable-next-line:no-console
         console.log('Authoring state:', state);
     },
     metadataApi: new ExampleMetadataApi(),

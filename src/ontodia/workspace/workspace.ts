@@ -305,6 +305,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             operation.then(() => {
                 this.editor.setSpinner(undefined);
             }).catch(error => {
+                // tslint:disable-next-line:no-console
                 console.error(error);
                 this.editor.setSpinner({statusText: 'Unknown error occured', errorOccured: true});
             });
@@ -390,7 +391,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
     }
 
-    centerTo = (paperPosition?: { x: number; y: number; }) => {
+    centerTo = (paperPosition?: { x: number; y: number }) => {
         this.markup.paperArea.centerTo(paperPosition);
     }
 
@@ -470,5 +471,3 @@ export function renderTo<WorkspaceComponentProps>(
 ) {
     ReactDOM.render(createElement(workspace, props), container);
 }
-
-export default Workspace;
