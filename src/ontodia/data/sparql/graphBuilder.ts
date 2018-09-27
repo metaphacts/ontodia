@@ -1,6 +1,6 @@
 import { keyBy } from 'lodash';
 
-import { GenerateID } from '../../diagram/elements';
+import { GenerateID } from '../../data/schema';
 import {
     LayoutElement, LayoutLink, SerializedDiagram, makeSerializedDiagram
 } from '../../editor/serializedDiagram';

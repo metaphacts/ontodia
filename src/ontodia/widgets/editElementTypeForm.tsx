@@ -1,14 +1,15 @@
 import * as React from 'react';
 
+import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from '../data/schema';
+
 import { DiagramView } from '../diagram/view';
-import { ElementModel, ElementTypeIri, LinkModel, LinkTypeIri } from '../data/model';
+import { ElementModel, ElementTypeIri, LinkModel } from '../data/model';
 import { MetadataApi } from '../data/metadataApi';
 import { Cancellation } from '../viewUtils/async';
+import { HtmlSpinner } from '../viewUtils/spinner';
 import { SelectLinkType } from './selectLinkType';
 
 const CLASS_NAME = 'ontodia-edit-form';
-const ELEMENT_TYPE = '' as ElementTypeIri;
-const LINK_TYPE = '' as LinkTypeIri;
 
 export interface Props {
     view: DiagramView;
@@ -31,7 +32,7 @@ export class EditElementTypeForm extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
-        this.state = {elementData: props.target, linkData: props.link, elementTypes: []};
+        this.state = {elementData: props.target, linkData: props.link};
     }
 
     componentDidMount() {
@@ -44,26 +45,35 @@ export class EditElementTypeForm extends React.Component<Props, State> {
 
     onElementTypeChange = (e: React.FormEvent<HTMLSelectElement>) => {
         const type = (e.target as HTMLSelectElement).value as ElementTypeIri;
-        this.setState({elementData: {...this.state.elementData, types: [type]}});
+        this.setState(({elementData, linkData}) => ({
+            elementData: {...elementData, types: [type]},
+            linkData: {...linkData, linkTypeId: PLACEHOLDER_LINK_TYPE},
+        }));
+    }
+
+    private renderPossibleElementType = (elementType: ElementTypeIri) => {
+        const {view} = this.props;
+        const type = view.model.createClass(elementType);
+        const label = view.getElementTypeLabel(type).text;
+        return <option key={elementType} value={elementType}>{label}</option>;
     }
 
     private renderElementType() {
-        const {view} = this.props;
-        const {elementData} = this.state;
+        const {elementData, elementTypes} = this.state;
         const value = elementData.types.length ? elementData.types[0] : '';
         return (
             <label>
                 Element type
-                <select className='ontodia-form-control' value={value} onChange={this.onElementTypeChange}>
-                    <option value='' disabled={true}>Select element type</option>
-                    {
-                        this.state.elementTypes.map(elementType => {
-                            const type = view.model.createClass(elementType);
-                            const label = view.getElementTypeLabel(type).text;
-                            return <option key={elementType} value={elementType}>{label}</option>;
-                        })
-                    }
-                </select>
+                {
+                    elementTypes ? (
+                        <select className='ontodia-form-control' value={value} onChange={this.onElementTypeChange}>
+                            <option value={PLACEHOLDER_ELEMENT_TYPE} disabled={true}>Select element type</option>
+                            {
+                                elementTypes.map(this.renderPossibleElementType)
+                            }
+                        </select>
+                    ) : <div><HtmlSpinner width={20} height={20} /></div>
+                }
             </label>
         );
     }
@@ -71,6 +81,8 @@ export class EditElementTypeForm extends React.Component<Props, State> {
     render() {
         const {view, metadataApi, source} = this.props;
         const {elementData, linkData} = this.state;
+        const isElementTypeSelected = elementData.types.indexOf(PLACEHOLDER_ELEMENT_TYPE) < 0;
+        const isLinkTypeSelected = linkData.linkTypeId !== PLACEHOLDER_LINK_TYPE;
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__body`}>
@@ -79,13 +91,14 @@ export class EditElementTypeForm extends React.Component<Props, State> {
                     </div>
                     <div className={`${CLASS_NAME}__form-row`}>
                         <SelectLinkType view={view} metadataApi={metadataApi} link={linkData} source={source}
-                            target={elementData} onChange={data => this.setState({linkData: data})} />
+                            target={elementData} onChange={data => this.setState({linkData: data})}
+                            disabled={!isElementTypeSelected} />
                     </div>
                 </div>
                 <div className={`${CLASS_NAME}__controls`}>
                     <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__apply-button`}
                         onClick={() => this.props.onApply(elementData, linkData)}
-                        disabled={elementData.types.indexOf(ELEMENT_TYPE) >= 0 || linkData.linkTypeId === LINK_TYPE}>
+                        disabled={!isElementTypeSelected || !isLinkTypeSelected}>
                         Apply
                     </button>
                     <button className='ontodia-btn ontodia-btn-danger'

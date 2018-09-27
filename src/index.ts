@@ -20,6 +20,7 @@ export * from './ontodia/data/composite/composite';
 export * from './ontodia/data/sparql/sparqlDataProviderSettings';
 export * from './ontodia/data/sparql/graphBuilder';
 export * from './ontodia/data/sparql/sparqlGraphBuilder';
+export { DIAGRAM_CONTEXT_URL_V1 } from './ontodia/data/schema';
 
 export { RestoreGeometry } from './ontodia/diagram/commands';
 export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell } from './ontodia/diagram/elements';
@@ -38,7 +39,7 @@ export {
 } from './ontodia/editor/editorController';
 
 export {
-    LayoutData, LayoutElement, LayoutLink, SerializedDiagram, DIAGRAM_CONTEXT_URL_V1,
+    LayoutData, LayoutElement, LayoutLink, SerializedDiagram,
     convertToSerializedDiagram, makeSerializedDiagram
 } from './ontodia/editor/serializedDiagram';
 export { recursiveLayout } from './ontodia/viewUtils/layout';

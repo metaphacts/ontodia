@@ -3,11 +3,13 @@ import * as React from 'react';
 import { MetadataApi } from '../data/metadataApi';
 import { LinkModel, LinkTypeIri, ElementModel } from '../data/model';
 import { formatLocalizedLabel } from '../diagram/model';
+import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
-import { FatLinkType, Link } from '../diagram/elements';
+import { FatLinkType } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 export interface Props {
     view: DiagramView;
@@ -16,6 +18,7 @@ export interface Props {
     source: ElementModel;
     target: ElementModel;
     onChange: (data: LinkModel) => void;
+    disabled?: boolean;
 }
 
 export interface State {
@@ -28,20 +31,19 @@ export class SelectLinkType extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
-
-        this.state = {fatLinkTypes: {}};
+        this.state = {};
     }
 
     private updateAll = () => this.forceUpdate();
 
     componentDidMount() {
-        const {source, target} = this.props;
-        this.fetchPossibleLinkTypes(source, target);
+        this.fetchPossibleLinkTypes();
     }
 
-    componentWillReceiveProps(nextProps: Props) {
-        if (nextProps.source !== this.props.source || nextProps.target !== this.props.target) {
-            this.fetchPossibleLinkTypes(nextProps.source, nextProps.target);
+    componentDidUpdate(prevProps: Props) {
+        if (prevProps.source !== this.props.source || prevProps.target !== this.props.target) {
+            this.setState({fatLinkTypes: undefined});
+            this.fetchPossibleLinkTypes();
         }
     }
 
@@ -50,8 +52,8 @@ export class SelectLinkType extends React.Component<Props, State> {
         this.cancellation.abort();
     }
 
-    private fetchPossibleLinkTypes(source: ElementModel, target: ElementModel) {
-        const {view, metadataApi} = this.props;
+    private fetchPossibleLinkTypes() {
+        const {view, metadataApi, source, target} = this.props;
         if (!metadataApi) { return; }
         metadataApi.possibleLinkTypes(source, target, this.cancellation.signal).then(linkTypes => {
             const fatLinkTypes: {[id: string]: FatLinkType} = {};
@@ -72,23 +74,31 @@ export class SelectLinkType extends React.Component<Props, State> {
         this.props.onChange({...this.props.link, linkTypeId});
     }
 
-    render() {
-        const {view, link} = this.props;
-        const {fatLinkTypes} = this.state;
+    private renderPossibleLinkType(fatLinkType: FatLinkType) {
+        const {view} = this.props;
+        const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
+        return <option key={fatLinkType.id} value={fatLinkType.id}>{label}</option>;
+    }
 
+    render() {
+        const {link, disabled} = this.props;
+        const {fatLinkTypes} = this.state;
         return (
             <label>
                 Type
-                <select className='ontodia-form-control' value={link.linkTypeId} onChange={this.onChangeType}>
-                    <option value='' disabled={true}>Select link type</option>
-                    {
-                        Object.keys(fatLinkTypes).map(linkType => {
-                            const fatLinkType = fatLinkTypes[linkType];
-                            const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
-                            return <option key={linkType} value={linkType}>{label}</option>;
-                        })
-                    }
-                </select>
+                {
+                    fatLinkTypes ? (
+                        <select className='ontodia-form-control' value={link.linkTypeId} onChange={this.onChangeType}
+                             disabled={disabled}>
+                            <option value={PLACEHOLDER_LINK_TYPE} disabled={true}>Select link type</option>
+                            {
+                                Object.keys(fatLinkTypes).map(linkType =>
+                                    this.renderPossibleLinkType(fatLinkTypes[linkType])
+                                )
+                            }
+                        </select>
+                    ) : <div><HtmlSpinner width={20} height={20} /></div>
+                }
             </label>
         );
     }
