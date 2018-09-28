@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build:
+  checkout:
     docker:
       # specify the version you desire here
       - image: circleci/node:8.12
@@ -28,8 +28,25 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
-      - run: yarn test
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+          - ontodia
+
+  build:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+
+      - run: yarn run build-all
+      - run: yarn run typings
+      - run: yarn run lint
 
       - run:
           name: cleanup node_modules
@@ -42,7 +59,20 @@ jobs:
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
-            - ontodia
+          - ontodia
+
+  test:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+
+    - run: yarn run lint
 
   publish:
     docker:
@@ -76,10 +106,32 @@ workflows:
   version: 2
   untagged-build:
     jobs:
-      - build
+      - checkout
+      - build:
+          requires:
+            - checkout
+      - test:
+          requires:
+            - checkout
   tagged-build:
     jobs:
+      - checkout:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
       - build:
+          requires:
+          - checkout
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - test:
+          requires:
+          - checkout
           filters:
             tags:
               only: /^v.*/
@@ -88,6 +140,7 @@ workflows:
       - publish:
           requires:
             - build
+            - test
           filters:
             tags:
               only: /^v.*/

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.9.4] - 2018-09-28
+### Added
+- TSLint check is enforced in builds
+
+### Fixed
+- resetting of temporary state
+- duplication of link labels in SparqlDataProvider
+
 ## [0.9.3] - 2018-09-20
 ### Added
 - Ontodia watermark to diagrams.
@@ -337,7 +345,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.3...HEAD
+[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.4...HEAD
+[0.9.4]: https://github.com/ontodia-org/ontodia/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/ontodia-org/ontodia/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/ontodia-org/ontodia/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/ontodia-org/ontodia/compare/v0.9.0...v0.9.1
