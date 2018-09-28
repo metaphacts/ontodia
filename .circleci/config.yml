@@ -18,8 +18,6 @@ jobs:
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
 
       - run: yarn install
 
@@ -46,20 +44,28 @@ jobs:
 
       - run: yarn run build-all
       - run: yarn run typings
-      - run: yarn run lint
-
-      - run:
-          name: cleanup node_modules
-          command: rm -rf node_modules
-
-      - store_artifacts:
-          path: /tmp/workspace/ontodia/dist/examples
-          destination: ontodia
 
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
           - ontodia
+
+  build-examples:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+
+    - run: yarn run build-examples
+
+    - store_artifacts:
+        path: /tmp/workspace/ontodia/dist/examples
+        destination: ontodia
 
   test:
     docker:
@@ -110,6 +116,9 @@ workflows:
       - build:
           requires:
             - checkout
+      - build-examples:
+          requires:
+          - checkout
       - test:
           requires:
             - checkout
@@ -129,6 +138,14 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+      - build-examples:
+          requires:
+          - checkout
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
       - test:
           requires:
           - checkout
@@ -141,6 +158,7 @@ workflows:
           requires:
             - build
             - test
+            - build-examples
           filters:
             tags:
               only: /^v.*/
