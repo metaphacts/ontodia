@@ -12,7 +12,7 @@ const JsonLdParser: any = require('rdf-parser-jsonld');
 const EXAMPLE = `@prefix fts: <https://w3id.org/datafabric.cc/ontologies/fts#> .
  @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
  @prefix ex: <http://example.com/> .
-  
+
  ex:LED-1 a fts:C4_Legal_Entity_Details ;
     fts:p80_describes_company ex:LE-1 ;
     fts:p81_includes_le_reg_entity ex:LE-1-NameEntity-1157847449121,
@@ -37,19 +37,18 @@ const EXAMPLE = `@prefix fts: <https://w3id.org/datafabric.cc/ontologies/fts#> .
         fts:p82_refers_to_company ex:LE-1 ;
         fts:p76_entered_on_registry_with ex:RND-1157847449121 ;
         fts:p28_le_primary_state_registration_number "1157847449121" ;
-        fts:p29_psrn_assignment_date "25-12-2015"^^xsd:date .                            
+        fts:p29_psrn_assignment_date "25-12-2015"^^xsd:date .
 `;
 
 const DIAGRAM = `@prefix fts: <https://w3id.org/datafabric.cc/ontologies/fts#> .
  @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
  @prefix ex: <http://example.com/> .
-  
+
  ex:LED-1 a fts:C4_Legal_Entity_Details ;
     fts:p80_describes_company ex:LE-1 ;
     fts:p81_includes_le_reg_entity ex:LE-1-NameEntity-1157847449121,
                         ex:LE-1-Address-1157847449121,
                         ex:LE-1-RegInfo-1157847449121 .`;
-
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }

@@ -153,5 +153,3 @@ function mapClass(
         icon,
     };
 }
-
-export default ClassTree;

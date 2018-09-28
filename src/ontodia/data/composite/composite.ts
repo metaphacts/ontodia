@@ -37,7 +37,7 @@ export class CompositeDataProvider implements DataProvider {
     constructor(
         dataProviders: (DataProvider | DPDefinition)[],
         params?: {
-            mergeMode?: MergeMode,
+            mergeMode?: MergeMode;
         },
     ) {
         let dpCounter = 1;
@@ -149,7 +149,7 @@ export class CompositeDataProvider implements DataProvider {
                 }
             }).then(mergeLinkTypesOf);
         }
-    };
+    }
 
     linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
         if (this.mergeMode === 'fetchAll') {
@@ -177,7 +177,7 @@ export class CompositeDataProvider implements DataProvider {
                 }
             }).then(mergeFilter);
         }
-    };
+    }
 
     private processResults<ResponseType>(
         responsePromise: Promise<ResponseType>,
@@ -187,16 +187,17 @@ export class CompositeDataProvider implements DataProvider {
         return responsePromise
             .then(response => ({dataSourceName: dpName, useInStats: useProviderInStats, response: response}))
             .catch(error => {
+                // tslint:disable-next-line:no-console
                 console.error(error);
                 return {dataSourceName: dpName, useInStats: useProviderInStats, response: undefined};
             });
-    };
+    }
 
     private queueProcessResults<ResponseType>(
         callBack: (previousResult: ResponseType, dp: DPDefinition) => Promise<ResponseType>,
     ): Promise<CompositeResponse<ResponseType>[]> {
         let counter = 0;
-        let responseList: CompositeResponse<ResponseType>[] = [];
+        const responseList: CompositeResponse<ResponseType>[] = [];
 
         const recursiveCall = (result?: ResponseType): Promise<CompositeResponse<ResponseType>[]> => {
             if (this.dataProviders.length > counter) {
@@ -211,6 +212,7 @@ export class CompositeDataProvider implements DataProvider {
                     });
                     return recursiveCall(newResult);
                 }).catch(error => {
+                    // tslint:disable-next-line:no-console
                     console.error(error);
                     return recursiveCall(result);
                 });
@@ -219,7 +221,7 @@ export class CompositeDataProvider implements DataProvider {
             }
         };
         return recursiveCall();
-    };
+    }
 
     private fetchSequentially<ResponseType>(
         functionName: keyof DataProvider, mergeFunction: (...args: any[]) => ResponseType, params?: any,

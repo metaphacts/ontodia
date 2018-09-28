@@ -13,11 +13,11 @@ export interface State {
     /**
      * Items' sizes in pixels.
      * Undefined until first resize or toggle initiated by user.
-     **/
+     */
     readonly sizes?: number[];
     /**
      * Items' sizes in percent.
-     **/
+     */
     readonly percents?: string[];
     /**
      * Per-item collapsed state: true if corresponding item is collapsed;
@@ -59,7 +59,7 @@ export class Accordion extends React.Component<Props, State> {
 
     private setHeight = () => {
         this.setState({height: this.element.parentElement.clientHeight});
-    };
+    }
 
     render() {
         const {resizing, height} = this.state;

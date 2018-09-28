@@ -93,8 +93,6 @@ export interface DataProvider {
     filter(params: FilterParams): Promise<Dictionary<ElementModel>>;
 }
 
-export default DataProvider;
-
 export interface LinkElementsParams {
     elementId: ElementIri;
     linkId: LinkTypeIri;

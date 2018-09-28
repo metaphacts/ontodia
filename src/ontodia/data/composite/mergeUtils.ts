@@ -19,8 +19,8 @@ export interface CompositeResponse<Type> {
     response: Type;
 }
 
-export function mergeClassTree(response: CompositeResponse<ClassModel[]>[]): ClassModel[] {
-    const lists = response.filter(r => r.response).map(({useInStats, response}) =>
+export function mergeClassTree(composite: CompositeResponse<ClassModel[]>[]): ClassModel[] {
+    const lists = composite.filter(r => r.response).map(({useInStats, response}) =>
         ({useInStats, classes: classTreeToArray(response)})
     );
     const dictionary: Dictionary<ClassModel> = {};
@@ -239,7 +239,7 @@ export function mergeLinkTypesOf(response: CompositeResponse<LinkCount[]>[]): Li
     const lists = response.filter(r => r.response).map(r => r.response);
     const dictionary: Dictionary<LinkCount> = {};
 
-    const mergeCounts = (a: LinkCount, b: LinkCount): LinkCount => {
+    const merge = (a: LinkCount, b: LinkCount): LinkCount => {
         return {
             id: a.id,
             inCount: a.inCount + b.inCount,
@@ -252,7 +252,7 @@ export function mergeLinkTypesOf(response: CompositeResponse<LinkCount[]>[]): Li
             if (!dictionary[lCount.id]) {
                 dictionary[lCount.id] = lCount;
             } else {
-                dictionary[lCount.id] = mergeCounts(lCount, dictionary[lCount.id]);
+                dictionary[lCount.id] = merge(lCount, dictionary[lCount.id]);
             }
         }
     }

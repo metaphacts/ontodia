@@ -143,7 +143,7 @@ function hasUserPlacedVertices(link: DiagramLink) {
     return vertices && vertices.length > 0;
 }
 
-function centerOfElement(element: DiagramElement): { x: number; y: number; } {
+function centerOfElement(element: DiagramElement): Vector {
     const {x, y} = element.position;
     const {width, height} = element.size;
     return {x: x + width / 2, y: y + height / 2};

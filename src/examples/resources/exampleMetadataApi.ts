@@ -15,10 +15,6 @@ const schema = {
     subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri,
 };
 
-function hasType(model: ElementModel, type: ElementTypeIri) {
-    return Boolean(model.types.find(t => t === type));
-}
-
 const METADATA_DELAY: number = 0; /* ms */
 function delay(): Promise<void> {
     if (METADATA_DELAY === 0) {
@@ -31,37 +27,21 @@ export class ExampleMetadataApi implements MetadataApi {
     async canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean> {
         await delay();
         return true;
-        // return new Promise<boolean>(resolve => {
-        //     this.typesOfElementsDraggedFrom(source, ct).then(elementTypes => resolve(elementTypes.length > 0));
-        // });
     }
 
     async canDropOnElement(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
         await delay();
         return true;
-        // const linkTypes = await this.possibleLinkTypes(source, target, ct);
-        // return linkTypes.length > 0;
     }
 
     async possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
         await delay();
         return [schema.domain, schema.range, schema.subClassOf, schema.subPropertyOf];
-        // return (
-        //     hasType(source, schema.class) && hasType(target, schema.class) ? [schema.subClassOf] :
-        //     hasType(source, schema.objectProperty) && hasType(target, schema.class) ? [schema.domain, schema.range] :
-        //     hasType(source, schema.objectProperty) && hasType(target, schema.objectProperty) ? [schema.subPropertyOf] :
-        //     []
-        // );
     }
 
     async typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
         await delay();
         return [schema.class, schema.objectProperty];
-        // return (
-        //     hasType(source, schema.class) ? [schema.class] :
-        //     hasType(source, schema.objectProperty) ? [schema.class, schema.objectProperty] :
-        //     []
-        // );
     }
 
     async propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {

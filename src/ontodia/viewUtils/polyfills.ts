@@ -22,12 +22,13 @@ if (typeof Number.isFinite === 'undefined') {
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/startsWith
 if (!String.prototype.startsWith) {
-	String.prototype.startsWith = function(search: string, pos?: number) {
-		return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
-	};
+    String.prototype.startsWith = function (search: string, pos?: number) {
+        return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
+    };
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find
+// tslint:disable
 if (!Array.prototype.find) {
     const arrayFind = function (this: Array<any>, predicate: any) {
         // 1. Let O be ? ToObject(this value).
@@ -70,6 +71,7 @@ if (!Array.prototype.find) {
     };
     Object.defineProperty(Array.prototype, 'find', {value: arrayFind});
 }
+// tslint:enable
 
 // from:https://github.com/jserz/js_piece/blob/master/DOM/ChildNode/remove()/remove().md
 (function (arr) {
@@ -82,8 +84,9 @@ if (!Array.prototype.find) {
             enumerable: true,
             writable: true,
             value: function remove(this: any) {
-                if (this.parentNode !== null)
+                if (this.parentNode !== null) {
                     this.parentNode.removeChild(this);
+                }
             }
         });
     });

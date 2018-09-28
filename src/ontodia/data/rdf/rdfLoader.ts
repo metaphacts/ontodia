@@ -10,7 +10,7 @@ export class RDFLoader {
     public proxy: string;
 
     constructor(parameters: {
-        parser: RDFCompositeParser,
+        parser: RDFCompositeParser;
         proxy?: string;
     }) {
         this.parser = parameters.parser;
@@ -42,16 +42,17 @@ export class RDFLoader {
                 }).then((body: string) => {
                     return this.parseData(body, acceptType, elementId)
                     .catch(error => {
+                        // tslint:disable-next-line:no-console
                         console.warn(error);
                         if (typePointer < mimeTypes.length) {
                             return recursivePart();
                         } else {
-                            throw Error(`Unable to parse response. Response: ${body}`);
+                            throw new Error(`Unable to parse response. Response: ${body}`);
                         }
                     });
                 });
             } else {
-                throw Error(`Unable to fetch data using this id (${elementId})`);
+                throw new Error(`Unable to fetch data using this id (${elementId})`);
             }
         };
 
@@ -63,9 +64,9 @@ export class RDFLoader {
 }
 
 function fetchFile(params: {
-    url: string,
-    proxy: string,
-    headers?: any,
+    url: string;
+    proxy: string;
+    headers?: any;
 }) {
     return fetch(
         params.proxy + params.url,
@@ -83,7 +84,7 @@ function fetchFile(params: {
             return response.text();
         } else {
             const error = new Error(response.statusText);
-            (<any> error).response = response;
+            (error as any).response = response;
             throw error;
         }
     });

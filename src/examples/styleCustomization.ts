@@ -77,7 +77,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         linkTemplateResolvers: [
             type => CUSTOM_LINK_TEMPLATE,
         ],
-        onIriClick: iri => console.log(iri),
+        onIriClick: iri => window.open(iri),
     },
 };
 

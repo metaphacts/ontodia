@@ -94,6 +94,7 @@ export class AsyncModel extends DiagramModel {
                 markLinksAsLayoutOnly: false,
             });
         }).catch(error => {
+            // tslint:disable-next-line:no-console
             console.error(error);
             this.asyncSource.trigger('loadingError', {source: this, error});
             return Promise.reject(error);

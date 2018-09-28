@@ -530,7 +530,7 @@ export class EditorController {
     onAddElementsInConnectionMenu(
         elementIris: ElementIri[],
         targetElement: Element,
-        linkType: FatLinkType|undefined,
+        linkType: FatLinkType | undefined,
     ) {
         const batch = this.view.model.history.startBatch();
 

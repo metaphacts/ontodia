@@ -53,7 +53,7 @@ export class RDFCompositeParser {
             }
         }
 
-        const errors: {mimeType: string, error: Error}[] = [];
+        const errors: Array<{ mimeType: string; error: Error }> = [];
 
         const recursion = (): Promise<any> => {
             if (mimeTypeIndex < mimeTypes.length) {

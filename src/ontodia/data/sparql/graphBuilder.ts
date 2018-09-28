@@ -42,8 +42,6 @@ export class GraphBuilder {
     }
 }
 
-export default GraphBuilder;
-
 export function makeGraphItems(response: ReadonlyArray<Triple>): {
     elementIds: ElementIri[];
     links: LinkModel[];

@@ -1,13 +1,14 @@
 import { hashFnv32a } from '../data/utils';
 
-export type Dictionary<T> = { [key: string]: T; };
+export interface Dictionary<T> { [key: string]: T; }
 
 export interface LocalizedString {
     text: string;
     lang: string;
 }
 
-export type Property = { type: 'string'; values: LocalizedString[]; };
+// tslint:disable-next-line:interface-over-type-literal
+export type Property = { type: 'string'; values: LocalizedString[] };
 
 export type ElementIri = string & { readonly elementBrand: void };
 export type ElementTypeIri = string & { readonly classBrand: void };

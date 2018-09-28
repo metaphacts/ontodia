@@ -7,20 +7,18 @@ import {
     RDFDataProvider,
     CompositeDataProvider,
     SparqlDataProvider,
-    OWLStatsSettings,
     SparqlQueryMethod,
-    DBPediaSettings,
     WikidataSettings,
     LinkModel,
  } from '../index';
 
- const N3Parser: any = require('rdf-parser-n3');
- const RdfXmlParser: any = require('rdf-parser-rdfxml');
- const JsonLdParser: any = require('rdf-parser-jsonld');
+const N3Parser: any = require('rdf-parser-n3');
+const RdfXmlParser: any = require('rdf-parser-rdfxml');
+const JsonLdParser: any = require('rdf-parser-jsonld');
 
-import {onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage} from './common';
-import {LinkBinding} from '../ontodia/data/sparql/sparqlModels';
-import {getLinksInfo} from '../ontodia/data/sparql/responseHandler';
+import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
+import { LinkBinding } from '../ontodia/data/sparql/sparqlModels';
+import { getLinksInfo } from '../ontodia/data/sparql/responseHandler';
 
 const data = require<string>('./resources/testData.ttl');
 
@@ -38,9 +36,9 @@ class TransformingDataProvider extends SparqlDataProvider {
             refQueryPart += !params.direction || params.direction === 'out' ? `
                 { ${refElementIRI} ${refElementLinkIRI} ?inst . FILTER ISIRI(?inst)}
                 UNION
-                { ${refElementIRI} ${refElementLinkIRI} ?literalId.                     
+                { ${refElementIRI} ${refElementLinkIRI} ?literalId.
     		        ?property <http://wikiba.se/ontology#directClaim> ${refElementLinkIRI}.
-    		        ?property wdt:P1630|wdt:P1921 ?template.  	  	
+    		        ?property wdt:P1630|wdt:P1921 ?template.
                     BIND(IRI(REPLACE(?template, "\\\\$1", ?literalId)) as ?inst)
                 }
                 ` : '';
@@ -55,9 +53,9 @@ class TransformingDataProvider extends SparqlDataProvider {
             refQueryPart += !params.direction || params.direction === 'out' ? `
                 { ${refElementIRI} ?link ?inst . FILTER ISIRI(?inst)}
                 UNION
-                { ${refElementIRI} ?link ?literalId.                     
+                { ${refElementIRI} ?link ?literalId.
     		        ?property <http://wikiba.se/ontology#directClaim> ?link.
-    		        ?property wdt:P1630|wdt:P1921 ?template.  	  	
+    		        ?property wdt:P1630|wdt:P1921 ?template.
                     BIND(IRI(REPLACE(?template, "\\\\$1", ?literalId)) as ?inst)
                 }
                 ` : '';
@@ -83,14 +81,14 @@ class TransformingDataProvider extends SparqlDataProvider {
                 {?source ?type ?target.}
                 UNION
                 {
-                    ?source ?type ?literalId. 
-                    FILTER(ISLITERAL(?literalId))                    
+                    ?source ?type ?literalId.
+                    FILTER(ISLITERAL(?literalId))
     		        ?property <http://wikiba.se/ontology#directClaim> ?type.
-    		        ?property wdt:P1630|wdt:P1921 ?template.  	  	
+    		        ?property wdt:P1630|wdt:P1921 ?template.
                     BIND(IRI(REPLACE(?template, "\\\\$1", ?literalId)) as ?createdTarget)
                     BIND(?createdTarget as ?target)
                     FILTER (BOUND(?createdTarget))
-                }                                
+                }
             }
         `;
         return this.executeSparqlQuery<LinkBinding>(query).then(getLinksInfo);
@@ -102,7 +100,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 
     const rdfDataProvider = new RDFDataProvider({
         data: [
-            {content: data, type: 'text/turtle'}
+            {content: data, type: 'text/turtle'},
         ],
         dataFetching: true,
         parsers: {
