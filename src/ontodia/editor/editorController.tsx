@@ -110,6 +110,9 @@ export class EditorController {
                 }
             }
         });
+        this.listener.listen(this.events, 'changeAuthoringState', e => {
+            this.validateChangedSince(e.previous);
+        });
     }
 
     _initializePaperComponents(paperArea: PaperArea) {
