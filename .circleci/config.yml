@@ -4,7 +4,7 @@
 #
 version: 2
 jobs:
-  build:
+  checkout:
     docker:
       # specify the version you desire here
       - image: circleci/node:8.12
@@ -18,8 +18,6 @@ jobs:
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "package.json" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
 
       - run: yarn install
 
@@ -28,21 +26,59 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      # run tests!
-      - run: yarn test
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+          - ontodia
 
-      - run:
-          name: cleanup node_modules
-          command: rm -rf node_modules
+  build:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
 
-      - store_artifacts:
-          path: /tmp/workspace/ontodia/dist/examples
-          destination: ontodia
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+
+      - run: yarn run build-all
+      - run: yarn run typings
 
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
-            - ontodia
+          - ontodia
+
+  build-examples:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+
+    - run: yarn run build-examples
+
+    - store_artifacts:
+        path: /tmp/workspace/ontodia/dist/examples
+        destination: ontodia
+
+  lint:
+    docker:
+    # specify the version you desire here
+    - image: circleci/node:8.12
+
+    working_directory: /tmp/workspace/ontodia
+
+    steps:
+    - attach_workspace:
+        at: /tmp/workspace
+
+    - run: yarn run lint
 
   publish:
     docker:
@@ -76,10 +112,43 @@ workflows:
   version: 2
   untagged-build:
     jobs:
-      - build
+      - checkout
+      - build:
+          requires:
+            - checkout
+      - build-examples:
+          requires:
+          - checkout
+      - lint:
+          requires:
+            - checkout
   tagged-build:
     jobs:
+      - checkout:
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
       - build:
+          requires:
+          - checkout
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - build-examples:
+          requires:
+          - checkout
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+      - lint:
+          requires:
+          - checkout
           filters:
             tags:
               only: /^v.*/
@@ -88,6 +157,8 @@ workflows:
       - publish:
           requires:
             - build
+            - lint
+            - build-examples
           filters:
             tags:
               only: /^v.*/

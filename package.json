@@ -4,7 +4,7 @@
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/ontodia-org/ontodia.git"
+    "url": "git+ssh://git@github.com/sputniq-space/ontodia.git"
   },
   "keywords": [
     "owl",
@@ -19,21 +19,20 @@
   },
   "license": "LGPL-2.1",
   "bugs": {
-    "url": "https://github.com/ontodia-org/ontodia/issues"
+    "url": "https://github.com/sputniq-space/ontodia/issues"
   },
-  "homepage": "https://github.com/ontodia-org/ontodia#readme",
+  "homepage": "https://github.com/sputniq-space/ontodia#readme",
   "scripts": {
-    "build": "npm run _webpack && npm run _typings",
     "demo": "./node_modules/.bin/webpack-dev-server --port 10444 --config webpack.demo.config.js",
+    "build": "npm run _webpack && npm run typings",
+    "build-all": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack",
+    "build-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",
+    "test": "npm run build-all && npm run lint",
+    "typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
+    "lint": "./node_modules/.bin/tslint -c tslint.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish",
     "_typings-tsc": "./node_modules/.bin/tsc --declaration --emitDeclarationOnly --outDir dist/temp/dts",
     "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/temp/dts/index.d.ts --name ontodia --out ../../ontodia.d.ts",
-    "_typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
-    "test": "npm run _test-build && npm run lint",
-    "_test-build": "npm run _webpack && BUNDLE_PEERS=true npm run _webpack && npm run _typings && npm run _webpack-examples",
-    "_webpack": "./node_modules/.bin/webpack",
-    "_webpack-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",
-    "start": "./node_modules/.bin/webpack-dev-server --port 5000 --host 0.0.0.0 --config webpack.demo.config.js",
-    "lint": "./node_modules/.bin/tslint -c tslint.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish"
+    "_webpack": "./node_modules/.bin/webpack"
   },
   "dependencies": {
     "d3-color": "~1.0.2",
