@@ -4,7 +4,7 @@
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/ontodia-org/ontodia.git"
+    "url": "git+ssh://git@github.com/sputniq-space/ontodia.git"
   },
   "keywords": [
     "owl",
@@ -19,9 +19,9 @@
   },
   "license": "LGPL-2.1",
   "bugs": {
-    "url": "https://github.com/ontodia-org/ontodia/issues"
+    "url": "https://github.com/sputniq-space/ontodia/issues"
   },
-  "homepage": "https://github.com/ontodia-org/ontodia#readme",
+  "homepage": "https://github.com/sputniq-space/ontodia#readme",
   "scripts": {
     "demo": "./node_modules/.bin/webpack-dev-server --port 10444 --config webpack.demo.config.js",
     "build": "npm run _webpack && npm run typings",

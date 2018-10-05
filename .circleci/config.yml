@@ -67,7 +67,7 @@ jobs:
         path: /tmp/workspace/ontodia/dist/examples
         destination: ontodia
 
-  test:
+  lint:
     docker:
     # specify the version you desire here
     - image: circleci/node:8.12
@@ -119,7 +119,7 @@ workflows:
       - build-examples:
           requires:
           - checkout
-      - test:
+      - lint:
           requires:
             - checkout
   tagged-build:
@@ -146,7 +146,7 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - test:
+      - lint:
           requires:
           - checkout
           filters:
@@ -157,7 +157,7 @@ workflows:
       - publish:
           requires:
             - build
-            - test
+            - lint
             - build-examples
           filters:
             tags:

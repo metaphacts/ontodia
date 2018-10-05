@@ -5,14 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
-
-## [0.9.4] - 2018-09-28
-### Added
-- TSLint check is enforced in builds
-
 ### Fixed
-- resetting of temporary state
-- duplication of link labels in SparqlDataProvider
+- Resetting temporary elements and links in authoring mode when changing selection.
+- Missing validation on authoring changes.
+- Missing "add to filter" button in Firefox.
+- Duplication of link type labels in `SparqlDataProvider`.
 
 ## [0.9.3] - 2018-09-20
 ### Added
