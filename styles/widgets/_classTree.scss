@@ -13,32 +13,91 @@
     margin-right: 10px;
   }
 
-  &__rest {
+  &__tree {
     height: 0;
     flex-grow: 1;
     overflow-y: scroll;
     border-top: 1px solid rgb(221, 221, 221);
   }
+}
 
-  .jstree-icon.default-tree-icon::after {
-    content: url("../images/tree-leaf.png");
-    max-width: 19px;
-    max-height: 19px;
-    margin: 2px;
+.ontodia-class-leaf {
+  margin: 1px 0;
+
+  &__icon {
+    height: 20px;
   }
 
-  .ontodia-icon {
+  &__row {
+    display: flex;
+    white-space: nowrap;
+    user-select: none;
+    > * { flex-shrink: 0; }
+  }
+
+  &__body { 
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 15px;
+    padding: 1px;
+    border: 1px solid;
+    border-color: transparent;
+    &:hover {
+      background: #dcebff91;
+      border-color: #ccefff;
+      cursor: pointer;
+    }
+    &--selected {
+      background-color: #beebff;
+      border-color: #8edcff;
+    }
+  }
+
+  &__label {
+    margin-left: 5px;
+    color: black;
+  }
+
+  &__highlighted-term {
+    font-weight: bold;
+  }
+
+  &__count {
+    margin-left: 5px;
+  }
+
+  &__children {
+    margin-left: 20px;
+  }
+
+  &__no-toggle {
     display: inline-block;
-    width: 1em;
-    height: 1em;
-    background-size: auto 100%;
-    vertical-align: middle;
+    width: 22px;
+    height: 22px;
   }
 
-  .jstree-icon.parent-tree-icon::after {
-    content: url("../images/tree-leaf-folder.png");
-    max-width: 19px;
-    max-height: 19px;
-    margin: 2px;
+  &__collapsed-toggle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin: 5px;
+    content: url("../images/tree/expand-toggle.svg");
+    &:hover {
+      background: #dcebff91;
+      cursor: pointer;
+    }
+  }
+
+  &__expanded-toggle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin: 5px;
+    content: url("../images/tree/collapse-toggle.svg");
+    &:hover {
+      background: #dcebff91;
+      cursor: pointer;
+    }
   }
 }

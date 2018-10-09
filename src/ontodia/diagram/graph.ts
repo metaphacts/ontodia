@@ -1,5 +1,5 @@
-import { Dictionary, ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
-import { OrderedMap, createStringMap } from '../viewUtils/collections';
+import { ElementTypeIri, LinkTypeIri, PropertyTypeIri } from '../data/model';
+import { OrderedMap } from '../viewUtils/collections';
 import { EventSource, Events, AnyEvent, AnyListener } from '../viewUtils/events';
 
 import {
@@ -25,10 +25,10 @@ export class Graph {
     private elements = new OrderedMap<DiagramElement>();
     private links = new OrderedMap<DiagramLink>();
 
-    private classesById = createStringMap<FatClassModel>();
-    private propertiesById = createStringMap<RichProperty>();
+    private classesById = new Map<ElementTypeIri, FatClassModel>();
+    private propertiesById = new Map<PropertyTypeIri, RichProperty>();
 
-    private linkTypes = createStringMap<FatLinkType>();
+    private linkTypes = new Map<LinkTypeIri, FatLinkType>();
     private nextLinkTypeIndex = 0;
 
     getElements() { return this.elements.items; }
@@ -137,15 +137,12 @@ export class Graph {
 
     getLinkTypes(): FatLinkType[] {
         const result: FatLinkType[] = [];
-        // tslint:disable-next-line:forin
-        for (const linkTypeId in this.linkTypes) {
-            result.push(this.linkTypes[linkTypeId]);
-        }
+        this.linkTypes.forEach(type => result.push(type));
         return result;
     }
 
     getLinkType(linkTypeId: LinkTypeIri): FatLinkType | undefined {
-        return this.linkTypes[linkTypeId];
+        return this.linkTypes.get(linkTypeId);
     }
 
     addLinkType(linkType: FatLinkType): void {
@@ -154,7 +151,7 @@ export class Graph {
         }
         linkType.setIndex(this.nextLinkTypeIndex++);
         linkType.events.onAny(this.onLinkTypeEvent);
-        this.linkTypes[linkType.id] = linkType;
+        this.linkTypes.set(linkType.id, linkType);
     }
 
     private onLinkTypeEvent: AnyListener<FatLinkTypeEvents> = (data, key) => {
@@ -162,26 +159,23 @@ export class Graph {
     }
 
     getProperty(propertyId: PropertyTypeIri): RichProperty | undefined {
-        return this.propertiesById[propertyId];
+        return this.propertiesById.get(propertyId);
     }
 
     addProperty(property: RichProperty): void {
         if (this.getProperty(property.id)) {
             throw new Error(`Property '${property.id}' already exists.`);
         }
-        this.propertiesById[property.id] = property;
+        this.propertiesById.set(property.id, property);
     }
 
     getClass(classId: ElementTypeIri): FatClassModel | undefined {
-        return this.classesById[classId];
+        return this.classesById.get(classId);
     }
 
     getClasses(): FatClassModel[] {
         const classes: FatClassModel[] = [];
-        // tslint:disable-next-line:forin
-        for (const classId in this.classesById) {
-            classes.push(this.classesById[classId]);
-        }
+        this.classesById.forEach(richClass => classes.push(richClass));
         return classes;
     }
 
@@ -190,7 +184,7 @@ export class Graph {
             throw new Error(`Class '${classModel.id}' already exists.`);
         }
         classModel.events.onAny(this.onClassEvent);
-        this.classesById[classModel.id] = classModel;
+        this.classesById.set(classModel.id, classModel);
     }
 
     private onClassEvent: AnyListener<FatClassModelEvents> = (data, key) => {

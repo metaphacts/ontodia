@@ -16,7 +16,6 @@ import { EditorController, PropertyEditor, recursiveForceLayout } from '../edito
 import { EventObserver } from '../viewUtils/events';
 import { dataURLToBlob } from '../viewUtils/toSvg';
 
-import { ClassTree } from '../widgets/classTree';
 import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
 
@@ -122,7 +121,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private readonly editor: EditorController;
 
     private markup: WorkspaceMarkup;
-    private tree: ClassTree;
 
     private _watermarkSvg: string | undefined = ONTODIA_LOGO_SVG;
     private _watermarkUrl: string | undefined = ONTODIA_WEBSITE;

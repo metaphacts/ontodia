@@ -1,5 +1,3 @@
-/// <reference path="../node_modules/@types/jquery/index.d.ts" />
-/// <reference path="globals/jstree/index.d.ts" />
 /// <reference path="local/require/require.d.ts" />
 /// <reference path='local/file-saverjs/index.d.ts' />
 /// <reference path="local/n3/index.d.ts" />
