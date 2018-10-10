@@ -1,4 +1,3 @@
-require('intro.js/introjs.css');
 require('../styles/main.scss');
 
 require('whatwg-fetch');

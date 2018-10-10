@@ -43,29 +43,6 @@ export interface WorkspaceMarkupProps {
     watermarkUrl?: string;
 }
 
-const INTRO_CLASSES = `<p>Navigate through class tree and click a class to select it.</p>
-<p>When the class is selected, its instances are shown in Instances panel</p>
-<p>Double-click the class expands it and displays its subclasses.</p>`;
-
-const INTRO_INSTANCES = `<p>Instances of the selected class are displayed here.</p>
-<p>You can select one or several instances and drag-and-drop them directly on canvas to
- start your diagram.</p>`;
-
-const INTRO_DIAGRAM = `<h4>Main working area</h4><p><b>Zooming:</b> Ctrl-mousewheel or pinch-zoom on touchpad</p>
-<p><b>Pan:</b> Ctrl-mouse drag or mouse wheel</p><h5>Filtering related instances</h5>
-<p>When you select an element on the diagram the Ontodia shows a funnel icon underneath the
- element. By clicking the funnel icon, you can filter the related elements into the Instances panel.</p>
-<p>Then related elements can be drag-and-dropped into the diagram.</p>
-<p>By repeating it you can navigate from one element to another as far as you like and your way
- will be shown on the diagram.</p>`;
-
-const INTRO_CONNECTIONS = `<p>Connections panel lists all the connection present in the data source.</p>
-<p>You can define which connections Ontodia should display and which should stay hidden.</p>
-<p>You can also change the way they are shown on the diagram: it’s either with the name above
- them or without it.</p>`;
-
-const INTRO_RESIZE = `<p>Panels can be resized and collapsed.</p>`;
-
 export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     static childContextTypes = WorkspaceContextTypes;
 
@@ -105,14 +82,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
 
         const items: Array<React.ReactElement<any>> = [];
         items.push(
-            <AccordionItem key='classTree'
-                heading='Classes'
-                tutorialProps={{
-                    'data-position': 'right',
-                    'data-step': '1',
-                    'data-intro-id': 'tree-view',
-                    'data-intro': INTRO_CLASSES,
-                }}>
+            <AccordionItem key='classTree' heading='Classes'>
                 <ClassTree view={this.props.view}
                     editor={this.props.editor}
                     onClassSelected={classId => {
@@ -134,14 +104,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
             );
         }
         items.push(
-            <AccordionItem key='instancesSearch'
-                heading='Instances'
-                tutorialProps={{
-                    'data-position': 'top',
-                    'data-step': '2',
-                    'data-intro-id': 'filter-view',
-                    'data-intro': INTRO_INSTANCES,
-                }}>
+            <AccordionItem key='instancesSearch' heading='Instances'>
                 <InstancesSearch view={this.props.view}
                     model={this.props.model}
                     criteria={searchCriteria}
@@ -157,13 +120,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                 onStartResize={() => this.untilMouseUp({
                     preventTextSelection: true,
                     horizontalResizing: true,
-                })}
-                tutorialProps={{
-                    'data-position': 'right',
-                    'data-step': '7',
-                    'data-intro-id': 'resize',
-                    'data-intro': INTRO_RESIZE,
-                }}>
+                })}>
                 {/* Use different key to update when switching mode */}
                 <Accordion key={`accordion--${editor.inAuthoringMode ? 'exploring' : 'authoring'}`}
                     onStartResize={() => this.untilMouseUp({
@@ -191,14 +148,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Connections'
-                        bodyClassName='link-types-toolbox'
-                        tutorialProps={{
-                            'data-position': 'left',
-                            'data-step': '4',
-                            'data-intro-id': 'link-types-toolbox',
-                            'data-intro': INTRO_CONNECTIONS,
-                        }}>
+                    <AccordionItem heading='Connections' bodyClassName='link-types-toolbox'>
                         <LinkTypesToolbox view={this.props.view} editor={this.props.editor} />
                     </AccordionItem>
                 </Accordion>
@@ -212,8 +162,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                 {this.renderToolbar()}
                 <div className='ontodia__workspace'>
                     {this.renderLeftPanel()}
-                    <div className='ontodia__main-panel'
-                         data-position='left' data-step='3' data-intro-id='diagram-area' data-intro={INTRO_DIAGRAM}>
+                    <div className='ontodia__main-panel'>
                         <PaperArea ref={el => this.paperArea = el}
                             view={this.props.view}
                             zoomOptions={this.props.zoomOptions}

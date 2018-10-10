@@ -19,8 +19,7 @@ export class Toolbar extends React.Component<Props, {}> {
     render() {
         return (
             <div className={CLASS_NAME}>
-                <div className='ontodia-btn-group ontodia-btn-group-sm'
-                     data-position='bottom' data-step='6'>
+                <div className='ontodia-btn-group ontodia-btn-group-sm'>
                     <span className={`${CLASS_NAME}__layout-group`}>
                         <label className='ontodia-label'><span>Layout - </span></label>
                         <span className='ontodia-btn-group ontodia-btn-group-sm'>

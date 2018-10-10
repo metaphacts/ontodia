@@ -6,17 +6,12 @@ import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
 
 import { RestoreGeometry } from '../diagram/commands';
-import { Element, Link, FatLinkType } from '../diagram/elements';
-import { boundsOf, computeGrouping } from '../diagram/geometry';
-import { Batch, Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
-import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent, getContentFittingBox } from '../diagram/paperArea';
+import { Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
+import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
 import { DiagramView, ViewOptions } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
-import {
-    EditorController, EditorOptions, PropertyEditor, recursiveForceLayout,
-} from '../editor/editorController';
-import { AuthoringState } from '../editor/authoringState';
+import { EditorController, PropertyEditor, recursiveForceLayout } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 import { dataURLToBlob } from '../viewUtils/toSvg';
@@ -26,7 +21,6 @@ import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
 
 import { DefaultToolbar, ToolbarProps } from './toolbar';
-import { showTutorial, showTutorialIfNotSeen } from './tutorial';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
 
@@ -263,10 +257,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
                 onWorkspaceEvent(WorkspaceEventKey.editorAddElements)
             );
         }
-
-        if (!this.props.hideTutorial) {
-            showTutorialIfNotSeen();
-        }
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
@@ -394,10 +384,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
     centerTo = (paperPosition?: { x: number; y: number }) => {
         this.markup.paperArea.centerTo(paperPosition);
     }
-
-    showTutorial = () => {
-        showTutorial();
-    }
 }
 
 interface ToolbarWrapperProps {
@@ -435,7 +421,6 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
             languages,
             selectedLanguage: view.getLanguage(),
             onChangeLanguage: workspace.changeLanguage,
-            onShowTutorial: workspace.showTutorial,
             hidePanels,
             isLeftPanelOpen: workspace.state.isLeftPanelOpen,
             onLeftPanelToggle: () => {

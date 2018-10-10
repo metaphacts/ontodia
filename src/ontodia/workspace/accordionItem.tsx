@@ -1,13 +1,11 @@
 import * as React from 'react';
 
 import { DraggableHandle } from './draggableHandle';
-import { TutorialProps } from './tutorial';
 
 export interface Props {
     heading: string;
     bodyClassName?: string;
     bodyRef?: (body: HTMLDivElement) => void;
-    tutorialProps?: TutorialProps;
     children?: React.ReactNode;
 
     // props provided by Accordion
@@ -30,15 +28,14 @@ export class AccordionItem extends React.Component<Props, {}> {
 
     render() {
         const {
-            heading, bodyClassName, children, tutorialProps, bodyRef,
+            heading, bodyClassName, children, bodyRef,
             collapsed, height, onBeginDragHandle, onDragHandle, onEndDragHandle,
         } = this.props;
         const shouldRenderHandle = onBeginDragHandle && onDragHandle && onEndDragHandle;
 
         return <div className={`${CLASS_NAME} ${CLASS_NAME}--${collapsed ? 'collapsed' : 'expanded'}`}
             ref={element => this._element = element}
-            style={{height}}
-            {...tutorialProps}>
+            style={{height}}>
             <div className={`${CLASS_NAME}__inner`}>
                 <div className={`${CLASS_NAME}__header`}
                     ref={header => this._header = header}

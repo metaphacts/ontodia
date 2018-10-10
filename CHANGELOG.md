@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Missing "add to filter" button in Firefox.
 - Duplication of link type labels in `SparqlDataProvider`.
 
+### Removed
+- **[Breaking]** Intro.js-based tutorial.
+
 ## [0.9.3] - 2018-09-20
 ### Added
 - Ontodia watermark to diagrams.
