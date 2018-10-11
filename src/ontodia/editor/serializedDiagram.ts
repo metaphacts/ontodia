@@ -10,7 +10,7 @@ export interface SerializedDiagram {
     '@context': any;
     '@type': 'Diagram';
     layoutData: LayoutData;
-    linkTypeOptions: ReadonlyArray<LinkTypeOptions>;
+    linkTypeOptions?: ReadonlyArray<LinkTypeOptions>;
 }
 
 export interface LinkTypeOptions {
@@ -127,14 +127,18 @@ export function convertToSerializedDiagram(params: {
 }
 
 export function makeSerializedDiagram(params: {
-    layoutData: LayoutData;
-    linkTypeOptions: ReadonlyArray<LinkTypeOptions>;
+    layoutData?: LayoutData;
+    linkTypeOptions?: ReadonlyArray<LinkTypeOptions>;
 }): SerializedDiagram {
-    return {
+    const diagram: SerializedDiagram = {
         ...emptyDiagram(),
-        layoutData: params.layoutData,
-        linkTypeOptions: params.linkTypeOptions,
+        linkTypeOptions: params.linkTypeOptions
     };
+    // layout data is a complex structure we want to persist
+    if (params.layoutData) {
+        diagram.layoutData = params.layoutData;
+    }
+    return diagram;
 }
 
 export function makeLayoutData(
