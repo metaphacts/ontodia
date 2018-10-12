@@ -40,7 +40,7 @@ export {
 
 export {
     LayoutData, LayoutElement, LayoutLink, SerializedDiagram,
-    convertToSerializedDiagram, makeSerializedDiagram
+    convertToSerializedDiagram, makeSerializedDiagram, LinkTypeOptions, makeLayoutData
 } from './ontodia/editor/serializedDiagram';
 export { recursiveLayout } from './ontodia/viewUtils/layout';
 

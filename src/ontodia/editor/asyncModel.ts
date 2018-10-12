@@ -179,6 +179,7 @@ export class AsyncModel extends DiagramModel {
     }
 
     private setLinkSettings(settings: ReadonlyArray<LinkTypeOptions>) {
+        if (!settings) { return; }
         for (const setting of settings) {
             const {visible = true, showLabel = true} = setting;
             const linkTypeId = setting.property as LinkTypeIri;
