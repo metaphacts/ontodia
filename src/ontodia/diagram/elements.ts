@@ -157,9 +157,6 @@ export class FatClassModel {
 
     readonly id: ElementTypeIri;
 
-    private _base: FatClassModel | undefined;
-    private _derived: FatClassModel[] = [];
-
     private _label: ReadonlyArray<LocalizedString>;
     private _count: number | undefined;
 
@@ -172,31 +169,6 @@ export class FatClassModel {
         this.id = id;
         this._label = label;
         this._count = count;
-    }
-
-    get base() { return this._base; }
-    get derived(): ReadonlyArray<FatClassModel> { return this._derived; }
-    setBase(value: FatClassModel | undefined) {
-        if (this._base === value) { return; }
-        if (this._base) {
-            this._base.removeDerived(this);
-            this._base = undefined;
-        }
-        if (value) {
-            this._base = value;
-            this._base.addDerived(this);
-        }
-    }
-
-    private addDerived(child: FatClassModel) {
-        this._derived.push(child);
-    }
-
-    private removeDerived(child: FatClassModel) {
-        const index = this._derived.indexOf(child);
-        if (index >= 0) {
-            this._derived.splice(index, 1);
-        }
     }
 
     get label() { return this._label; }

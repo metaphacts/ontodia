@@ -43,7 +43,7 @@ export class AsyncModel extends DiagramModel {
     private _dataProvider: DataProvider;
     private fetcher: DataFetcher;
 
-    private classTree: FatClassModel[] = [];
+    private classTree: ReadonlyArray<ClassModel> = [];
     private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
     constructor(
@@ -59,7 +59,7 @@ export class AsyncModel extends DiagramModel {
 
     get dataProvider() { return this._dataProvider; }
 
-    getClasses() {
+    getClasses(): ReadonlyArray<ClassModel> {
         return this.classTree;
     }
 
@@ -150,21 +150,29 @@ export class AsyncModel extends DiagramModel {
         return makeSerializedDiagram({layoutData, linkTypeOptions});
     }
 
-    private setClassTree(rootClasses: ClassModel[]) {
-        const addClass = (base: FatClassModel | undefined, classModel: ClassModel) => {
-            const {id, label, count, children} = classModel;
-            const richClass = new FatClassModel({id, label: label.values, count});
-            richClass.setBase(base);
-            this.graph.addClass(richClass);
-            for (const child of children) {
-                addClass(richClass, child);
+    private setClassTree(roots: ClassModel[]) {
+        const visiting = new Set<ElementTypeIri>();
+        const reduceNonCycle = (acc: ClassModel[], model: ClassModel) => {
+            if (!visiting.has(model.id)) {
+                visiting.add(model.id);
+                const children = model.children.reduce(reduceNonCycle, []);
+                acc.push({...model, children});
+                visiting.delete(model.id);
+            }
+            return acc;
+        };
+        this.classTree = roots.reduce(reduceNonCycle, []);
+
+        const addClass = (model: ClassModel) => {
+            const existing = this.getClass(model.id);
+            if (!existing) {
+                const {id, label, count, children} = model;
+                const richClass = new FatClassModel({id, label: label.values, count});
+                children.forEach(addClass);
             }
         };
-        for (const root of rootClasses) {
-            addClass(undefined, root);
-        }
+        this.classTree.forEach(addClass);
 
-        this.classTree = this.graph.getClasses();
         this.asyncSource.trigger('changeClassTree', {source: this});
     }
 

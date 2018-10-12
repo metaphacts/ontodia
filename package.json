@@ -49,7 +49,6 @@
   },
   "devDependencies": {
     "@types/d3-color": "1.0.4",
-    "@types/jquery": "2.0.49",
     "@types/lodash": "4.14.108",
     "@types/react": "15.6.9",
     "@types/react-dom": "15.5.8",
@@ -57,10 +56,7 @@
     "css-loader": "1.0.0",
     "dts-bundle": "0.7.2",
     "es6-promise": "4.2.4",
-    "exports-loader": "0.7.0",
     "html-webpack-plugin": "3.2.0",
-    "jquery": "2.2.4",
-    "jstree": "3.2.1",
     "node-sass": "4.9.3",
     "raw-loader": "0.5.1",
     "rdf-parser-jsonld": "0.3.3",

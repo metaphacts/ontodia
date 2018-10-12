@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 - **[Breaking]** Intro.js-based tutorial.
+- Dependency on jsTree for class tree (greatly reduced bundle size).
 
 ## [0.9.3] - 2018-09-20
 ### Added

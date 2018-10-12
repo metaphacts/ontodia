@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="128"
+   height="128"
+   version="1.1"
+   id="svg5088"
+   sodipodi:docname="tree-leaf-folder.svg"
+   inkscape:version="0.92.1 r15371">
+  <defs
+     id="defs5092" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     id="namedview5090"
+     showgrid="false"
+     inkscape:zoom="2.6074563"
+     inkscape:cx="128.74614"
+     inkscape:cy="30.905472"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5088" />
+  <g
+     id="g5086">
+    <circle
+       id="svg_1"
+       cy="64"
+       cx="64"
+       style="fill:none;stroke:#1573b0;stroke-width:5"
+       r="60" />
+    <circle
+       id="svg_3"
+       cy="64"
+       cx="64"
+       stroke-opacity="null"
+       style="fill:#1573b0;stroke:#1573b0;stroke-width:5"
+       r="37" />
+    <path
+       id="svg_5"
+       d="m 127.2258,86.546643 c -0.0105,-5.971065 -4.72314,-10.809034 -10.54009,-10.817147 v -0.0027 H 84.380152 c -1.33102,-4.386353 -5.300357,-7.593637 -10.028771,-7.60175 h -7.577587 c -5.819586,0.0054 -10.534822,4.846082 -10.545365,10.817147 v 38.368417 c 0.01054,5.96565 4.725778,10.80362 10.545365,10.81444 h 49.914556 c 5.81167,-0.0108 10.52955,-4.84879 10.54009,-10.81444 V 86.546643 Z"
+       inkscape:connector-curvature="0"
+       style="fill:#0f5376"
+       sodipodi:nodetypes="ccccccccccccc" />
+  </g>
+</svg>
