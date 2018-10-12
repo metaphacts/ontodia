@@ -18,7 +18,6 @@ export interface ToolbarProps {
     languages?: ReadonlyArray<WorkspaceLanguage>;
     selectedLanguage?: string;
     onChangeLanguage?: (language: string) => void;
-    onShowTutorial?: () => void;
     hidePanels?: boolean;
     isLeftPanelOpen?: boolean;
     onLeftPanelToggle?: () => void;
@@ -64,17 +63,6 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         );
     }
 
-    private renderHelpButton() {
-        if (this.props.hidePanels) { return null; }
-
-        return (
-            <button type='button' className='ontodia-btn ontodia-btn-default'
-                    onClick={this.props.onShowTutorial}>
-                <span className='fa fa-info-circle' aria-hidden='true' /> Help
-            </button>
-        );
-    }
-
     private renderLanguages() {
         const {selectedLanguage, languages} = this.props;
         if (languages.length <= 1) { return null; }
@@ -109,15 +97,9 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
     }
 
     render() {
-        const intro = '<h4>Toolbox</h4>' +
-            '<p>You can use additional tools for working with your diagram, such as choosing between automatic ' +
-            'layouts or fit diagram to screen, etc.</p>' +
-            '<p>Don’t forget to save diagrams, it always comes handy after all.</p>';
-
         return (
             <div className={CLASS_NAME}>
-                <div className='ontodia-btn-group ontodia-btn-group-sm'
-                    data-position='bottom' data-step='6' data-intro={intro}>
+                <div className='ontodia-btn-group ontodia-btn-group-sm'>
                     {this.renderSaveDiagramButton()}
                     {this.renderPersistAuthoredChangesButton()}
                     {this.props.onClearAll ? (
@@ -155,7 +137,6 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
                         <span className='fa fa-print' aria-hidden='true'/>
                     </button>
                     {this.renderLanguages()}
-                    {this.renderHelpButton()}
                 </div>
                 {this.renderButtonsTogglePanels()}
             </div>

@@ -1,7 +1,6 @@
 import * as React from 'react';
 
 import { DraggableHandle } from './draggableHandle';
-import { TutorialProps } from './tutorial';
 
 export interface Props {
     className?: string;
@@ -12,7 +11,6 @@ export interface Props {
     isOpen?: boolean;
     onOpenOrClose?: (open: boolean) => void;
     onStartResize: () => void;
-    tutorialProps?: TutorialProps;
     children?: React.ReactNode;
 }
 
@@ -68,8 +66,7 @@ export class ResizableSidebar extends React.Component<Props, State> {
             `${this.props.className || ''}`;
 
         return <div className={className}
-            style={{width: open ? width : 0}}
-            {...this.props.tutorialProps}>
+            style={{width: open ? width : 0}}>
             {open ? this.props.children : null}
             <DraggableHandle className={`${CLASS_NAME}__handle`}
                 onBeginDragHandle={this.onBeginDragHandle}
