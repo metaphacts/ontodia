@@ -258,7 +258,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     componentWillReceiveProps(nextProps: WorkspaceProps) {
-        if (nextProps.language !== this.view.getLanguage()) {
+        const controlledLanguage = Boolean(nextProps.onLanguageChange);
+        if (controlledLanguage && nextProps.language !== this.view.getLanguage()) {
             this.view.setLanguage(nextProps.language);
         }
 
@@ -369,9 +370,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     changeLanguage = (language: string) => {
-        // if onLanguageChange is set we'll just forward the change
-        if (this.props.onLanguageChange) {
-            this.props.onLanguageChange(language);
+        const {onLanguageChange} = this.props;
+        // if language is in controlled mode we'll just forward the change
+        if (onLanguageChange) {
+            onLanguageChange(language);
         } else {
             this.view.setLanguage(language);
             // since we have toolbar dependent on language, we're forcing update here

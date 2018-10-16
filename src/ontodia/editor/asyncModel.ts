@@ -168,6 +168,7 @@ export class AsyncModel extends DiagramModel {
             if (!existing) {
                 const {id, label, count, children} = model;
                 const richClass = new FatClassModel({id, label: label.values, count});
+                this.graph.addClass(richClass);
                 children.forEach(addClass);
             }
         };
