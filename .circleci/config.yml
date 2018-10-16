@@ -93,7 +93,7 @@ jobs:
              echo "//registry.npmjs.org/:_authToken=$NPM_PUBLISH" >> ~/.npmrc
       - run:
           name: specify correct version for npm
-          command: npm --no-git-tag-version version $CIRCLE_TAG
+          command: npm --no-git-tag-version --allow-same-version version $CIRCLE_TAG
       - run:
           name: publish npm package
           command: |

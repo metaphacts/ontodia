@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+## [0.9.5] - 2018-10-16
+### Fixed
+- Missing localized labels on class tree initialization.
+- Resetting language on `Workspace` update in uncontrolled mode.
 
 ## [0.9.4] - 2018-10-16
 ### Fixed
