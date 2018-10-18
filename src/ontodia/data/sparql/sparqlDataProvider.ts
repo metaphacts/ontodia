@@ -329,9 +329,9 @@ export class SparqlDataProvider implements DataProvider {
                 SELECT DISTINCT ?inst ${textSearchPart ? '?score' : ''} WHERE {
                     ${elementTypePart}
                     ${refQueryPart}
+                    ${this.settings.fullTextSearch.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                     ${textSearchPart}
                     ${this.settings.filterAdditionalRestriction}
-                    ${this.settings.fullTextSearch.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                 }
                 ${textSearchPart ? 'ORDER BY DESC(?score)' : ''}
                 LIMIT ${params.limit} OFFSET ${params.offset}
