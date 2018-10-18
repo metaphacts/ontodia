@@ -31,10 +31,10 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, ValidationState,
-    isLinkConnectedToElement, TemporaryState, AuthoringEvent,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
+import { ValidationState, changedElementsToValidate, validateElements } from './validation';
 
 import { Cancellation } from '../viewUtils/async';
 
@@ -111,7 +111,15 @@ export class EditorController {
             }
         });
         this.listener.listen(this.events, 'changeAuthoringState', e => {
-            this.validateChangedSince(e.previous);
+            if (this.options.validationApi) {
+                const changedElements = changedElementsToValidate(e.previous, this);
+                validateElements(
+                    changedElements,
+                    this.options.validationApi,
+                    this,
+                    this.cancellation.signal
+                );
+            }
         });
     }
 
@@ -770,61 +778,6 @@ export class EditorController {
 
     finishEditing() {
         this.view.setPaperWidget({key: 'editLayer', widget: undefined});
-    }
-
-    private validateChangedSince(previousAuthoring: AuthoringState) {
-        const {validationApi} = this.options;
-        if (!validationApi) { return; }
-
-        const previousValidation = this.validationState;
-        const currentAuthoring = this.authoringState;
-
-        const newState = ValidationState.createMutable();
-        const hasChangedLinks = new Set<ElementIri>();
-
-        for (const {data} of this.model.links) {
-            const current = currentAuthoring.index.links.get(data);
-            const previous = previousAuthoring.index.links.get(data);
-            const state = previousValidation.links.get(data);
-
-            if (current !== previous) {
-                hasChangedLinks.add(data.sourceId);
-                newState.links.set(data, {...ValidationState.emptyLink, ...state, loading: true});
-            } else if (state) {
-                newState.links.set(data, state);
-            }
-        }
-
-        for (const element of this.model.elements) {
-            if (newState.elements.has(element.iri)) { continue; }
-            const current = currentAuthoring.index.elements.get(element.iri);
-            const previous = previousAuthoring.index.elements.get(element.iri);
-            const state = previousValidation.elements.get(element.iri);
-
-            if (hasChangedLinks.has(element.iri) || current !== previous) {
-                const loadingState = {...ValidationState.emptyElement, ...state, loading: true};
-                newState.elements.set(element.iri, loadingState);
-
-                validationApi.validateElement(
-                    element.data,
-                    currentAuthoring,
-                    this.cancellation.signal
-                ).then(loadedErrors => {
-                    const stateAfterLoad = this.validationState.elements.get(element.iri);
-                    if (stateAfterLoad !== loadingState) { return; }
-                    const validation = ValidationState.setElementErrors(
-                        this.validationState,
-                        element.iri,
-                        loadedErrors,
-                    );
-                    this.setValidationState(validation);
-                });
-            } else if (state) {
-                newState.elements.set(element.iri, state);
-            }
-        }
-
-        this.setValidationState(newState);
     }
 
     private addNewEntity(element: ElementModel) {

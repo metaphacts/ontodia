@@ -21,7 +21,7 @@
         "space-before-function-paren": [true, {
             "anonymous": "always",
             "named": "never",
-            "asyncArrow": "never",
+            "asyncArrow": "always",
             "method": "never",
             "constructor": "never"
         }],

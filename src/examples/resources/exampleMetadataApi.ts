@@ -1,6 +1,6 @@
 import {
-    ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, DiagramModel, CancellationToken,
-    LinkModel,
+    ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
+    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, isLinkConnectedToElement,
 } from '../../index';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
@@ -15,7 +15,7 @@ const schema = {
     subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri,
 };
 
-const METADATA_DELAY: number = 0; /* ms */
+const METADATA_DELAY: number = 500; /* ms */
 function delay(): Promise<void> {
     if (METADATA_DELAY === 0) {
         return Promise.resolve();
@@ -81,5 +81,33 @@ export class ExampleMetadataApi implements MetadataApi {
     ): Promise<boolean> {
         await delay();
         return true;
+    }
+}
+
+export class ExampleValidationApi implements ValidationApi {
+    async validate(event: ValidationEvent): Promise<Array<ElementError | LinkError>> {
+        const errors: Array<ElementError | LinkError> = [];
+        if (event.target.types.indexOf(schema.class) >= 0) {
+            event.state.events
+                .filter((e): e is LinkChange =>
+                    e.type === AuthoringKind.ChangeLink &&
+                    !e.before &&
+                    isLinkConnectedToElement(e.after, event.target.id)
+                ).forEach(newLinkEvent => {
+                    errors.push({
+                        type: 'link',
+                        target: newLinkEvent.after,
+                        message: 'Cannot add any new link from a Class',
+                    });
+                    errors.push({
+                        type: 'element',
+                        target: event.target.id,
+                        message: 'Cannot create link from a Class',
+                    });
+                });
+        }
+
+        await delay();
+        return errors;
     }
 }

@@ -1,9 +1,4 @@
 import { ElementModel, LinkModel, ElementIri, sameLink, hashLink } from '../data/model';
-import { hashFnv32a } from '../data/utils';
-import { ElementError, LinkError } from '../data/validationApi';
-
-import { Element, Link } from '../diagram/elements';
-import { DiagramModel } from '../diagram/model';
 
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
 
@@ -223,9 +218,14 @@ export namespace AuthoringState {
         return {elements, links};
     }
 
-    export function isNewElement(state: AuthoringState, elementIri: ElementIri): boolean {
-        const event = state.index.elements.get(elementIri);
+    export function isNewElement(state: AuthoringState, target: ElementIri): boolean {
+        const event = state.index.elements.get(target);
         return event && event.type === AuthoringKind.ChangeElement && !event.before;
+    }
+
+    export function isDeletedElement(state: AuthoringState, target: ElementIri): boolean {
+        const event = state.index.elements.get(target);
+        return event && event.type === AuthoringKind.DeleteElement;
     }
 
     export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
@@ -266,46 +266,6 @@ export namespace TemporaryState {
         const links = state.links.clone();
         links.delete(link);
         return {...state, links};
-    }
-}
-
-export interface ValidationState {
-   readonly elements: ReadonlyMap<ElementIri, ElementValidation>;
-   readonly links: ReadonlyHashMap<LinkModel, LinkValidation>;
-}
-
-export interface ElementValidation {
-    readonly loading: boolean;
-    readonly errors: ReadonlyArray<ElementError>;
-}
-
-export interface LinkValidation {
-    readonly loading: boolean;
-    readonly errors: ReadonlyArray<LinkError>;
-}
-
-export namespace ValidationState {
-    export const empty: ValidationState = createMutable();
-    export const emptyElement: ElementValidation = {loading: false, errors: []};
-    export const emptyLink: LinkValidation = {loading: false, errors: []};
-
-    export function createMutable() {
-        return {
-            elements: new Map<ElementIri, ElementValidation>(),
-            links: new HashMap<LinkModel, LinkValidation>(hashLink, sameLink),
-        };
-    }
-
-    export function setElementErrors(
-        state: ValidationState, target: ElementIri, errors: ReadonlyArray<ElementError>
-    ): ValidationState {
-        const elements = cloneMap(state.elements);
-        if (errors.length > 0) {
-            elements.set(target, {loading: false, errors});
-        } else {
-            elements.delete(target);
-        }
-        return {...state, elements};
     }
 }
 

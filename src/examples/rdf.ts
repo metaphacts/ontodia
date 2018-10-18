@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import { Workspace, WorkspaceProps, RDFDataProvider, GroupTemplate } from '../index';
 
-import { ExampleMetadataApi } from './resources/exampleMetadataApi';
+import { ExampleMetadataApi, ExampleValidationApi } from './resources/exampleMetadataApi';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
 const N3Parser: any = require('rdf-parser-n3');
@@ -53,6 +53,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         console.log('Authoring state:', state);
     },
     metadataApi: new ExampleMetadataApi(),
+    validationApi: new ExampleValidationApi(),
     viewOptions: {
         onIriClick: iri => window.open(iri),
         groupBy: [

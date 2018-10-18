@@ -117,7 +117,7 @@ export class HashMap<K, V> implements ReadonlyHashMap<K, V> {
         let items = this.map.get(hash);
         if (items) {
             const index = items.findIndex(p => this.equals(p.key, key));
-            if (index >= 0 && index !== items.length - 1) {
+            if (index >= 0) {
                 items.splice(index, 1);
             } else {
                 this._size++;

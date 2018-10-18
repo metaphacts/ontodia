@@ -1,13 +1,17 @@
 import * as React from 'react';
 
-import { boundsOf, computePolyline } from '../diagram/geometry';
+import { ElementIri } from '../data/model';
+
+import { Rect, Vector, boundsOf, computePolyline, getPointAlongPolyline } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView, RenderingLayer } from '../diagram/view';
-import { Link } from '../diagram/elements';
+import { Link, Element } from '../diagram/elements';
+import { formatLocalizedLabel } from '../diagram/model';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 import { AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
@@ -18,6 +22,8 @@ export interface Props extends PaperWidgetProps {
 }
 
 const CLASS_NAME = `ontodia-states-widget`;
+const WARNING_SIZE = 20;
+const WARNING_MARGIN = 5;
 
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
@@ -57,6 +63,7 @@ export class StatesWidget extends React.Component<Props, {}> {
         this.listener.listen(editor.model.events, 'changeCells', this.scheduleUpdate);
         this.listener.listen(editor.events, 'changeAuthoringState', this.scheduleUpdate);
         this.listener.listen(editor.events, 'changeTemporaryState', this.scheduleUpdate);
+        this.listener.listen(editor.events, 'changeValidationState', this.scheduleUpdate);
         this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer === RenderingLayer.Editor) {
                 this.delayedUpdate.runSynchronously();
@@ -73,6 +80,11 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     private calculateLinkPath(link: Link) {
+        const polyline = this.calculatePolyline(link);
+        return 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
+    }
+
+    private calculatePolyline(link: Link) {
         const {editor, view} = this.props;
 
         const source = editor.model.getElement(link.sourceId);
@@ -82,18 +94,17 @@ export class StatesWidget extends React.Component<Props, {}> {
         const verticesDefinedByUser = link.vertices || [];
         const vertices = route ? route.vertices : verticesDefinedByUser;
 
-        const polyline = computePolyline(source, target, vertices);
-        return 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
+        return computePolyline(source, target, vertices);
     }
 
-    private renderLinksStates() {
+    private renderLinkOutlines() {
         const {editor} = this.props;
         return editor.model.links.map(link => {
             if (editor.temporaryState.links.has(link.data)) {
                 const path = this.calculateLinkPath(link);
                 return (
                     <path key={link.id} d={path} fill={'none'} stroke={'grey'} strokeWidth={5} strokeOpacity={0.5}
-                        strokeDasharray={'8 8'}/>
+                        strokeDasharray={'8 8'} />
                 );
             }
             const state = (
@@ -117,7 +128,59 @@ export class StatesWidget extends React.Component<Props, {}> {
         });
     }
 
-    private renderElementsStates() {
+    private renderLinkErrors() {
+        const {editor} = this.props;
+        const {validationState} = editor;
+
+        return editor.model.links.reduce((acc: JSX.Element[], link) => {
+            const validation = validationState.links.get(link.data);
+            if (!validation) {
+                return acc;
+            }
+            const polyline = this.calculatePolyline(link);
+            const style = this.getWarningPosition(polyline);
+            const title = validation.errors.map(error => error.message).join('\n');
+
+            acc.push(
+                <div className={`${CLASS_NAME}__link-error`}
+                    key={link.id}
+                    style={style}
+                    title={title}>
+                    {validation.loading
+                        ? <HtmlSpinner width={WARNING_SIZE} height={WARNING_SIZE} />
+                        : <div className={`${CLASS_NAME}__link-error-icon`} />}
+                    {(!validation.loading && validation.errors.length > 0)
+                        ? validation.errors.length : null}
+                </div>
+            );
+            return acc;
+        }, []);
+    }
+
+    private getWarningPosition(polyline: ReadonlyArray<Vector>): { top: number; left: number } {
+        const point = getPointAlongPolyline(polyline, WARNING_SIZE + WARNING_MARGIN);
+        const {x, y} = this.props.paperArea.paperToScrollablePaneCoords(point.x, point.y);
+
+        return {top: y - WARNING_SIZE / 2, left: x - WARNING_SIZE / 2};
+    }
+
+    private scrollBoundsOf(element: Element): Rect {
+        const {paperArea} = this.props;
+        const bbox = boundsOf(element);
+        const {x: x0, y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
+        const {x: x1, y: y1} = paperArea.paperToScrollablePaneCoords(
+            bbox.x + bbox.width,
+            bbox.y + bbox.height,
+        );
+        return {
+            x: x0,
+            y: y0,
+            width: x1 - x0,
+            height: y1 - y0,
+        };
+    }
+
+    private renderElementOutlines() {
         const {editor} = this.props;
         return editor.model.elements.map(element => {
             const {x, y, width, height} = boundsOf(element);
@@ -128,58 +191,97 @@ export class StatesWidget extends React.Component<Props, {}> {
                 );
             }
             const state = editor.authoringState.index.elements.get(element.iri);
-            if (state) {
-                const actionClass = `${CLASS_NAME}__action`;
-                const cancelClass = `${CLASS_NAME}__cancel`;
-                const onCancel = () => editor.discardChange(state);
-
-                if (state.type === AuthoringKind.ChangeElement && !state.before) {
-                    return <g key={element.id}>
-                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
-                            <tspan className={actionClass}>New</tspan> [
-                                <tspan className={cancelClass}
-                                    onClick={onCancel}>
-                                    <title>Revert creation of the element</title>
-                                    cancel
-                                </tspan>
-                            ]
-                        </text>
-                    </g>;
-                } else if (state.type === AuthoringKind.ChangeElement && state.before) {
-                    return <g key={element.id}>
-                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
-                            <tspan className={actionClass}>Change</tspan> [
-                                <tspan className={cancelClass}
-                                    onClick={onCancel}>
-                                    <title>Revert all changes in properties of the element</title>
-                                    cancel
-                                </tspan>
-                            ]
-                        </text>
-                    </g>;
-                } else if (state.type === AuthoringKind.DeleteElement) {
+            if (state && state.type === AuthoringKind.DeleteElement) {
                     const right = x + width;
                     const bottom = y + height;
                     return <g key={element.id}>
-                        <text x={x} y={y} dy='-1ex' pointerEvents='all'>
-                            <tspan className={actionClass}>Delete</tspan> [
-                                <tspan className={cancelClass}
-                                    onClick={onCancel}>
-                                    <title>Revert deletion of the element</title>
-                                    cancel
-                                </tspan>
-                            ]
-                        </text>
                         <rect x={x} y={y} width={width} height={height} fill='white' fillOpacity={0.5} />
                         <line x1={x} y1={y} x2={right} y2={bottom} stroke='red' />
                         <line x1={right} y1={y} x2={x} y2={bottom} stroke='red' />
                     </g>;
-                } else {
-                    throw new Error('Unexpected element status');
-                }
             }
             return null;
         });
+    }
+
+    private renderElementStates() {
+        const {editor} = this.props;
+        return editor.model.elements.reduce((acc: JSX.Element[], element) => {
+            const {x, y} = this.scrollBoundsOf(element);
+
+            let renderedState: JSX.Element | null = null;
+            const state = editor.authoringState.index.elements.get(element.iri);
+            if (state) {
+                const onCancel = () => editor.discardChange(state);
+
+                let statusText: string;
+                let title: string;
+
+                if (state.type === AuthoringKind.ChangeElement && !state.before) {
+                    statusText = 'New';
+                    title = 'Revert creation of the element';
+                } else if (state.type === AuthoringKind.ChangeElement && state.before) {
+                    statusText = 'Change';
+                    title = 'Revert all changes in properties of the element';
+                } else if (state.type === AuthoringKind.DeleteElement) {
+                    statusText = 'Delete';
+                    title = 'Revert deletion of the element';
+                }
+
+                if (statusText && title) {
+                    renderedState = (
+                        <span>
+                            <span className={`${CLASS_NAME}__state-label`}>{statusText}</span>
+                            [<span className={`${CLASS_NAME}__state-cancel`}
+                                    onClick={onCancel} title={title}>cancel</span>]
+                        </span>
+                    );
+                }
+            }
+
+            const renderedErrors = this.renderElementErrors(element.iri);
+            if (renderedState || renderedErrors) {
+                acc.push(
+                    <div className={`${CLASS_NAME}__element-state`}
+                        key={element.id}
+                        style={{left: x, top: y}}>
+                        <div className={`${CLASS_NAME}__element-state-container`}>
+                            <div className={`${CLASS_NAME}__element-state-body`}>
+                                {renderedState}
+                                {renderedErrors}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            return acc;
+        }, []);
+    }
+
+    private renderElementErrors(elementIri: ElementIri): JSX.Element | null {
+        const {view, editor} = this.props;
+        const validation = editor.validationState.elements.get(elementIri);
+        if (!validation) {
+            return null;
+        }
+        const title = validation.errors.map(error => {
+            if (error.propertyType) {
+                const {id, label} = view.model.createProperty(error.propertyType);
+                const source = formatLocalizedLabel(id, label, view.getLanguage());
+                return `${source}: ${error.message}`;
+            } else {
+                return error.message;
+            }
+        }).join('\n');
+        return (
+            <div className={`${CLASS_NAME}__element-error`} title={title}>
+                {validation.loading
+                    ? <HtmlSpinner width={15} height={17} />
+                    : <div className={`${CLASS_NAME}__element-error-icon`} />}
+                {(!validation.loading && validation.errors.length > 0)
+                    ? validation.errors.length : undefined}
+            </div>
+        );
     }
 
     render() {
@@ -187,11 +289,15 @@ export class StatesWidget extends React.Component<Props, {}> {
         if (!editor.inAuthoringMode) {
             return null;
         }
-        return (
+        return (<div className={`${CLASS_NAME}`}>
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible', pointerEvents: 'none'}}>
-                {this.renderLinksStates()}
-                {this.renderElementsStates()}
+                {this.renderLinkOutlines()}
+                {this.renderElementOutlines()}
             </TransformedSvgCanvas>
-        );
+            <div className={`${CLASS_NAME}__validation-layer`}>
+                {this.renderElementStates()}
+                {this.renderLinkErrors()}
+            </div>
+        </div>);
     }
 }
