@@ -5,6 +5,8 @@ import { highlightSubstring } from '../listElementView';
 
 import { TreeNode } from './treeModel';
 
+const EXPAND_ICON = require<string>('../../../../images/tree/expand-toggle.svg');
+const COLLAPSE_ICON = require<string>('../../../../images/tree/collapse-toggle.svg');
 const DEFAULT_LEAF_ICON = require<string>('../../../../images/tree/leaf-default.svg');
 const DEFAULT_PARENT_ICON = require<string>('../../../../images/tree/leaf-folder.svg');
 
@@ -46,11 +48,10 @@ export class Leaf extends React.Component<LeafProps, State> {
         const {view, selectedNode, searchText} = otherProps;
         const {expanded} = this.state;
 
-        const toggleClass = (
-            node.derived.length === 0 ? `${LEAF_CLASS}__no-toggle` :
-            expanded ? `${LEAF_CLASS}__expanded-toggle` :
-            `${LEAF_CLASS}__collapsed-toggle`
-        );
+        let toggleIcon: string | undefined;
+        if (node.derived.length > 0) {
+            toggleIcon = expanded ? COLLAPSE_ICON : EXPAND_ICON;
+        }
 
         let {icon} = view.getTypeStyle([node.model.id]);
         if (!icon) {
@@ -69,9 +70,13 @@ export class Leaf extends React.Component<LeafProps, State> {
         return (
             <div className={LEAF_CLASS} role='tree-item'>
                 <div className={`${LEAF_CLASS}__row`}>
-                    <div className={toggleClass} onClick={this.toggle} role='button' />
+                    <div className={`${LEAF_CLASS}__toggle`} onClick={this.toggle} role='button'>
+                        {toggleIcon ? <img className={`${LEAF_CLASS}__toggle-icon`} src={toggleIcon} /> : null}
+                    </div>
                     <a className={bodyClass} href={node.model.id} onClick={this.onClick}>
-                        <img className={`${LEAF_CLASS}__icon`} src={icon} />
+                        <div className={`${LEAF_CLASS}__icon-container`}>
+                            <img className={`${LEAF_CLASS}__icon`} src={icon} />
+                        </div>
                         <span className={`${LEAF_CLASS}__label`}>{label}</span>
                         {node.model.count ? (
                             <span className={`${LEAF_CLASS}__count ontodia-badge`}>

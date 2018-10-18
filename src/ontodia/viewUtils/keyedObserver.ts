@@ -18,19 +18,18 @@ export class KeyedObserver<Key extends string> {
 
         for (const key of keys) {
             if (newObservedKeys.has(key)) { continue; }
-            let token = this.observedKeys.get(key);
-            if (!token) {
-                token = this.subscribe(key);
+            let unsubscribe = this.observedKeys.get(key);
+            if (!unsubscribe) {
+                unsubscribe = this.subscribe(key);
             }
-            newObservedKeys.set(key, token);
+            newObservedKeys.set(key, unsubscribe);
         }
 
-        for (const key in this.observedKeys) {
+        this.observedKeys.forEach((unsubscribe, key) => {
             if (!newObservedKeys.has(key)) {
-                const unsubscribe = this.observedKeys.get(key);
                 unsubscribe();
             }
-        }
+        });
 
         this.observedKeys = newObservedKeys;
     }

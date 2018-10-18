@@ -496,23 +496,26 @@ export class EditorController {
 
     onDragDrop(e: DragEvent, paperPosition: Vector) {
         e.preventDefault();
-        let elementIris: ElementIri[];
-        try {
-            elementIris = JSON.parse(e.dataTransfer.getData('application/x-ontodia-elements'));
-        } catch (ex) {
+
+        const tryGetData = (type: string) => {
             try {
-                elementIris = JSON.parse(e.dataTransfer.getData('text')); // IE fix
-            } catch (ex) {
-                const draggedUri = e.dataTransfer.getData('text/uri-list');
-                // element dragged from the class tree has URI of the form:
-                // <window.location without hash>#<class URI>
-                const uriFromTreePrefix = window.location.href.split('#')[0] + '#';
-                const uri = draggedUri.indexOf(uriFromTreePrefix) === 0
-                    ? draggedUri.substring(uriFromTreePrefix.length) : draggedUri;
-                elementIris = [uri as ElementIri];
+                const iriString = e.dataTransfer.getData(type);
+                if (!iriString) { return undefined; }
+                let iris: ElementIri[];
+                try {
+                    iris = JSON.parse(iriString);
+                } catch (e) {
+                    iris = [iriString as ElementIri];
+                }
+                return iris.length === 0 ? undefined : iris;
+            } catch (e) {
+                return undefined;
             }
-        }
-        if (!elementIris || elementIris.length === 0) { return; }
+        };
+
+        const elementIris = tryGetData('application/x-ontodia-elements')
+            || tryGetData('text') // IE11, Edge
+            || tryGetData('text/uri-list');
 
         const batch = this.model.history.startBatch('Drag and drop onto diagram');
         const placedElements = placeElements(this.view, elementIris, paperPosition);
