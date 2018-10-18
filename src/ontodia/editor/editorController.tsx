@@ -777,14 +777,31 @@ export class EditorController {
         const newState = ValidationState.createMutable();
         const hasChangedLinks = new Set<ElementIri>();
 
-        for (const {data} of this.model.links) {
+        for (const link of this.model.links) {
+            const {data, sourceId, targetId} = link;
             const current = currentAuthoring.index.links.get(data);
             const previous = previousAuthoring.index.links.get(data);
             const state = previousValidation.links.get(data);
 
             if (current !== previous) {
+                const loadingState = {...ValidationState.emptyLink, ...state, loading: true};
                 hasChangedLinks.add(data.sourceId);
-                newState.links.set(data, {...ValidationState.emptyLink, ...state, loading: true});
+                newState.links.set(data, loadingState);
+
+                const sourceModel = this.model.getElement(sourceId).data;
+                const targetModel = this.model.getElement(targetId).data;
+                validationApi.validateLink(
+                    data, sourceModel, targetModel, this.cancellation.signal,
+                ).then(loadedErrors => {
+                    const stateAfterLoad = this.validationState.links.get(data);
+                    if (stateAfterLoad !== loadingState) { return; }
+                    const validation = ValidationState.setLinkErrors(
+                        this.validationState,
+                        data,
+                        loadedErrors,
+                    );
+                    this.setValidationState(validation);
+                });
             } else if (state) {
                 newState.links.set(data, state);
             }

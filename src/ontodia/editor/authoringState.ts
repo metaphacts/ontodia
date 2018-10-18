@@ -1,9 +1,5 @@
 import { ElementModel, LinkModel, ElementIri, sameLink, hashLink } from '../data/model';
-import { hashFnv32a } from '../data/utils';
 import { ElementError, LinkError } from '../data/validationApi';
-
-import { Element, Link } from '../diagram/elements';
-import { DiagramModel } from '../diagram/model';
 
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
 
@@ -306,6 +302,18 @@ export namespace ValidationState {
             elements.delete(target);
         }
         return {...state, elements};
+    }
+
+    export function setLinkErrors(
+        state: ValidationState, target: LinkModel, errors: ReadonlyArray<LinkError>
+    ): ValidationState {
+        const links = state.links.clone();
+        if (errors.length > 0) {
+            links.set(target, {loading: false, errors});
+        } else {
+            links.delete(target);
+        }
+        return {...state, links};
     }
 }
 
