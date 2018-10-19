@@ -24,10 +24,6 @@
 .ontodia-class-leaf {
   margin: 1px 0;
 
-  &__icon {
-    height: 20px;
-  }
-
   &__row {
     display: flex;
     white-space: nowrap;
@@ -54,6 +50,15 @@
     }
   }
 
+  &__icon-container {
+    height: 20px;
+  }
+
+  &__icon {
+    display: block;
+    height: 100%;
+  }
+
   &__label {
     margin-left: 5px;
     color: black;
@@ -77,27 +82,19 @@
     height: 22px;
   }
 
-  &__collapsed-toggle {
+  &__toggle {
     display: inline-block;
     width: 12px;
     height: 12px;
     margin: 5px;
-    content: url("../images/tree/expand-toggle.svg");
-    &:hover {
+    &:hover:not(:empty) {
       background: #dcebff91;
       cursor: pointer;
     }
   }
 
-  &__expanded-toggle {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    margin: 5px;
-    content: url("../images/tree/collapse-toggle.svg");
-    &:hover {
-      background: #dcebff91;
-      cursor: pointer;
-    }
+  &__toggle-icon {
+    display: block;
+    height: 100%;
   }
 }
