@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { boundsOf, computePolyline } from '../diagram/geometry';
+import { boundsOf, computePolyline, Vector, computePolylineLength, getPointAlongPolyline } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView, RenderingLayer } from '../diagram/view';
@@ -9,8 +9,9 @@ import { Link } from '../diagram/elements';
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 
-import { AuthoringKind } from './authoringState';
+import { AuthoringKind, ValidationState } from './authoringState';
 import { EditorController } from './editorController';
+import { HtmlSpinner } from '../viewUtils/spinner';
 
 export interface Props extends PaperWidgetProps {
     editor: EditorController;
@@ -18,6 +19,8 @@ export interface Props extends PaperWidgetProps {
 }
 
 const CLASS_NAME = `ontodia-states-widget`;
+const WARNING_SIZE = 20;
+const WARNING_MARGIN = 5;
 
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
@@ -57,6 +60,7 @@ export class StatesWidget extends React.Component<Props, {}> {
         this.listener.listen(editor.model.events, 'changeCells', this.scheduleUpdate);
         this.listener.listen(editor.events, 'changeAuthoringState', this.scheduleUpdate);
         this.listener.listen(editor.events, 'changeTemporaryState', this.scheduleUpdate);
+        this.listener.listen(editor.events, 'changeValidationState', this.scheduleUpdate);
         this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer === RenderingLayer.Editor) {
                 this.delayedUpdate.runSynchronously();
@@ -73,6 +77,11 @@ export class StatesWidget extends React.Component<Props, {}> {
     }
 
     private calculateLinkPath(link: Link) {
+        const polyline = this.calculatePolyline(link);
+        return 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
+    }
+
+    private calculatePolyline(link: Link) {
         const {editor, view} = this.props;
 
         const source = editor.model.getElement(link.sourceId);
@@ -82,8 +91,7 @@ export class StatesWidget extends React.Component<Props, {}> {
         const verticesDefinedByUser = link.vertices || [];
         const vertices = route ? route.vertices : verticesDefinedByUser;
 
-        const polyline = computePolyline(source, target, vertices);
-        return 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
+        return computePolyline(source, target, vertices);
     }
 
     private renderLinksStates() {
@@ -115,6 +123,41 @@ export class StatesWidget extends React.Component<Props, {}> {
             }
             return null;
         });
+    }
+
+    private renderValidationStatus() {
+        const {editor} = this.props;
+        const {validationState} = editor;
+
+        return editor.model.links.map(link => {
+            const validation = validationState.links.get(link.data);
+            if (!validation) {
+                return null;
+            }
+            const polyline = this.calculatePolyline(link);
+            const style = this.getWarningPosition(polyline);
+            const title = validation.errors.map(error => error.message).join('\n');
+
+            return (<div
+                className={`${CLASS_NAME}_warning`}
+                key={link.id}
+                style={style}
+                title={title}>
+                {validation.loading ?
+                    <HtmlSpinner width={20} height={20}/>
+                    : <div className={`${CLASS_NAME}_warning__invalid-icon`}/>
+                }
+                {(!validation.loading && validation.errors.length > 0)
+                    ? validation.errors.length : undefined}
+            </div>);
+        });
+    }
+
+    private getWarningPosition(polyline: ReadonlyArray<Vector>): { top: number; left: number } {
+        const point = getPointAlongPolyline(polyline, WARNING_SIZE + WARNING_MARGIN);
+        const {x, y} = this.props.paperArea.paperToScrollablePaneCoords(point.x, point.y);
+
+        return {top: y - WARNING_SIZE / 2, left: x - WARNING_SIZE / 2};
     }
 
     private renderElementsStates() {
@@ -187,11 +230,14 @@ export class StatesWidget extends React.Component<Props, {}> {
         if (!editor.inAuthoringMode) {
             return null;
         }
-        return (
+        return (<div className={`${CLASS_NAME}`}>
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible', pointerEvents: 'none'}}>
                 {this.renderLinksStates()}
                 {this.renderElementsStates()}
             </TransformedSvgCanvas>
-        );
+            <div className={`${CLASS_NAME}__validation-layer`}>
+                {this.renderValidationStatus()}
+            </div>
+        </div>);
     }
 }

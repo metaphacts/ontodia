@@ -1,4 +1,20 @@
 .ontodia-states-widget {
+  &_warning {
+    position: absolute;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    
+    &__invalid-icon {
+      background: url("../images/font-awesome/filled-exclamation-triangle.svg");
+      height: 15px;
+      width: 17px;
+    }
+  }
+
+
+
   &__action {
     font-weight: bold;
   }

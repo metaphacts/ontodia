@@ -161,11 +161,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
             return null;
         }
         const title = validation.errors.map(error => {
-            if (error.linkType) {
-                const {id, label} = view.model.createLinkType(error.linkType);
-                const source = formatLocalizedLabel(id, label, view.getLanguage());
-                return `${source}: ${error.message}`;
-            } else if (error.propertyType) {
+            if (error.propertyType) {
                 const {id, label} = view.model.createProperty(error.propertyType);
                 const source = formatLocalizedLabel(id, label, view.getLanguage());
                 return `${source}: ${error.message}`;

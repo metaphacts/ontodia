@@ -88,9 +88,6 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
         const iri = this.props.templateProps.data.id;
         const validation = editor.validationState.elements.get(iri);
         if (validation) {
-            this.linkTypesObserver.observe(
-                validation.errors.map(error => error.linkType).filter(type => type)
-            );
             this.propertiesObserver.observe(
                 validation.errors.map(error => error.propertyType).filter(type => type)
             );
@@ -108,7 +105,7 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
     }
 
     private queryAllowedActions() {
-        const {isExpanded, elementId, data} = this.props.templateProps;
+        const {isExpanded, data} = this.props.templateProps;
         // only fetch whether it's allowed to edit when expanded
         if (!isExpanded) { return; }
         this.queryCancellation.abort();

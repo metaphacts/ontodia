@@ -1,27 +1,32 @@
-import { ElementModel, LinkModel, LinkTypeIri, PropertyTypeIri } from './model';
+import { ElementModel, LinkModel, PropertyTypeIri } from './model';
 import { AuthoringState } from '../editor/authoringState';
 import { CancellationToken } from '../viewUtils/async';
+import { DiagramModel } from '../diagram/model';
 
 export interface ElementError {
-    message: string;
-    linkType?: LinkTypeIri;
-    propertyType?: PropertyTypeIri;
+    readonly message: string;
+    readonly propertyType?: PropertyTypeIri;
 }
 
 export interface LinkError {
-    message: string;
+    readonly message: string;
+}
+
+export interface ValidationEvent {
+    readonly element: ElementModel;
+    readonly data: DiagramModel;
+    readonly state: AuthoringState;
+    readonly cancellation: CancellationToken;
+    readonly addElementErrors: (
+        target: ElementModel,
+        errors: Promise<ElementError[]>
+    ) => void;
+    readonly addLinkErrors: (
+        target: LinkModel,
+        errors: Promise<LinkError[]>
+    ) => void;
 }
 
 export interface ValidationApi {
-    /**
-     * Validates element model
-     */
-    validateElement(element: ElementModel, state: AuthoringState, ct: CancellationToken): Promise<ElementError[]>;
-
-    /**
-     * Validates link model
-     */
-    validateLink(
-        link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
-    ): Promise<LinkError[]>;
+    validate(event: ValidationEvent): void;
 }

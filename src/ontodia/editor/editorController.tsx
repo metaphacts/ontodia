@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { ValidationApi } from '../data/validationApi';
+import { ValidationApi, ElementError, LinkError } from '../data/validationApi';
 import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
 import { GenerateID } from '../data/schema';
 
@@ -32,11 +32,12 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, ValidationState,
-    isLinkConnectedToElement, TemporaryState, AuthoringEvent,
+    isLinkConnectedToElement, TemporaryState, AuthoringEvent, LinkChange,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
 
 import { Cancellation } from '../viewUtils/async';
+import { HashMap } from '../viewUtils/collections';
 
 export interface PropertyEditorOptions {
     elementData: ElementModel;
@@ -777,66 +778,76 @@ export class EditorController {
         const newState = ValidationState.createMutable();
         const hasChangedLinks = new Set<ElementIri>();
 
-        for (const link of this.model.links) {
-            const {data, sourceId, targetId} = link;
+        for (const {data} of this.model.links) {
             const current = currentAuthoring.index.links.get(data);
             const previous = previousAuthoring.index.links.get(data);
             const state = previousValidation.links.get(data);
 
             if (current !== previous) {
-                const loadingState = {...ValidationState.emptyLink, ...state, loading: true};
                 hasChangedLinks.add(data.sourceId);
-                newState.links.set(data, loadingState);
-
-                const sourceModel = this.model.getElement(sourceId).data;
-                const targetModel = this.model.getElement(targetId).data;
-                validationApi.validateLink(
-                    data, sourceModel, targetModel, this.cancellation.signal,
-                ).then(loadedErrors => {
-                    const stateAfterLoad = this.validationState.links.get(data);
-                    if (stateAfterLoad !== loadingState) { return; }
-                    const validation = ValidationState.setLinkErrors(
-                        this.validationState,
-                        data,
-                        loadedErrors,
-                    );
-                    this.setValidationState(validation);
-                });
             } else if (state) {
                 newState.links.set(data, state);
             }
         }
+        previousAuthoring.index.links.forEach((value, key) => {
+            hasChangedLinks.add(key.sourceId);
+        });
+        currentAuthoring.index.links.forEach((value, key) => {
+            hasChangedLinks.add(key.sourceId);
+        });
 
+        this.setValidationState(newState);
         for (const element of this.model.elements) {
-            if (newState.elements.has(element.iri)) { continue; }
+            if (this.validationState.elements.has(element.iri)) { continue; }
             const current = currentAuthoring.index.elements.get(element.iri);
             const previous = previousAuthoring.index.elements.get(element.iri);
             const state = previousValidation.elements.get(element.iri);
 
             if (hasChangedLinks.has(element.iri) || current !== previous) {
-                const loadingState = {...ValidationState.emptyElement, ...state, loading: true};
-                newState.elements.set(element.iri, loadingState);
+                validationApi.validate({
+                    element: element.data,
+                    state: currentAuthoring,
+                    data: this.model,
+                    cancellation: this.cancellation.signal,
+                    addElementErrors: async(
+                        target: ElementModel,
+                        errors: Promise<ElementError[]>,
+                    ) => {
+                        // Set loading state
+                        const tempValidation = ValidationState.setElementLoading(this.validationState, target.id);
+                        this.setValidationState(tempValidation);
 
-                validationApi.validateElement(
-                    element.data,
-                    currentAuthoring,
-                    this.cancellation.signal
-                ).then(loadedErrors => {
-                    const stateAfterLoad = this.validationState.elements.get(element.iri);
-                    if (stateAfterLoad !== loadingState) { return; }
-                    const validation = ValidationState.setElementErrors(
-                        this.validationState,
-                        element.iri,
-                        loadedErrors,
-                    );
-                    this.setValidationState(validation);
+                        // Set final validation state
+                        const elementErrors = await errors;
+                        const newValidation = ValidationState.setElementErrors(
+                            this.validationState,
+                            target.id,
+                            elementErrors,
+                        );
+                        this.setValidationState(newValidation);
+                    },
+                    addLinkErrors: async(
+                        target: LinkModel,
+                        errors: Promise<LinkError[]>,
+                    ) => {
+                        // Set temp (loading) state
+                        const tempValidation = ValidationState.setLinkLoading(this.validationState, target);
+                        this.setValidationState(tempValidation);
+
+                        // Set final validation state
+                        const linkErrors = await errors;
+                        const newValidation = ValidationState.setLinkErrors(
+                            this.validationState,
+                            target,
+                            linkErrors,
+                        );
+                        this.setValidationState(newValidation);
+                    },
                 });
             } else if (state) {
                 newState.elements.set(element.iri, state);
             }
         }
-
-        this.setValidationState(newState);
     }
 
     private addNewEntity(element: ElementModel) {
