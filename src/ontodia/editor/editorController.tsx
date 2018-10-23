@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi, ElementError, LinkError } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink, hashLink } from '../data/model';
 import { GenerateID } from '../data/schema';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
@@ -776,24 +776,26 @@ export class EditorController {
         const currentAuthoring = this.authoringState;
 
         const newState = ValidationState.createMutable();
-        const hasChangedLinks = new Set<ElementIri>();
 
-        for (const {data} of this.model.links) {
-            const current = currentAuthoring.index.links.get(data);
-            const previous = previousAuthoring.index.links.get(data);
-            const state = previousValidation.links.get(data);
+        const links = new HashMap<LinkModel, void>(hashLink, sameLink);
+        previousAuthoring.index.links.forEach((value, linkModel) => {
+            links.set(linkModel, undefined);
+        });
+        currentAuthoring.index.links.forEach((value, linkModel) => {
+            links.set(linkModel, undefined);
+        });
+
+        const hasChangedLinks = new Set<ElementIri>();
+        links.forEach((value, linkModel) => {
+            const current = currentAuthoring.index.links.get(linkModel);
+            const previous = previousAuthoring.index.links.get(linkModel);
+            const state = previousValidation.links.get(linkModel);
 
             if (current !== previous) {
-                hasChangedLinks.add(data.sourceId);
+                hasChangedLinks.add(linkModel.sourceId);
             } else if (state) {
-                newState.links.set(data, state);
+                newState.links.set(linkModel, state);
             }
-        }
-        previousAuthoring.index.links.forEach((value, key) => {
-            hasChangedLinks.add(key.sourceId);
-        });
-        currentAuthoring.index.links.forEach((value, key) => {
-            hasChangedLinks.add(key.sourceId);
         });
 
         this.setValidationState(newState);
@@ -809,7 +811,7 @@ export class EditorController {
                     state: currentAuthoring,
                     data: this.model,
                     cancellation: this.cancellation.signal,
-                    addElementErrors: async(
+                    addElementErrors: (
                         target: ElementModel,
                         errors: Promise<ElementError[]>,
                     ) => {
@@ -818,15 +820,23 @@ export class EditorController {
                         this.setValidationState(tempValidation);
 
                         // Set final validation state
-                        const elementErrors = await errors;
-                        const newValidation = ValidationState.setElementErrors(
-                            this.validationState,
-                            target.id,
-                            elementErrors,
-                        );
-                        this.setValidationState(newValidation);
+                        errors.then(elementErrors => {
+                            const newValidation = ValidationState.setElementErrors(
+                                this.validationState,
+                                target.id,
+                                elementErrors,
+                            );
+                            this.setValidationState(newValidation);
+                        }).catch(() => {
+                            const newValidation = ValidationState.setElementErrors(
+                                this.validationState,
+                                target.id,
+                                [],
+                            );
+                            this.setValidationState(newValidation);
+                        });
                     },
-                    addLinkErrors: async(
+                    addLinkErrors: (
                         target: LinkModel,
                         errors: Promise<LinkError[]>,
                     ) => {
@@ -835,13 +845,21 @@ export class EditorController {
                         this.setValidationState(tempValidation);
 
                         // Set final validation state
-                        const linkErrors = await errors;
-                        const newValidation = ValidationState.setLinkErrors(
-                            this.validationState,
-                            target,
-                            linkErrors,
-                        );
-                        this.setValidationState(newValidation);
+                        errors.then(linkErrors => {
+                            const newValidation = ValidationState.setLinkErrors(
+                                this.validationState,
+                                target,
+                                linkErrors,
+                            );
+                            this.setValidationState(newValidation);
+                        }).catch(() => {
+                            const newValidation = ValidationState.setLinkErrors(
+                                this.validationState,
+                                target,
+                                [],
+                            );
+                            this.setValidationState(newValidation);
+                        });
                     },
                 });
             } else if (state) {
