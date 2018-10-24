@@ -43,7 +43,7 @@ export {
 } from './ontodia/editor/serializedDiagram';
 export { recursiveLayout } from './ontodia/viewUtils/layout';
 
-export { CancellationToken } from './ontodia/viewUtils/async';
+export { Cancellation, CancellationToken } from './ontodia/viewUtils/async';
 export * from './ontodia/viewUtils/events';
 
 export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/connectionsMenu';
