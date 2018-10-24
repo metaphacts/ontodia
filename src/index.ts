@@ -9,7 +9,7 @@ export * from './ontodia/customization/templates';
 
 export * from './ontodia/data/model';
 export { MetadataApi } from './ontodia/data/metadataApi';
-export { ValidationApi, ElementError, LinkError } from './ontodia/data/validationApi';
+export * from './ontodia/data/validationApi';
 export * from './ontodia/data/provider';
 export * from './ontodia/data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparqlModels';

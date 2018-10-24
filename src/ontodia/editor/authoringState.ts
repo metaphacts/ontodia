@@ -315,22 +315,6 @@ export namespace ValidationState {
         }
         return {...state, links};
     }
-
-    export function setElementLoading(
-        state: ValidationState, target: ElementIri,
-    ): ValidationState {
-        const elements = cloneMap(state.elements);
-        elements.set(target, {loading: true, errors: []});
-        return {...state, elements};
-    }
-
-    export function setLinkLoading(
-        state: ValidationState, target: LinkModel,
-    ): ValidationState {
-        const links = state.links.clone();
-        links.set(target, {loading: true, errors: []});
-        return {...state, links};
-    }
 }
 
 export function isLinkConnectedToElement(link: LinkModel, elementIri: ElementIri) {
