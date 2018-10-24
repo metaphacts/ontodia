@@ -1,29 +1,58 @@
 .ontodia-states-widget {
   &_warning {
     position: absolute;
-    cursor: pointer;
+    cursor: help;
     white-space: nowrap;
     display: flex;
     align-items: center;
     
     &__invalid-icon {
-      background: url("../images/font-awesome/filled-exclamation-triangle.svg");
+      background: url("../images/font-awesome/exclamation-triangle.svg");
       height: 15px;
       width: 17px;
     }
   }
 
+  &__validation {
+    align-self: flex-end;
+    margin: 0px 5px;
+    display: flex;
+    align-items: center;
+    cursor: help;
+  }
 
+  &__invalid-icon {
+    background: url("../images/font-awesome/exclamation-triangle.svg");
+    height: 15px;
+    width: 17px;
+  }
 
   &__action {
     font-weight: bold;
+    margin-right: 5px;
   }
 
   &__cancel {
-    fill: #3f87a6;
+    color: #3f87a6;
     cursor: pointer;
     &:hover {
       text-decoration: underline;
+    }
+  }
+
+  &-state-label {
+    position: absolute;
+    
+    &_body-container {
+      position: relative;
+
+      &__body {
+        position: absolute;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        bottom: 0;
+      }
     }
   }
 }

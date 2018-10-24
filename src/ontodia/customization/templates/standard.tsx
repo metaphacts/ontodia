@@ -6,8 +6,6 @@ import { isEncodedBlank } from '../../data/sparql/blankNodes';
 import { TemplateProps } from '../props';
 import { getProperty } from './utils';
 
-import { formatLocalizedLabel } from '../../diagram/model';
-
 import { AuthoredEntity, AuthoredEntityContext } from '../../editor/authoredEntity';
 import { AuthoringState } from '../../editor/authoringState';
 
@@ -45,7 +43,6 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                             </div>
                             <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
-                        {editor.inAuthoringMode ? this.renderValidationStatus(context) : null}
                     </div>
                 </div>
                 {isExpanded ? (
@@ -153,31 +150,6 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
     private getLabel() {
         const {label, props} = this.props;
         return getProperty(props, FOAF_NAME) || label;
-    }
-
-    private renderValidationStatus({editor, view}: AuthoredEntityContext) {
-        const validation = editor.validationState.elements.get(this.props.iri);
-        if (!validation) {
-            return null;
-        }
-        const title = validation.errors.map(error => {
-            if (error.propertyType) {
-                const {id, label} = view.model.createProperty(error.propertyType);
-                const source = formatLocalizedLabel(id, label, view.getLanguage());
-                return `${source}: ${error.message}`;
-            } else {
-                return error.message;
-            }
-        }).join('\n');
-        return (
-            <div className={`${CLASS_NAME}__validation`} title={title}>
-                {validation.loading
-                    ? <HtmlSpinner width={15} height={17} />
-                    : <div className={`${CLASS_NAME}__invalid-icon`} />}
-                {(!validation.loading && validation.errors.length > 0)
-                    ? validation.errors.length : undefined}
-            </div>
-        );
     }
 
     private renderActions(context: AuthoredEntityContext) {

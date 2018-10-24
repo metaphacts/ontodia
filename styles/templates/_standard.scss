@@ -154,20 +154,6 @@
     padding: 9px;
   }
 
-  &__validation {
-    align-self: flex-end;
-    margin: 0 5px 2px -8px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-  }
-
-  &__invalid-icon {
-    background: url("../images/font-awesome/exclamation-triangle.svg");
-    height: 15px;
-    width: 17px;
-  }
-
   &__actions {
     display: flex;
     justify-content: space-between;
