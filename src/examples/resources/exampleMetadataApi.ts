@@ -1,6 +1,6 @@
 import {
-    ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, DiagramModel, CancellationToken,
-    LinkModel,
+    ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
+    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ValidationOperation, isLinkConnectedToElement,
 } from '../../index';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
@@ -81,5 +81,36 @@ export class ExampleMetadataApi implements MetadataApi {
     ): Promise<boolean> {
         await delay();
         return true;
+    }
+}
+
+export class ExampleValidationApi implements ValidationApi {
+    validate(event: ValidationEvent): ReadonlyArray<ValidationOperation> {
+        const results: ValidationOperation[] = [];
+        if (event.target.types.indexOf(schema.class) >= 0) {
+            const newLinkEvent = event.state.events.find(e =>
+                e.type === AuthoringKind.ChangeLink &&
+                !e.before &&
+                isLinkConnectedToElement(e.after, event.target.id)
+            ) as LinkChange | undefined;
+
+            if (newLinkEvent) {
+                results.push({
+                    type: 'link',
+                    target: newLinkEvent.after,
+                    errors: Promise.resolve([{
+                        message: 'Cannot add links from/to classes'
+                    }])
+                });
+                results.push({
+                    type: 'element',
+                    target: event.target.id,
+                    errors: Promise.resolve([{
+                        message: 'Cannot add links from/to classes'
+                    }])
+                });
+            }
+        }
+        return results;
     }
 }

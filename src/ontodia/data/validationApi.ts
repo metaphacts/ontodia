@@ -1,12 +1,7 @@
-import { ElementModel, LinkModel, PropertyTypeIri } from './model';
+import { ElementModel, LinkModel, ElementIri, PropertyTypeIri } from './model';
 import { AuthoringState } from '../editor/authoringState';
 import { CancellationToken } from '../viewUtils/async';
 import { DiagramModel } from '../diagram/model';
-
-export enum ValidationKind {
-    ElementValidation = 'elementValidation',
-    LinkValidation = 'linkValidation',
-}
 
 export interface ElementError {
     readonly message: string;
@@ -17,27 +12,27 @@ export interface LinkError {
     readonly message: string;
 }
 
-export interface ElementValidationResult {
-    readonly type: ValidationKind.ElementValidation;
-    readonly target: ElementModel;
+export interface ValidatingElement {
+    readonly type: 'element';
+    readonly target: ElementIri;
     readonly errors: Promise<ElementError[]>;
 }
 
-export interface LinkValidationResult {
-    readonly type: ValidationKind.LinkValidation;
+export interface ValidatingLink {
+    readonly type: 'link';
     readonly target: LinkModel;
     readonly errors: Promise<LinkError[]>;
 }
 
-export type ValidationResult = ElementValidationResult | LinkValidationResult;
+export type ValidationOperation = ValidatingElement | ValidatingLink;
 
 export interface ValidationEvent {
-    readonly element: ElementModel;
-    readonly data: DiagramModel;
+    readonly target: ElementModel;
+    readonly model: DiagramModel;
     readonly state: AuthoringState;
     readonly cancellation: CancellationToken;
 }
 
 export interface ValidationApi {
-    validate(event: ValidationEvent): ValidationResult[];
+    validate(event: ValidationEvent): ReadonlyArray<ValidationOperation>;
 }
