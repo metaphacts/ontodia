@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { ValidationApi, ElementError, LinkError } from '../data/validationApi';
+import { ValidationApi, ElementError, LinkError, ValidationKind } from '../data/validationApi';
 import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink, hashLink } from '../data/model';
 import { GenerateID } from '../data/schema';
 
@@ -798,7 +798,6 @@ export class EditorController {
             }
         });
 
-        this.setValidationState(newState);
         for (const element of this.model.elements) {
             if (this.validationState.elements.has(element.iri)) { continue; }
             const current = currentAuthoring.index.elements.get(element.iri);
@@ -806,18 +805,19 @@ export class EditorController {
             const state = previousValidation.elements.get(element.iri);
 
             if (hasChangedLinks.has(element.iri) || current !== previous) {
-                validationApi.validate({
+                const validationResults = validationApi.validate({
                     element: element.data,
                     state: currentAuthoring,
                     data: this.model,
                     cancellation: this.cancellation.signal,
-                    addElementErrors: (
-                        target: ElementModel,
-                        errors: Promise<ElementError[]>,
-                    ) => {
+                });
+
+                for (const validationResult of validationResults) {
+                    if (validationResult.type === ValidationKind.ElementValidation) {
+                        const target = validationResult.target;
+                        const errors = validationResult.errors;
                         // Set loading state
-                        const tempValidation = ValidationState.setElementLoading(this.validationState, target.id);
-                        this.setValidationState(tempValidation);
+                        newState.elements.set(target.id, {loading: true, errors: []});
 
                         // Set final validation state
                         errors.then(elementErrors => {
@@ -835,14 +835,11 @@ export class EditorController {
                             );
                             this.setValidationState(newValidation);
                         });
-                    },
-                    addLinkErrors: (
-                        target: LinkModel,
-                        errors: Promise<LinkError[]>,
-                    ) => {
+                    } else if (validationResult.type === ValidationKind.LinkValidation) {
+                        const target = validationResult.target;
+                        const errors = validationResult.errors;
                         // Set temp (loading) state
-                        const tempValidation = ValidationState.setLinkLoading(this.validationState, target);
-                        this.setValidationState(tempValidation);
+                        newState.links.set(target, {loading: true, errors: []});
 
                         // Set final validation state
                         errors.then(linkErrors => {
@@ -860,12 +857,13 @@ export class EditorController {
                             );
                             this.setValidationState(newValidation);
                         });
-                    },
-                });
+                    }
+                }
             } else if (state) {
                 newState.elements.set(element.iri, state);
             }
         }
+        this.setValidationState(newState);
     }
 
     private addNewEntity(element: ElementModel) {
