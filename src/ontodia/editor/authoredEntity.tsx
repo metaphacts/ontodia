@@ -44,7 +44,6 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
 
     private readonly listener = new EventObserver();
     private queryCancellation = new Cancellation();
-    private linkTypesObserver: KeyedObserver<LinkTypeIri>;
     private propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
     constructor(props: AuthoredEntityProps, context: any) {
@@ -62,9 +61,6 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
                 this.queryAllowedActions();
             }
         });
-        this.linkTypesObserver = observeLinkTypes(
-            editor.model, 'changeLabel', () => this.forceUpdate()
-        );
         this.propertiesObserver = observeProperties(
             editor.model, 'changeLabel', () => this.forceUpdate()
         );
@@ -92,14 +88,12 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
                 validation.errors.map(error => error.propertyType).filter(type => type)
             );
         } else {
-            this.linkTypesObserver.observe([]);
             this.propertiesObserver.observe([]);
         }
     }
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.linkTypesObserver.stopListening();
         this.propertiesObserver.stopListening();
         this.queryCancellation.abort();
     }

@@ -15,7 +15,7 @@ const schema = {
     subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri,
 };
 
-const METADATA_DELAY: number = 0; /* ms */
+const METADATA_DELAY: number = 500; /* ms */
 function delay(): Promise<void> {
     if (METADATA_DELAY === 0) {
         return Promise.resolve();
@@ -88,28 +88,33 @@ export class ExampleValidationApi implements ValidationApi {
     validate(event: ValidationEvent): ReadonlyArray<ValidationOperation> {
         const results: ValidationOperation[] = [];
         if (event.target.types.indexOf(schema.class) >= 0) {
-            const newLinkEvent = event.state.events.find(e =>
-                e.type === AuthoringKind.ChangeLink &&
-                !e.before &&
-                isLinkConnectedToElement(e.after, event.target.id)
-            ) as LinkChange | undefined;
-
-            if (newLinkEvent) {
-                results.push({
-                    type: 'link',
-                    target: newLinkEvent.after,
-                    errors: Promise.resolve([{
-                        message: 'Cannot add links from/to classes'
-                    }])
+            event.state.events
+                .filter((e): e is LinkChange =>
+                    e.type === AuthoringKind.ChangeLink &&
+                    !e.before &&
+                    isLinkConnectedToElement(e.after, event.target.id)
+                ).forEach(newLinkEvent => {
+                    results.push({
+                        type: 'link',
+                        target: newLinkEvent.after,
+                        errors: Promise.resolve().then(async () => {
+                            await delay();
+                            return [{
+                                message: 'Cannot add any new link from a Class'
+                            }];
+                        })
+                    });
+                    results.push({
+                        type: 'element',
+                        target: event.target.id,
+                        errors: Promise.resolve().then(async () => {
+                            await delay();
+                            return [{
+                                message: 'Cannot create link from a Class'
+                            }];
+                        })
+                    });
                 });
-                results.push({
-                    type: 'element',
-                    target: event.target.id,
-                    errors: Promise.resolve([{
-                        message: 'Cannot add links from/to classes'
-                    }])
-                });
-            }
         }
         return results;
     }
