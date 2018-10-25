@@ -246,6 +246,8 @@ export class EditorController {
 
         if (sourceEvent.ctrlKey || sourceEvent.shiftKey || sourceEvent.metaKey) { return; }
 
+        if (this.dialogTarget && this.dialogType === DialogTypes.EditEntityForm) { return; }
+
         if (target instanceof Element) {
             this.setSelection([target]);
             target.focus();
