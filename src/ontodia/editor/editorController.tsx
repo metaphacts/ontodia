@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { ValidationApi, ValidatingElement, ValidatingLink, ElementError, LinkError } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink, hashLink } from '../data/model';
+import { ValidationApi } from '../data/validationApi';
+import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
 import { GenerateID } from '../data/schema';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
@@ -31,13 +31,12 @@ import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, ValidationState, ElementValidation, LinkValidation,
-    isLinkConnectedToElement, TemporaryState, AuthoringEvent,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
+import { ValidationState, changedElementsToValidate, validateElements } from './validation';
 
 import { Cancellation } from '../viewUtils/async';
-import { HashMap } from '../viewUtils/collections';
 
 export interface PropertyEditorOptions {
     elementData: ElementModel;
@@ -112,7 +111,15 @@ export class EditorController {
             }
         });
         this.listener.listen(this.events, 'changeAuthoringState', e => {
-            this.validateChangedSince(e.previous);
+            if (this.options.validationApi) {
+                const changedElements = changedElementsToValidate(e.previous, this);
+                validateElements(
+                    changedElements,
+                    this.options.validationApi,
+                    this,
+                    this.cancellation.signal
+                );
+            }
         });
     }
 
@@ -766,97 +773,6 @@ export class EditorController {
 
     finishEditing() {
         this.view.setPaperWidget({key: 'editLayer', widget: undefined});
-    }
-
-    private validateChangedSince(previousAuthoring: AuthoringState) {
-        if (!this.options.validationApi) { return; }
-        const currentAuthoring = this.authoringState;
-
-        const links = new HashMap<LinkModel, true>(hashLink, sameLink);
-        previousAuthoring.index.links.forEach((e, model) => links.set(model, true));
-        currentAuthoring.index.links.forEach((e, model) => links.set(model, true));
-
-        const toValidate = new Set<ElementIri>();
-        links.forEach((value, linkModel) => {
-            const current = currentAuthoring.index.links.get(linkModel);
-            const previous = previousAuthoring.index.links.get(linkModel);
-            if (current !== previous) {
-                toValidate.add(linkModel.sourceId);
-            }
-        });
-
-        for (const element of this.model.elements) {
-            const current = currentAuthoring.index.elements.get(element.iri);
-            const previous = previousAuthoring.index.elements.get(element.iri);
-            if (current !== previous) {
-                toValidate.add(element.iri);
-            }
-        }
-
-        this.validateElements(toValidate);
-    }
-
-    private validateElements(targets: ReadonlySet<ElementIri>) {
-        if (!this.options.validationApi) { return; }
-
-        const newState = ValidationState.createMutable();
-
-        for (const element of this.model.elements) {
-            if (targets.has(element.iri) && !newState.elements.has(element.iri)) {
-                const operations = this.options.validationApi.validate({
-                    target: element.data,
-                    state: this.authoringState,
-                    model: this.model,
-                    cancellation: this.cancellation.signal,
-                });
-                for (const operation of operations) {
-                    if (operation.type === 'element') {
-                        const loading: ElementValidation = {loading: true, errors: []};
-                        newState.elements.set(operation.target, loading);
-                        operation.errors
-                            .catch((err): ElementError[] => {
-                                // tslint:disable-next-line:no-console
-                                console.error(`Failed to validate element`, operation.target, err);
-                                return [{message: `Failed to validate element`}];
-                            })
-                            .then(errors => {
-                                if (this.validationState.elements.get(operation.target) === loading) {
-                                    this.setValidationState(ValidationState.setElementErrors(
-                                        this.validationState, operation.target, errors
-                                    ));
-                                }
-                            });
-                    } else if (operation.type === 'link') {
-                        const loading: LinkValidation = {loading: true, errors: []};
-                        newState.links.set(operation.target, loading);
-                        operation.errors
-                            .catch((err): LinkError[] => {
-                                // tslint:disable-next-line:no-console
-                                console.error(`Failed to validate link`, operation.target, err);
-                                return [{message: `Failed to validate link`}];
-                            })
-                            .then(errors => {
-                                if (this.validationState.links.get(operation.target) === loading) {
-                                    this.setValidationState(ValidationState.setLinkErrors(
-                                        this.validationState, operation.target, errors
-                                    ));
-                                }
-                            });
-                    }
-                }
-            }
-        }
-
-        const previousState = this.validationState;
-        previousState.elements.forEach((state, iri) => {
-            if (newState.elements.has(iri)) { return; }
-            newState.elements.set(iri, state);
-        });
-        previousState.links.forEach((state, model) => {
-            if (newState.links.has(model)) { return; }
-            newState.links.set(model, state);
-        });
-        this.setValidationState(newState);
     }
 
     private addNewEntity(element: ElementModel) {

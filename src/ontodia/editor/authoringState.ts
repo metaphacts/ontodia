@@ -1,5 +1,4 @@
 import { ElementModel, LinkModel, ElementIri, sameLink, hashLink } from '../data/model';
-import { ElementError, LinkError } from '../data/validationApi';
 
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
 
@@ -261,58 +260,6 @@ export namespace TemporaryState {
     export function deleteLink(state: TemporaryState, link: LinkModel) {
         const links = state.links.clone();
         links.delete(link);
-        return {...state, links};
-    }
-}
-
-export interface ValidationState {
-   readonly elements: ReadonlyMap<ElementIri, ElementValidation>;
-   readonly links: ReadonlyHashMap<LinkModel, LinkValidation>;
-}
-
-export interface ElementValidation {
-    readonly loading: boolean;
-    readonly errors: ReadonlyArray<ElementError>;
-}
-
-export interface LinkValidation {
-    readonly loading: boolean;
-    readonly errors: ReadonlyArray<LinkError>;
-}
-
-export namespace ValidationState {
-    export const empty: ValidationState = createMutable();
-    export const emptyElement: ElementValidation = {loading: false, errors: []};
-    export const emptyLink: LinkValidation = {loading: false, errors: []};
-
-    export function createMutable() {
-        return {
-            elements: new Map<ElementIri, ElementValidation>(),
-            links: new HashMap<LinkModel, LinkValidation>(hashLink, sameLink),
-        };
-    }
-
-    export function setElementErrors(
-        state: ValidationState, target: ElementIri, errors: ReadonlyArray<ElementError>
-    ): ValidationState {
-        const elements = cloneMap(state.elements);
-        if (errors.length > 0) {
-            elements.set(target, {loading: false, errors});
-        } else {
-            elements.delete(target);
-        }
-        return {...state, elements};
-    }
-
-    export function setLinkErrors(
-        state: ValidationState, target: LinkModel, errors: ReadonlyArray<LinkError>
-    ): ValidationState {
-        const links = state.links.clone();
-        if (errors.length > 0) {
-            links.set(target, {loading: false, errors});
-        } else {
-            links.delete(target);
-        }
         return {...state, links};
     }
 }

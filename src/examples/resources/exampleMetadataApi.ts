@@ -1,6 +1,6 @@
 import {
     ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
-    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ValidationOperation, isLinkConnectedToElement,
+    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, isLinkConnectedToElement,
 } from '../../index';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
@@ -85,8 +85,8 @@ export class ExampleMetadataApi implements MetadataApi {
 }
 
 export class ExampleValidationApi implements ValidationApi {
-    validate(event: ValidationEvent): ReadonlyArray<ValidationOperation> {
-        const results: ValidationOperation[] = [];
+    async validate(event: ValidationEvent): Promise<Array<ElementError | LinkError>> {
+        const errors: Array<ElementError | LinkError> = [];
         if (event.target.types.indexOf(schema.class) >= 0) {
             event.state.events
                 .filter((e): e is LinkChange =>
@@ -94,28 +94,20 @@ export class ExampleValidationApi implements ValidationApi {
                     !e.before &&
                     isLinkConnectedToElement(e.after, event.target.id)
                 ).forEach(newLinkEvent => {
-                    results.push({
+                    errors.push({
                         type: 'link',
                         target: newLinkEvent.after,
-                        errors: Promise.resolve().then(async () => {
-                            await delay();
-                            return [{
-                                message: 'Cannot add any new link from a Class'
-                            }];
-                        })
+                        message: 'Cannot add any new link from a Class',
                     });
-                    results.push({
+                    errors.push({
                         type: 'element',
                         target: event.target.id,
-                        errors: Promise.resolve().then(async () => {
-                            await delay();
-                            return [{
-                                message: 'Cannot create link from a Class'
-                            }];
-                        })
+                        message: 'Cannot create link from a Class',
                     });
                 });
         }
-        return results;
+
+        await delay();
+        return errors;
     }
 }

@@ -9,7 +9,7 @@ import { Link } from '../diagram/elements';
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 
-import { AuthoringKind, ValidationState } from './authoringState';
+import { AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
