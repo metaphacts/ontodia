@@ -8,8 +8,8 @@ export * from './ontodia/customization/props';
 export * from './ontodia/customization/templates';
 
 export * from './ontodia/data/model';
-export { MetadataApi } from './ontodia/data/metadataApi';
-export { ValidationApi, ElementError, LinkError } from './ontodia/data/validationApi';
+export * from './ontodia/data/metadataApi';
+export * from './ontodia/data/validationApi';
 export * from './ontodia/data/provider';
 export * from './ontodia/data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './ontodia/data/sparql/sparqlModels';
@@ -36,6 +36,7 @@ export * from './ontodia/editor/authoringState';
 export {
     EditorOptions, EditorEvents, EditorController, PropertyEditor, PropertyEditorOptions,
 } from './ontodia/editor/editorController';
+export { ValidationState, ElementValidation, LinkValidation } from './ontodia/editor/validation';
 
 export {
     LayoutData, LayoutElement, LayoutLink, SerializedDiagram,
