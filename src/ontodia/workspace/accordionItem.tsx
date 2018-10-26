@@ -4,6 +4,7 @@ import { DraggableHandle } from './draggableHandle';
 
 export interface Props {
     heading: string;
+    defaultHeight?: number;
     bodyClassName?: string;
     bodyRef?: (body: HTMLDivElement) => void;
     children?: React.ReactNode;

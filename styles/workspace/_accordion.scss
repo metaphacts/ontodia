@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
 
-  &:not(&--resizing) .ontodia-accordion-item {
+  &:not(&--disable-animation) .ontodia-accordion-item {
     transition: height 0.3s ease-in-out;
   }
 }

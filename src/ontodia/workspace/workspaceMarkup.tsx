@@ -94,7 +94,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         );
         if (editor.inAuthoringMode) {
             items.push(
-                <AccordionItem key='authoringTools' heading='Authoring Tools'>
+                <AccordionItem key='authoringTools' heading='Authoring Tools' defaultHeight={80}>
                     <AuthoringTools view={this.props.view}
                         editor={this.props.editor}
                         metadataApi={this.props.metadataApi}

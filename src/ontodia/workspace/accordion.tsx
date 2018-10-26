@@ -9,16 +9,13 @@ export interface Props {
 }
 
 export interface State {
+    readonly initializing?: boolean;
     readonly height?: number;
     /**
      * Items' sizes in pixels.
      * Undefined until first resize or toggle initiated by user.
      */
     readonly sizes?: number[];
-    /**
-     * Items' sizes in percent.
-     */
-    readonly percents?: string[];
     /**
      * Per-item collapsed state: true if corresponding item is collapsed;
      * otherwise false.
@@ -41,51 +38,83 @@ export class Accordion extends React.Component<Props, State> {
         super(props);
         const childCount = React.Children.count(this.props.children);
         this.state = {
+            initializing: true,
             height: 0,
             collapsed: React.Children.map(this.props.children, () => false),
             resizing: false,
-            percents: React.Children.map(this.props.children, () => `${100 / childCount}%`),
         };
     }
 
-    componentDidMount() {
-        window.addEventListener('resize', this.setHeight);
-        this.setHeight();
-    }
-
-    componentWillUnmount() {
-        window.removeEventListener('resize', this.setHeight);
-    }
-
-    private setHeight = () => {
-        this.setState({height: this.element.parentElement.clientHeight});
-    }
-
     render() {
-        const {resizing, height} = this.state;
+        const {resizing, height, initializing} = this.state;
+        const disableAnimation = resizing || initializing;
         return (
-            <div className={`${CLASS_NAME} ${resizing ? `${CLASS_NAME}--resizing` : ''}`}
+            <div className={`${CLASS_NAME} ${disableAnimation ? `${CLASS_NAME}--disable-animation` : ''}`}
                 ref={element => this.element = element} style={{height}}>
                 {this.renderItems()}
             </div>
         );
     }
 
+    componentDidMount() {
+        window.addEventListener('resize', this.onWindowResize);
+        this.setDefaultSizes();
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.onWindowResize);
+    }
+
+    private onWindowResize = () => {
+        const {height: previousHeight, sizes: previousSizes} = this.state;
+        const newHeight = this.element.parentElement.clientHeight;
+        const sizes = previousSizes.map(size => size * newHeight / previousHeight);
+        this.setState({height: newHeight, sizes});
+    }
+
+    private setDefaultSizes() {
+        const totalHeight = this.element.parentElement.clientHeight;
+        const defaults = React.Children.toArray(this.props.children).map(
+            child => (child as React.ReactElement<ItemProps>).props.defaultHeight
+        );
+        const totalDefaultHeight = defaults.reduce(
+            (previous, value) => previous + (value || 0), 0);
+        const autosizedCount = defaults.reduce(
+            (previous, value) => previous + (typeof value === 'number' ? 0 : 1), 0);
+        const leftoverSize = Math.max(0, totalHeight - totalDefaultHeight);
+        const sizes = defaults.map(size => typeof size === 'number' ? size : (leftoverSize / autosizedCount));
+        this.setState({height: totalHeight, sizes});
+    }
+
+    componentDidUpdate() {
+        if (this.state.initializing && this.state.sizes) {
+            this.setState({initializing: false});
+        }
+    }
+
     private renderItems() {
-        const {sizes, percents, collapsed} = this.state;
+        const {height, sizes, collapsed} = this.state;
         const {children} = this.props;
+        const childCount = React.Children.count(children);
+
+        const itemHeight = (child: React.ReactElement<ItemProps>, index: number) => {
+            if (sizes) {
+                const size = sizes[index];
+                return collapsed[index] ? size : `${100 * size / height}%`;
+            } else {
+                return `${100 / childCount}%`;
+            }
+        };
 
         return React.Children.map(children, (child, index) => {
             if (typeof child !== 'object') {
                 throw new Error('Accordion should have only AccordionItem elements as children');
             }
             const lastChild = index === React.Children.count(children) - 1;
-            const height = collapsed[index] ? sizes[index] : percents[index];
-
             const additionalProps: Partial<ItemProps> & React.Props<AccordionItem> = {
                 ref: element => this.items[index] = element,
                 collapsed: collapsed[index],
-                height,
+                height: itemHeight(child, index),
                 onChangeCollapsed: newState => this.onItemChangeCollapsed(index, newState),
                 onBeginDragHandle: lastChild ? undefined : () => this.onBeginDragHandle(index),
                 onDragHandle: lastChild ? undefined : (dx, dy) => this.onDragHandle(index, dx, dy),
@@ -133,9 +162,7 @@ export class Accordion extends React.Component<Props, State> {
             sizes, collapsed, this.originTotalHeight, this.sizeWhenCollapsed,
         ).distribute(itemIndex + 1, dy);
 
-        const percents = sizes.map(size => `${100 * size / this.state.height}%`);
-
-        this.setState({sizes, percents, collapsed});
+        this.setState({sizes, collapsed});
     }
 
     private onItemChangeCollapsed(itemIndex: number, itemCollapsed: boolean) {
@@ -158,7 +185,7 @@ export class Accordion extends React.Component<Props, State> {
                 distributor.expand(splitShift, itemIndex + 1, sizes.length);
             }
         } else {
-            const shift = (totalHeight / sizes.length) - collapsedSize;
+            const shift = this.getDefaultHeightOrElse(itemIndex, totalHeight / sizes.length) - collapsedSize;
             let freeSize = distributor.collapse(shift, itemIndex + 1, sizes.length);
             freeSize = Math.max(freeSize, distributor.leftoverSize());
             if (freeSize < shift) {
@@ -170,9 +197,13 @@ export class Accordion extends React.Component<Props, State> {
 
         collapsed[itemIndex] = itemCollapsed;
 
-        const percents = sizes.map(size => `${100 * size / this.state.height}%`);
+        this.setState({sizes, collapsed});
+    }
 
-        this.setState({sizes, percents, collapsed});
+    private getDefaultHeightOrElse(itemIndex: number, fallbackHeight: number): number {
+        const item = this.items[itemIndex];
+        return item && typeof item.props.defaultHeight === 'number'
+            ? item.props.defaultHeight : fallbackHeight;
     }
 }
 
