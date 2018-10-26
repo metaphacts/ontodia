@@ -147,7 +147,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         );
         if (elementsSearchPanel) {
             items.push(
-                <AccordionItem key='search' heading='Search'>
+                <AccordionItem key='search' heading='Search in diagram'>
                     {React.cloneElement(elementsSearchPanel, {view, editor})}
                 </AccordionItem>
             );
