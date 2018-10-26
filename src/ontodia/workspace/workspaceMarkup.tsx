@@ -41,6 +41,7 @@ export interface WorkspaceMarkupProps {
     onWorkspaceEvent?: WorkspaceEventHandler;
     watermarkSvg?: string;
     watermarkUrl?: string;
+    elementsSearchPanel?: React.ReactElement<any>;
 }
 
 export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
@@ -136,6 +137,22 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     private renderRightPanel = () => {
         if (this.props.hidePanels) { return null; }
 
+        const {view, editor, elementsSearchPanel} = this.props;
+
+        const items: Array<React.ReactElement<any>> = [];
+        items.push(
+            <AccordionItem key='connections' heading='Connections' bodyClassName='link-types-toolbox'>
+                <LinkTypesToolbox view={view} editor={editor} />
+            </AccordionItem>
+        );
+        if (elementsSearchPanel) {
+            items.push(
+                <AccordionItem key='search' heading='Search'>
+                    {React.cloneElement(elementsSearchPanel, {view, editor})}
+                </AccordionItem>
+            );
+        }
+
         return (
             <ResizableSidebar dockSide={DockSide.Right}
                 isOpen={this.props.isRightPanelOpen}
@@ -148,9 +165,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                     preventTextSelection: true,
                     verticalResizing: true,
                 })}>
-                    <AccordionItem heading='Connections' bodyClassName='link-types-toolbox'>
-                        <LinkTypesToolbox view={this.props.view} editor={this.props.editor} />
-                    </AccordionItem>
+                    {items}
                 </Accordion>
             </ResizableSidebar>
         );
