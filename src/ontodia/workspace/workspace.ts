@@ -83,6 +83,11 @@ export interface WorkspaceProps {
     validationApi?: ValidationApi;
     propertyEditor?: PropertyEditor;
     onWorkspaceEvent?: WorkspaceEventHandler;
+
+    /**
+     * Custom panel to search existing elements on the diagram.
+     */
+    _elementsSearchPanel?: ReactElement<any>;
 }
 
 export interface DiagramViewOptions extends ViewOptions {
@@ -176,7 +181,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
     }
 
     render(): ReactElement<any> {
-        const {languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent} = this.props;
+        const {
+            languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent,
+            _elementsSearchPanel,
+        } = this.props;
         return createElement(WorkspaceMarkup, {
             ref: markup => { this.markup = markup; },
             hidePanels,
@@ -200,6 +208,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onWorkspaceEvent,
             watermarkSvg: this._watermarkSvg,
             watermarkUrl: this._watermarkUrl,
+            elementsSearchPanel: _elementsSearchPanel,
         } as WorkspaceMarkupProps & React.ClassAttributes<WorkspaceMarkup>);
     }
 
