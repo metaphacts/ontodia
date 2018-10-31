@@ -14,7 +14,7 @@
     "links": {"@id": "ontodia:hasLink", "@container": "@set"},
 
     "Element": "ontodia:Element",
-    "iri": {"@id": "ontodia:resource", "@type": "@id"},
+    "iri": {"@id": "ontodia:resource", "@type": "@vocab"},
     "position": "ontodia:position",
     "x": {"@id": "ontodia:xCoordValue"},
     "y": {"@id": "ontodia:yCoordValue"},
