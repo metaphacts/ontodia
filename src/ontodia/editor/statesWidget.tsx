@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { ElementIri, LinkModel } from '../data/model';
 
-import { Vector, boundsOf, computePolyline, getPointAlongPolyline } from '../diagram/geometry';
+import { Vector, boundsOf, computePolyline, getPointAlongPolyline, computePolylineLength } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView, RenderingLayer } from '../diagram/view';
@@ -59,7 +59,7 @@ export class StatesWidget extends React.Component<Props, {}> {
             }
         });
         this.listener.listen(editor.model.events, 'linkEvent', ({data}) => {
-            if (data.changeVertices) {
+            if (data.changeVertices || data.changeLabelBounds) {
                 this.scheduleUpdate();
             }
         });
@@ -100,7 +100,7 @@ export class StatesWidget extends React.Component<Props, {}> {
         return computePolyline(source, target, vertices);
     }
 
-    private renderLinkStateLabel() {
+    private renderLinkStateLabels() {
         const {editor} = this.props;
 
         return editor.model.links.map(link => {
@@ -193,7 +193,9 @@ export class StatesWidget extends React.Component<Props, {}> {
             const {x, y} = link.labelBounds;
             return {x, y: y - LINK_LABEL_MARGINE / 2};
         } else {
-            return undefined;
+            const polyline = this.calculatePolyline(link);
+            const polylineLength = computePolylineLength(polyline);
+            return getPointAlongPolyline(polyline, polylineLength / 2);
         }
     }
 
@@ -333,7 +335,7 @@ export class StatesWidget extends React.Component<Props, {}> {
             </TransformedSvgCanvas>
             <div className={`${CLASS_NAME}__validation-layer`} style={htmlTransformStyle}>
                 {this.renderElementStates()}
-                {this.renderLinkStateLabel()}
+                {this.renderLinkStateLabels()}
             </div>
         </div>;
     }

@@ -275,6 +275,11 @@ class LinkView extends Component<LinkViewProps, {}> {
         vertex.remove();
     }
 
+    private onBoundsUpdate = (newBounds: Rect | undefined) => {
+        const {model} = this.props;
+        model.setLabelBounds(newBounds);
+    }
+
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
         const {view, model, route} = this.props;
 
@@ -294,9 +299,6 @@ class LinkView extends Component<LinkViewProps, {}> {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
                     const groupKey = Math.round(label.offset * LABEL_GROUPING_PRECISION) / LABEL_GROUPING_PRECISION;
                     const line = TEMPORARY_LABEL_LINES.get(groupKey) || 0;
-                    const onBoundsUpdate = index === 0 ? (newBounds: Rect | undefined) => {
-                        model.setLabelBounds(newBounds);
-                    } : undefined;
                     TEMPORARY_LABEL_LINES.set(groupKey, line + 1);
                     return (
                         <LinkLabel key={index}
@@ -304,7 +306,7 @@ class LinkView extends Component<LinkViewProps, {}> {
                             line={line}
                             label={label}
                             textAnchor={textAnchor}
-                            onBoundsUpdate={onBoundsUpdate}
+                            onBoundsUpdate={index === 0 ? this.onBoundsUpdate : undefined}
                         />
                     );
                 })}
@@ -470,6 +472,11 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
 
     componentDidMount() {
         this.recomputeBounds(this.props);
+    }
+
+    componentWillUnmount() {
+        const {onBoundsUpdate} = this.props;
+        onBoundsUpdate(undefined);
     }
 
     componentWillReceiveProps(nextProps: LinkLabelProps) {

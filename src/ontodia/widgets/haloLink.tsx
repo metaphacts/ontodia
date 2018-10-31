@@ -264,25 +264,14 @@ export class HaloLink extends React.Component<Props, State> {
         );
     }
 
-    private renderRevertButton(polyline: ReadonlyArray<Vector>) {
-        const style = this.getButtonPosition(polyline, 2);
-        return (
-            <button className={`${CLASS_NAME}__button ${CLASS_NAME}__revert`}
-                style={style}
-                title={`Revert deletion of the selected link`}
-                onClick={this.props.onRevert} />
-        );
-    }
-
     render() {
         const {editor, target} = this.props;
         const polyline = this.computePolyline();
         if (!polyline) { return null; }
 
         const deleteOrRevertButton = (
-            isDeletedByItself(editor.authoringState, target) ? this.renderRevertButton(polyline) :
-            isSourceOrTargetDeleted(editor.authoringState, target) ? null :
-            this.renderDeleteButton(polyline)
+            isDeletedByItself(editor.authoringState, target) ||
+            isSourceOrTargetDeleted(editor.authoringState, target) ? null : this.renderDeleteButton(polyline)
         );
 
         return (

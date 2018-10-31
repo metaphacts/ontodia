@@ -222,6 +222,7 @@ export interface LinkEvents {
     changeData: PropertyChange<Link, LinkModel>;
     changeLayoutOnly: PropertyChange<Link, boolean>;
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
+    changeLabelBounds: PropertyChange<Link, Rect>;
 }
 
 export class Link {
@@ -274,6 +275,7 @@ export class Link {
         const previous = this._labelBounds;
         if (previous === value) { return; }
         this._labelBounds = value;
+        this.source.trigger('changeLabelBounds', {source: this, previous});
     }
 
     get layoutOnly(): boolean { return this._layoutOnly; }
