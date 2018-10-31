@@ -12,7 +12,7 @@ import { EventObserver } from '../viewUtils/events';
 import { restoreCapturedLinkGeometry } from './commands';
 import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey, FatLinkType } from './elements';
 import {
-    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
+    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping, Rect,
 } from './geometry';
 import { DiagramView, RenderingLayer } from './view';
 
@@ -294,6 +294,9 @@ class LinkView extends Component<LinkViewProps, {}> {
                     const {x, y} = getPointAlongPolyline(polyline, polylineLength * label.offset);
                     const groupKey = Math.round(label.offset * LABEL_GROUPING_PRECISION) / LABEL_GROUPING_PRECISION;
                     const line = TEMPORARY_LABEL_LINES.get(groupKey) || 0;
+                    const onBoundsUpdate = index === 0 ? (newBounds: Rect | undefined) => {
+                        model.setLabelBounds(newBounds);
+                    } : undefined;
                     TEMPORARY_LABEL_LINES.set(groupKey, line + 1);
                     return (
                         <LinkLabel key={index}
@@ -301,6 +304,7 @@ class LinkView extends Component<LinkViewProps, {}> {
                             line={line}
                             label={label}
                             textAnchor={textAnchor}
+                            onBoundsUpdate={onBoundsUpdate}
                         />
                     );
                 })}
@@ -397,6 +401,7 @@ interface LinkLabelProps {
     line: number;
     label: LabelAttributes;
     textAnchor: 'start' | 'middle' | 'end';
+    onBoundsUpdate?: (newBounds: Rect) => void;
 }
 
 interface LinkLabelState {
@@ -416,15 +421,9 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
     }
 
     render() {
-        const {x, y, label, textAnchor, line} = this.props;
+        const {x, y, label, line, textAnchor} = this.props;
         const {width, height} = this.state;
-
-        const rectPosition = {x, y: y - height / 2};
-        if (textAnchor === 'middle') {
-            rectPosition.x -= width / 2;
-        } else if (textAnchor === 'end') {
-            rectPosition.x -= width;
-        }
+        const {x: rectX, y: rectY} = this.getLabelRectangle(width, height);
 
         const transform = line === 0 ? undefined :
             `translate(0, ${line * (height + GROUPED_LABEL_MARGIN)}px)`;
@@ -433,7 +432,7 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
 
         return (
           <g style={transform ? {transform} : undefined}>
-              <rect x={rectPosition.x} y={rectPosition.y}
+              <rect x={rectX} y={rectY}
                   width={width} height={height}
                   style={label.attributes.rect}
               />
@@ -445,6 +444,24 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
               </text>
           </g>
         );
+    }
+
+    private getLabelRectangle(width: number, height: number): Rect {
+        const {x, y, textAnchor} = this.props;
+
+        let xOffset = 0;
+        if (textAnchor === 'middle') {
+            xOffset = -width / 2;
+        } else if (textAnchor === 'end') {
+            xOffset = -width;
+        }
+
+        return {
+            x: x + xOffset,
+            y: y - height / 2,
+            width,
+            height,
+        };
     }
 
     private onTextMount = (text: SVGTextElement | undefined) => {
@@ -459,14 +476,18 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
         this.shouldUpdateBounds = true;
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(props: LinkLabelProps) {
         this.recomputeBounds(this.props);
     }
 
     private recomputeBounds(props: LinkLabelProps) {
         if (this.shouldUpdateBounds) {
+            const {onBoundsUpdate} = this.props;
             this.shouldUpdateBounds = false;
             const bounds = this.text.getBBox();
+            const labelBounds = this.getLabelRectangle(bounds.width, bounds.height);
+            onBoundsUpdate(labelBounds);
+
             this.setState({
                 width: bounds.width,
                 height: bounds.height,

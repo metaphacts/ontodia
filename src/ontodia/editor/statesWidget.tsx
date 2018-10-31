@@ -1,8 +1,8 @@
 import * as React from 'react';
 
-import { ElementIri } from '../data/model';
+import { ElementIri, LinkModel } from '../data/model';
 
-import { Rect, Vector, boundsOf, computePolyline, getPointAlongPolyline } from '../diagram/geometry';
+import { Vector, boundsOf, computePolyline, getPointAlongPolyline } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView, RenderingLayer } from '../diagram/view';
@@ -15,6 +15,7 @@ import { HtmlSpinner } from '../viewUtils/spinner';
 
 import { AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
+import { LinkValidation, ElementValidation } from './validation';
 
 export interface Props extends PaperWidgetProps {
     editor: EditorController;
@@ -24,6 +25,8 @@ export interface Props extends PaperWidgetProps {
 const CLASS_NAME = `ontodia-states-widget`;
 const WARNING_SIZE = 20;
 const WARNING_MARGIN = 5;
+
+const LINK_LABEL_MARGINE = 5;
 
 export class StatesWidget extends React.Component<Props, {}> {
     private readonly listener = new EventObserver();
@@ -97,7 +100,64 @@ export class StatesWidget extends React.Component<Props, {}> {
         return computePolyline(source, target, vertices);
     }
 
-    private renderLinkOutlines() {
+    private renderLinkStateLabel() {
+        const {editor} = this.props;
+
+        return editor.model.links.map(link => {
+            let renderedState: JSX.Element | null = null;
+            const state = editor.authoringState.index.links.get(link.data);
+            if (state) {
+                const onCancel = () => editor.discardChange(state);
+
+                let statusText: string;
+                let title: string;
+
+                if (state.type === AuthoringKind.ChangeLink && !state.before) {
+                    statusText = 'New';
+                    title = 'Revert creation of the link';
+                } else if (state.type === AuthoringKind.ChangeLink && state.before) {
+                    statusText = 'Change';
+                    title = 'Revert all changes in properties of the link';
+                } else if (state.type === AuthoringKind.DeleteLink) {
+                    statusText = 'Delete';
+                    title = 'Revert deletion of the link';
+                }
+
+                if (statusText && title) {
+                    renderedState = (
+                        <span>
+                            <span className={`${CLASS_NAME}__state-label`}>{statusText}</span>
+                            [<span className={`${CLASS_NAME}__state-cancel`}
+                                    onClick={onCancel} title={title}>cancel</span>]
+                        </span>
+                    );
+                }
+            }
+
+            const renderedErrors = this.renderLinkErrors(link.data);
+            if (renderedState || renderedErrors) {
+                const labelPosition = this.getLinkStateLabelPosition(link);
+                if (!labelPosition) {
+                    return null;
+                }
+                const style = {left: labelPosition.x, top: labelPosition.y};
+                return <div className={`${CLASS_NAME}__state-indicator`}
+                    key={link.id}
+                    style={style}>
+                    <div className={`${CLASS_NAME}__state-indicator-container`}>
+                        <div className={`${CLASS_NAME}__state-indicator-body`}>
+                            {renderedState}
+                            {renderedErrors}
+                        </div>
+                    </div>
+                </div>;
+            } else {
+                return null;
+            }
+        });
+    }
+
+    private renderLinkStateHighlighting() {
         const {editor} = this.props;
         return editor.model.links.map(link => {
             if (editor.temporaryState.links.has(link.data)) {
@@ -128,56 +188,13 @@ export class StatesWidget extends React.Component<Props, {}> {
         });
     }
 
-    private renderLinkErrors() {
-        const {editor} = this.props;
-        const {validationState} = editor;
-
-        return editor.model.links.reduce((acc: JSX.Element[], link) => {
-            const validation = validationState.links.get(link.data);
-            if (!validation) {
-                return acc;
-            }
-            const polyline = this.calculatePolyline(link);
-            const style = this.getWarningPosition(polyline);
-            const title = validation.errors.map(error => error.message).join('\n');
-
-            acc.push(
-                <div className={`${CLASS_NAME}__link-error`}
-                    key={link.id}
-                    style={style}
-                    title={title}>
-                    {validation.loading
-                        ? <HtmlSpinner width={WARNING_SIZE} height={WARNING_SIZE} />
-                        : <div className={`${CLASS_NAME}__link-error-icon`} />}
-                    {(!validation.loading && validation.errors.length > 0)
-                        ? validation.errors.length : null}
-                </div>
-            );
-            return acc;
-        }, []);
-    }
-
-    private getWarningPosition(polyline: ReadonlyArray<Vector>): { top: number; left: number } {
-        const point = getPointAlongPolyline(polyline, WARNING_SIZE + WARNING_MARGIN);
-        const {x, y} = this.props.paperArea.paperToScrollablePaneCoords(point.x, point.y);
-
-        return {top: y - WARNING_SIZE / 2, left: x - WARNING_SIZE / 2};
-    }
-
-    private scrollBoundsOf(element: Element): Rect {
-        const {paperArea} = this.props;
-        const bbox = boundsOf(element);
-        const {x: x0, y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
-        const {x: x1, y: y1} = paperArea.paperToScrollablePaneCoords(
-            bbox.x + bbox.width,
-            bbox.y + bbox.height,
-        );
-        return {
-            x: x0,
-            y: y0,
-            width: x1 - x0,
-            height: y1 - y0,
-        };
+    private getLinkStateLabelPosition(link: Link): Vector {
+        if (link.labelBounds) {
+            const {x, y} = link.labelBounds;
+            return {x, y: y - LINK_LABEL_MARGINE / 2};
+        } else {
+            return undefined;
+        }
     }
 
     private renderElementOutlines() {
@@ -207,8 +224,6 @@ export class StatesWidget extends React.Component<Props, {}> {
     private renderElementStates() {
         const {editor} = this.props;
         return editor.model.elements.reduce((acc: JSX.Element[], element) => {
-            const {x, y} = this.scrollBoundsOf(element);
-
             let renderedState: JSX.Element | null = null;
             const state = editor.authoringState.index.elements.get(element.iri);
             if (state) {
@@ -241,12 +256,13 @@ export class StatesWidget extends React.Component<Props, {}> {
 
             const renderedErrors = this.renderElementErrors(element.iri);
             if (renderedState || renderedErrors) {
+                const {x, y} = boundsOf(element);
                 acc.push(
-                    <div className={`${CLASS_NAME}__element-state`}
+                    <div className={`${CLASS_NAME}__state-indicator`}
                         key={element.id}
                         style={{left: x, top: y}}>
-                        <div className={`${CLASS_NAME}__element-state-container`}>
-                            <div className={`${CLASS_NAME}__element-state-body`}>
+                        <div className={`${CLASS_NAME}__state-indicator-container`}>
+                            <div className={`${CLASS_NAME}__state-indicator-body`}>
                                 {renderedState}
                                 {renderedErrors}
                             </div>
@@ -273,31 +289,52 @@ export class StatesWidget extends React.Component<Props, {}> {
                 return error.message;
             }
         }).join('\n');
-        return (
-            <div className={`${CLASS_NAME}__element-error`} title={title}>
-                {validation.loading
-                    ? <HtmlSpinner width={15} height={17} />
-                    : <div className={`${CLASS_NAME}__element-error-icon`} />}
-                {(!validation.loading && validation.errors.length > 0)
-                    ? validation.errors.length : undefined}
-            </div>
-        );
+
+        return this.renderErrorIcon(title, validation);
+    }
+
+    private renderLinkErrors(linkModel: LinkModel) {
+        const {editor} = this.props;
+        const {validationState} = editor;
+
+        const validation = validationState.links.get(linkModel);
+        if (!validation) {
+            return null;
+        }
+        const title = validation.errors.map(error => error.message).join('\n');
+
+        return this.renderErrorIcon(title, validation);
+    }
+
+    private renderErrorIcon(title: string, validation: LinkValidation | ElementValidation): JSX.Element {
+        return <div className={`${CLASS_NAME}__item-error`} title={title}>
+            {validation.loading
+                ? <HtmlSpinner width={15} height={17} />
+                : <div className={`${CLASS_NAME}__item-error-icon`} />}
+            {(!validation.loading && validation.errors.length > 0)
+                ? validation.errors.length : undefined}
+        </div>;
     }
 
     render() {
         const {editor, paperTransform} = this.props;
+        const {scale, originX, originY} = paperTransform;
         if (!editor.inAuthoringMode) {
             return null;
         }
-        return (<div className={`${CLASS_NAME}`}>
+        const htmlTransformStyle: React.CSSProperties = {
+            position: 'absolute', left: 0, top: 0,
+            transform: `scale(${scale},${scale})translate(${originX}px,${originY}px)`,
+        };
+        return <div className={`${CLASS_NAME}`}>
             <TransformedSvgCanvas paperTransform={paperTransform} style={{overflow: 'visible', pointerEvents: 'none'}}>
-                {this.renderLinkOutlines()}
+                {this.renderLinkStateHighlighting()}
                 {this.renderElementOutlines()}
             </TransformedSvgCanvas>
-            <div className={`${CLASS_NAME}__validation-layer`}>
+            <div className={`${CLASS_NAME}__validation-layer`} style={htmlTransformStyle}>
                 {this.renderElementStates()}
-                {this.renderLinkErrors()}
+                {this.renderLinkStateLabel()}
             </div>
-        </div>);
+        </div>;
     }
 }
