@@ -13,7 +13,6 @@ import { SearchResults } from './searchResults';
 
 import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } from '../workspace/workspaceContext';
 
-interface Label { values: LocalizedString[]; }
 interface ConnectionCount { inCount: number; outCount: number; }
 
 export interface ReactElementModel {
@@ -67,7 +66,6 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     static contextTypes = WorkspaceContextTypes;
     readonly context: WorkspaceContextWrapper;
 
-    private container: HTMLElement;
     private readonly handler = new EventObserver();
     private readonly linkTypesListener = new EventObserver();
     private loadingState: 'loading' | 'error' | 'completed';
@@ -142,7 +140,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
 
     private loadObjects(linkDataChunk: LinkDataChunk) {
         const {view, editor, target} = this.props;
-        const {link, direction, expectedCount } = linkDataChunk;
+        const {link, direction } = linkDataChunk;
         const offset = (linkDataChunk.offset || 0);
 
         this.loadingState = 'loading';
