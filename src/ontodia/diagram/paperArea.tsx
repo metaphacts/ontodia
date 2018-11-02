@@ -40,6 +40,7 @@ export interface PaperAreaEvents {
     pointerDown: PointerEvent;
     pointerMove: PointerEvent;
     pointerUp: PointerUpEvent;
+    changeAnimation: PropertyChange<PaperArea, boolean>;
 }
 
 export interface PointerEvent {
@@ -67,6 +68,7 @@ export interface State {
     readonly paddingX?: number;
     readonly paddingY?: number;
     readonly renderedWidgets?: ReadonlyArray<WidgetDescription>;
+    readonly animation?: boolean;
 }
 
 export interface PaperAreaContextWrapper {
@@ -95,6 +97,7 @@ interface PointerMoveState {
 }
 
 const CLASS_NAME = 'ontodia-paper-area';
+const ANIMATION_CLASS_NAME = 'ontodia-animation';
 const LEFT_MOUSE_BUTTON = 0;
 
 export class PaperArea extends React.Component<PaperAreaProps, State> {
@@ -154,7 +157,11 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
     render() {
         const {view, watermarkSvg, watermarkUrl} = this.props;
-        const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
+        const {
+            paperWidth, paperHeight, originX,
+            originY, scale, paddingX, paddingY,
+            renderedWidgets, animation,
+        } = this.state;
         const paperTransform: PaperTransform = {
             width: paperWidth, height: paperHeight,
             originX, originY, scale, paddingX, paddingY,
@@ -166,8 +173,10 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             areaClass += ` ${CLASS_NAME}--hide-scrollbars`;
         }
 
+        const animationClass = animation ? ANIMATION_CLASS_NAME : '';
+
         return (
-            <div className={CLASS_NAME} ref={this.onOuterMount}>
+            <div className={`${CLASS_NAME} ${animationClass}`} ref={this.onOuterMount}>
                 <div className={areaClass}
                     ref={this.onAreaMount}
                     onMouseDown={this.onAreaPointerDown}
@@ -263,6 +272,16 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
     private onWidgetsMouseDown = (e: React.MouseEvent<any>) => {
         // prevent PaperArea from generating click on a blank area
         e.stopPropagation();
+    }
+
+    get animation(): boolean {
+        return this.state.animation;
+    }
+    setAnimation(animation: boolean) {
+        const previous = this.state.animation;
+        if (previous === animation) { return; }
+        this.setState({animation});
+        this.source.trigger('changeAnimation', {source: this, previous});
     }
 
     pageToPaperCoords(pageX: number, pageY: number) {
@@ -549,6 +568,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         const clientCenterX = (paperCenter.x + originX) * scale;
         const clientCenterY = (paperCenter.y + originY) * scale;
         const {clientWidth, clientHeight} = this.area;
+
         this.area.scrollLeft = clientCenterX - clientWidth / 2 + paddingX;
         this.area.scrollTop = clientCenterY - clientHeight / 2 + paddingY;
     }

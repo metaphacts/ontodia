@@ -1,0 +1,25 @@
+.ontodia-animation {
+    .ontodia-overlayed-element {
+        transition: transform 0.5s ease-in-out,
+                    box-shadow 0.5s ease-in-out;
+    }
+    .ontodia-link-layer {
+        animation: ontodia-animation-opacity 0.5s ease-in-out 1 forwards;
+    }
+
+    .ontodia-paper-area__widgets {
+        animation: ontodia-animation-opacity 0.5s ease-in-out 1 forwards;
+    }
+}
+
+@keyframes ontodia-animation-opacity {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: initial;
+    }
+}
