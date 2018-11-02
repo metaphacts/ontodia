@@ -27,6 +27,7 @@ import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
 
 const ONTODIA_WEBSITE = 'https://ontodia.org/';
 const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');
+const DEFAULT_ANIMATION_TIMEOUT = 500;
 
 export interface WorkspaceProps {
     /** Saves diagram layout (position and state of elements and links). */
@@ -298,7 +299,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
     preventTextSelectionUntilMouseUp() { this.markup.preventTextSelection(); }
 
     zoomToFit = () => {
-        this.markup.paperArea.zoomToFit();
+        return this.markup.paperArea.zoomToFit(true);
     }
 
     clearAll = () => {
@@ -319,16 +320,18 @@ export class Workspace extends Component<WorkspaceProps, State> {
         }
     }
 
-    forceLayout = () => {
+    forceLayout = async () => {
         const batch = this.model.history.startBatch('Force layout');
         batch.history.registerToUndo(this.makeSyncAndZoom());
         batch.history.registerToUndo(RestoreGeometry.capture(this.model));
 
-        recursiveForceLayout({model: this.model});
-
-        for (const link of this.model.links) {
-            link.setVertices([]);
-        }
+        const paperArea = this._getPaperArea();
+        await paperArea.animate(() => {
+            recursiveForceLayout({model: this.model});
+            for (const link of this.model.links) {
+                link.setVertices([]);
+            }
+        });
 
         batch.history.execute(this.makeSyncAndZoom());
         batch.store();
@@ -337,7 +340,6 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private makeSyncAndZoom(): Command {
         return Command.effect('Sync and zoom to fit', () => {
             this.view.performSyncUpdate();
-            this.zoomToFit();
         });
     }
 
@@ -431,7 +433,7 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
             onSaveDiagram: onSaveDiagram ? () => onSaveDiagram(workspace) : undefined,
             canPersistChanges,
             onPersistChanges: onPersistChanges ? () => onPersistChanges(workspace) : undefined,
-            onForceLayout: () => {
+            onForceLayout: async () => {
                 workspace.forceLayout();
                 workspace.zoomToFit();
             },
