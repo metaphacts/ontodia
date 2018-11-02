@@ -27,7 +27,7 @@ import { StatesWidget } from './statesWidget';
 import {
     forceLayout, padded, removeOverlaps, recursiveLayout, placeElementsAround,
 } from '../viewUtils/layout';
-import { Spinner, Props as SpinnerProps } from '../viewUtils/spinner';
+import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {

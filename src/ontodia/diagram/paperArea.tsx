@@ -12,7 +12,7 @@ import { Batch } from './history';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
 
-export interface Props {
+export interface PaperAreaProps {
     view: DiagramView;
     zoomOptions?: ZoomOptions;
     hideScrollBars?: boolean;
@@ -97,7 +97,7 @@ interface PointerMoveState {
 const CLASS_NAME = 'ontodia-paper-area';
 const LEFT_MOUSE_BUTTON = 0;
 
-export class PaperArea extends React.Component<Props, State> {
+export class PaperArea extends React.Component<PaperAreaProps, State> {
     static childContextTypes = PaperAreaContextTypes;
 
     private readonly listener = new EventObserver();
@@ -132,7 +132,7 @@ export class PaperArea extends React.Component<Props, State> {
         return {min, max, step, maxFit, fitPadding, requireCtrl};
     }
 
-    constructor(props: Props, context: any) {
+    constructor(props: PaperAreaProps, context: any) {
         super(props, context);
         this.state = {
             paperWidth: this.pageSize.x,
@@ -225,7 +225,7 @@ export class PaperArea extends React.Component<Props, State> {
         this.area.addEventListener('drop', this.onDragDrop);
     }
 
-    componentDidUpdate(prevProps: Props, prevState: State) {
+    componentDidUpdate(prevProps: PaperAreaProps, prevState: State) {
         if (this.scrollBeforeUpdate) {
             const {scale, originX, originY, paddingX, paddingY} = this.state;
             const scrollX = (originX - prevState.originX) * scale + (paddingX - prevState.paddingX);
