@@ -1,6 +1,6 @@
 import {
     ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
-    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, isLinkConnectedToElement,
+    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, formatLocalizedLabel,
 } from '../../index';
 
 const owlPrefix = 'http://www.w3.org/2002/07/owl#';
@@ -91,18 +91,19 @@ export class ExampleValidationApi implements ValidationApi {
             event.state.events
                 .filter((e): e is LinkChange =>
                     e.type === AuthoringKind.ChangeLink &&
-                    !e.before &&
-                    isLinkConnectedToElement(e.after, event.target.id)
+                    !e.before && e.after.sourceId === event.target.id
                 ).forEach(newLinkEvent => {
                     errors.push({
                         type: 'link',
                         target: newLinkEvent.after,
                         message: 'Cannot add any new link from a Class',
                     });
+                    const linkType = event.model.createLinkType(newLinkEvent.after.linkTypeId);
+                    const linkTypeLabel = formatLocalizedLabel(linkType.id, linkType.label, 'en');
                     errors.push({
                         type: 'element',
                         target: event.target.id,
-                        message: 'Cannot create link from a Class',
+                        message: `Cannot create "${linkTypeLabel}" link from a Class`,
                     });
                 });
         }
