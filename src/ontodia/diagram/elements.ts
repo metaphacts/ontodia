@@ -6,7 +6,7 @@ import { GenerateID } from '../data/schema';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
-import { Vector, Size, isPolylineEqual } from './geometry';
+import { Vector, Size, isPolylineEqual, Rect } from './geometry';
 
 export type Cell = Element | Link | LinkVertex;
 
@@ -222,6 +222,7 @@ export interface LinkEvents {
     changeData: PropertyChange<Link, LinkModel>;
     changeLayoutOnly: PropertyChange<Link, boolean>;
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
+    changeLabelBounds: PropertyChange<Link, Rect>;
 }
 
 export class Link {
@@ -235,6 +236,7 @@ export class Link {
     private _targetId: string;
 
     private _data: LinkModel | undefined;
+    private _labelBounds: Rect | undefined;
     private _layoutOnly: boolean;
     private _vertices: ReadonlyArray<Vector>;
 
@@ -266,6 +268,14 @@ export class Link {
         this._data = value;
         this._typeId = value.linkTypeId;
         this.source.trigger('changeData', {source: this, previous});
+    }
+
+    get labelBounds() { return this._labelBounds; }
+    setLabelBounds(value: Rect | undefined) {
+        const previous = this._labelBounds;
+        if (previous === value) { return; }
+        this._labelBounds = value;
+        this.source.trigger('changeLabelBounds', {source: this, previous});
     }
 
     get layoutOnly(): boolean { return this._layoutOnly; }

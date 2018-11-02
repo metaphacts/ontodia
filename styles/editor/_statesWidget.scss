@@ -1,21 +1,5 @@
 .ontodia-states-widget {
-  &__link-error {
-    position: absolute;
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    cursor: help;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 5px;
-  }
-
-  &__link-error-icon {
-    background: url("../images/font-awesome/exclamation-triangle.svg");
-    height: 15px;
-    width: 17px;
-  }
-
-  &__element-error {
+  &__item-error {
     align-self: flex-end;
     margin: 0px 5px;
     display: flex;
@@ -23,7 +7,7 @@
     cursor: help;
   }
 
-  &__element-error-icon {
+  &__item-error-icon {
     background: url("../images/font-awesome/exclamation-triangle.svg");
     height: 15px;
     width: 17px;
@@ -42,13 +26,13 @@
     }
   }
 
-  &__element-state {
+  &__state-indicator {
     position: absolute;
   }
-  &__element-state-container {
+  &__state-indicator-container {
     position: relative;
   }
-  &__element-state-body {
+  &__state-indicator-body {
     position: absolute;
     white-space: nowrap;
     display: flex;

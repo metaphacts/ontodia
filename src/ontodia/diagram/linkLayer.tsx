@@ -12,7 +12,7 @@ import { EventObserver } from '../viewUtils/events';
 import { restoreCapturedLinkGeometry } from './commands';
 import { Element as DiagramElement, Link as DiagramLink, LinkVertex, linkMarkerKey, FatLinkType } from './elements';
 import {
-    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping,
+    Vector, computePolyline, computePolylineLength, getPointAlongPolyline, computeGrouping, Rect,
 } from './geometry';
 import { DiagramView, RenderingLayer } from './view';
 
@@ -275,6 +275,11 @@ class LinkView extends Component<LinkViewProps, {}> {
         vertex.remove();
     }
 
+    private onBoundsUpdate = (newBounds: Rect | undefined) => {
+        const {model} = this.props;
+        model.setLabelBounds(newBounds);
+    }
+
     private renderLabels(polyline: ReadonlyArray<Vector>, style: LinkStyle) {
         const {view, model, route} = this.props;
 
@@ -301,6 +306,7 @@ class LinkView extends Component<LinkViewProps, {}> {
                             line={line}
                             label={label}
                             textAnchor={textAnchor}
+                            onBoundsUpdate={index === 0 ? this.onBoundsUpdate : undefined}
                         />
                     );
                 })}
@@ -397,6 +403,7 @@ interface LinkLabelProps {
     line: number;
     label: LabelAttributes;
     textAnchor: 'start' | 'middle' | 'end';
+    onBoundsUpdate?: (newBounds: Rect) => void;
 }
 
 interface LinkLabelState {
@@ -416,15 +423,9 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
     }
 
     render() {
-        const {x, y, label, textAnchor, line} = this.props;
+        const {x, y, label, line, textAnchor} = this.props;
         const {width, height} = this.state;
-
-        const rectPosition = {x, y: y - height / 2};
-        if (textAnchor === 'middle') {
-            rectPosition.x -= width / 2;
-        } else if (textAnchor === 'end') {
-            rectPosition.x -= width;
-        }
+        const {x: rectX, y: rectY} = this.getLabelRectangle(width, height);
 
         const transform = line === 0 ? undefined :
             `translate(0, ${line * (height + GROUPED_LABEL_MARGIN)}px)`;
@@ -433,7 +434,7 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
 
         return (
           <g style={transform ? {transform} : undefined}>
-              <rect x={rectPosition.x} y={rectPosition.y}
+              <rect x={rectX} y={rectY}
                   width={width} height={height}
                   style={label.attributes.rect}
               />
@@ -447,6 +448,24 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
         );
     }
 
+    private getLabelRectangle(width: number, height: number): Rect {
+        const {x, y, textAnchor} = this.props;
+
+        let xOffset = 0;
+        if (textAnchor === 'middle') {
+            xOffset = -width / 2;
+        } else if (textAnchor === 'end') {
+            xOffset = -width;
+        }
+
+        return {
+            x: x + xOffset,
+            y: y - height / 2,
+            width,
+            height,
+        };
+    }
+
     private onTextMount = (text: SVGTextElement | undefined) => {
         this.text = text;
     }
@@ -455,18 +474,27 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
         this.recomputeBounds(this.props);
     }
 
+    componentWillUnmount() {
+        const {onBoundsUpdate} = this.props;
+        onBoundsUpdate(undefined);
+    }
+
     componentWillReceiveProps(nextProps: LinkLabelProps) {
         this.shouldUpdateBounds = true;
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(props: LinkLabelProps) {
         this.recomputeBounds(this.props);
     }
 
     private recomputeBounds(props: LinkLabelProps) {
         if (this.shouldUpdateBounds) {
+            const {onBoundsUpdate} = this.props;
             this.shouldUpdateBounds = false;
             const bounds = this.text.getBBox();
+            const labelBounds = this.getLabelRectangle(bounds.width, bounds.height);
+            onBoundsUpdate(labelBounds);
+
             this.setState({
                 width: bounds.width,
                 height: bounds.height,
