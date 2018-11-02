@@ -4,17 +4,20 @@ import { DiagramView } from '../diagram/view';
 import { Element, Link } from '../diagram/elements';
 import { EventObserver, Unsubscribe } from '../viewUtils/events';
 import { PaperWidgetProps } from '../diagram/paperArea';
-import { boundsOf, computePolyline, computePolylineLength, getPointAlongPolyline } from '../diagram/geometry';
+import {
+    boundsOf,
+    computePolyline,
+    computePolylineLength,
+    getPointAlongPolyline,
+    Vector,
+    Rect,
+} from '../diagram/geometry';
 
 const WIDTH = 300;
 const HEIGHT = 300;
 const ELEMENT_OFFSET = 40;
 const LINK_OFFSET = 20;
-
-interface Position {
-    top: number;
-    left: number;
-}
+const FOCUS_OFFSET = 20;
 
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
@@ -29,6 +32,7 @@ export class Dialog extends React.Component<Props, {}> {
 
     componentDidMount() {
         this.listenToTarget(this.props.target);
+        this.focusOn();
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -79,7 +83,7 @@ export class Dialog extends React.Component<Props, {}> {
         this.handler.listen(link.events, 'changeVertices', this.updateAll);
     }
 
-    private calculatePositionForElement(element: Element): Position {
+    private calculatePositionForElement(element: Element): Vector {
         const {paperArea} = this.props;
 
         const bbox = boundsOf(element);
@@ -90,12 +94,12 @@ export class Dialog extends React.Component<Props, {}> {
         );
 
         return {
-            top: (y0 + y1) / 2 - (HEIGHT / 2),
-            left: x1 + ELEMENT_OFFSET,
+            x: x1 + ELEMENT_OFFSET,
+            y: (y0 + y1) / 2 - (HEIGHT / 2),
         };
     }
 
-    private calculatePositionForLink(link: Link): Position {
+    private calculatePositionForLink(link: Link): Vector {
         const {view, paperArea} = this.props;
 
         const source = view.model.getElement(link.sourceId);
@@ -115,10 +119,10 @@ export class Dialog extends React.Component<Props, {}> {
 
         const {x, y} = paperArea.paperToScrollablePaneCoords(targetPoint.x, targetPoint.y);
 
-        return {top: y + LINK_OFFSET, left: x + LINK_OFFSET};
+        return {y: y + LINK_OFFSET, x: x + LINK_OFFSET};
     }
 
-    private calculatePosition(): Position {
+    private calculatePosition(): Vector {
         const {target} = this.props;
 
         if (target instanceof Element) {
@@ -130,11 +134,68 @@ export class Dialog extends React.Component<Props, {}> {
         throw new Error('Unknown target type');
     }
 
+    private getViewPortScrollablePoints(): {min: Vector; max: Vector} {
+        const {paperArea} = this.props;
+        const paperAreaMetrix = paperArea.getAreaMetrics();
+        const min = paperArea.clientToScrollablePaneCoords(0, 0);
+        const max = paperArea.clientToScrollablePaneCoords(
+            paperAreaMetrix.clientWidth, paperAreaMetrix.clientHeight
+        );
+        return {min, max};
+    }
+
+    private getDialogScrollablePoints(): {min: Vector; max: Vector} {
+        const {x, y} = this.calculatePosition();
+        const min = {
+            x: x - FOCUS_OFFSET,
+            y: y - FOCUS_OFFSET,
+        };
+        const max = {
+            x: min.x + WIDTH + FOCUS_OFFSET * 2,
+            y: min.y + HEIGHT + FOCUS_OFFSET * 2,
+        };
+        return {min, max};
+    }
+
+    private focusOn() {
+        const {paperArea} = this.props;
+        const {min: viewPortMin, max: viewPortMax} = this.getViewPortScrollablePoints();
+        const {min, max} = this.getDialogScrollablePoints();
+
+        let xOffset = 0;
+        if (min.x < viewPortMin.x) {
+            xOffset = min.x - viewPortMin.x;
+        } else if (max.x > viewPortMax.x) {
+            xOffset = max.x - viewPortMax.x;
+        }
+
+        let yOffset = 0;
+        if (min.y < viewPortMin.y) {
+            yOffset = min.y - viewPortMin.y;
+        } else if (max.y > viewPortMax.y) {
+            yOffset = max.y - viewPortMax.y;
+        }
+
+        const curScrollableCenter = {
+            x: viewPortMin.x + (viewPortMax.x - viewPortMin.x) / 2,
+            y: viewPortMin.y + (viewPortMax.y - viewPortMin.y) / 2,
+        };
+        const newScrollabalCenter = {
+            x: curScrollableCenter.x + xOffset,
+            y: curScrollableCenter.y + yOffset,
+        };
+        const paperCenter = paperArea.scrollablePaneToPaperCoords(
+            newScrollabalCenter.x, newScrollabalCenter.y,
+        );
+        paperArea.centerTo(paperCenter);
+    }
+
     render() {
-        const {top, left} = this.calculatePosition();
+        const {x, y} = this.calculatePosition();
+        const style = {top: y, left: x, height: HEIGHT, width: WIDTH};
 
         return (
-            <div className='ontodia-dialog' style={{top, left, height: HEIGHT, width: WIDTH}}>
+            <div className='ontodia-dialog' style={style}>
                 {this.props.children}
             </div>
         );
