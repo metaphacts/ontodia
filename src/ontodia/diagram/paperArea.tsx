@@ -11,6 +11,7 @@ import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
+import { generate128BitID } from '../data/utils';
 
 export interface PaperAreaProps {
     view: DiagramView;
@@ -40,6 +41,7 @@ export interface PaperAreaEvents {
     pointerDown: PointerEvent;
     pointerMove: PointerEvent;
     pointerUp: PointerUpEvent;
+    changeAnimated: PropertyChange<PaperArea, boolean>;
 }
 
 export interface PointerEvent {
@@ -95,6 +97,8 @@ interface PointerMoveState {
 }
 
 const CLASS_NAME = 'ontodia-paper-area';
+const ANIMATION_CLASS_NAME = 'ontodia-paper-area--animated';
+const DEFAULT_CSS_ANIMATION_DURATION = 500;
 const LEFT_MOUSE_BUTTON = 0;
 
 export class PaperArea extends React.Component<PaperAreaProps, State> {
@@ -110,6 +114,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
     private readonly pageSize = {x: 1500, y: 800};
 
+    private cssAnimations = 0;
     private movingState: PointerMoveState | undefined;
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number };
     private movingElementOrigin: {
@@ -154,7 +159,11 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
     render() {
         const {view, watermarkSvg, watermarkUrl} = this.props;
-        const {paperWidth, paperHeight, originX, originY, scale, paddingX, paddingY, renderedWidgets} = this.state;
+        const {
+            paperWidth, paperHeight, originX,
+            originY, scale, paddingX, paddingY,
+            renderedWidgets
+        } = this.state;
         const paperTransform: PaperTransform = {
             width: paperWidth, height: paperHeight,
             originX, originY, scale, paddingX, paddingY,
@@ -166,8 +175,10 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             areaClass += ` ${CLASS_NAME}--hide-scrollbars`;
         }
 
+        const animationClass = this.animated ? ANIMATION_CLASS_NAME : '';
+
         return (
-            <div className={CLASS_NAME} ref={this.onOuterMount}>
+            <div className={`${CLASS_NAME} ${animationClass}`} ref={this.onOuterMount}>
                 <div className={areaClass}
                     ref={this.onAreaMount}
                     onMouseDown={this.onAreaPointerDown}
@@ -549,6 +560,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         const clientCenterX = (paperCenter.x + originX) * scale;
         const clientCenterY = (paperCenter.y + originY) * scale;
         const {clientWidth, clientHeight} = this.area;
+
         this.area.scrollLeft = clientCenterX - clientWidth / 2 + paddingX;
         this.area.scrollTop = clientCenterY - clientHeight / 2 + paddingY;
     }
@@ -673,6 +685,42 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
     exportPNG(options: ToDataURLOptions): Promise<string> {
         return toDataURL({...options, ...this.makeToSVGOptions()});
+    }
+
+    get animated(): boolean {
+        return this.cssAnimations > 0;
+    }
+
+    animate(body: () => void, durationMs?: number): Promise<void> {
+        const previous = this.animated;
+        this.cssAnimations++;
+        const value = this.animated;
+
+        if (previous !== value) {
+            this.forceUpdate();
+            this.source.trigger('changeAnimated', {source: this, previous: previous});
+        }
+
+        body();
+
+        const duration = typeof durationMs === 'number' ? durationMs : DEFAULT_CSS_ANIMATION_DURATION;
+        return new Promise(resolve => setTimeout(() => {
+            resolve();
+            this.stopCssAnimation();
+        }, duration));
+    }
+
+    private stopCssAnimation = () => {
+        if (this.cssAnimations === 0) { return; }
+
+        const previous = this.animated;
+        this.cssAnimations--;
+        const value = this.animated;
+
+        if (previous !== value) {
+            this.forceUpdate();
+            this.source.trigger('changeAnimated', {source: this, previous: previous});
+        }
     }
 }
 
