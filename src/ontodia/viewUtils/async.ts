@@ -134,3 +134,46 @@ export class CancelledError extends Error {
         Object.setPrototypeOf(this, CancelledError.prototype);
     }
 }
+
+export function delay(timeout: number) {
+    return new Promise(resolve => setTimeout(() => resolve(), timeout));
+}
+
+export function animateInterval(
+    duration: number,
+    onProgress: (progress: number) => void,
+    cancellation?: Cancellation,
+): Promise<void> {
+    return new Promise(resolve => {
+        let animationFrameId: number;
+        let start: number;
+
+        const animate = (time: number) => {
+            if (cancellation && cancellation.signal.aborted) { return; }
+
+            start = start || time;
+            let timePassed = time - start;
+            if (timePassed > duration) { timePassed = duration; }
+
+            onProgress(timePassed / duration);
+
+            if (timePassed < duration) {
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                resolve();
+            }
+        };
+
+        cancellation.signal.addEventListener('abort', () => {
+            cancelAnimationFrame(animationFrameId);
+            resolve();
+        });
+        animationFrameId = requestAnimationFrame(animate);
+    });
+}
+
+export function easeInOutBezier(t: number) {
+    if (t < 0) { return 0; }
+    if (t > 1) { return 1; }
+    return t * t * (3.0 - 2.0 * t);
+}
