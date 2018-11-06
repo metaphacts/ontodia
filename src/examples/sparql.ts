@@ -44,14 +44,6 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     viewOptions: {
         onIriClick: iri => window.open(iri),
-        templatesResolvers: [
-            types => {
-                if (types.indexOf('http://www.ics.forth.gr/isl/CRMinf/I2_Belief') !== -1) {
-                    return GroupTemplate;
-                }
-                return undefined;
-            }
-        ],
         groupBy: [
             {linkType: 'http://www.researchspace.org/ontology/group', linkDirection: 'in'},
         ],
@@ -62,6 +54,12 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         {code: 'ru', label: 'Russian'},
     ],
     language: 'ru',
+    templatesResolver: types => {
+        if (types.indexOf('http://www.ics.forth.gr/isl/CRMinf/I2_Belief') !== -1) {
+            return GroupTemplate;
+        }
+        return undefined;
+    },
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

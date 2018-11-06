@@ -59,26 +59,22 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        typeStyleResolvers: [
-            types => {
-                if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
-                    return {icon: certificateIcon};
-                } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
-                    return {icon: certificateIcon};
-                } else if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
-                    return {icon: cogIcon};
-                } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
-                    return {color: '#046380'};
-                } else {
-                    return undefined;
-                }
-            },
-        ],
-        linkTemplateResolvers: [
-            type => CUSTOM_LINK_TEMPLATE,
-        ],
         onIriClick: iri => window.open(iri),
     },
+    typeStyleResolver: types => {
+        if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {
+            return {icon: certificateIcon};
+        } else if (types.indexOf('http://www.w3.org/2002/07/owl#Class') !== -1) {
+            return {icon: certificateIcon};
+        } else if (types.indexOf('http://www.w3.org/2002/07/owl#ObjectProperty') !== -1) {
+            return {icon: cogIcon};
+        } else if (types.indexOf('http://www.w3.org/2002/07/owl#DatatypeProperty') !== -1) {
+            return {color: '#046380'};
+        } else {
+            return undefined;
+        }
+    },
+    linkTemplateResolver: type => CUSTOM_LINK_TEMPLATE,
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));
