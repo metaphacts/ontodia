@@ -182,7 +182,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     render(): ReactElement<any> {
         const {
-            languages, toolbar, hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent,
+            hidePanels, hideToolbar, metadataApi, hideScrollBars, onWorkspaceEvent,
             _elementsSearchPanel,
         } = this.props;
         return createElement(WorkspaceMarkup, {
@@ -406,12 +406,12 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
         const {workspace} = this.props;
         const view = workspace.getDiagram();
         const editor = workspace.getEditor();
-        const {languages, onSaveDiagram, onPersistChanges, hidePanels, toolbar, metadataApi} = workspace.props;
+        const {languages, onSaveDiagram, onPersistChanges, hidePanels, toolbar} = workspace.props;
 
         const canPersistChanges = onPersistChanges ? editor.authoringState.events.length > 0 : undefined;
         const canSaveDiagram = !canPersistChanges;
 
-        const toolbarProps: ToolbarProps = {
+        const defaultToolbarProps: ToolbarProps = {
             onZoomIn: workspace.zoomIn,
             onZoomOut: workspace.zoomOut,
             onZoomToFit: workspace.zoomToFit,
@@ -440,9 +440,15 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
                 workspace.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
             },
         };
-        return toolbar
-            ? cloneElement(toolbar, toolbarProps)
-            : createElement(DefaultToolbar, toolbarProps);
+        if (toolbar) {
+            const toolbarProps: ToolbarProps = {
+                ...defaultToolbarProps,
+                ...toolbar.props,
+            };
+            return cloneElement(toolbar, toolbarProps);
+        } else {
+            createElement(DefaultToolbar, defaultToolbarProps);
+        }
     }
 
     componentDidMount() {
