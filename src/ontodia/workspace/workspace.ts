@@ -93,7 +93,7 @@ export interface WorkspaceProps {
 
     typeStyleResolver?: TypeStyleResolver;
     linkTemplateResolver?: LinkTemplateResolver;
-    templateResolver?: TemplateResolver;
+    elementTemplateResolver?: TemplateResolver;
 }
 
 export interface DiagramViewOptions {
@@ -144,7 +144,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         const {
             hideHalo, language, history, viewOptions = {},
             metadataApi, validationApi, propertyEditor,
-            templateResolver, linkTemplateResolver, typeStyleResolver,
+            elementTemplateResolver, linkTemplateResolver, typeStyleResolver,
         } = this.props;
         const {
             linkRouter, onIriClick,
@@ -156,7 +156,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             groupBy || [],
         );
         this.view = new DiagramView(this.model, {
-            templateResolver,
+            elementTemplateResolver,
             linkTemplateResolver,
             typeStyleResolver,
             linkRouter,

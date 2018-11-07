@@ -8,7 +8,7 @@ import {
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
-import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
+import { StandardTemplate, DefaultElementTemplateBundle } from '../customization/templates';
 
 import { ElementModel, LocalizedString, ElementTypeIri, LinkTypeIri } from '../data/model';
 import { isEncodedBlank } from '../data/sparql/blankNodes';
@@ -26,7 +26,7 @@ export type IriClickHandler = (iri: string, element: Element, event: MouseEvent<
 export interface ViewOptions {
     typeStyleResolver?: TypeStyleResolver;
     linkTemplateResolver?: LinkTemplateResolver;
-    templateResolver?: TemplateResolver;
+    elementTemplateResolver?: TemplateResolver;
     linkRouter?: LinkRouter;
     onIriClick?: IriClickHandler;
 }
@@ -75,7 +75,7 @@ export class DiagramView {
 
     private readonly resolveTypeStyle: TypeStyleResolver;
     private readonly resolveLinkTemplate: LinkTemplateResolver;
-    private readonly resolveTemplate: TemplateResolver;
+    private readonly resolveElementTemplate: TemplateResolver;
 
     private _language = 'en';
 
@@ -90,7 +90,7 @@ export class DiagramView {
     ) {
         this.resolveTypeStyle = options.typeStyleResolver || DefaultTypeStyleBundle;
         this.resolveLinkTemplate = options.linkTemplateResolver || DefaultLinkTemplateBundle;
-        this.resolveTemplate = options.templateResolver || DefaultTemplateBundle;
+        this.resolveElementTemplate = options.elementTemplateResolver || DefaultElementTemplateBundle;
 
         this.initRouting();
     }
@@ -210,7 +210,7 @@ export class DiagramView {
     }
 
     public getElementTemplate(types: ElementTypeIri[]): ElementTemplate {
-        return this.resolveTemplate(types) || StandardTemplate;
+        return this.resolveElementTemplate(types) || StandardTemplate;
     }
 
     createLinkTemplate(linkType: FatLinkType): LinkTemplate {
