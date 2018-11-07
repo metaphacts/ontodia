@@ -1,6 +1,6 @@
 import { hcl } from 'd3-color';
 import { defaultsDeep, cloneDeep } from 'lodash';
-import { ReactElement } from 'react';
+import { ReactElement, MouseEvent } from 'react';
 
 import {
     LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
@@ -8,7 +8,7 @@ import {
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
-import { StandardTemplate, DefaultTemplateBundle } from '../customization/templates';
+import { StandardTemplate, DefaultElementTemplateBundle } from '../customization/templates';
 
 import { ElementModel, LocalizedString, ElementTypeIri, LinkTypeIri } from '../data/model';
 import { isEncodedBlank } from '../data/sparql/blankNodes';
@@ -21,12 +21,14 @@ import { DiagramModel, chooseLocalizedText } from './model';
 
 import { DefaultLinkRouter } from './linkRouter';
 
+export type IriClickHandler = (iri: string, element: Element, event: MouseEvent<any>) => void;
+
 export interface ViewOptions {
-    typeStyleResolvers?: TypeStyleResolver[];
-    linkTemplateResolvers?: LinkTemplateResolver[];
-    templatesResolvers?: TemplateResolver[];
+    typeStyleResolver?: TypeStyleResolver;
+    linkTemplateResolver?: LinkTemplateResolver;
+    elementTemplateResolver?: TemplateResolver;
     linkRouter?: LinkRouter;
-    onIriClick?: (iri: string, element: Element, event: React.MouseEvent<any>) => void;
+    onIriClick?: IriClickHandler;
 }
 
 export interface TypeStyle {
@@ -71,9 +73,9 @@ export class DiagramView {
 
     private readonly colorSeed = 0x0BADBEEF;
 
-    private typeStyleResolvers: TypeStyleResolver[];
-    private linkTemplateResolvers: LinkTemplateResolver[];
-    private templatesResolvers: TemplateResolver[];
+    private readonly resolveTypeStyle: TypeStyleResolver;
+    private readonly resolveLinkTemplate: LinkTemplateResolver;
+    private readonly resolveElementTemplate: TemplateResolver;
 
     private _language = 'en';
 
@@ -86,14 +88,9 @@ export class DiagramView {
         public readonly model: DiagramModel,
         public readonly options: ViewOptions = {},
     ) {
-        this.typeStyleResolvers = options.typeStyleResolvers
-            ? options.typeStyleResolvers : DefaultTypeStyleBundle;
-
-        this.linkTemplateResolvers = options.linkTemplateResolvers
-            ? this.options.linkTemplateResolvers : DefaultLinkTemplateBundle;
-
-        this.templatesResolvers = options.templatesResolvers
-            ? options.templatesResolvers : DefaultTemplateBundle;
+        this.resolveTypeStyle = options.typeStyleResolver || DefaultTypeStyleBundle;
+        this.resolveLinkTemplate = options.linkTemplateResolver || DefaultLinkTemplateBundle;
+        this.resolveElementTemplate = options.elementTemplateResolver || DefaultElementTemplateBundle;
 
         this.initRouting();
     }
@@ -192,14 +189,7 @@ export class DiagramView {
     public getTypeStyle(types: ElementTypeIri[]): TypeStyle {
         types.sort();
 
-        let customStyle: CustomTypeStyle;
-        for (const resolver of this.typeStyleResolvers) {
-            const result = resolver(types);
-            if (result) {
-                customStyle = result;
-                break;
-            }
-        }
+        const customStyle = this.resolveTypeStyle(types);
 
         const icon = customStyle ? customStyle.icon : undefined;
         let color: { h: number; c: number; l: number };
@@ -219,42 +209,8 @@ export class DiagramView {
         return `<${iri}>`;
     }
 
-    public registerElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
-        this.typeStyleResolvers.unshift(resolver);
-        return resolver;
-    }
-
-    public unregisterElementStyleResolver(resolver: TypeStyleResolver): TypeStyleResolver {
-        const index = this.typeStyleResolvers.indexOf(resolver);
-        if (index !== -1) {
-            return this.typeStyleResolvers.splice(index, 1)[0];
-        } else {
-            return undefined;
-        }
-    }
-
     public getElementTemplate(types: ElementTypeIri[]): ElementTemplate {
-        for (const resolver of this.templatesResolvers) {
-            const result = resolver(types);
-            if (result) {
-                return result;
-            }
-        }
-        return StandardTemplate;
-    }
-
-    public registerTemplateResolver(resolver: TemplateResolver): TemplateResolver {
-        this.templatesResolvers.unshift(resolver);
-        return resolver;
-    }
-
-    public unregisterTemplateResolver(resolver: TemplateResolver): TemplateResolver {
-        const index = this.templatesResolvers.indexOf(resolver);
-        if (index !== -1) {
-            return this.templatesResolvers.splice(index, 1)[0];
-        } else {
-            return undefined;
-        }
+        return this.resolveElementTemplate(types) || StandardTemplate;
     }
 
     createLinkTemplate(linkType: FatLinkType): LinkTemplate {
@@ -264,28 +220,15 @@ export class DiagramView {
         }
 
         let template: LinkTemplate = {};
-        for (const resolver of this.linkTemplateResolvers) {
-            const result = resolver(linkType.id);
-            if (result) {
-                template = cloneDeep(result);
-                break;
-            }
+        const result = this.resolveLinkTemplate(linkType.id);
+        if (result) {
+            template = cloneDeep(result);
         }
 
         fillLinkTemplateDefaults(template);
         this.linkTemplates.set(linkType.id, template);
         this.source.trigger('changeLinkTemplates', {});
         return template;
-    }
-
-    public registerLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver {
-        this.linkTemplateResolvers.unshift(resolver);
-        return resolver;
-    }
-
-    public unregisterLinkTemplateResolver(resolver: LinkTemplateResolver): LinkTemplateResolver | undefined {
-        const index = this.linkTemplateResolvers.indexOf(resolver);
-        return index >= 0 ? this.linkTemplateResolvers.splice(index, 1)[0] : undefined;
     }
 
     dispose() {

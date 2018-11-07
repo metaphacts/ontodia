@@ -2,13 +2,15 @@ import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 import * as saveAs from 'file-saverjs';
 
+import { LinkRouter, LinkTemplateResolver, TemplateResolver, TypeStyleResolver } from '../customization/props';
+
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
 
 import { RestoreGeometry } from '../diagram/commands';
 import { Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
-import { DiagramView, ViewOptions } from '../diagram/view';
+import { DiagramView, IriClickHandler } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import { EditorController, PropertyEditor, recursiveForceLayout } from '../editor/editorController';
@@ -88,9 +90,15 @@ export interface WorkspaceProps {
      * Custom panel to search existing elements on the diagram.
      */
     _elementsSearchPanel?: ReactElement<any>;
+
+    typeStyleResolver?: TypeStyleResolver;
+    linkTemplateResolver?: LinkTemplateResolver;
+    elementTemplateResolver?: TemplateResolver;
 }
 
-export interface DiagramViewOptions extends ViewOptions {
+export interface DiagramViewOptions {
+    linkRouter?: LinkRouter;
+    onIriClick?: IriClickHandler;
     groupBy?: GroupBy[];
     disableDefaultHalo?: boolean;
     suggestProperties?: PropertySuggestionHandler;
@@ -136,9 +144,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
         const {
             hideHalo, language, history, viewOptions = {},
             metadataApi, validationApi, propertyEditor,
+            elementTemplateResolver, linkTemplateResolver, typeStyleResolver,
         } = this.props;
         const {
-            templatesResolvers, linkTemplateResolvers, typeStyleResolvers, linkRouter, onIriClick,
+            linkRouter, onIriClick,
             disableDefaultHalo, suggestProperties, groupBy,
         } = viewOptions;
 
@@ -147,9 +156,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
             groupBy || [],
         );
         this.view = new DiagramView(this.model, {
-            templatesResolvers,
-            linkTemplateResolvers,
-            typeStyleResolvers,
+            elementTemplateResolver,
+            linkTemplateResolver,
+            typeStyleResolver,
             linkRouter,
             onIriClick,
         });

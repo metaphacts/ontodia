@@ -59,16 +59,14 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         groupBy: [
             {linkType: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', linkDirection: 'in'},
         ],
-        templatesResolvers: [
-            types => {
-                if (types.length === 0) {
-                    // use group template only for classes
-                    return GroupTemplate;
-                }
-                return undefined;
-            }
-        ],
-    }
+    },
+    elementTemplateResolver: types => {
+        if (types.length === 0) {
+            // use group template only for classes
+            return GroupTemplate;
+        }
+        return undefined;
+    },
 };
 
 onPageLoad(container => ReactDOM.render(createElement(Workspace, props), container));

@@ -29,7 +29,7 @@ export class Graph {
     private propertiesById = new Map<PropertyTypeIri, RichProperty>();
 
     private linkTypes = new Map<LinkTypeIri, FatLinkType>();
-    private nextLinkTypeIndex = 0;
+    private static nextLinkTypeIndex = 0;
 
     getElements() { return this.elements.items; }
     getLinks() { return this.links.items; }
@@ -149,7 +149,7 @@ export class Graph {
         if (this.getLinkType(linkType.id)) {
             throw new Error(`Link type '${linkType.id}' already exists.`);
         }
-        linkType.setIndex(this.nextLinkTypeIndex++);
+        linkType.setIndex(Graph.nextLinkTypeIndex++);
         linkType.events.onAny(this.onLinkTypeEvent);
         this.linkTypes.set(linkType.id, linkType);
     }
