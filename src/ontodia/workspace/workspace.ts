@@ -1,4 +1,4 @@
-import { Component, createElement, ReactElement, cloneElement, MouseEvent } from 'react';
+import { Component, createElement, ReactElement, cloneElement } from 'react';
 import * as ReactDOM from 'react-dom';
 import * as saveAs from 'file-saverjs';
 

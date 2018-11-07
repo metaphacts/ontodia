@@ -73,9 +73,9 @@ export class DiagramView {
 
     private readonly colorSeed = 0x0BADBEEF;
 
-    private readonly typeStyleResolvers: TypeStyleResolver;
-    private readonly linkTemplateResolvers: LinkTemplateResolver;
-    private readonly templatesResolvers: TemplateResolver;
+    private readonly resolveTypeStyle: TypeStyleResolver;
+    private readonly resolveLinkTemplate: LinkTemplateResolver;
+    private readonly resolveTemplate: TemplateResolver;
 
     private _language = 'en';
 
@@ -88,9 +88,9 @@ export class DiagramView {
         public readonly model: DiagramModel,
         public readonly options: ViewOptions = {},
     ) {
-        this.typeStyleResolvers = options.typeStyleResolver || DefaultTypeStyleBundle;
-        this.linkTemplateResolvers = options.linkTemplateResolver || DefaultLinkTemplateBundle;
-        this.templatesResolvers = options.templatesResolver || DefaultTemplateBundle;
+        this.resolveTypeStyle = options.typeStyleResolver || DefaultTypeStyleBundle;
+        this.resolveLinkTemplate = options.linkTemplateResolver || DefaultLinkTemplateBundle;
+        this.resolveTemplate = options.templatesResolver || DefaultTemplateBundle;
 
         this.initRouting();
     }
@@ -189,11 +189,7 @@ export class DiagramView {
     public getTypeStyle(types: ElementTypeIri[]): TypeStyle {
         types.sort();
 
-        let customStyle: CustomTypeStyle;
-        const result = this.typeStyleResolvers(types);
-        if (result) {
-            customStyle = result;
-        }
+        const customStyle = this.resolveTypeStyle(types);
 
         const icon = customStyle ? customStyle.icon : undefined;
         let color: { h: number; c: number; l: number };
@@ -214,11 +210,7 @@ export class DiagramView {
     }
 
     public getElementTemplate(types: ElementTypeIri[]): ElementTemplate {
-        const result = this.templatesResolvers(types);
-        if (result) {
-            return result;
-        }
-        return StandardTemplate;
+        return this.resolveTemplate(types) || StandardTemplate;
     }
 
     createLinkTemplate(linkType: FatLinkType): LinkTemplate {
@@ -228,7 +220,7 @@ export class DiagramView {
         }
 
         let template: LinkTemplate = {};
-        const result = this.linkTemplateResolvers(linkType.id);
+        const result = this.resolveLinkTemplate(linkType.id);
         if (result) {
             template = cloneDeep(result);
         }

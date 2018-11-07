@@ -29,7 +29,7 @@ export class Graph {
     private propertiesById = new Map<PropertyTypeIri, RichProperty>();
 
     private linkTypes = new Map<LinkTypeIri, FatLinkType>();
-    static nextLinkTypeIndex = 0;
+    private static nextLinkTypeIndex = 0;
 
     getElements() { return this.elements.items; }
     getLinks() { return this.links.items; }
