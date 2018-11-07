@@ -54,7 +54,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         {code: 'ru', label: 'Russian'},
     ],
     language: 'ru',
-    templatesResolver: types => {
+    templateResolver: types => {
         if (types.indexOf('http://www.ics.forth.gr/isl/CRMinf/I2_Belief') !== -1) {
             return GroupTemplate;
         }

@@ -26,7 +26,7 @@ export type IriClickHandler = (iri: string, element: Element, event: MouseEvent<
 export interface ViewOptions {
     typeStyleResolver?: TypeStyleResolver;
     linkTemplateResolver?: LinkTemplateResolver;
-    templatesResolver?: TemplateResolver;
+    templateResolver?: TemplateResolver;
     linkRouter?: LinkRouter;
     onIriClick?: IriClickHandler;
 }
@@ -90,7 +90,7 @@ export class DiagramView {
     ) {
         this.resolveTypeStyle = options.typeStyleResolver || DefaultTypeStyleBundle;
         this.resolveLinkTemplate = options.linkTemplateResolver || DefaultLinkTemplateBundle;
-        this.resolveTemplate = options.templatesResolver || DefaultTemplateBundle;
+        this.resolveTemplate = options.templateResolver || DefaultTemplateBundle;
 
         this.initRouting();
     }

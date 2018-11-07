@@ -60,7 +60,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
             {linkType: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', linkDirection: 'in'},
         ],
     },
-    templatesResolver: types => {
+    templateResolver: types => {
         if (types.length === 0) {
             // use group template only for classes
             return GroupTemplate;
