@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+## [0.9.6] - 2018-11-10
+### Added
+- Cancellation interface available through API
+- Adding custom UI panel through workspace API
+
+### Changed
+- Link state when authoring is now displayed as labels with actions
+- **[Breaking]** Refactored resolving templates
+
+### Fixed
+- Context definition for SerializedDiagram
+- Link validation
+- Loosing data when closing edit entity dialog by clicking outside the dialog
+- Drag-n-Drop for class tree in IE11
+- Regexp search for some SPARQL endpoints
+
 ## [0.9.5] - 2018-10-16
 ### Fixed
 - Missing localized labels on class tree initialization.
@@ -352,27 +369,29 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/ontodia-org/ontodia/compare/v0.9.4...HEAD
-[0.9.4]: https://github.com/ontodia-org/ontodia/compare/v0.9.3...v0.9.4
-[0.9.3]: https://github.com/ontodia-org/ontodia/compare/v0.9.2...v0.9.3
-[0.9.2]: https://github.com/ontodia-org/ontodia/compare/v0.9.1...v0.9.2
-[0.9.1]: https://github.com/ontodia-org/ontodia/compare/v0.9.0...v0.9.1
-[0.9.0]: https://github.com/ontodia-org/ontodia/compare/v0.8.1...v0.9.0
-[0.8.1]: https://github.com/ontodia-org/ontodia/compare/v0.8.0...v0.8.1
-[0.8.0]: https://github.com/ontodia-org/ontodia/compare/v0.6.1...v0.8.0
-[0.6.1]: https://github.com/ontodia-org/ontodia/compare/v0.6.0...v0.6.1
-[0.6.0]: https://github.com/ontodia-org/ontodia/compare/v0.5.3...v0.6.0
-[0.5.3]: https://github.com/ontodia-org/ontodia/compare/v0.5.2...v0.5.3
-[0.5.2]: https://github.com/ontodia-org/ontodia/compare/v0.5.1...v0.5.2
-[0.5.1]: https://github.com/ontodia-org/ontodia/compare/v0.5.0...v0.5.1
-[0.5.0]: https://github.com/ontodia-org/ontodia/compare/v0.4.1...v0.5.0
-[0.4.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.8...v0.4.1
-[0.3.8]: https://github.com/ontodia-org/ontodia/compare/v0.3.7...v0.3.8
-[0.3.7]: https://github.com/ontodia-org/ontodia/compare/v0.3.6...v0.3.7
-[0.3.6]: https://github.com/ontodia-org/ontodia/compare/v0.3.5...v0.3.6
-[0.3.5]: https://github.com/ontodia-org/ontodia/compare/v0.3.3...v0.3.5
-[0.3.3]: https://github.com/ontodia-org/ontodia/compare/v0.3.2...v0.3.3
-[0.3.2]: https://github.com/ontodia-org/ontodia/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/ontodia-org/ontodia/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/ontodia-org/ontodia/compare/v0.2.1...v0.3.0
-[0.2.1]: https://github.com/ontodia-org/ontodia/compare/v0.2.0...v0.2.1
+[Latest]: https://github.com/sputniq-space/ontodia/compare/v0.9.6...HEAD
+[0.9.6]: https://github.com/sputniq-space/ontodia/compare/v0.9.5...v0.9.6
+[0.9.5]: https://github.com/sputniq-space/ontodia/compare/v0.9.4...v0.9.5
+[0.9.4]: https://github.com/sputniq-space/ontodia/compare/v0.9.3...v0.9.4
+[0.9.3]: https://github.com/sputniq-space/ontodia/compare/v0.9.2...v0.9.3
+[0.9.2]: https://github.com/sputniq-space/ontodia/compare/v0.9.1...v0.9.2
+[0.9.1]: https://github.com/sputniq-space/ontodia/compare/v0.9.0...v0.9.1
+[0.9.0]: https://github.com/sputniq-space/ontodia/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/sputniq-space/ontodia/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/sputniq-space/ontodia/compare/v0.6.1...v0.8.0
+[0.6.1]: https://github.com/sputniq-space/ontodia/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/sputniq-space/ontodia/compare/v0.5.3...v0.6.0
+[0.5.3]: https://github.com/sputniq-space/ontodia/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/sputniq-space/ontodia/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/sputniq-space/ontodia/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/sputniq-space/ontodia/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/sputniq-space/ontodia/compare/v0.3.8...v0.4.1
+[0.3.8]: https://github.com/sputniq-space/ontodia/compare/v0.3.7...v0.3.8
+[0.3.7]: https://github.com/sputniq-space/ontodia/compare/v0.3.6...v0.3.7
+[0.3.6]: https://github.com/sputniq-space/ontodia/compare/v0.3.5...v0.3.6
+[0.3.5]: https://github.com/sputniq-space/ontodia/compare/v0.3.3...v0.3.5
+[0.3.3]: https://github.com/sputniq-space/ontodia/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/sputniq-space/ontodia/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/sputniq-space/ontodia/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/sputniq-space/ontodia/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/sputniq-space/ontodia/compare/v0.2.0...v0.2.1

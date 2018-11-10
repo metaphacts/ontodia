@@ -13,7 +13,7 @@ function onWorkspaceMounted(workspace: Workspace) {
         diagram,
         validateLinks: true,
         dataProvider: new SparqlDataProvider({
-            endpointUrl: 'http://dbpedia.org/sparql',
+            endpointUrl: 'https://dbpedia.org/sparql',
             imagePropertyUris: [
                 'http://xmlns.com/foaf/0.1/depiction',
                 'http://xmlns.com/foaf/0.1/img',
