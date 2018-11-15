@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Debouncer } from '../viewUtils/async';
+import { Debouncer, Cancellation } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
@@ -96,9 +96,26 @@ interface PointerMoveState {
     restoreGeometry: RestoreGeometry;
 }
 
+interface ViewportState {
+    readonly center: Vector; // paper coords
+    readonly scale: Vector;
+}
+
+interface ViewportAnimation {
+    readonly from: ViewportState;
+    readonly to: ViewportState;
+    readonly cancellation: Cancellation;
+}
+
+interface ViewPortAnimationDescription {
+    duration?: number;
+}
+type ViewportAnimationOptions = boolean | ViewPortAnimationDescription;
+
 const CLASS_NAME = 'ontodia-paper-area';
 const ANIMATION_CLASS_NAME = 'ontodia-paper-area--animated';
 const DEFAULT_CSS_ANIMATION_DURATION = 500;
+const DEFAULT_VIEWPORT_ANIMATION_DURATION = 500;
 const LEFT_MOUSE_BUTTON = 0;
 
 export class PaperArea extends React.Component<PaperAreaProps, State> {
@@ -114,7 +131,9 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
     private readonly pageSize = {x: 1500, y: 800};
 
+    private viewportAnimation: ViewportAnimation | undefined;
     private cssAnimations = 0;
+
     private movingState: PointerMoveState | undefined;
     private panningScrollOrigin: { scrollLeft: number; scrollTop: number };
     private movingElementOrigin: {
@@ -554,30 +573,32 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         }
     }
 
-    centerTo(paperPosition?: { x: number; y: number }) {
-        const {paperWidth, paperHeight, scale, originX, originY, paddingX, paddingY} = this.state;
+    // animatable operation (return await promise)
+    centerTo(paperPosition?: { x: number; y: number }, animate?: ViewportAnimationOptions): Promise<void> {
+        const {paperWidth, paperHeight, scale} = this.state;
         const paperCenter = paperPosition || {x: paperWidth / 2, y: paperHeight / 2};
-        const clientCenterX = (paperCenter.x + originX) * scale;
-        const clientCenterY = (paperCenter.y + originY) * scale;
-        const {clientWidth, clientHeight} = this.area;
-
-        this.area.scrollLeft = clientCenterX - clientWidth / 2 + paddingX;
-        this.area.scrollTop = clientCenterY - clientHeight / 2 + paddingY;
+        const viewportState: ViewportState = {
+            scale: {x: scale, y: scale},
+            center: paperCenter,
+        };
+        return this.setViewportState(viewportState, animate);
     }
 
-    centerContent() {
+    // animatable operation (return await promise)
+    centerContent(animate?: ViewportAnimationOptions): Promise<void> {
         const bbox = this.getContentFittingBox();
-        this.centerTo({
+        return this.centerTo({
             x: bbox.x + bbox.width / 2,
             y: bbox.y + bbox.height / 2,
-        });
+        }, animate);
     }
 
     getScale() {
         return this.state.scale;
     }
 
-    setScale(value: number, options: ScaleOptions = {}) {
+    // animatable operation (return await promise)
+    setScale(value: number, options: ScaleOptions = {}, animate?: ViewportAnimationOptions): Promise<void> {
         let scale = value;
 
         const {min, max} = this.zoomOptions;
@@ -599,36 +620,37 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             pivot = center;
         }
 
-        this.setState({scale}, () => {
-            this.centerTo(pivot);
-            if (this.props.onZoom) {
-                this.props.onZoom(scale, scale);
-            }
-        });
+        const viewportState: ViewportState = {
+            center: pivot,
+            scale: {x: scale, y: scale},
+        };
+        return this.setViewportState(viewportState, animate);
     }
 
-    zoomBy(value: number, options: ScaleOptions = {}) {
-        this.setScale(this.getScale() + value, options);
+    // animatable operation (return await promise)
+    zoomBy(value: number, options: ScaleOptions = {}, animate?: ViewportAnimationOptions) {
+        return this.setScale(this.getScale() + value, options, animate);
     }
 
-    zoomIn = () => {
-        this.zoomBy(this.zoomOptions.step);
+    // animatable operation (return await promise)
+    zoomIn = (animate?: ViewportAnimationOptions) => {
+        return this.zoomBy(this.zoomOptions.step, {}, animate);
     }
 
-    zoomOut = () => {
-        this.zoomBy(-this.zoomOptions.step);
+    zoomOut = (animate?: ViewportAnimationOptions) => {
+        return this.zoomBy(-this.zoomOptions.step, {}, animate);
     }
 
-    zoomToFit() {
+    // animatable operation (return await promise)
+    zoomToFit(animate?: ViewportAnimationOptions): Promise<void> {
         if (this.props.view.model.elements.length === 0) {
-            this.centerTo();
-            return;
+            return this.centerTo();
         }
 
         const bbox = this.getContentFittingBox();
 
         const {clientWidth, clientHeight} = this.area;
-        const {width, height} = fitRectKeepingAspectRatio(
+        const {width} = fitRectKeepingAspectRatio(
             bbox.width, bbox.height,
             clientWidth, clientHeight,
         );
@@ -638,12 +660,17 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         scale = Math.max(scale, min);
         scale = Math.min(scale, maxFit);
 
-        this.setState({scale}, () => {
-            this.centerContent();
-            if (this.props.onZoom) {
-                this.props.onZoom(scale, scale);
-            }
-        });
+        const center = {
+            x: bbox.x + bbox.width / 2,
+            y: bbox.y + bbox.height / 2,
+        };
+
+        const viewPortState: ViewportState = {
+            center,
+            scale: {x: scale, y: scale},
+        };
+
+        return this.setViewportState(viewPortState, animate);
     }
 
     private onDragOver = (e: DragEvent) => {
@@ -722,6 +749,87 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             this.source.trigger('changeAnimated', {source: this, previous: previous});
         }
     }
+
+    private get viewportState(): ViewportState {
+        const {clientWidth, clientHeight} = this.area;
+        const {originX, originY, paddingX, paddingY, scale} = this.state;
+
+        const scrollCenterX = this.area.scrollLeft + clientWidth / 2 - paddingX;
+        const scrollCenterY = this.area.scrollTop + clientHeight / 2 - paddingY;
+        const paperCenter = {
+            x: scrollCenterX / scale - originX,
+            y: scrollCenterY / scale - originY,
+        };
+
+        return {
+            center: paperCenter,
+            scale: {
+                x: scale,
+                y: scale,
+            }
+        };
+    }
+
+    private setViewportState(state: ViewportState, animate?: ViewportAnimationOptions): Promise<void> {
+        const applyViewPortState = (targetState: ViewportState) => {
+            const scale = targetState.scale.x;
+            const paperCenter = targetState.center;
+
+            this.setState({scale}, () => {
+                const {originX, originY, paddingX, paddingY} = this.state;
+                const scrollCenterX = (paperCenter.x + originX) * scale;
+                const scrollCenterY = (paperCenter.y + originY) * scale;
+                const {clientWidth, clientHeight} = this.area;
+
+                this.area.scrollLeft = scrollCenterX - clientWidth / 2 + paddingX;
+                this.area.scrollTop = scrollCenterY - clientHeight / 2 + paddingY;
+
+                if (this.props.onZoom) {
+                    this.props.onZoom(scale, scale);
+                }
+            });
+        };
+
+        const startViewPortAnimation = (
+            from: ViewportState,
+            to: ViewportState,
+            description?: ViewPortAnimationDescription,
+        ): Promise<void> => {
+            const viewportAnimation: ViewportAnimation = {
+                from, to, cancellation: new Cancellation(),
+            };
+            const duration = description && description.duration ?
+                description.duration : DEFAULT_VIEWPORT_ANIMATION_DURATION;
+            return animationInterval(progress => {
+                const curState: ViewportState = {
+                    center: {
+                        x: from.center.x + (to.center.x - from.center.x) * progress,
+                        y: from.center.y + (to.center.y - from.center.y) * progress,
+                    },
+                    scale: {
+                        x: from.scale.x + (to.scale.x - from.scale.x) * progress,
+                        y: from.scale.y + (to.scale.y - from.scale.y) * progress,
+                    }
+                };
+                applyViewPortState(curState);
+            }, duration, viewportAnimation.cancellation);
+        };
+
+        if (this.viewportAnimation) {
+            this.viewportAnimation.cancellation.abort();
+        }
+
+        if (animate) {
+            return startViewPortAnimation(
+                this.viewportState,
+                state,
+                animate instanceof Object ? animate as ViewPortAnimationDescription : undefined,
+            );
+        } else {
+            applyViewPortState(state);
+            return Promise.resolve();
+        }
+    }
 }
 
 function clientCoordsFor(container: HTMLElement, e: MouseEvent) {
@@ -766,4 +874,39 @@ export function getContentFittingBox(
         width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
         height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
     };
+}
+
+export function animationInterval(
+    animationBody: (progress: number) => void,
+    duration: number,
+    cancellation?: Cancellation,
+): Promise<void> {
+    return new Promise(resolve => {
+        let animationFrameId: number;
+        const start = performance.now();
+
+        const animate = (time: number) => {
+            if (cancellation && cancellation.signal.aborted) { return; }
+
+            let timePassed = time - start;
+            if (timePassed > duration) { timePassed = duration; }
+
+            const progress = timePassed / duration;
+            animationBody(progress);
+
+            if (progress === 1) {
+                resolve();
+            }
+
+            if (timePassed < duration) {
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        };
+
+        cancellation.signal.addEventListener('abort', () => {
+            cancelAnimationFrame(animationFrameId);
+            resolve();
+        });
+        animationFrameId = requestAnimationFrame(animate);
+    });
 }
