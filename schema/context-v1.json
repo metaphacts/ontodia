@@ -3,8 +3,6 @@
     "ontodia": "http://ontodia.org/schema/v1#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
 
-    "@base": "http://ontodia.org/data/",
-
     "Diagram": "ontodia:Diagram",
     "layoutData": "ontodia:layoutData",
     "linkTypeOptions": "ontodia:linkTypeOptions",
