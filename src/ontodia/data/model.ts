@@ -88,7 +88,7 @@ export function sameElement(left: ElementModel, right: ElementModel): boolean {
 function isArraysEqual(left: string[], right: string[]): boolean {
     if (left.length !== right.length) { return false; }
     for (let i = 0; i < left.length; i++) {
-        if (left[i] !== left[i]) { return false; }
+        if (left[i] !== right[i]) { return false; }
     }
     return true;
 }

@@ -7,6 +7,8 @@
     overflow: auto;
     padding: 10px;
     flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   &__controls {
@@ -23,5 +25,65 @@
   &__form-row {
     display: block;
     margin-bottom: 10px;
+  }
+
+  &__element-selector {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__search {
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  &__search-icon {
+    opacity: 0.6;
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    margin-top: -7px;
+  }
+
+  &__search-input {
+    padding-left: 33px;
+  }
+
+  &__existing-elements-list {
+    flex-grow: 1;
+    margin-top: 7px;
+    padding-right: 10px;
+    overflow-y: scroll;
+  }
+
+  &__separator {
+    margin: 7px 0;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  &__separator-text {
+    color: #555;
+    display: inline-block;
+    font-size: 13px;
+    position: relative;
+
+    &:before, &:after {
+      content: "";
+      border-top: 1px solid;
+      position: absolute;
+      top: 50%;
+      margin: 0 10px;
+      width: 500px;
+    }
+
+    &:before {
+      left: 100%;
+    }
+
+    &:after {
+      right: 100%;
+    }
   }
 }
