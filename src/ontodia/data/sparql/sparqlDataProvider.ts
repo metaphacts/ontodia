@@ -345,7 +345,7 @@ export class SparqlDataProvider implements DataProvider {
             .then(result => {
                 if (this.options.acceptBlankNodes) {
                     return BlankNodes.updateFilterResults(result, blankQuery =>
-                        this.executeSparqlQuery<BlankBinding>(blankQuery));
+                        this.executeSparqlQuery<BlankBinding>(blankQuery), this.settings);
                 }
                 return result;
             }).then(getFilteredData);
