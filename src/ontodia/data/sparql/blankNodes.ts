@@ -2,12 +2,11 @@ import { Dictionary } from '../model';
 import { FilterParams } from '../provider';
 import { uri2name } from '../utils';
 
+import { SparqlDataProviderSettings } from './sparqlDataProviderSettings';
 import {
     ElementBinding, LinkBinding, BlankBinding, isRdfIri, isRdfBlank,
-    LinkCountBinding, SparqlResponse, RdfLiteral, RdfBlank, isBlankBinding,
+    LinkCountBinding, SparqlResponse, RdfLiteral, isBlankBinding,
 } from './sparqlModels';
-
-import { executeSparqlQuery } from './sparqlDataProvider';
 
 export const MAX_RECURSION_DEEP = 3;
 
@@ -70,6 +69,7 @@ export class QueryExecutor {
 export function updateFilterResults(
     result: SparqlResponse<ElementBinding | BlankBinding>,
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+    settings: SparqlDataProviderSettings,
 ): Promise<SparqlResponse<ElementBinding | BlankBinding>> {
     const completeBindings: ElementBinding[] = [];
     const blankBindings: BlankBinding[] = [];
@@ -86,6 +86,7 @@ export function updateFilterResults(
         (callBackQuery: string) => {
             return queryFunction(callBackQuery);
         },
+        settings,
     ).then(processedBindings => {
         result.results.bindings = completeBindings.concat(processedBindings);
         return result;
@@ -95,6 +96,7 @@ export function updateFilterResults(
 export function processBlankBindings(
     blankBindings: BlankBinding[],
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
+    settings: SparqlDataProviderSettings,
 ): Promise<BlankBinding[]> {
 
     const bindingGroupsById: Dictionary<BlankBinding[]> = {};
@@ -117,7 +119,7 @@ export function processBlankBindings(
 
     const queryExecutor = new QueryExecutor(queryFunction);
 
-    return loadRelatedBlankNodes(relatedBlankBindnings, queryExecutor).then(loadedGroupsById => {
+    return loadRelatedBlankNodes(relatedBlankBindnings, queryExecutor, settings).then(loadedGroupsById => {
         const idsMap = getEncodedIdDictionary(loadedGroupsById);
         const groups = Object.keys(bindingGroupsById).map(key => bindingGroupsById[key]);
 
@@ -206,6 +208,7 @@ export function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
 function loadRelatedBlankNodes(
     blankChains: BlankBinding[][],
     queryExecutor: QueryExecutor,
+    settings: SparqlDataProviderSettings,
     recursionDeep?: number,
 ): Promise<Dictionary<BlankBinding[]>> {
 
@@ -216,7 +219,7 @@ function loadRelatedBlankNodes(
     }
 
     const queryPairs = blankChains.map(chain => ({
-        query: getQueryForChain(chain),
+        query: getQueryForChain(chain, settings),
         chain: chain,
     }));
 
@@ -243,7 +246,7 @@ function loadRelatedBlankNodes(
                     }
 
                     recursionPromises.push(
-                        loadRelatedBlankNodes(relatedBlankBindings, queryExecutor, (recursionDeep + 1))
+                        loadRelatedBlankNodes(relatedBlankBindings, queryExecutor, settings, (recursionDeep + 1))
                             .then(loadedGroupsById => {
                                 const idsMap = getEncodedIdDictionary(loadedGroupsById);
                                 const mergedResults: Dictionary<BlankBinding[]> = {};
@@ -281,7 +284,7 @@ function loadRelatedBlankNodes(
         });
 }
 
-function getQueryForChain(blankNodes: BlankBinding[]): string {
+function getQueryForChain(blankNodes: BlankBinding[], sparqlDataProviderSettings: SparqlDataProviderSettings): string {
 
     function getQueryBlock(
         blankNode: BlankBinding,
@@ -332,7 +335,8 @@ function getQueryForChain(blankNodes: BlankBinding[]): string {
     }
 
     const body = blankNodes.map((bn, index) => getQueryBlock(bn, index, blankNodes.length - 1)).join('\n');
-    const query = `SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankType
+    const query = `${sparqlDataProviderSettings.defaultPrefix}
+    SELECT ?inst ?class ?label ?blankTrgProp ?blankTrg ?blankType
         WHERE {
            ${body}
         }
