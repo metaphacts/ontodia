@@ -29,7 +29,7 @@
     "build-examples": "./node_modules/.bin/webpack --config webpack.demo.config.js",
     "test": "npm run build-all && npm run lint",
     "typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
-    "lint": "./node_modules/.bin/tslint -c tslint.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish",
+    "lint": "./node_modules/.bin/tslint -c tslint.ci.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish",
     "_typings-tsc": "./node_modules/.bin/tsc --declaration --emitDeclarationOnly --outDir dist/temp/dts",
     "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/temp/dts/index.d.ts --name ontodia --out ../../ontodia.d.ts",
     "_webpack": "./node_modules/.bin/webpack"
