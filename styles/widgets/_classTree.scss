@@ -13,6 +13,11 @@
     margin-right: 10px;
   }
 
+  &__only-creatable {
+    display: block;
+    margin-top: 5px;
+  }
+
   &__tree {
     height: 0;
     flex-grow: 1;
@@ -26,6 +31,7 @@
 
   &__row {
     display: flex;
+    align-items: center;
     white-space: nowrap;
     user-select: none;
     > * { flex-shrink: 0; }
@@ -96,5 +102,12 @@
   &__toggle-icon {
     display: block;
     height: 100%;
+  }
+
+  &__create {
+    margin-left: 5px;
+    > button {
+      cursor: move;
+    }
   }
 }

@@ -56,9 +56,17 @@ export class ExampleMetadataApi implements MetadataApi {
         return true;
     }
 
-    async canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean> {
+    async filterConstructibleTypes(
+        types: ReadonlySet<ElementTypeIri>, ct: CancellationToken
+    ): Promise<ReadonlySet<ElementTypeIri>> {
         await delay();
-        return true;
+        const result = new Set<ElementTypeIri>();
+        types.forEach(type => {
+            if (type.length % 2 === 0) {
+                result.add(type);
+            }
+        });
+        return result;
     }
 
     async canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {

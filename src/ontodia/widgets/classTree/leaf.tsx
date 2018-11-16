@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { ElementTypeIri } from '../../data/model';
 import { DiagramView } from '../../diagram/view';
 import { highlightSubstring } from '../listElementView';
 
@@ -14,7 +15,10 @@ interface CommonProps {
     view: DiagramView;
     searchText?: string;
     selectedNode?: TreeNode;
-    onSelect?: (node: TreeNode) => void;
+    onSelect: (node: TreeNode) => void;
+    creatableClasses: ReadonlyMap<ElementTypeIri, boolean>;
+    onClickCreate: (node: TreeNode) => void;
+    onDragCreate: (node: TreeNode) => void;
 }
 
 export interface LeafProps extends CommonProps {
@@ -45,7 +49,7 @@ export class Leaf extends React.Component<LeafProps, State> {
 
     render() {
         const {node, ...otherProps} = this.props;
-        const {view, selectedNode, searchText} = otherProps;
+        const {view, selectedNode, searchText, creatableClasses} = otherProps;
         const {expanded} = this.state;
 
         let toggleIcon: string | undefined;
@@ -84,6 +88,17 @@ export class Leaf extends React.Component<LeafProps, State> {
                             </span>
                         ) : null}
                     </a>
+                    {creatableClasses.get(node.model.id) ? (
+                        <div className={`${LEAF_CLASS}__create ontodia-btn-group ontodia-btn-group-xs`}>
+                            <button className='ontodia-btn ontodia-btn-default'
+                                title={'Click or drag to create new entity of this type'}
+                                draggable={true}
+                                onClick={this.onClickCreate}
+                                onDragStart={this.onDragCreate}>
+                                +
+                            </button>
+                        </div>
+                    ) : null}
                 </div>
                 {expanded && node.derived.length > 0 ? (
                     <Forest className={`${LEAF_CLASS}__children`}
@@ -103,6 +118,14 @@ export class Leaf extends React.Component<LeafProps, State> {
 
     private toggle = () => {
         this.setState((state): State => ({expanded: !state.expanded}));
+    }
+
+    private onClickCreate = () => {
+        this.props.onClickCreate(this.props.node);
+    }
+
+    private onDragCreate = () => {
+        this.props.onDragCreate(this.props.node);
     }
 }
 

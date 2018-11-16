@@ -7,7 +7,6 @@ import { Vector } from '../diagram/geometry';
 import { DiagramView, DropOnPaperEvent } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 
-import { AuthoringTools } from '../widgets/authoringTools';
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
 import { LinkTypesToolbox } from '../widgets/linksToolbox';
@@ -94,20 +93,22 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                         const elementType = this.props.model.createClass(classId);
                         this.props.onSearchCriteriaChanged({elementType});
                     }}
+                    onCreateInstance={async (classId, position) => {
+                        await forceNonReactExecutionContext();
+                        const batch = this.props.model.history.startBatch();
+
+                        const element = editor.createNewEntity(classId);
+                        this.props.view.performSyncUpdate();
+                        const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
+                        centerElementToPosition(element, targetPosition);
+
+                        batch.store();
+                        editor.setSelection([element]);
+                        editor.showEditEntityForm(element);
+                    }}
                 />
             </AccordionItem>
         );
-        if (editor.inAuthoringMode) {
-            items.push(
-                <AccordionItem key='authoringTools' heading='Authoring Tools'>
-                    <AuthoringTools view={this.props.view}
-                        editor={this.props.editor}
-                        metadataApi={this.props.metadataApi}
-                        selectedElementType={searchCriteria.elementType}
-                    />
-                </AccordionItem>
-            );
-        }
         items.push(
             <AccordionItem key='instancesSearch' heading='Instances'>
                 <InstancesSearch view={this.props.view}
@@ -251,6 +252,25 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
             this.props.editor.onDragDrop(iris, paperPosition);
         }
     }
+}
+
+function forceNonReactExecutionContext(): Promise<void> {
+    // force non-React executing context to resolve forceUpdate() synchronously
+    return Promise.resolve();
+}
+
+function getViewportCenterInPaperCoords(paperArea: PaperArea): Vector {
+    const viewport = paperArea.getAreaMetrics();
+    return paperArea.clientToPaperCoords(
+        viewport.clientWidth / 2, viewport.clientHeight / 2);
+}
+
+function centerElementToPosition(element: Element, center: Vector) {
+    const position = {
+        x: center.x - element.size.width / 2,
+        y: center.y - element.size.height / 2,
+    };
+    element.setPosition(position);
 }
 
 function tryParseDefaultDragAndDropData(e: DragEvent): ElementIri[] {

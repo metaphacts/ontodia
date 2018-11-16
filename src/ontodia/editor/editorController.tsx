@@ -9,7 +9,7 @@ import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibili
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
+import { DiagramModel, formatLocalizedLabel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
@@ -592,10 +592,13 @@ export class EditorController {
 
     createNewEntity(classIri: ElementTypeIri): Element {
         const batch = this.model.history.startBatch('Create new entity');
+
+        const type = this.model.getClass(classIri);
+        const typeName = formatLocalizedLabel(classIri, type ? type.label : [], 'en');
         const elementModel = {
             id: GenerateID.forNewEntity(),
             types: [classIri],
-            label: {values: [{text: 'New Entity', lang: ''}]},
+            label: {values: [{text: `New ${typeName}`, lang: ''}]},
             properties: {},
         };
 
