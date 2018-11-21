@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Component, SVGAttributes, CSSProperties } from 'react';
+import { Component, CSSProperties } from 'react';
 
-import { Cell, Element as DiagramElement, Link as DiagramLink, LinkVertex } from './elements';
+import { Cell, LinkVertex } from './elements';
 import { ElementLayer } from './elementLayer';
 import { Vector } from './geometry';
 import { LinkLayer, LinkMarkers } from './linkLayer';
@@ -121,4 +121,35 @@ export class TransformedSvgCanvas extends Component<TransformedSvgCanvasProps, {
             </svg>
         );
     }
+}
+
+/**
+ * @returns scrollable pane size in non-scaled pane coords.
+ */
+export function totalPaneSize(pt: PaperTransform): Vector {
+    return {
+        x: pt.width * pt.scale + pt.paddingX * 2,
+        y: pt.height * pt.scale + pt.paddingY * 2,
+    };
+}
+
+/**
+ * @returns scrollable pane top-left corner position in non-scaled pane coords.
+ */
+export function paneTopLeft(pt: PaperTransform): Vector {
+    return {x: -pt.paddingX, y: -pt.paddingY};
+}
+
+export function paneFromPaperCoords(paper: Vector, pt: PaperTransform): Vector {
+    return {
+        x: (paper.x + pt.originX) * pt.scale,
+        y: (paper.y + pt.originY) * pt.scale,
+    };
+}
+
+export function paperFromPaneCoords(pane: Vector, pt: PaperTransform): Vector {
+    return {
+        x: pane.x / pt.scale - pt.originX,
+        y: pane.y / pt.scale - pt.originY,
+    };
 }
