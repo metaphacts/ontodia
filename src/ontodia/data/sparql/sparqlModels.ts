@@ -59,7 +59,7 @@ export interface ElementBinding {
     class?: RdfIri;
     label?: RdfLiteral;
     propType?: RdfIri;
-    propValue?: RdfLiteral;
+    propValue?: RdfIri | RdfLiteral;
 }
 
 export interface ClassBinding {

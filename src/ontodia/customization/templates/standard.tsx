@@ -4,7 +4,7 @@ import { Component } from 'react';
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
 import { TemplateProps } from '../props';
-import { getProperty } from './utils';
+import { getProperty, getPropertyValues } from './utils';
 
 import { AuthoredEntity, AuthoredEntityContext } from '../../editor/authoredEntity';
 import { AuthoringState } from '../../editor/authoringState';
@@ -69,20 +69,21 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
 
         return (
             <div className={`${CLASS_NAME}__properties`}>
-                {propsAsList.map(({name, id, property}) => (
-                    <div key={id} className={`${CLASS_NAME}__properties-row`}>
+                {propsAsList.map(({name, id, property}) => {
+                    const propertyValues = getPropertyValues(property);
+                    return <div key={id} className={`${CLASS_NAME}__properties-row`}>
                         <div className={`${CLASS_NAME}__properties-key`} title={`${name} (${id})`}>
                             {name}
                         </div>
                         <div className={`${CLASS_NAME}__properties-values`}>
-                            {property.values.map(({text}, index) => (
+                            {propertyValues.map((text, index) => (
                                 <div className={`${CLASS_NAME}__properties-value`} key={index} title={text}>
                                     {text}
                                 </div>
                             ))}
                         </div>
-                    </div>
-                ))}
+                    </div>;
+                })}
             </div>
         );
     }

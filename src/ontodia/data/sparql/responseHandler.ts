@@ -7,7 +7,7 @@ import {
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
-    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, isIriProperty, isLiteralProperty,
 } from '../model';
 import * as _ from 'lodash';
 
@@ -188,12 +188,6 @@ export function triplesToElementBinding(
                 map[trippleId] = createAndPushBinding(tripple);
             }
             map[trippleId].label = tripple.object;
-        } else if (isRdfLiteral(tripple.object) && isRdfIri(tripple.predicate)) { // Property
-            if (map[trippleId].propType) {
-                map[trippleId] = createAndPushBinding(tripple);
-            }
-            map[trippleId].propType = tripple.predicate;
-            map[trippleId].propValue = tripple.object;
         } else if ( // Class
             tripple.predicate.value === RDF_TYPE_URI &&
             isRdfIri(tripple.object) && isRdfIri(tripple.predicate)
@@ -202,6 +196,12 @@ export function triplesToElementBinding(
                 map[trippleId] = createAndPushBinding(tripple);
             }
             map[trippleId].class = tripple.object;
+        } else if (!isRdfBlank(tripple.object) && isRdfIri(tripple.predicate)) { // Property
+            if (map[trippleId].propType) {
+                map[trippleId] = createAndPushBinding(tripple);
+            }
+            map[trippleId].propType = tripple.predicate;
+            map[trippleId].propValue = tripple.object;
         }
     }
 
@@ -303,18 +303,25 @@ export function getFilteredData(response: SparqlResponse<ElementBinding>): Dicti
  * @param propType
  * @param propValue
  */
-function mergeProperties(properties: { [id: string]: Property }, propType: RdfIri, propValue: RdfLiteral) {
-    let property: Property = properties[propType.value];
-    if (!property) {
-        property = properties[propType.value] = {
-            type: 'string', // sInst.propType.value,
-            values: [],
-        };
+function mergeProperties(properties: { [id: string]: Property }, propType: RdfIri, propValue: RdfIri | RdfLiteral) {
+    let property = properties[propType.value];
+    if (isRdfIri(propValue)) {
+        if (!property) {
+            property = {type: 'uri', values: []};
+        }
+        if (isIriProperty(property) && property.values.every(({value}) => value !== propValue.value)) {
+            property.values = [...property.values, propValue];
+        }
+    } else if (isRdfLiteral(propValue)) {
+        if (!property) {
+            property = {type: 'string', values: []};
+        }
+        const propertyValue = getLocalizedString(propValue);
+        if (isLiteralProperty(property) && property.values.every(value => !isLocalizedEqual(value, propertyValue))) {
+            property.values = [...property.values, propertyValue];
+        }
     }
-    const propertyValue = getPropertyValue(propValue);
-    if (property.values.every(value => !isLocalizedEqual(value, propertyValue))) {
-        property.values.push(propertyValue);
-    }
+    properties[propType.value] = property;
 }
 
 export function enrichElement(element: ElementModel, sInst: ElementBinding) {
@@ -344,6 +351,7 @@ export function getLocalizedString(label: RdfLiteral): LocalizedString | undefin
         return {
             text: label.value,
             lang: label['xml:lang'],
+            datatype: label.datatype,
         };
     } else {
         return undefined;
@@ -388,14 +396,6 @@ export function getLinkCount(sLinkType: LinkCountBinding): LinkCount {
     };
 }
 
-export function getPropertyValue(propValue?: RdfLiteral): LocalizedString {
-    if (!propValue) { return undefined; }
-    return {
-        lang: propValue['xml:lang'],
-        text: propValue.value,
-    };
-}
-
 export function emptyElementInfo(id: ElementIri): ElementModel {
     const elementInfo: ElementModel = {
         id: id,
@@ -417,7 +417,7 @@ export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
     if (sLinkInfo.propType && sLinkInfo.propValue) {
         linkModel.properties[sLinkInfo.propType.value] = {
             type: 'string',
-            values: [getPropertyValue(sLinkInfo.propValue)],
+            values: [getLocalizedString(sLinkInfo.propValue)],
         };
     }
     return linkModel;
