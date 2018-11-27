@@ -8,6 +8,7 @@ import { formatLocalizedLabel } from '../diagram/model';
 
 import { EditorController } from '../editor/editorController';
 import { EventObserver } from '../viewUtils/events';
+import { ProgressBar, ProgressState } from '../widgets/progressBar';
 import { highlightSubstring } from './listElementView';
 import { SearchResults } from './searchResults';
 
@@ -68,7 +69,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
 
     private readonly handler = new EventObserver();
     private readonly linkTypesListener = new EventObserver();
-    private loadingState: 'loading' | 'error' | 'completed';
+    private loadingState = ProgressState.none;
 
     private links: FatLinkType[];
     private countMap: { [linkTypeId: string]: ConnectionCount };
@@ -101,12 +102,12 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
     private loadLinks() {
         const {view, editor, target} = this.props;
 
-        this.loadingState = 'loading';
+        this.loadingState = ProgressState.loading;
         this.links = [];
         this.countMap = {};
         editor.model.dataProvider.linkTypesOf({elementId: target.iri})
             .then(linkTypes => {
-                this.loadingState = 'completed';
+                this.loadingState = ProgressState.completed;
 
                 const countMap: Dictionary<ConnectionCount> = {};
                 const links: FatLinkType[] = [];
@@ -132,7 +133,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             .catch(err => {
                 // tslint:disable-next-line:no-console
                 console.error(err);
-                this.loadingState = 'error';
+                this.loadingState = ProgressState.error;
                 this.updateAll();
             });
         this.updateAll();
@@ -143,7 +144,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         const {link, direction } = linkDataChunk;
         const offset = (linkDataChunk.offset || 0);
 
-        this.loadingState = 'loading';
+        this.loadingState = ProgressState.loading;
         this.linkDataChunk = linkDataChunk;
         this.objects = [];
 
@@ -154,7 +155,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
             offset: offset,
             direction,
         }).then(elements => {
-            this.loadingState = 'completed';
+            this.loadingState = ProgressState.completed;
             this.objects = Object.keys(elements).map(iri => ({
                 model: elements[iri],
                 presentOnDiagram: view.model.elements.findIndex(
@@ -167,7 +168,7 @@ export class ConnectionsMenu extends React.Component<ConnectionsMenuProps, {}> {
         }).catch(err => {
             // tslint:disable-next-line:no-console
             console.error(err);
-            this.loadingState = 'error';
+            this.loadingState = ProgressState.error;
             this.updateAll();
         });
     }
@@ -253,7 +254,7 @@ interface ConnectionsMenuMarkupProps {
     objectsData?: ObjectsData;
 
     view: DiagramView;
-    state: 'loading' | 'error' | 'completed';
+    state: ProgressState;
 
     onExpandLink?: (linkDataChunk: LinkDataChunk) => void;
     onPressAddSelected?: (selectedObjects: ReactElementModel[]) => void;
@@ -326,11 +327,11 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                 onMoveToFilter={this.props.onMoveToFilter}
                 view={this.props.view}
                 filterKey={this.state.filterKey}
-                loading={this.props.state === 'loading'}
+                loading={this.props.state === ProgressState.loading}
                 onPressAddSelected={this.props.onPressAddSelected}
             />;
         } else if (this.props.connectionsData && this.state.panel === 'connections') {
-            if (this.props.state === 'loading') {
+            if (this.props.state === ProgressState.loading) {
                 return <label className='ontodia-label ontodia-connections-menu__loading'>Loading...</label>;
             }
 
@@ -401,14 +402,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
                     />
                     {this.renderSortSwitches()}
                 </div>
-                <div className={`ontodia-connections-menu__progress-bar ` +
-                    `ontodia-connections-menu__progress-bar--${this.props.state}`}>
-                    <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
-                        role='progressbar'
-                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
-                        style={{width: '100%'}}>
-                    </div>
-                </div>
+                <ProgressBar state={this.props.state} height={10} />
                 {this.getBody()}
             </div>
         );

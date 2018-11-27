@@ -367,9 +367,14 @@ export class AsyncModel extends DiagramModel {
     }
 }
 
-export function restoreLinksBetweenElements(model: AsyncModel, elementIris: ReadonlyArray<ElementIri>): Command {
-    return Command.effect('Restore links between elements', () => {
+export function requestElementData(model: AsyncModel, elementIris: ReadonlyArray<ElementIri>): Command {
+    return Command.effect('Fetch element data', () => {
         model.requestElementData(elementIris);
+    });
+}
+
+export function restoreLinksBetweenElements(model: AsyncModel): Command {
+    return Command.effect('Restore links between elements', () => {
         model.requestLinksOfType();
     });
 }

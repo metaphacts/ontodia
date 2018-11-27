@@ -7,7 +7,6 @@
 @import "viewUtils/input-group";
 @import "viewUtils/list-group";
 @import "viewUtils/badge";
-@import "viewUtils/progress";
 
 @import "diagram/elementLayer";
 @import "diagram/linkLayer";
@@ -20,16 +19,16 @@
 @import "widgets/authoringTools";
 @import "widgets/classTree";
 @import "widgets/connectionsMenu";
+@import "widgets/dialog";
+@import "widgets/editForm";
 @import "widgets/halo";
 @import "widgets/haloLink";
 @import "widgets/instancesSearch";
 @import "widgets/linksToolbox";
-@import "widgets/searchResults";
 @import "widgets/listElementView";
-@import "widgets/progress";
-@import "widgets/dialog";
-@import "widgets/editForm";
 @import "widgets/navigator";
+@import "widgets/progressBar";
+@import "widgets/searchResults";
 
 @import "workspace/accordion";
 @import "workspace/resizableSidebar";
@@ -41,4 +40,3 @@
 @import "templates/defaultElement";
 @import "templates/group";
 @import "templates/standard";
-

@@ -1,6 +1,10 @@
 import * as React from 'react';
 
-import { DiagramView } from '../diagram/view';
+import { ElementIri } from '../data/model';
+
+import { Element } from '../diagram/elements';
+import { Vector } from '../diagram/geometry';
+import { DiagramView, DropOnPaperEvent } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 
 import { AuthoringTools } from '../widgets/authoringTools';
@@ -184,7 +188,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                             hideScrollBars={this.props.hideScrollBars}
                             watermarkSvg={this.props.watermarkSvg}
                             watermarkUrl={this.props.watermarkUrl}
-                            onDragDrop={(e, position) => this.props.editor.onDragDrop(e, position)}
+                            onDragDrop={this.onDropOnPaper}
                             onZoom={this.props.onZoom}>
                         </PaperArea>
                     </div>
@@ -233,4 +237,41 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         }
         this.untilMouseUpClasses = [];
     }
+
+    private onDropOnPaper = (e: DragEvent, paperPosition: Vector) => {
+        e.preventDefault();
+
+        const event: DropOnPaperEvent = {dragEvent: e, paperPosition};
+        if (this.props.view._tryHandleDropOnPaper(event)) {
+            return;
+        }
+
+        const iris = tryParseDefaultDragAndDropData(e);
+        if (iris.length > 0) {
+            this.props.editor.onDragDrop(iris, paperPosition);
+        }
+    }
+}
+
+function tryParseDefaultDragAndDropData(e: DragEvent): ElementIri[] {
+    const tryGetData = (type: string) => {
+        try {
+            const iriString = e.dataTransfer.getData(type);
+            if (!iriString) { return undefined; }
+            let iris: ElementIri[];
+            try {
+                iris = JSON.parse(iriString);
+            } catch (e) {
+                iris = [iriString as ElementIri];
+            }
+            return iris.length === 0 ? undefined : iris;
+        } catch (e) {
+            return undefined;
+        }
+    };
+
+    return tryGetData('application/x-ontodia-elements')
+        || tryGetData('text') // IE11, Edge
+        || tryGetData('text/uri-list')
+        || [];
 }

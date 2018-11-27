@@ -108,25 +108,6 @@
   margin-bottom: 5px;
 }
 
-.ontodia-connections-menu__progress-bar {
-  opacity: 0;
-  height: 0px;
-  -webkit-transition: 0.3s;
-  -moz-transition: 0.3s;
-  transition: 0.3s;
-
-  &--loading {
-    height: 10px;
-    opacity: 1;
-  }
-
-  &--error {
-    height: 10px;
-    opacity: 1;
-    > .progress-bar { background-color: #E72F2F; }
-  }
-}
-
 .ontodia-connections-menu__move-to-filter {
   display: flex;
   padding: 5px 10px;
