@@ -1,4 +1,4 @@
-import { Node, RDFGraph } from 'rdf-ext';
+import { Node, RDFGraph, Triple } from 'rdf-ext';
 import {
     RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNode, isLabelType
 } from './rdfCacheableStore';
