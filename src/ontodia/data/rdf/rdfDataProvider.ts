@@ -1,5 +1,7 @@
-import { Triple, Node, RDFGraph } from 'rdf-ext';
-import { RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNode } from './rdfCacheableStore';
+import { Node, RDFGraph } from 'rdf-ext';
+import {
+    RDFCacheableStore, MatchStatement, prefixFactory, isLiteral, isNamedNode, isLabelType
+} from './rdfCacheableStore';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import { RDFLoader } from './rdfLoader';
 import {
@@ -432,7 +434,7 @@ export class RDFDataProvider implements DataProvider {
         if (params.limit === undefined) {
             params.limit = 100;
         }
-        const limit = (node: Node, index: number) => {
+        const limitCallback = (node: Node, index: number) => {
             return (blankNodes || isNamedNode(node))
                 && offsetIndex <= index
                 && index < limitIndex;
@@ -444,18 +446,19 @@ export class RDFDataProvider implements DataProvider {
 
         let elementsPromise: Promise<ElementModel[]>;
         if (params.elementTypeId) {
-            elementsPromise = this.filterByTypeId(params.elementTypeId, limit);
+            elementsPromise = this.filterByTypeId(params.elementTypeId, limitCallback);
         } else if (params.refElementId && params.refElementLinkId) {
             elementsPromise = this.filterByRefAndLink(
                 params.refElementId,
                 params.refElementLinkId,
                 params.linkDirection,
-                limit,
+                limitCallback,
             );
         } else if (params.refElementId) {
-            elementsPromise = this.filterByRef(params.refElementId, limit);
+            elementsPromise = this.filterByRef(params.refElementId, limitCallback);
         } else if (params.text) {
-            elementsPromise = this.getAllElements(params.text, limit);
+            const filteredElements = await this.getAllElements(params.text, limitCallback);
+            return this.filterByKey(undefined, filteredElements);
         } else {
             return {};
         }
@@ -522,14 +525,22 @@ export class RDFDataProvider implements DataProvider {
         text: string,
         filter: (node: Node, index: number) => boolean,
     ): Promise<ElementModel[]> {
+        const key = (text ? text.toLowerCase() : null);
         const elementTriples = await this.rdfStorage.match(null, null, null);
         const promices: Promise<ElementModel>[] = [];
-        for (const tripple of elementTriples.toArray()) {
-            if (filter(tripple.object, promices.length)) {
-                promices.push(this.getElementInfo(tripple.object.nominalValue as ElementIri, true));
-            }
-            if (filter(tripple.subject, promices.length)) {
-                promices.push(this.getElementInfo(tripple.subject.nominalValue as ElementIri, true));
+        for (const triple of elementTriples.toArray()) {
+            if (filter(triple.subject, promices.length)) {
+                const objectIsLiteral = triple.object.interfaceName === 'Literal';
+                const isLabel = isLabelType(triple.predicate.nominalValue);
+                const containsKey =
+                    isLabel &&
+                        triple.object.nominalValue.toLowerCase().indexOf(key) !== -1 ||
+                    !objectIsLiteral &&
+                        triple.subject.nominalValue.toLowerCase().indexOf(key) !== -1;
+
+                if (containsKey) {
+                    promices.push(this.getElementInfo(triple.subject.nominalValue as ElementIri, true));
+                }
             }
         }
         return Promise.all(promices);
@@ -545,6 +556,7 @@ export class RDFDataProvider implements DataProvider {
                     acceptableKey = acceptableKey || label.text.toLowerCase().indexOf(key) !== -1;
                     if (acceptableKey) { break; }
                 }
+                acceptableKey = acceptableKey || el.id.toLowerCase().indexOf(key) !== -1;
                 if (acceptableKey) { result[el.id] = el; }
             }
         } else {

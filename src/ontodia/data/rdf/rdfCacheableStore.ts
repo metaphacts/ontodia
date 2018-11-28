@@ -62,6 +62,16 @@ export const LABEL_POSTFIXES = [
     'title',
 ];
 
+export function isLabelType(predicateIri: string): boolean {
+    const isLabelIri = LABEL_URIS.indexOf(predicateIri) !== -1;
+    const type = predicateIri.toLocaleLowerCase();
+    const looksLikeLabel = Boolean(LABEL_POSTFIXES.find((value, index, array) => {
+        const postfix = value.toLocaleLowerCase();
+        return type.indexOf(postfix) !== -1;
+    }));
+    return isLabelIri || looksLikeLabel;
+}
+
 export interface RDFStoreOptions {
     parser: RDFCompositeParser;
     acceptBlankNodes?: boolean;
@@ -172,13 +182,7 @@ export class RDFCacheableStore {
             const element = triple.subject.nominalValue;
             const predicate = triple.predicate.nominalValue;
 
-            const type = predicate.toLocaleLowerCase();
-            const isLabel = LABEL_URIS.indexOf(predicate) !== -1;
-            const looksLikeLabel = LABEL_POSTFIXES.find((value, index, array) => {
-                const postfix = value.toLocaleLowerCase();
-                return type.indexOf(postfix) !== -1;
-            });
-            if (isLabel || looksLikeLabel) {
+            if (isLabelType(predicate)) {
                 if (!this.labelsMap[element]) {
                     this.labelsMap[element] = [];
                 }
