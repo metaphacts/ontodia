@@ -275,17 +275,29 @@ export class RDFDataProvider implements DataProvider {
             PREFIX_FACTORIES.OWL('ObjectProperty'),
         );
         const [rdfLinks, owlLinks] = await Promise.all([rdfLinksQueries, owlLinksQueries]);
-        const links = rdfLinks.toArray().concat(owlLinks.toArray());
-        return Promise.all(
-            links.map(async t => {
-                const labels = await this.getLabels(t.subject.nominalValue);
-                return {
-                    id: t.subject.nominalValue as LinkTypeIri,
+        const linkTypeIds = new Set();
+        const mapLinkTriple = async (triple: Triple): Promise<void> => {
+            if (!linkTypeIds.has(triple.subject.nominalValue)) {
+                linkTypeIds.add(triple.subject.nominalValue);
+                const labels = await this.getLabels(triple.subject.nominalValue);
+
+                linkTypes.push({
+                    id: triple.subject.nominalValue as LinkTypeIri,
                     label: {values: labels},
-                    count: this.rdfStorage.getTypeCount(t.subject.nominalValue),
-                };
-            }),
-        );
+                    count: this.rdfStorage.getTypeCount(triple.subject.nominalValue),
+                });
+            }
+        };
+        const linkTypePromises: Promise<void>[] = [];
+        for (const linkTriple of rdfLinks.toArray()) {
+            linkTypePromises.push(mapLinkTriple(linkTriple));
+        }
+        for (const linkTriple of owlLinks.toArray()) {
+            linkTypePromises.push(mapLinkTriple(linkTriple));
+        }
+
+        await Promise.all(linkTypePromises);
+        return linkTypes;
     }
 
     async elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
