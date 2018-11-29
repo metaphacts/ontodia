@@ -36,6 +36,7 @@ export interface PaperAreaEvents {
     pointerDown: PointerEvent;
     pointerMove: PointerEvent;
     pointerUp: PointerUpEvent;
+    scroll: { source: PaperArea };
     changeAnimatingGraph: PropertyChange<PaperArea, boolean>;
 }
 
@@ -262,6 +263,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
         this.area.addEventListener('dragover', this.onDragOver);
         this.area.addEventListener('drop', this.onDragDrop);
+        this.area.addEventListener('scroll', this.onScroll);
     }
 
     componentDidUpdate(prevProps: PaperAreaProps, prevState: State) {
@@ -285,6 +287,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
+        this.area.removeEventListener('scroll', this.onScroll);
     }
 
     private updateWidgets(update: { [key: string]: WidgetDescription }) {
@@ -688,6 +691,10 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             const paperPosition = this.clientToPaperCoords(x, y);
             this.props.onDragDrop(e, paperPosition);
         }
+    }
+
+    private onScroll = () => {
+        this.source.trigger('scroll', {source: this});
     }
 
     private makeToSVGOptions(): ToSVGOptions {
