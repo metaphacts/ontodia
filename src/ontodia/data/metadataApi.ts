@@ -1,4 +1,4 @@
-import { ElementModel, LinkType, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkModel } from './model';
+import { ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkModel } from './model';
 import { CancellationToken } from '../viewUtils/async';
 
 export interface MetadataApi {
@@ -27,9 +27,11 @@ export interface MetadataApi {
      */
     propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]>;
 
-    canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
+    filterConstructibleTypes(
+        types: ReadonlySet<ElementTypeIri>, ct: CancellationToken
+    ): Promise<ReadonlySet<ElementTypeIri>>;
 
-    canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean>;
+    canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean>;
 

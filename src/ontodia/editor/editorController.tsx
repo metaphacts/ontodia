@@ -9,7 +9,7 @@ import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibili
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
+import { DiagramModel, formatLocalizedLabel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
@@ -29,7 +29,7 @@ import {
 } from '../viewUtils/layout';
 import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
-import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
+import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement,
 } from './authoringState';
@@ -517,34 +517,12 @@ export class EditorController {
         }
     }
 
-    onDragDrop(e: DragEvent, paperPosition: Vector) {
-        e.preventDefault();
-
-        const tryGetData = (type: string) => {
-            try {
-                const iriString = e.dataTransfer.getData(type);
-                if (!iriString) { return undefined; }
-                let iris: ElementIri[];
-                try {
-                    iris = JSON.parse(iriString);
-                } catch (e) {
-                    iris = [iriString as ElementIri];
-                }
-                return iris.length === 0 ? undefined : iris;
-            } catch (e) {
-                return undefined;
-            }
-        };
-
-        const elementIris = tryGetData('application/x-ontodia-elements')
-            || tryGetData('text') // IE11, Edge
-            || tryGetData('text/uri-list');
-
+    onDragDrop(dragged: ReadonlyArray<ElementIri | ElementModel>, paperPosition: Vector) {
         const batch = this.model.history.startBatch('Drag and drop onto diagram');
-        const placedElements = placeElements(this.view, elementIris, paperPosition);
-        batch.history.execute(
-            restoreLinksBetweenElements(this.model, elementIris)
-        );
+        const placedElements = placeElements(this.view, dragged, paperPosition);
+        const irisToLoad = placedElements.map(elem => elem.iri);
+        batch.history.execute(requestElementData(this.model, irisToLoad));
+        batch.history.execute(restoreLinksBetweenElements(this.model));
         batch.store();
 
         if (placedElements.length > 0) {
@@ -584,9 +562,8 @@ export class EditorController {
             }));
         }
 
-        batch.history.execute(
-            restoreLinksBetweenElements(this.model, elementIris)
-        );
+        batch.history.execute(requestElementData(this.model, elementIris));
+        batch.history.execute(restoreLinksBetweenElements(this.model));
         batch.store();
     }
 
@@ -615,10 +592,13 @@ export class EditorController {
 
     createNewEntity(classIri: ElementTypeIri): Element {
         const batch = this.model.history.startBatch('Create new entity');
+
+        const type = this.model.getClass(classIri);
+        const typeName = formatLocalizedLabel(classIri, type ? type.label : [], 'en');
         const elementModel = {
             id: GenerateID.forNewEntity(),
             types: [classIri],
-            label: {values: [{text: 'New Entity', lang: ''}]},
+            label: {values: [{text: `New ${typeName}`, lang: ''}]},
             properties: {},
         };
 
@@ -891,9 +871,9 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
 }
 
 function placeElements(
-    view: DiagramView, elementIris: ReadonlyArray<ElementIri>, position: Vector
+    view: DiagramView, dragged: ReadonlyArray<ElementIri | ElementModel>, position: Vector
 ): Element[] {
-    const elements = elementIris.map(iri => view.model.createElement(iri));
+    const elements = dragged.map(item => view.model.createElement(item));
     view.performSyncUpdate();
 
     let {x, y} = position;

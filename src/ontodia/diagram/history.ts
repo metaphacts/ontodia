@@ -18,10 +18,17 @@ export namespace Command {
     }
 
     export function effect(title: string, body: () => void): Command {
-        const perform = create(title, () => {
-            body();
-            return create(title, () => perform);
-        });
+        const perform = {
+            title,
+            invoke: () => {
+                body();
+                return skip;
+            }
+        };
+        const skip = {
+            title: 'Skipped effect: ' + title,
+            invoke: () => perform,
+        };
         return perform;
     }
 }

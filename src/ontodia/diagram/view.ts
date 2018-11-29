@@ -17,9 +17,9 @@ import { hashFnv32a, uri2name } from '../data/utils';
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
 import { Element, FatLinkType, FatClassModel } from './elements';
-import { DiagramModel, chooseLocalizedText } from './model';
-
+import { Vector } from './geometry';
 import { DefaultLinkRouter } from './linkRouter';
+import { DiagramModel, chooseLocalizedText } from './model';
 
 export type IriClickHandler = (iri: string, element: Element, event: MouseEvent<any>) => void;
 
@@ -64,6 +64,11 @@ export interface WidgetDescription {
     pinnedToScreen: boolean;
 }
 
+export interface DropOnPaperEvent {
+    dragEvent: DragEvent;
+    paperPosition: Vector;
+}
+
 export class DiagramView {
     private readonly listener = new EventObserver();
     private readonly source = new EventSource<DiagramViewEvents>();
@@ -80,9 +85,9 @@ export class DiagramView {
     private _language = 'en';
 
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
-
     private router: LinkRouter;
     private routings: RoutedLinks;
+    private dropOnPaperHandler: (e: DropOnPaperEvent) => void;
 
     constructor(
         public readonly model: DiagramModel,
@@ -158,6 +163,19 @@ export class DiagramView {
         const {key, widget: element, pinnedToScreen} = widget;
         const widgets = {[widget.key]: element ? {element, pinnedToScreen} : undefined};
         this.source.trigger('updateWidgets', {widgets});
+    }
+
+    setHandlerForNextDropOnPaper(handler: (e: DropOnPaperEvent) => void) {
+        this.dropOnPaperHandler = handler;
+    }
+
+    _tryHandleDropOnPaper(e: DropOnPaperEvent): boolean {
+        const {dropOnPaperHandler} = this;
+        if (dropOnPaperHandler) {
+            dropOnPaperHandler(e);
+            return true;
+        }
+        return false;
     }
 
     /**
