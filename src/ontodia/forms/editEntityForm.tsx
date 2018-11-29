@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
 import { formatLocalizedLabel, chooseLocalizedText } from '../diagram/model';
-import { ElementModel, ElementTypeIri, LocalizedString, PropertyTypeIri } from '../data/model';
+import { ElementModel, PropertyTypeIri, Property, isIriProperty, isLiteralProperty } from '../data/model';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
@@ -24,18 +24,24 @@ export class EditEntityForm extends React.Component<Props, State> {
         this.state = {elementModel: props.entity};
     }
 
-    private renderProperty = (key: PropertyTypeIri, values: LocalizedString[]) => {
+    private renderProperty = (key: PropertyTypeIri, property: Property) => {
         const {view} = this.props;
-        const property = view.model.getProperty(key);
-        const label = formatLocalizedLabel(key, property.label, view.getLanguage());
+        const richProperty = view.model.getProperty(key);
+        const label = formatLocalizedLabel(key, richProperty.label, view.getLanguage());
 
+        let values: string[] = [];
+        if (isIriProperty(property)) {
+            values = property.values.map(({value}) => value);
+        } else if (isLiteralProperty(property)) {
+            values = property.values.map(({text}) => text);
+        }
         return (
             <div key={key} className={`${CLASS_NAME}__form-row`}>
                 <label>
                     {label}
                     {
                         values.map((value, index) => (
-                            <input key={index} className='ontodia-form-control' defaultValue={value.text} />
+                            <input key={index} className='ontodia-form-control' defaultValue={value} />
                         ))
                     }
                 </label>
@@ -49,8 +55,7 @@ export class EditEntityForm extends React.Component<Props, State> {
         return (
             <div>
                 {propertyIris.map(iri => {
-                    const {values} = properties[iri];
-                    return this.renderProperty(iri, values);
+                    return this.renderProperty(iri, properties[iri]);
                 })}
             </div>
         );

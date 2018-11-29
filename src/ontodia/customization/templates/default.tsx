@@ -3,6 +3,8 @@ import { ReactElement } from 'react';
 
 import { TemplateProps } from '../props';
 
+import { getPropertyValues } from './utils';
+
 const CLASS_NAME = 'ontodia-default-template';
 
 export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
@@ -63,7 +65,8 @@ export class DefaultElementTemplate extends React.Component<TemplateProps, {}> {
         if (propsAsList && propsAsList.length > 0) {
             return <div className='ontodia-default-template_body_expander_property-table'>
                 {propsAsList.map(prop => {
-                    const values = prop.property.values.map(({text}, index) => (
+                    const propertyValues = getPropertyValues(prop.property);
+                    const values = propertyValues.map((text, index) => (
                         <div className='ontodia-default-template_body_expander_property-table_row_key_values__value'
                             key={index} title={text}>
                             {text}
