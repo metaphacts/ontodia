@@ -5,19 +5,26 @@ import { LinkModel, LinkTypeIri, ElementModel } from '../data/model';
 import { formatLocalizedLabel } from '../diagram/model';
 import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
+import { EditorController } from '../editor/editorController';
 import { FatLinkType } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
+export interface LinkValue {
+    value: LinkModel;
+    error?: string;
+}
+
 export interface Props {
+    editor: EditorController;
     view: DiagramView;
     metadataApi: MetadataApi | undefined;
-    link: LinkModel;
+    linkValue: LinkValue;
     source: ElementModel;
     target: ElementModel;
-    onChange: (data: LinkModel) => void;
+    onChange: (data: LinkValue) => void;
     disabled?: boolean;
 }
 
@@ -25,7 +32,7 @@ export interface State {
     fatLinkTypes?: {[id: string]: FatLinkType};
 }
 
-export class SelectLinkType extends React.Component<Props, State> {
+export class LinkTypeSelector extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
     private readonly cancellation = new Cancellation();
 
@@ -41,7 +48,8 @@ export class SelectLinkType extends React.Component<Props, State> {
     }
 
     componentDidUpdate(prevProps: Props) {
-        if (prevProps.source !== this.props.source || prevProps.target !== this.props.target) {
+        const {source, target} = this.props;
+        if (prevProps.source !== source || prevProps.target !== target) {
             this.setState({fatLinkTypes: undefined});
             this.fetchPossibleLinkTypes();
         }
@@ -70,8 +78,9 @@ export class SelectLinkType extends React.Component<Props, State> {
     }
 
     private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
+        const {linkValue, onChange} = this.props;
         const linkTypeId = e.currentTarget.value as LinkTypeIri;
-        this.props.onChange({...this.props.link, linkTypeId});
+        onChange({value: {...linkValue.value, linkTypeId}, error: linkValue.error});
     }
 
     private renderPossibleLinkType(fatLinkType: FatLinkType) {
@@ -81,14 +90,16 @@ export class SelectLinkType extends React.Component<Props, State> {
     }
 
     render() {
-        const {link, disabled} = this.props;
+        const {linkValue, disabled} = this.props;
         const {fatLinkTypes} = this.state;
         return (
-            <label>
-                Type
+            <div>
+                <label>Link Type</label>
                 {
                     fatLinkTypes ? (
-                        <select className='ontodia-form-control' value={link.linkTypeId} onChange={this.onChangeType}
+                        <select className='ontodia-form-control'
+                             value={linkValue.value.linkTypeId}
+                             onChange={this.onChangeType}
                              disabled={disabled}>
                             <option value={PLACEHOLDER_LINK_TYPE} disabled={true}>Select link type</option>
                             {
@@ -99,7 +110,27 @@ export class SelectLinkType extends React.Component<Props, State> {
                         </select>
                     ) : <div><HtmlSpinner width={20} height={20} /></div>
                 }
-            </label>
+                {linkValue.error ? <span style={{color: 'red'}}>{linkValue.error}</span> : ''}
+            </div>
         );
     }
+}
+
+export function validateLinkType(editor: EditorController, link: LinkModel): Promise<string | undefined> {
+    if (link.linkTypeId === PLACEHOLDER_LINK_TYPE) {
+        return Promise.resolve('Required!');
+    }
+    const alreadyOnDiagram = editor.model.links.find(({data: {linkTypeId, sourceId, targetId}}) =>
+        linkTypeId === link.linkTypeId && sourceId === link.sourceId && targetId === link.targetId
+    );
+    if (alreadyOnDiagram) {
+        return Promise.resolve('The link already exists!');
+    }
+    return editor.model.dataProvider.linksInfo({
+        elementIds: [link.sourceId, link.targetId],
+        linkTypeIds: [link.linkTypeId],
+    }).then(links => {
+        const alreadyExists = links.find(({linkTypeId}) => linkTypeId === link.linkTypeId);
+        return alreadyExists ? 'The link already exists!' : undefined;
+    });
 }

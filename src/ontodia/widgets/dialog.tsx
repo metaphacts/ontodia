@@ -22,9 +22,15 @@ const FOCUS_OFFSET = 20;
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     target: Element | Link;
+    size?: { width: number; height: number };
+    caption?: string;
 }
 
 export class Dialog extends React.Component<Props, {}> {
+    private static defaultProps: Partial<Props> = {
+        size: {width: WIDTH, height: HEIGHT},
+    };
+
     private unsubscribeFromTarget: Unsubscribe | undefined = undefined;
     private readonly handler = new EventObserver();
 
@@ -84,7 +90,7 @@ export class Dialog extends React.Component<Props, {}> {
     }
 
     private calculatePositionForElement(element: Element): Vector {
-        const {paperArea} = this.props;
+        const {paperArea, size} = this.props;
 
         const bbox = boundsOf(element);
         const {y: y0} = paperArea.paperToScrollablePaneCoords(bbox.x, bbox.y);
@@ -95,7 +101,7 @@ export class Dialog extends React.Component<Props, {}> {
 
         return {
             x: x1 + ELEMENT_OFFSET,
-            y: (y0 + y1) / 2 - (HEIGHT / 2),
+            y: (y0 + y1) / 2 - (size.height / 2),
         };
     }
 
@@ -145,14 +151,15 @@ export class Dialog extends React.Component<Props, {}> {
     }
 
     private getDialogScrollablePoints(): {min: Vector; max: Vector} {
+        const {size} = this.props;
         const {x, y} = this.calculatePosition();
         const min = {
             x: x - FOCUS_OFFSET,
             y: y - FOCUS_OFFSET,
         };
         const max = {
-            x: min.x + WIDTH + FOCUS_OFFSET * 2,
-            y: min.y + HEIGHT + FOCUS_OFFSET * 2,
+            x: min.x + size.width + FOCUS_OFFSET * 2,
+            y: min.y + size.height + FOCUS_OFFSET * 2,
         };
         return {min, max};
     }
@@ -191,11 +198,13 @@ export class Dialog extends React.Component<Props, {}> {
     }
 
     render() {
+        const {size, caption} = this.props;
         const {x, y} = this.calculatePosition();
-        const style = {top: y, left: x, height: HEIGHT, width: WIDTH};
+        const style = {top: y, left: x, width: size.width, height: size.height};
 
         return (
             <div className='ontodia-dialog' style={style}>
+                {caption ? <div className='ontodia-dialog__caption'>{caption}</div> : null}
                 {this.props.children}
             </div>
         );

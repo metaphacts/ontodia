@@ -191,7 +191,9 @@ export class EditLayer extends React.Component<Props, State> {
         const {editor, mode} = this.props;
         const {targetElement, canDropOnElement, canDropOnCanvas} = this.state;
 
+        const batch = editor.model.history.startBatch();
         editor.model.removeElement(this.temporaryElement.id);
+        batch.discard();
 
         if (targetElement || (mode === EditLayerMode.moveLinkSource || mode === EditLayerMode.moveLinkTarget)) {
             this.endChangingLink({link: this.temporaryLink, targetElement, canDrop: canDropOnElement}).then(link => {
