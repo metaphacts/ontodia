@@ -201,6 +201,23 @@ export namespace AuthoringState {
         return AuthoringState.set(state, {events});
     }
 
+    export function deleteNewLinksReleatedToElements(
+        state: AuthoringState, elementIris: ElementIri[]
+    ): AuthoringState {
+        const events = state.events.filter(event => {
+            const isNew = event.type === AuthoringKind.ChangeLink && !event.before;
+            if (!isNew) { return true; }
+
+            const linkModel = (event as LinkChange).after;
+            const isConnectedToTheElements = elementIris.find(elementIri => {
+                return isLinkConnectedToElement(linkModel, elementIri);
+            });
+
+            return !isConnectedToTheElements;
+        });
+        return AuthoringState.set(state, {events});
+    }
+
     function makeIndex(events: ReadonlyArray<AuthoringEvent>): AuthoringIndex {
         const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
         const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(hashLink, sameLink);

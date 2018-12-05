@@ -31,7 +31,7 @@ import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange, ElementChange,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
@@ -230,35 +230,32 @@ export class EditorController {
     }
 
     removeItems(items: ReadonlyArray<SelectionItem>) {
-        const state = this.authoringState;
         const batch = this.model.history.startBatch();
+        const removedElementIris: ElementIri[] = [];
+
         for (const item of items) {
             if (item instanceof Element) {
-                if (AuthoringState.isNewElement(state, item.iri)) {
+                if (AuthoringState.isNewElement(this.authoringState, item.iri)) {
                     this.deleteEntity(item.iri);
                 } else {
                     this.model.removeElement(item.id);
-
-                    const newlyConnectedLinks: LinkModel[] = [];
-                    state.events.forEach(event => {
-                        const isNewLink = event.type === AuthoringKind.ChangeLink && !event.before;
-                        if (isNewLink) {
-                            const link = (event as LinkChange).after;
-                            if (isLinkConnectedToElement(link, item.iri)) {
-                                newlyConnectedLinks.push(link);
-                            }
-                        }
-                    });
-                    for (const link of newlyConnectedLinks) {
-                        this.deleteLink(link);
-                    }
+                    // clear changes of element
+                    const event = this.authoringState.index.elements.get(item.iri);
+                    this.discardChange(event);
+                    removedElementIris.push(item.iri);
                 }
             } else if (item instanceof Link) {
-                if (AuthoringState.isNewLink(state, item.data)) {
+                if (AuthoringState.isNewLink(this.authoringState, item.data)) {
                     this.deleteLink(item.data);
                 }
             }
         }
+
+        if (removedElementIris.length > 0) {
+            const newState = AuthoringState.deleteNewLinksReleatedToElements(this.authoringState, removedElementIris);
+            this.setAuthoringState(newState);
+        }
+
         batch.store();
     }
 
@@ -658,29 +655,25 @@ export class EditorController {
         const model = elements[0].data;
 
         const event = state.index.elements.get(elementIri);
-        if (event && event.type === AuthoringKind.ChangeElement) {
-            if (event.before) {
-                // restore initial data
-                this.model.history.execute(
-                    setElementData(this.model, elementIri, event.before)
-                );
-            } else {
-                // delete newly created entity
-                for (const element of elements) {
-                    this.model.removeElement(element.id);
+        const isOriginalEntity = !event || event.type === AuthoringKind.ChangeElement && event.before;
+
+        if (isOriginalEntity) {
+            if (event) { // entity was edited
+                this.discardChange(event);
+            }
+            // remove new connected links
+            for (const element of elements) {
+                for (const link of element.links) {
+                    if (link.data && AuthoringState.isNewLink(state, link.data)) {
+                        this.model.removeLink(link.id);
+                    }
                 }
             }
+        } else {
+            for (const element of elements) {
+                this.model.removeElement(element.id);
+            }
         }
-
-        const newlyConnectedLinks = this.model.links.filter(link => {
-            if (!link.data) { return false; }
-            return isLinkConnectedToElement(link.data, elementIri)
-                && AuthoringState.isNewLink(state, link.data);
-        });
-        for (const link of newlyConnectedLinks) {
-            this.model.removeLink(link.id);
-        }
-
         this.setAuthoringState(AuthoringState.deleteElement(state, model));
         batch.store();
     }
