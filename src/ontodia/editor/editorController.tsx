@@ -31,7 +31,7 @@ import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange,
 } from './authoringState';
 import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
@@ -238,6 +238,20 @@ export class EditorController {
                     this.deleteEntity(item.iri);
                 } else {
                     this.model.removeElement(item.id);
+
+                    const newlyConnectedLinks: LinkModel[] = [];
+                    state.events.forEach(event => {
+                        const isNewLink = event.type === AuthoringKind.ChangeLink && !event.before;
+                        if (isNewLink) {
+                            const link = (event as LinkChange).after;
+                            if (isLinkConnectedToElement(link, item.iri)) {
+                                newlyConnectedLinks.push(link);
+                            }
+                        }
+                    });
+                    for (const link of newlyConnectedLinks) {
+                        this.deleteLink(link);
+                    }
                 }
             } else if (item instanceof Link) {
                 if (AuthoringState.isNewLink(state, item.data)) {
