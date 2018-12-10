@@ -167,17 +167,20 @@ export class StatesWidget extends React.Component<Props, {}> {
                         strokeDasharray={'8 8'} />
                 );
             }
-            const state = (
-                editor.authoringState.index.links.get(link.data) ||
-                editor.authoringState.index.elements.get(link.data.sourceId) ||
-                editor.authoringState.index.elements.get(link.data.targetId)
-            );
-            if (state) {
+            const state = editor.authoringState.index.links.get(link.data);
+            const sourceState = editor.authoringState.index.elements.get(link.data.sourceId);
+            const targetState = editor.authoringState.index.elements.get(link.data.targetId);
+            const sourceStateDeleted = sourceState && sourceState.type === AuthoringKind.DeleteElement;
+            const targetStateDeleted = targetState && targetState.type === AuthoringKind.DeleteElement;
+            if (state || sourceStateDeleted || targetStateDeleted) {
                 const path = this.calculateLinkPath(link);
                 let color: string;
-                if (state.type === AuthoringKind.ChangeLink) {
+                if (
+                    state && state.type === AuthoringKind.ChangeLink &&
+                    !(sourceStateDeleted || targetStateDeleted)
+                ) {
                     color = state.before ? 'blue' : 'green';
-                } else if (state.type === AuthoringKind.DeleteLink || state.type === AuthoringKind.DeleteElement) {
+                } else {
                     color = 'red';
                 }
                 return (
