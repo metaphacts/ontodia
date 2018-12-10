@@ -13,7 +13,7 @@ import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
-import { AuthoringKind } from './authoringState';
+import { AuthoringKind, AuthoringState } from './authoringState';
 import { EditorController } from './editorController';
 import { LinkValidation, ElementValidation } from './validation';
 
@@ -168,20 +168,14 @@ export class StatesWidget extends React.Component<Props, {}> {
                 );
             }
             const state = editor.authoringState.index.links.get(link.data);
-            const sourceState = editor.authoringState.index.elements.get(link.data.sourceId);
-            const targetState = editor.authoringState.index.elements.get(link.data.targetId);
-            const sourceStateDeleted = sourceState && sourceState.type === AuthoringKind.DeleteElement;
-            const targetStateDeleted = targetState && targetState.type === AuthoringKind.DeleteElement;
-            if (state || sourceStateDeleted || targetStateDeleted) {
+            const isDeletedLink = AuthoringState.isDeletedLink(editor.authoringState, link.data);
+            if (state || isDeletedLink) {
                 const path = this.calculateLinkPath(link);
                 let color: string;
-                if (
-                    state && state.type === AuthoringKind.ChangeLink &&
-                    !(sourceStateDeleted || targetStateDeleted)
-                ) {
-                    color = state.before ? 'blue' : 'green';
-                } else {
+                if (isDeletedLink) {
                     color = 'red';
+                } else if (state && state.type === AuthoringKind.ChangeLink) {
+                    color = state.before ? 'blue' : 'green';
                 }
                 return (
                     <path key={link.id} d={path} fill={'none'} stroke={color} strokeWidth={5} strokeOpacity={0.5} />
