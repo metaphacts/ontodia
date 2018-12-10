@@ -249,6 +249,13 @@ export namespace AuthoringState {
         const event = state.index.links.get(linkModel);
         return event && event.type === AuthoringKind.ChangeLink && !event.before;
     }
+
+    export function isDeletedLink(state: AuthoringState, linkModel: LinkModel): boolean {
+        const event = state.index.links.get(linkModel);
+        return event && event.type === AuthoringKind.DeleteLink ||
+            isDeletedElement(state, linkModel.sourceId) ||
+            isDeletedElement(state, linkModel.targetId);
+    }
 }
 
 export interface TemporaryState {

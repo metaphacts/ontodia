@@ -2,7 +2,7 @@ import { ElementIri, LinkModel, hashLink, sameLink } from '../data/model';
 import { ValidationApi, ValidationEvent, ElementError, LinkError } from '../data/validationApi';
 import { CancellationToken } from '../viewUtils/async';
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
-import { AuthoringState } from './authoringState';
+import { AuthoringState, AuthoringKind } from './authoringState';
 import { EditorController } from './editorController';
 
 export interface ValidationState {
@@ -81,6 +81,15 @@ export function changedElementsToValidate(
         const previous = previousAuthoring.index.elements.get(element.iri);
         if (current !== previous) {
             toValidate.add(element.iri);
+
+            // when we remove element incoming link are removed as well so we should update their sources
+            if ((current || previous).type === AuthoringKind.DeleteElement) {
+                for (const link of element.links) {
+                    if (link.data.sourceId !== element.iri) {
+                        toValidate.add(link.data.sourceId);
+                    }
+                }
+            }
         }
     }
 
