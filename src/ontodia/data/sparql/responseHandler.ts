@@ -18,57 +18,82 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
     const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
     // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
-    for (const nodeId in treeNodes) {
-        if (!treeNodes.hasOwnProperty(nodeId)) { continue; }
-        const treeNode = treeNodes[nodeId];
-        if (treeNode.parent) {
-            const parent = treeNodes[treeNode.parent];
-            parent.children.push(treeNode);
+    treeNodes.forEach(node => {
+        if (node.parents.size > 0) {
+            node.parents.forEach(parent => {
+                treeNodes.get(parent).children.push(node);
+            });
         } else {
-            tree.push(treeNode);
+            tree.push(node);
         }
-    }
+        node.parents = undefined;
+    });
 
-    calcCounts(tree);
-
+    calculateCounts(tree);
     return tree;
 }
 
-function createClassMap(sNodes: ClassBinding[]): Dictionary<HierarchicalClassModel> {
-    const treeNodes: Dictionary<HierarchicalClassModel> = {};
-    for (const sNode of sNodes) {
-        if (!isRdfIri(sNode.class)) { continue; }
-        const sNodeId: string = sNode.class.value;
-        let node = treeNodes[sNodeId];
-        if (node) {
-            if (sNode.label) {
-                const label = node.label;
-                if (label.values.length === 1 && !label.values[0].lang) {
-                    label.values = [];
-                }
-                label.values.push(getLocalizedString(sNode.label));
-            }
-            if (!node.parent && sNode.parent) {
-                node.parent = sNode.parent.value;
-            }
-        } else {
-            node = getClassModel(sNode);
-            treeNodes[sNodeId] = node;
+/**
+ * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
+ */
+interface HierarchicalClassModel extends ClassModel {
+    parents?: Set<ElementTypeIri>;
+}
+
+function createClassMap(bindings: ClassBinding[]): Map<ElementTypeIri, HierarchicalClassModel> {
+    const treeNodes = new Map<ElementTypeIri, HierarchicalClassModel>();
+
+    for (const binding of bindings) {
+        if (!isRdfIri(binding.class)) { continue; }
+        const classIri = binding.class.value as ElementTypeIri;
+
+        let node = treeNodes.get(classIri);
+        if (!node) {
+            node = createEmptyModel(classIri);
+            treeNodes.set(classIri, node);
         }
-        // ensuring parent will always be there
-        if (node.parent && !treeNodes[node.parent]) {
-            treeNodes[node.parent] = getClassModel({class: {value: node.parent, type: 'uri'}});
+
+        if (binding.label) {
+            appendLabel(node.label, getLocalizedString(binding.label));
+        }
+        if (binding.parent) {
+            const parentIri = binding.parent.value as ElementTypeIri;
+            node.parents.add(parentIri);
+        }
+        if (binding.instcount) {
+            node.count = getInstCount(binding.instcount);
         }
     }
+
+    // ensuring parent will always be there
+    for (const binding of bindings) {
+        if (binding.parent) {
+            const parentIri = binding.parent.value as ElementTypeIri;
+            if (!treeNodes.has(parentIri)) {
+                treeNodes.set(parentIri, createEmptyModel(parentIri));
+            }
+        }
+    }
+
+    function createEmptyModel(iri: ElementTypeIri): HierarchicalClassModel {
+        return {
+            id: iri as ElementTypeIri,
+            children: [],
+            label: {values: []},
+            count: undefined,
+            parents: new Set<ElementTypeIri>(),
+        };
+    }
+
     return treeNodes;
 }
 
-function calcCounts(children: ClassModel[]) {
+function calculateCounts(children: ClassModel[]) {
     for (const node of children) {
         // no more to count
         if (!node.children) {return; }
         // ensure all children have their counts completed;
-        calcCounts(node.children);
+        calculateCounts(node.children);
         // we have to preserve no data here. If nor element nor childs have no count information,
         // we just pass undefined upwards.
         let childCount: number;
@@ -92,10 +117,7 @@ export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel
         const id = binding.class.value as ElementTypeIri;
         const model = classes[id];
         if (model) {
-            const newLabel = getLocalizedString(binding.label);
-            if (newLabel && !model.label.values.some(label => isLocalizedEqual(label, newLabel))) {
-                model.label.values.push(newLabel);
-            }
+            appendLabel(model.label, getLocalizedString(binding.label));
             const instanceCount = getInstCount(binding.instcount);
             if (instanceCount !== undefined) {
                 model.count =  Math.max(model.count, instanceCount);
@@ -335,6 +357,14 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
     }
 }
 
+function appendLabel(container: { values: LocalizedString[] }, newLabel: LocalizedString | undefined) {
+    if (!newLabel) { return; }
+    for (const existing of container.values) {
+        if (isLocalizedEqual(existing, newLabel)) { return; }
+    }
+    container.values.push(newLabel);
+}
+
 function isLocalizedEqual(left: LocalizedString, right: LocalizedString) {
     return left.lang === right.lang && left.text === right.text;
 }
@@ -352,24 +382,6 @@ export function getLocalizedString(label: RdfLiteral): LocalizedString | undefin
 
 export function getInstCount(instcount: RdfLiteral): number | undefined {
     return (instcount ? +instcount.value : undefined);
-}
-
-/**
- * This extension of ClassModel is used only in processing, parent links are not needed in UI (yet?)
- */
-export interface HierarchicalClassModel extends ClassModel {
-    parent: string;
-}
-
-export function getClassModel(node: ClassBinding): HierarchicalClassModel {
-    const label = getLocalizedString(node.label);
-    return {
-        id: node.class.value as ElementTypeIri,
-        children: [],
-        label: { values: label ? [label] : [] },
-        count: getInstCount(node.instcount),
-        parent: node.parent ? node.parent.value : undefined,
-    };
 }
 
 export function getPropertyModel(node: PropertyBinding): PropertyModel {
