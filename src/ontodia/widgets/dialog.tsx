@@ -10,25 +10,42 @@ import {
     computePolylineLength,
     getPointAlongPolyline,
     Vector,
-    Rect,
 } from '../diagram/geometry';
+import { DraggableHandle } from '../workspace/draggableHandle';
 
-const WIDTH = 300;
-const HEIGHT = 300;
+const DEFAULT_WIDTH = 300;
+const DEFAULT_HEIGHT = 300;
+const MIN_WIDTH = 250;
+const MIN_HEIGHT = 250;
+const MAX_WIDTH = 800;
+const MAX_HEIGHT = 800;
+
 const ELEMENT_OFFSET = 40;
 const LINK_OFFSET = 20;
 const FOCUS_OFFSET = 20;
+
+const CLASS_NAME = 'ontodia-dialog';
 
 export interface Props extends PaperWidgetProps {
     view: DiagramView;
     target: Element | Link;
 }
 
-export class Dialog extends React.Component<Props, {}> {
+export interface State {
+    width?: number;
+    height?: number;
+}
+
+export class Dialog extends React.Component<Props, State> {
     private unsubscribeFromTarget: Unsubscribe | undefined = undefined;
     private readonly handler = new EventObserver();
 
     private updateAll = () => this.forceUpdate();
+
+    constructor(props: Props) {
+        super(props);
+        this.state = {};
+    }
 
     componentDidMount() {
         this.listenToTarget(this.props.target);
@@ -95,7 +112,7 @@ export class Dialog extends React.Component<Props, {}> {
 
         return {
             x: x1 + ELEMENT_OFFSET,
-            y: (y0 + y1) / 2 - (HEIGHT / 2),
+            y: (y0 + y1) / 2 - (DEFAULT_HEIGHT / 2),
         };
     }
 
@@ -151,8 +168,8 @@ export class Dialog extends React.Component<Props, {}> {
             y: y - FOCUS_OFFSET,
         };
         const max = {
-            x: min.x + WIDTH + FOCUS_OFFSET * 2,
-            y: min.y + HEIGHT + FOCUS_OFFSET * 2,
+            x: min.x + DEFAULT_WIDTH + FOCUS_OFFSET * 2,
+            y: min.y + DEFAULT_HEIGHT + FOCUS_OFFSET * 2,
         };
         return {min, max};
     }
@@ -190,13 +207,75 @@ export class Dialog extends React.Component<Props, {}> {
         paperArea.centerTo(paperCenter);
     }
 
+    private difference: Vector;
+    private onStartDragging = (e: React.MouseEvent<HTMLDivElement>) => {
+        this.preventSelection();
+        this.difference = {x: 0, y: 0};
+    }
+
+    private onDragHandleBottom = (e: MouseEvent, dx: number, dy: number) => {
+        const {height: curHeight = DEFAULT_HEIGHT} = this.state;
+        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, curHeight + dy - this.difference.y));
+        this.difference = {...this.difference, y: dy};
+        this.setState({height});
+    }
+
+    private onDragHandleRight = (e: MouseEvent, dx: number, dy: number) => {
+        const {width: curWidth = DEFAULT_WIDTH} = this.state;
+        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, curWidth + dx - this.difference.x));
+        this.difference = {...this.difference, x: dx};
+        this.setState({width});
+    }
+
+    private onDragHandleBottomRight = (e: MouseEvent, dx: number, dy: number) => {
+        const {
+            width: curWidth = DEFAULT_WIDTH,
+            height: curHeight = DEFAULT_HEIGHT
+        } = this.state;
+        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, curWidth + dx - this.difference.x));
+        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, curHeight + dy - this.difference.y));
+        this.difference = {x: dx, y: dy};
+        this.setState({width, height});
+    }
+
+    private preventSelection = () => {
+        const onMouseUp = () => {
+            document.body.classList.remove('ontodia--unselectable');
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mouseup', onMouseUp);
+        document.body.classList.add('ontodia--unselectable');
+    }
+
     render() {
         const {x, y} = this.calculatePosition();
-        const style = {top: y, left: x, height: HEIGHT, width: WIDTH};
+        const width = this.state.width || DEFAULT_WIDTH;
+        const height = this.state.height || DEFAULT_HEIGHT;
+        const style = {
+            top: y,
+            left: x,
+            width,
+            height,
+        };
 
         return (
-            <div className='ontodia-dialog' style={style}>
+            <div className={CLASS_NAME} style={style}>
                 {this.props.children}
+                <DraggableHandle
+                    className={`${CLASS_NAME}__bottom-handle`}
+                    onBeginDragHandle={this.onStartDragging}
+                    onDragHandle={this.onDragHandleBottom}>
+                </DraggableHandle>
+                <DraggableHandle
+                    className={`${CLASS_NAME}__right-handle`}
+                    onBeginDragHandle={this.onStartDragging}
+                    onDragHandle={this.onDragHandleRight}>
+                </DraggableHandle>
+                <DraggableHandle
+                    className={`${CLASS_NAME}__bottom-right-handle`}
+                    onBeginDragHandle={this.onStartDragging}
+                    onDragHandle={this.onDragHandleBottomRight}>
+                </DraggableHandle>
             </div>
         );
     }
