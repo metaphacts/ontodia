@@ -201,7 +201,7 @@ export namespace AuthoringState {
         return AuthoringState.set(state, {events});
     }
 
-    export function deleteNewLinksReleatedToElements(
+    export function deleteNewLinksConnectedToElements(
         state: AuthoringState, elementIris: ElementIri[]
     ): AuthoringState {
         const events = state.events.filter(event => {
