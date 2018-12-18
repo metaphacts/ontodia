@@ -13,7 +13,7 @@ import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
-import { AuthoringKind } from './authoringState';
+import { AuthoringKind, AuthoringState } from './authoringState';
 import { EditorController } from './editorController';
 import { LinkValidation, ElementValidation } from './validation';
 
@@ -167,18 +167,15 @@ export class StatesWidget extends React.Component<Props, {}> {
                         strokeDasharray={'8 8'} />
                 );
             }
-            const state = (
-                editor.authoringState.index.links.get(link.data) ||
-                editor.authoringState.index.elements.get(link.data.sourceId) ||
-                editor.authoringState.index.elements.get(link.data.targetId)
-            );
-            if (state) {
+            const state = editor.authoringState.index.links.get(link.data);
+            const isDeletedLink = AuthoringState.isDeletedLink(editor.authoringState, link.data);
+            if (state || isDeletedLink) {
                 const path = this.calculateLinkPath(link);
                 let color: string;
-                if (state.type === AuthoringKind.ChangeLink) {
-                    color = state.before ? 'blue' : 'green';
-                } else if (state.type === AuthoringKind.DeleteLink || state.type === AuthoringKind.DeleteElement) {
+                if (isDeletedLink) {
                     color = 'red';
+                } else if (state && state.type === AuthoringKind.ChangeLink) {
+                    color = state.before ? 'blue' : 'green';
                 }
                 return (
                     <path key={link.id} d={path} fill={'none'} stroke={color} strokeWidth={5} strokeOpacity={0.5} />

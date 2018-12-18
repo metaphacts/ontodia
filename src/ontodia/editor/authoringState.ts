@@ -201,6 +201,20 @@ export namespace AuthoringState {
         return AuthoringState.set(state, {events});
     }
 
+    export function deleteNewLinksConnectedToElements(
+        state: AuthoringState, elementIris: Set<ElementIri>
+    ): AuthoringState {
+        const events = state.events.filter(event => {
+            if (event.type !== AuthoringKind.ChangeLink || event.before) { return true; }
+
+            const linkModel = event.after;
+
+            return !elementIris.has(linkModel.sourceId) &&
+                !elementIris.has(linkModel.targetId);
+        });
+        return AuthoringState.set(state, {events});
+    }
+
     function makeIndex(events: ReadonlyArray<AuthoringEvent>): AuthoringIndex {
         const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
         const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(hashLink, sameLink);
@@ -231,6 +245,13 @@ export namespace AuthoringState {
     export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
         const event = state.index.links.get(linkModel);
         return event && event.type === AuthoringKind.ChangeLink && !event.before;
+    }
+
+    export function isDeletedLink(state: AuthoringState, linkModel: LinkModel): boolean {
+        const event = state.index.links.get(linkModel);
+        return event && event.type === AuthoringKind.DeleteLink ||
+            isDeletedElement(state, linkModel.sourceId) ||
+            isDeletedElement(state, linkModel.targetId);
     }
 }
 
