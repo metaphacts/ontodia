@@ -8,41 +8,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.9.7] - 2018-12-18
 ### Added
-- Internal support for animated paper operations (#169).
+- Internal support for animated paper operations.
 
 ### Changed
 - **[Breaking]** Generate element and link IDs as full IRIs (fixes issue
-with getting relative IRIs when framing JSON-LD layout data) (#170).
+with getting relative IRIs when framing JSON-LD layout data).
 
 ### Fixed
-- Missing prefixes for the blank nodes query in `SparqlDataProvider` (#171).
-- Duplication of link types in `RdfDataProvider` (#177).
-- Search by text in `RdfDataProvider` (#176).
-- Mixed up datatype and object property icons (#179).
-- Missing parents for classes with multiple parents in `SparqlDataProvider` (#180).
+- Missing prefixes for the blank nodes query in `SparqlDataProvider`.
+- Duplication of link types in `RdfDataProvider`.
+- Search by text in `RdfDataProvider`.
+- Mixed up datatype and object property icons.
+- Missing parents for classes with multiple parents in `SparqlDataProvider`.
 - Stale validation state when removing element with new links, deleting target
-element and incorrect highlighting for deleted links (#181).
+element and incorrect highlighting for deleted links.
 
 ## [0.9.6] - 2018-11-10
 ### Added
-- Ability to return validation result for outgoing links when validating an element (#159).
-- `Cancellation` and `CancellationToken` to exported API (#161).
-- Auto-scroll to contextual menu when it appears in the viewport (#166).
+- Ability to return validation result for outgoing links when validating an element.
+- `Cancellation` and `CancellationToken` to exported API.
+- Auto-scroll to contextual menu when it appears in the viewport.
 
 ### Changed
 - **[Breaking]** Replaced `DiagramViewOptions.typeStyleResolvers` option
 with single `WorkspaceProps.typeStyleResolver` function;
-same for `linkTemplateResolvers` and `templatesResolvers` (#168).
-- Display link authoring state using status label with *cancel* action (#165).
-- Prevent closing "Edit entity" dialog when clicking outside (#162).
+same for `linkTemplateResolvers` and `templatesResolvers`.
+- Display link authoring state using status label with *cancel* action.
+- Prevent closing "Edit entity" dialog when clicking outside.
 
 ### Fixed
-- Link style conflicts when using multiple `Workspace` instances on a page (#168).
-- JSON-LD context definition (now using `@vocab` for element IRIs) (#164).
+- Link style conflicts when using multiple `Workspace` instances on a page.
+- JSON-LD context definition (now using `@vocab` for element IRIs).
 - Incorrectly displayed icons and non-working drag and drop from class tree
-in IE11 (#160).
-- Regexp search for some SPARQL endpoints in `SparqlDataProvider` (#158).
-- Inability to redefine functions for custom toolbar (#167).
+in IE11.
+- Regexp search for some SPARQL endpoints in `SparqlDataProvider`.
+- Inability to redefine functions for custom toolbar.
 
 ## [0.9.5] - 2018-10-16
 ### Fixed
@@ -391,7 +391,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/sputniq-space/ontodia/compare/v0.9.6...HEAD
+[Latest]: https://github.com/sputniq-space/ontodia/compare/v0.9.7...HEAD
+[0.9.7]: https://github.com/sputniq-space/ontodia/compare/v0.9.6...v0.9.7
 [0.9.6]: https://github.com/sputniq-space/ontodia/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/sputniq-space/ontodia/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/sputniq-space/ontodia/compare/v0.9.3...v0.9.4
