@@ -231,14 +231,14 @@ export class EditorController {
 
     removeItems(items: ReadonlyArray<SelectionItem>) {
         const batch = this.model.history.startBatch();
-        const dangerousIris: ElementIri[] = [];
+        const deletedElementIris = new Set<ElementIri>();
 
         for (const item of items) {
             if (item instanceof Element) {
                 const event = this.authoringState.index.elements.get(item.iri);
                 this.discardChange(event);
                 this.model.removeElement(item.id);
-                dangerousIris.push(item.iri);
+                deletedElementIris.add(item.iri);
             } else if (item instanceof Link) {
                 if (AuthoringState.isNewLink(this.authoringState, item.data)) {
                     this.deleteLink(item.data);
@@ -246,8 +246,8 @@ export class EditorController {
             }
         }
 
-        if (dangerousIris.length > 0) {
-            const newState = AuthoringState.deleteNewLinksConnectedToElements(this.authoringState, dangerousIris);
+        if (deletedElementIris.size > 0) {
+            const newState = AuthoringState.deleteNewLinksConnectedToElements(this.authoringState, deletedElementIris);
             this.setAuthoringState(newState);
         }
 

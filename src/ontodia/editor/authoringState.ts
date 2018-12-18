@@ -202,18 +202,15 @@ export namespace AuthoringState {
     }
 
     export function deleteNewLinksConnectedToElements(
-        state: AuthoringState, elementIris: ElementIri[]
+        state: AuthoringState, elementIris: Set<ElementIri>
     ): AuthoringState {
         const events = state.events.filter(event => {
-            const isNew = event.type === AuthoringKind.ChangeLink && !event.before;
-            if (!isNew) { return true; }
+            if (event.type !== AuthoringKind.ChangeLink || event.before) { return true; }
 
-            const linkModel = (event as LinkChange).after;
-            const isConnectedToTheElements = elementIris.find(elementIri => {
-                return isLinkConnectedToElement(linkModel, elementIri);
-            });
+            const linkModel = event.after;
 
-            return !isConnectedToTheElements;
+            return !elementIris.has(linkModel.sourceId) &&
+                !elementIris.has(linkModel.targetId);
         });
         return AuthoringState.set(state, {events});
     }
