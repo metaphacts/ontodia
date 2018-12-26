@@ -207,34 +207,25 @@ export class Dialog extends React.Component<Props, State> {
         paperArea.centerTo(paperCenter);
     }
 
-    private difference: Vector;
+    private startSize: Vector;
     private onStartDragging = (e: React.MouseEvent<HTMLDivElement>) => {
         this.preventSelection();
-        this.difference = {x: 0, y: 0};
+        this.startSize = {x: this.state.width || DEFAULT_WIDTH, y: this.state.height || DEFAULT_HEIGHT};
     }
 
     private onDragHandleBottom = (e: MouseEvent, dx: number, dy: number) => {
-        const {height: curHeight = DEFAULT_HEIGHT} = this.state;
-        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, curHeight + dy - this.difference.y));
-        this.difference = {...this.difference, y: dy};
+        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, this.startSize.y + dy));
         this.setState({height});
     }
 
-    private onDragHandleRight = (e: MouseEvent, dx: number, dy: number) => {
-        const {width: curWidth = DEFAULT_WIDTH} = this.state;
-        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, curWidth + dx - this.difference.x));
-        this.difference = {...this.difference, x: dx};
+    private onDragHandleRight = (e: MouseEvent, dx: number) => {
+        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, this.startSize.x + dx));
         this.setState({width});
     }
 
     private onDragHandleBottomRight = (e: MouseEvent, dx: number, dy: number) => {
-        const {
-            width: curWidth = DEFAULT_WIDTH,
-            height: curHeight = DEFAULT_HEIGHT
-        } = this.state;
-        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, curWidth + dx - this.difference.x));
-        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, curHeight + dy - this.difference.y));
-        this.difference = {x: dx, y: dy};
+        const width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, this.startSize.x + dx));
+        const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, this.startSize.y + dy));
         this.setState({width, height});
     }
 
