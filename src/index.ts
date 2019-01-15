@@ -52,6 +52,7 @@ export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/conne
 export * from './ontodia/workspace/toolbar';
 export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
 export { WorkspaceEventHandler, WorkspaceEventKey } from './ontodia/workspace/workspaceContext';
+export { DraggableHandle } from './ontodia/workspace/draggableHandle';
 
 import * as InternalApi from './internalApi';
 export { InternalApi };

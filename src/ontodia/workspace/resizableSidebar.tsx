@@ -5,9 +5,9 @@ import { DraggableHandle } from './draggableHandle';
 export interface Props {
     className?: string;
     dockSide?: DockSide;
-    defaultWidth?: number;
-    minWidth?: number;
-    maxWidth?: number;
+    defaultLength?: number;
+    minLength?: number;
+    maxLength?: number;
     isOpen?: boolean;
     onOpenOrClose?: (open: boolean) => void;
     onStartResize: () => void;
@@ -17,11 +17,13 @@ export interface Props {
 export enum DockSide {
     Left = 1,
     Right,
+    Top,
+    Bottom,
 }
 
 export interface State {
     readonly open?: boolean;
-    readonly width?: number;
+    readonly length?: number;
 }
 
 const CLASS_NAME = 'ontodia-drag-resizable-column';
@@ -29,9 +31,9 @@ const CLASS_NAME = 'ontodia-drag-resizable-column';
 export class ResizableSidebar extends React.Component<Props, State> {
     static readonly defaultProps: Partial<Props> = {
         dockSide: DockSide.Left,
-        minWidth: 0,
-        maxWidth: 500,
-        defaultWidth: 275,
+        minLength: 0,
+        maxLength: 500,
+        defaultLength: 275,
         isOpen: true,
     };
 
@@ -41,7 +43,7 @@ export class ResizableSidebar extends React.Component<Props, State> {
         super(props);
         this.state = {
             open: this.props.isOpen,
-            width: this.defaultWidth(),
+            length: this.defaultWidth(),
         };
     }
 
@@ -52,21 +54,37 @@ export class ResizableSidebar extends React.Component<Props, State> {
     }
 
     private defaultWidth() {
-        const {defaultWidth, maxWidth} = this.props;
-        return Math.min(defaultWidth, maxWidth);
+        const {defaultLength, maxLength} = this.props;
+        return Math.min(defaultLength, maxLength);
+    }
+
+    private getSideClass() {
+        switch (this.props.dockSide) {
+            case DockSide.Left: return `${CLASS_NAME}--docked-left`;
+            case DockSide.Right: return `${CLASS_NAME}--docked-right`;
+            case DockSide.Top: return `${CLASS_NAME}--docked-top`;
+            case DockSide.Bottom: return `${CLASS_NAME}--docked-bottom`;
+            default: return 'docked-right';
+        }
+    }
+
+    private get isHorizontal(): boolean {
+        return this.props.dockSide === DockSide.Top ||
+        this.props.dockSide === DockSide.Bottom;
     }
 
     render() {
-        const isDockedLeft = this.props.dockSide === DockSide.Left;
-        const {open, width} = this.state;
+        const {open, length} = this.state;
 
         const className = `${CLASS_NAME} ` +
-            `${CLASS_NAME}--${isDockedLeft ? 'docked-left' : 'docked-right'} ` +
+            `${this.getSideClass()} ` +
             `${CLASS_NAME}--${open ? 'opened' : 'closed'} ` +
             `${this.props.className || ''}`;
 
+        const style: any = {};
+        style[this.isHorizontal ? 'height' : 'width'] = open ? length : 0;
         return <div className={className}
-            style={{width: open ? width : 0}}>
+            style={style}>
             {open ? this.props.children : null}
             <DraggableHandle className={`${CLASS_NAME}__handle`}
                 onBeginDragHandle={this.onBeginDragHandle}
@@ -79,18 +97,19 @@ export class ResizableSidebar extends React.Component<Props, State> {
     }
 
     private onBeginDragHandle = () => {
-        this.originWidth = this.state.open ? this.state.width : 0;
+        this.originWidth = this.state.open ? this.state.length : 0;
         this.props.onStartResize();
     }
 
     private onDragHandle = (e: MouseEvent, dx: number, dy: number) => {
-        let xDifference = dx;
+        let difference = this.isHorizontal ? dy : dx;
         if (this.props.dockSide === DockSide.Right) {
-            xDifference = -xDifference;
+            difference = -difference;
         }
-        const newWidth = this.originWidth + xDifference;
-        const clampedWidth = Math.max(Math.min(newWidth, this.props.maxWidth), this.props.minWidth);
-        this.toggle({open: clampedWidth > this.props.minWidth, newWidth: clampedWidth});
+        const newWidth = this.originWidth + difference;
+        const clampedWidth = Math.max(Math.min(newWidth, this.props.maxLength), this.props.minLength);
+        const isOpen = this.props.minLength > 0 || clampedWidth > this.props.minLength;
+        this.toggle({open: isOpen, newWidth: clampedWidth});
     }
 
     private toggle(params: {
@@ -105,11 +124,11 @@ export class ResizableSidebar extends React.Component<Props, State> {
             }
         };
 
-        const useDefaultWidth = open && this.state.width === 0 && newWidth === undefined;
+        const useDefaultWidth = open && this.state.length === 0 && newWidth === undefined;
         if (useDefaultWidth) {
-            this.setState({open, width: this.defaultWidth()}, onStateChanged);
+            this.setState({open, length: this.defaultWidth()}, onStateChanged);
         } else {
-            this.setState(newWidth === undefined ? {open} : {open, width: newWidth}, onStateChanged);
+            this.setState(newWidth === undefined ? {open} : {open, length: newWidth}, onStateChanged);
         }
     }
 }
