@@ -1,3 +1,23 @@
+.ontodia-drag-resizable-column.ontodia-drag-resizable-column--docked-bottom,
+.ontodia-drag-resizable-column.ontodia-drag-resizable-column--docked-top {
+  .ontodia-drag-resizable-column__handle {
+    height: 8px;
+    width: 100%;
+    top: initial;
+    left: 0;
+    cursor: ns-resize;
+  }
+
+  .ontodia-drag-resizable-column__handle-btn {
+    height: 100%;
+    width: 40px;
+    top: 0;
+    left: 50%;
+    margin-left: -20px;
+    margin-top: 0px;
+  }
+}
+
 .ontodia-drag-resizable-column {
   display: flex;
   flex-direction: column;
@@ -5,10 +25,11 @@
 
   &__handle {
     background: #fff url("../images/resizable-column-handle.png") repeat;
+    width: 8px;
     height: 100%;
     position: absolute;
     top: 0;
-    width: 8px;
+    left: initial;
     z-index: 2;
     -webkit-transition: 0.3s;
     -moz-transition: 0.3s;
@@ -69,5 +90,19 @@
   &--docked-right &__handle-btn {
     &::before { background-image: url("../images/arrow-right.png"); }
     &:hover::before { background-image: url("../images/arrow-right1.png"); }
+  }
+
+  &--docked-top { margin-bottom: 8px; }
+  &--docked-top &__handle { bottom: -8px; }
+  &--docked-top &__handle-btn {
+    &::before { background-image: url("../images/arrow-top.png"); }
+    &:hover::before { background-image: url("../images/arrow-top1.png"); }
+  }
+
+  &--docked-bottom { margin-top: 8px; }
+  &--docked-bottom &__handle { top: -8px; }
+  &--docked-bottom &__handle-btn {
+    &::before { background-image: url("../images/arrow-bottom.png"); }
+    &:hover::before { background-image: url("../images/arrow-bottom1.png"); }
   }
 }

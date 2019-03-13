@@ -461,3 +461,13 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
     `,
 };
 export const DBPediaSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...DBPediaOverride};
+
+const StardogOverride: Partial<SparqlDataProviderSettings> = {
+    fullTextSearch: {
+        prefix: '',
+        queryPattern: `
+        ?inst rdfs:label ?searchLabel.
+        (?searchLabel ?score) <tag:stardog:api:property:textMatch> "\${text}".
+    `}
+};
+export const StardogSettings: SparqlDataProviderSettings = {...OWLRDFSSettings, ...StardogOverride};
