@@ -28,6 +28,7 @@ export interface Props extends PaperWidgetProps {
     onRevert: () => void;
     onSourceMove: (point: { x: number; y: number }) => void;
     onTargetMove: (point: { x: number; y: number }) => void;
+    onEditLabel: () => void;
 }
 
 export interface State {
@@ -140,6 +141,7 @@ export class HaloLink extends React.Component<Props, State> {
             listenToElement(source);
             listenToElement(target);
             this.targetListener.listen(link.events, 'changeVertices', this.updateAll);
+            this.targetListener.listen(link.events, 'changeLabelBounds', this.updateAll);
         }
     }
 
@@ -264,11 +266,31 @@ export class HaloLink extends React.Component<Props, State> {
         );
     }
 
+    // Link editing implementation could be rethought in the future.
+    private renderEditLabelButton() {
+        const {view, target, paperArea, onEditLabel} = this.props;
+
+        const linkType = view.model.getLinkType(target.typeId);
+        const template = view.createLinkTemplate(linkType);
+
+        if (!template.setLinkLabel || !target.labelBounds) {
+            return null;
+        }
+
+        const {x, y, width, height} = target.labelBounds;
+        const {x: left, y: top} = paperArea.paperToScrollablePaneCoords(x + width, y + height / 2);
+        const size = {width: 15, height: 17};
+        const style = {width: size.width, height: size.height, top: top - size.height / 2, left};
+        return <button className={`${CLASS_NAME}__edit-label-button`} style={style} onClick={() => onEditLabel()}
+            title={'Edit Link Label'} />;
+    }
+
     render() {
-        const {editor, target} = this.props;
+        const {editor, target, metadataApi} = this.props;
         const polyline = this.computePolyline();
         if (!polyline) { return null; }
 
+        const isAuthoringMode = Boolean(metadataApi);
         const deleteOrRevertButton = (
             isDeletedByItself(editor.authoringState, target) ||
             isSourceOrTargetDeleted(editor.authoringState, target) ? null : this.renderDeleteButton(polyline)
@@ -276,11 +298,12 @@ export class HaloLink extends React.Component<Props, State> {
 
         return (
             <div className={`${CLASS_NAME}`}>
-                {this.renderTargetButton(polyline)}
-                {this.renderSourceButton(polyline)}
-                {isDeletedLink(editor.authoringState, target)
+                {isAuthoringMode ? this.renderTargetButton(polyline) : null}
+                {isAuthoringMode ? this.renderSourceButton(polyline) : null}
+                {!isAuthoringMode || isDeletedLink(editor.authoringState, target)
                     ? null : this.renderEditButton(polyline)}
-                {deleteOrRevertButton}
+                {isAuthoringMode ? deleteOrRevertButton : null}
+                {this.renderEditLabelButton()}
             </div>
         );
     }

@@ -21,3 +21,8 @@
     box-sizing: inherit;
   }
 }
+
+.ontodia-overlayed-element--blurred {
+  filter: grayscale(100%);
+  opacity: 0.5;
+}

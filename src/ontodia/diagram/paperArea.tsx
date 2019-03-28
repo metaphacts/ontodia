@@ -2,12 +2,13 @@ import * as React from 'react';
 
 import { Debouncer, Cancellation, animateInterval, delay, easeInOutBezier } from '../viewUtils/async';
 import { EventObserver, Events, EventSource, PropertyChange } from '../viewUtils/events';
+import { isIE11 } from '../viewUtils/polyfills';
 import { PropTypes } from '../viewUtils/react';
 import { ToSVGOptions, ToDataURLOptions, toSVG, toDataURL, fitRectKeepingAspectRatio } from '../viewUtils/toSvg';
 
 import { RestoreGeometry } from './commands';
 import { Element, Link, Cell, LinkVertex } from './elements';
-import { Vector, computePolyline, findNearestSegmentIndex } from './geometry';
+import { Vector, Rect, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
 import { DiagramView, RenderingLayer, WidgetDescription } from './view';
 import { Paper, PaperTransform } from './paper';
@@ -36,6 +37,7 @@ export interface PaperAreaEvents {
     pointerDown: PointerEvent;
     pointerMove: PointerEvent;
     pointerUp: PointerUpEvent;
+    scroll: { source: PaperArea };
     changeAnimatingGraph: PropertyChange<PaperArea, boolean>;
 }
 
@@ -209,8 +211,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             <div className={componentClass} ref={this.onOuterMount}>
                 <div className={areaClass}
                     ref={this.onAreaMount}
-                    onMouseDown={this.onAreaPointerDown}
-                    onWheel={this.onWheel}>
+                    onMouseDown={this.onAreaPointerDown}>
                     <Paper view={view}
                         paperTransform={paperTransform}
                         onPointerDown={this.onPaperPointerDown}>
@@ -262,6 +263,8 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
 
         this.area.addEventListener('dragover', this.onDragOver);
         this.area.addEventListener('drop', this.onDragDrop);
+        this.area.addEventListener('scroll', this.onScroll);
+        this.area.addEventListener('wheel', this.onWheel, isIE11() ? false : {passive: false});
     }
 
     componentDidUpdate(prevProps: PaperAreaProps, prevState: State) {
@@ -285,6 +288,8 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         this.listener.stopListening();
         this.area.removeEventListener('dragover', this.onDragOver);
         this.area.removeEventListener('drop', this.onDragDrop);
+        this.area.removeEventListener('scroll', this.onScroll);
+        this.area.removeEventListener('wheel', this.onWheel);
     }
 
     private updateWidgets(update: { [key: string]: WidgetDescription }) {
@@ -573,7 +578,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         }
     }
 
-    private onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    private onWheel = (e: MouseWheelEvent) => {
         if (this.shouldStartZooming(e)) {
             e.preventDefault();
             const delta = Math.max(-1, Math.min(1, e.deltaY || e.deltaX));
@@ -647,10 +652,17 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         if (this.props.view.model.elements.length === 0) {
             return this.centerTo();
         }
-
         const bbox = this.getContentFittingBox();
+        return this.zoomToFitRect(bbox, options);
+    }
 
+    zoomToFitRect(
+        bbox: Rect, options?: ViewportOptions
+    ) {
         const {clientWidth, clientHeight} = this.area;
+
+        if (bbox.width === 0) { return; }
+
         const {width} = fitRectKeepingAspectRatio(
             bbox.width, bbox.height,
             clientWidth, clientHeight,
@@ -688,6 +700,10 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
             const paperPosition = this.clientToPaperCoords(x, y);
             this.props.onDragDrop(e, paperPosition);
         }
+    }
+
+    private onScroll = () => {
+        this.source.trigger('scroll', {source: this});
     }
 
     private makeToSVGOptions(): ToSVGOptions {

@@ -9,6 +9,7 @@ import { DiagramView } from '../diagram/view';
 
 import { AsyncModel } from '../editor/asyncModel';
 import { EventObserver } from '../viewUtils/events';
+import { ProgressBar, ProgressState } from '../widgets/progressBar';
 import { SearchResults } from './searchResults';
 
 import { WorkspaceContextTypes, WorkspaceContextWrapper, WorkspaceEventKey } from '../workspace/workspaceContext';
@@ -63,23 +64,19 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     render() {
         const ENTER_KEY_CODE = 13;
 
-        const className = `${CLASS_NAME} stateBasedProgress ${this.props.className || ''}`;
-        const progressState =
-            this.state.quering ? 'querying' :
-            this.state.error ? 'error' :
-            this.state.items ? 'finished' : undefined;
+        const className = `${CLASS_NAME} ${this.props.className || ''}`;
+        const progressState = (
+            this.state.quering ? ProgressState.loading :
+            this.state.error ? ProgressState.error :
+            this.state.items ? ProgressState.completed :
+            ProgressState.none
+        );
 
         const searchTerm = this.state.inputText === undefined
             ? this.props.criteria.text : this.state.inputText;
 
-        return <div className={className} data-state={progressState}>
-            <div className='ontodia-progress'>
-                <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
-                    role='progressbar'
-                    aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
-                    style={{width: '100%'}}>
-                </div>
-            </div>
+        return <div className={className}>
+            <ProgressBar state={progressState} />
             <div className={`${CLASS_NAME}__criteria`}>
                 {this.renderCriteria()}
                 <div className={`${CLASS_NAME}__text-criteria ontodia-input-group`}>
@@ -104,6 +101,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 <SearchResults
                     view={this.props.view}
                     items={this.state.items}
+                    highlightText={this.props.criteria.text}
                     selection={this.state.selection}
                     onSelectionChanged={this.onSelectionChanged}
                 />
@@ -277,7 +275,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
     }
 }
 
-function createRequest(criteria: SearchCriteria, language: string): FilterParams {
+export function createRequest(criteria: SearchCriteria, language: string): FilterParams {
     const {text, elementType, refElement, refElementLink, linkDirection} = criteria;
     return {
         text,

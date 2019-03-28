@@ -55,7 +55,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     metadataApi: new ExampleMetadataApi(),
     validationApi: new ExampleValidationApi(),
     viewOptions: {
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
         groupBy: [
             {linkType: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', linkDirection: 'in'},
         ],

@@ -29,6 +29,7 @@
 
     "LinkTypeOptions": "ontodia:LinkTypeOptions",
     "visible": "ontodia:visible",
-    "showLabel": "ontodia:showLabel"
+    "showLabel": "ontodia:showLabel",
+    "linkState": "ontodia:linkState"
   }
 }

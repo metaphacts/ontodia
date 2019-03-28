@@ -552,7 +552,7 @@ export function executeSparqlQuery<Binding>(
             body: query,
             headers: {
                 'Accept': 'application/sparql-results+json',
-                'Content-Type': 'application/sparql-query',
+                'Content-Type': 'application/sparql-query; charset=UTF-8',
             },
             method: 'POST',
         });
@@ -589,7 +589,7 @@ export function executeSparqlConstruct(
             body: query,
             headers: {
                 'Accept': 'text/turtle',
-                'Content-Type': 'application/sparql-query',
+                'Content-Type': 'application/sparql-query; charset=UTF-8',
             },
             method: 'POST',
         });

@@ -43,4 +43,21 @@
   &__spinner {
     position: absolute;
   }
+
+  &__edit-label-button {
+    background: transparent url("../images/font-awesome/pen-square-solid.svg") no-repeat;
+    background-size: cover;
+    border: 0 none;
+    cursor: pointer;
+    padding: 0;
+    position: absolute;
+    margin-left: 5px;
+    outline: none;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }

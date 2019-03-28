@@ -1,14 +1,32 @@
 import { hashFnv32a } from '../data/utils';
+import { RdfIri } from './sparql/sparqlModels';
 
 export interface Dictionary<T> { [key: string]: T; }
 
 export interface LocalizedString {
     text: string;
     lang: string;
+    /** Equals `xsd:string` if not defined. */
+    datatype?: string;
 }
 
 // tslint:disable-next-line:interface-over-type-literal
-export type Property = { type: 'string'; values: LocalizedString[] };
+export interface IriProperty {
+    type: 'uri';
+    values: ReadonlyArray<RdfIri>;
+}
+export interface LiteralProperty {
+    type: 'string';
+    values: ReadonlyArray<LocalizedString>;
+}
+export type Property = IriProperty | LiteralProperty;
+
+export function isIriProperty(e: Property): e is IriProperty {
+    return e && e.type === 'uri';
+}
+export function isLiteralProperty(e: Property): e is LiteralProperty {
+    return e && e.type === 'string';
+}
 
 export type ElementIri = string & { readonly elementBrand: void };
 export type ElementTypeIri = string & { readonly classBrand: void };
@@ -88,12 +106,12 @@ export function sameElement(left: ElementModel, right: ElementModel): boolean {
 function isArraysEqual(left: string[], right: string[]): boolean {
     if (left.length !== right.length) { return false; }
     for (let i = 0; i < left.length; i++) {
-        if (left[i] !== left[i]) { return false; }
+        if (left[i] !== right[i]) { return false; }
     }
     return true;
 }
 
-function isLocalizedStringsEqual(left: LocalizedString[], right: LocalizedString[]): boolean {
+function isLocalizedStringsEqual(left: ReadonlyArray<LocalizedString>, right: ReadonlyArray<LocalizedString>): boolean {
     if (left.length !== right.length) { return false; }
     for (let i = 0; i < left.length; i++) {
         const leftValue = left[i];
@@ -105,13 +123,33 @@ function isLocalizedStringsEqual(left: LocalizedString[], right: LocalizedString
     return true;
 }
 
+function isIriPropertiesEqual(left: Property, right: Property): boolean {
+    if (!isIriProperty(left) || !isIriProperty(right)) { return false; }
+    if (left.values.length !== right.values.length) { return false; }
+    for (let i = 0; i < left.values.length; i++) {
+        const leftValue = left.values[i];
+        const rightValue = right.values[i];
+        if (leftValue.value !== rightValue.value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isLiteralPropertiesEqual(left: Property, right: Property): boolean {
+    if (!isLiteralProperty(left) || !isLiteralProperty(right)) { return false; }
+    return isLocalizedStringsEqual(left.values, right.values);
+}
+
 function isPropertiesEqual(left: { [id: string]: Property }, right: { [id: string]: Property }) {
     if (Object.keys(left).length !== Object.keys(right).length) { return false; }
     for (const key in left.properties) {
         if (left.properties.hasOwnProperty(key)) {
             const leftProperty = left[key];
             const rightProperty = right[key];
-            if (!rightProperty || !isLocalizedStringsEqual(leftProperty.values, rightProperty.values)) {
+            if (!rightProperty) { return false; }
+            if (!isIriPropertiesEqual(leftProperty, rightProperty) &&
+                !isLiteralPropertiesEqual(leftProperty, rightProperty)) {
                 return false;
             }
         }

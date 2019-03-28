@@ -7,6 +7,7 @@ import { LinkRouter, LinkTemplateResolver, TemplateResolver, TypeStyleResolver }
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
 
+import { Rect } from '../diagram/geometry';
 import { RestoreGeometry } from '../diagram/commands';
 import { Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
@@ -20,6 +21,7 @@ import { dataURLToBlob } from '../viewUtils/toSvg';
 
 import { PropertySuggestionHandler } from '../widgets/connectionsMenu';
 import { SearchCriteria } from '../widgets/instancesSearch';
+import { Navigator } from '../widgets/navigator';
 
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
@@ -51,6 +53,8 @@ export interface WorkspaceProps {
     hideHalo?: boolean;
     /** @default true */
     hideTutorial?: boolean;
+    /** @default false */
+    hideNavigator?: boolean;
     /** @default true */
     leftPanelInitiallyOpen?: boolean;
     /** @default false */
@@ -142,7 +146,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         super(props);
 
         const {
-            hideHalo, language, history, viewOptions = {},
+            hideHalo, history, viewOptions = {},
             metadataApi, validationApi, propertyEditor,
             elementTemplateResolver, linkTemplateResolver, typeStyleResolver,
         } = this.props;
@@ -225,6 +229,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         const {onWorkspaceEvent} = this.props;
 
         this.editor._initializePaperComponents(this.markup.paperArea);
+        this.updateNavigator(!this.props.hideNavigator);
 
         this.listener.listen(this.model.events, 'loadingSuccess', () => {
             this.view.performSyncUpdate();
@@ -284,11 +289,24 @@ export class Workspace extends Component<WorkspaceProps, State> {
         if (nextProps.metadataApi !== this.editor.metadataApi) {
             this.editor.setMetadataApi(nextProps.metadataApi);
         }
+
+        if (nextProps.hideNavigator !== this.props.hideNavigator) {
+            this.updateNavigator(!nextProps.hideNavigator);
+        }
     }
 
     componentWillUnmount() {
         this.listener.stopListening();
         this.view.dispose();
+    }
+
+    private updateNavigator(showNavigator: boolean) {
+        if (showNavigator) {
+            const widget = createElement(Navigator, {view: this.view});
+            this.view.setPaperWidget({key: 'navigator', widget, pinnedToScreen: true});
+        } else {
+            this.view.setPaperWidget({key: 'navigator', widget: undefined});
+        }
     }
 
     getModel() { return this.model; }
@@ -299,6 +317,10 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     zoomToFit = () => {
         this.markup.paperArea.zoomToFit();
+    }
+
+    zoomToFitRect = (bbox: Rect) => {
+        this.markup.paperArea.zoomToFitRect(bbox);
     }
 
     clearAll = () => {

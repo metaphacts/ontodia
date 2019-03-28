@@ -229,7 +229,7 @@ export class AsyncModel extends DiagramModel {
         }
 
         for (const layoutLink of layoutData.links) {
-            const {'@id': id, property, source, target, vertices} = layoutLink;
+            const {'@id': id, property, source, target, vertices, linkState} = layoutLink;
             const linkType = this.createLinkType(property);
             usedLinkTypes[linkType.id] = linkType;
             const link = this.addLink(new Link({
@@ -238,6 +238,7 @@ export class AsyncModel extends DiagramModel {
                 sourceId: source['@id'],
                 targetId: target['@id'],
                 vertices,
+                linkState,
             }));
             if (link) {
                 link.setLayoutOnly(markLinksAsLayoutOnly);
@@ -367,9 +368,14 @@ export class AsyncModel extends DiagramModel {
     }
 }
 
-export function restoreLinksBetweenElements(model: AsyncModel, elementIris: ReadonlyArray<ElementIri>): Command {
-    return Command.effect('Restore links between elements', () => {
+export function requestElementData(model: AsyncModel, elementIris: ReadonlyArray<ElementIri>): Command {
+    return Command.effect('Fetch element data', () => {
         model.requestElementData(elementIris);
+    });
+}
+
+export function restoreLinksBetweenElements(model: AsyncModel): Command {
+    return Command.effect('Restore links between elements', () => {
         model.requestLinksOfType();
     });
 }

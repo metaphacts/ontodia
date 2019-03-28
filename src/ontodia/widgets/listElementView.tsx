@@ -38,11 +38,7 @@ export class ListElementView extends React.Component<ListElementViewProps, {}> {
             onClick={this.onClick}
             onDragStart={onDragStart}>
             <div className={`${CLASS_NAME}__label`} style={{background: frontColor}}>
-                {highlightSubstring(
-                    localizedText,
-                    highlightText,
-                    {className: `${CLASS_NAME}__highlight`}
-                )}
+                {highlightSubstring(localizedText, highlightText)}
             </div>
         </li>;
     }
@@ -65,10 +61,14 @@ export function startDragElements(e: React.DragEvent<{}>, iris: ReadonlyArray<st
     return false;
 }
 
+const DEFAULT_HIGHLIGHT_PROPS: React.HTMLProps<HTMLSpanElement> = {
+    className: `ontodia-text-highlight`
+};
+
 export function highlightSubstring(
     text: string,
     substring: string | undefined,
-    highlightProps: React.HTMLProps<HTMLSpanElement>,
+    highlightProps = DEFAULT_HIGHLIGHT_PROPS,
 ) {
     if (!substring) {
         return <span>{text}</span>;

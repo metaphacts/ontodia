@@ -29,7 +29,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
     },
 };
 

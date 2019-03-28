@@ -59,7 +59,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
     },
     typeStyleResolver: types => {
         if (types.indexOf('http://www.w3.org/2000/01/rdf-schema#Class') !== -1) {

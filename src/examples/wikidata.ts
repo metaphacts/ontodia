@@ -104,7 +104,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
     },
     viewOptions: {
         suggestProperties: wikidataSuggestProperties,
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
     },
 };
 

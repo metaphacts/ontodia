@@ -18,16 +18,23 @@ export namespace Command {
     }
 
     export function effect(title: string, body: () => void): Command {
-        const perform = create(title, () => {
-            body();
-            return create(title, () => perform);
-        });
+        const perform = {
+            title,
+            invoke: () => {
+                body();
+                return skip;
+            }
+        };
+        const skip = {
+            title: 'Skipped effect: ' + title,
+            invoke: () => perform,
+        };
         return perform;
     }
 }
 
 export interface CommandHistoryEvents {
-    historyChanged: {};
+    historyChanged: { hasChanges: boolean };
 }
 
 export interface CommandHistory {
@@ -56,7 +63,7 @@ export class NonRememberingHistory implements CommandHistory {
     readonly redoStack: ReadonlyArray<Command> = [];
 
     reset() {
-        // do nothing
+        this.source.trigger('historyChanged', {hasChanges: false});
     }
     undo() {
         throw new Error('Undo is unsupported');
@@ -67,9 +74,10 @@ export class NonRememberingHistory implements CommandHistory {
 
     execute(command: Command) {
         command.invoke();
+        this.source.trigger('historyChanged', {hasChanges: true});
     }
     registerToUndo(command: Command) {
-        // do nothing
+        this.source.trigger('historyChanged', {hasChanges: true});
     }
     startBatch(title?: string): Batch {
         return {

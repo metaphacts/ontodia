@@ -43,7 +43,7 @@ const props: WorkspaceProps & ClassAttributes<Workspace> = {
         window.location.reload();
     },
     viewOptions: {
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
         groupBy: [
             {linkType: 'http://www.researchspace.org/ontology/group', linkDirection: 'in'},
         ],

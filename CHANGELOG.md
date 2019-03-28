@@ -5,6 +5,28 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+### Added
+- Custom link state in the serialized diagram layout.
+- Link "renaming" using custom link template.
+- Ability to highlight diagram elements using `DiagramView.setHighlighter()`.
+- Expand/collapse button to the Navigator.
+
+### Changed
+- **[Breaking]** Pass IRI click intent to the `onIriClick` handler.
+- Navigator now displays only a part of the diagram area with elements and links,
+instead of the full scrollable pane.
+
+### Fixed
+- Resizing dialogs with custom size specified, resizing handle style in IE11/Edge.
+- Creating new element instead of showing existing one after drag'n'drop from
+class tree to create a new entity.
+- Mismatch between routed link geometry and status overlay for the same link
+that sometimes happens in the authoring mode.
+- Support of international IRIs in `SparqlDataProvider` and drag'n'drop.
+- `zoomToFit()` for zero bounding box.
+- Trigger `historyChanged` event in the default no-op command history.
+- Diagram zooming with Control+Wheel which was broken with Chrome 73,
+see https://github.com/facebook/react/issues/14856 for details.
 
 ## [0.9.7] - 2018-12-18
 ### Added

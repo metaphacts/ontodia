@@ -3,16 +3,18 @@ import {
     AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, formatLocalizedLabel,
 } from '../../index';
 
-const owlPrefix = 'http://www.w3.org/2002/07/owl#';
-const rdfsPrefix = 'http://www.w3.org/2000/01/rdf-schema#';
+const OWL_PREFIX = 'http://www.w3.org/2002/07/owl#';
+const RDFS_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
 
-const schema = {
-    class: owlPrefix + 'Class' as ElementTypeIri,
-    objectProperty: owlPrefix + 'ObjectProperty' as ElementTypeIri,
-    domain: owlPrefix + 'domain' as LinkTypeIri,
-    range: owlPrefix + 'range' as LinkTypeIri,
-    subClassOf: rdfsPrefix + 'subClassOf' as LinkTypeIri,
-    subPropertyOf: rdfsPrefix + 'subPropertyOf' as LinkTypeIri,
+const owl = {
+    class: OWL_PREFIX + 'Class' as ElementTypeIri,
+    objectProperty: OWL_PREFIX + 'ObjectProperty' as ElementTypeIri,
+    domain: OWL_PREFIX + 'domain' as LinkTypeIri,
+    range: OWL_PREFIX + 'range' as LinkTypeIri,
+};
+const rdfs = {
+    subClassOf: RDFS_PREFIX + 'subClassOf' as LinkTypeIri,
+    subPropertyOf: RDFS_PREFIX + 'subPropertyOf' as LinkTypeIri,
 };
 
 const METADATA_DELAY: number = 500; /* ms */
@@ -36,12 +38,12 @@ export class ExampleMetadataApi implements MetadataApi {
 
     async possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
         await delay();
-        return [schema.domain, schema.range, schema.subClassOf, schema.subPropertyOf];
+        return [owl.domain, owl.range, rdfs.subClassOf, rdfs.subPropertyOf];
     }
 
     async typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
         await delay();
-        return [schema.class, schema.objectProperty];
+        return [owl.class, owl.objectProperty];
     }
 
     async propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {
@@ -54,9 +56,17 @@ export class ExampleMetadataApi implements MetadataApi {
         return true;
     }
 
-    async canCreateElement(elementType: ElementTypeIri, ct: CancellationToken): Promise<boolean> {
+    async filterConstructibleTypes(
+        types: ReadonlySet<ElementTypeIri>, ct: CancellationToken
+    ): Promise<ReadonlySet<ElementTypeIri>> {
         await delay();
-        return true;
+        const result = new Set<ElementTypeIri>();
+        types.forEach(type => {
+            if (type.length % 2 === 0) {
+                result.add(type);
+            }
+        });
+        return result;
     }
 
     async canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
@@ -87,7 +97,7 @@ export class ExampleMetadataApi implements MetadataApi {
 export class ExampleValidationApi implements ValidationApi {
     async validate(event: ValidationEvent): Promise<Array<ElementError | LinkError>> {
         const errors: Array<ElementError | LinkError> = [];
-        if (event.target.types.indexOf(schema.class) >= 0) {
+        if (event.target.types.indexOf(owl.class) >= 0) {
             event.state.events
                 .filter((e): e is LinkChange =>
                     e.type === AuthoringKind.ChangeLink &&

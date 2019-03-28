@@ -44,6 +44,7 @@ export interface LayoutLink {
     source: { '@id': string };
     target: { '@id': string };
     vertices?: ReadonlyArray<Vector>;
+    linkState?: LinkTemplateState;
 }
 
 const serializedCellProperties = [
@@ -161,6 +162,11 @@ export function makeLayoutData(
         source: {'@id': link.sourceId},
         target: {'@id': link.targetId},
         vertices: [...link.vertices],
+        linkState: link.linkState,
     }));
     return {'@type': 'Layout', elements, links};
+}
+
+export interface LinkTemplateState {
+    [propertyIri: string]: any;
 }

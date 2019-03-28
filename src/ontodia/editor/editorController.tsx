@@ -9,17 +9,18 @@ import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibili
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
+import { DiagramModel, formatLocalizedLabel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
-import { DiagramView } from '../diagram/view';
+import { DiagramView, IriClickIntent } from '../diagram/view';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
 import { Dialog } from '../widgets/dialog';
 import { ConnectionsMenu, PropertySuggestionHandler } from '../widgets/connectionsMenu';
-import { EditEntityForm } from '../widgets/editEntityForm';
-import { EditElementTypeForm } from '../widgets/editElementTypeForm';
-import { EditLinkForm } from '../widgets/editLinkForm';
+import { EditEntityForm } from '../forms/editEntityForm';
+import { EditElementTypeForm } from '../forms/editElementTypeForm';
+import { EditLinkForm } from '../forms/editLinkForm';
+import { EditLinkLabelForm } from '../forms/editLinkLabelForm';
 import { Halo } from '../widgets/halo';
 import { HaloLink } from '../widgets/haloLink';
 import { StatesWidget } from './statesWidget';
@@ -29,7 +30,7 @@ import {
 } from '../viewUtils/layout';
 import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
-import { AsyncModel, restoreLinksBetweenElements } from './asyncModel';
+import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
 import {
     AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange, ElementChange,
 } from './authoringState';
@@ -49,6 +50,7 @@ export enum DialogTypes {
     EditEntityForm,
     EditLinkForm,
     EditEntityTypeForm,
+    EditLinkLabelForm,
 }
 
 export type SelectionItem = Element | Link;
@@ -338,10 +340,12 @@ export class EditorController {
                     onEstablishNewLink={(point: { x: number; y: number }) =>
                         this.startEditing({target: selected, mode: EditLayerMode.establishLink, point})
                     }
-                    onFolowLink={(element, e) => this.view.onIriClick(element.iri, element, e)}
+                    onFollowLink={(element, e) =>
+                        this.view.onIriClick(element.iri, element, IriClickIntent.JumpToEntity, e)
+                    }
                 />
             );
-        } else if (selected instanceof Link && this.inAuthoringMode) {
+        } else if (selected instanceof Link) {
             halo = (
                 <HaloLink view={this.view}
                     editor={this}
@@ -361,6 +365,7 @@ export class EditorController {
                     onTargetMove={(point: { x: number; y: number }) =>
                         this.startEditing({target: selected, mode: EditLayerMode.moveLinkTarget, point})
                     }
+                    onEditLabel={() => this.showEditLinkLabelForm(selected)}
                 />
             );
         }
@@ -405,90 +410,133 @@ export class EditorController {
         const {link, source, target} = params;
         const dialogType = DialogTypes.EditEntityTypeForm;
         const content = (
-            <EditElementTypeForm view={this.view}
+            <EditElementTypeForm editor={this}
+                view={this.view}
                 metadataApi={this.metadataApi}
                 link={link.data}
                 source={source.data}
                 target={target.data}
                 onApply={(elementData: ElementModel, linkData: LinkModel) => {
-                    if (this.temporaryState.elements.has(target.iri)) {
-                        target.setData(elementData);
-                        this.setTemporaryState(
-                            TemporaryState.deleteElement(this.temporaryState, target.data)
-                        );
-                        this.addNewEntity(target.data);
+                    const isNewElement = target.iri === elementData.id;
+
+                    const position = target.position;
+                    this.removeTemporaryElement(target);
+                    this.removeTemporaryLink(link);
+
+                    const batch = this.model.history.startBatch();
+
+                    const newTarget = this.model.createElement(elementData);
+                    newTarget.setPosition(position);
+
+                    if (isNewElement) {
+                        newTarget.setExpanded(true);
+                        this.addNewEntity(newTarget.data);
                     } else {
-                        this.changeEntityData(target.iri, elementData);
+                        this.model.requestLinksOfType();
                     }
-                    if (this.temporaryState.links.has(link.data)) {
-                        this.removeTemporaryLink(link);
-                        this.createNewLink(new Link({
-                            typeId: linkData.linkTypeId,
-                            sourceId: link.sourceId,
-                            targetId: link.targetId,
-                            data: linkData,
-                        }));
-                    } else {
-                        this.changeLink(link.data, linkData);
-                    }
+                    this.createNewLink(new Link({
+                        typeId: linkData.linkTypeId,
+                        sourceId: source.id,
+                        targetId: newTarget.id,
+                        data: linkData,
+                    }));
+
+                    batch.store();
+
                     this.hideDialog();
-                    this.showEditEntityForm(target);
+                    if (isNewElement) {
+                        this.showEditEntityForm(newTarget);
+                    }
                 }}
                 onCancel={() => {
-                    if (this.temporaryState.elements.has(target.iri)) {
-                        this.removeTemporaryElement(target);
-                    }
-                    if (this.temporaryState.links.has(link.data)) {
-                        this.removeTemporaryLink(link);
-                    }
+                    this.removeTemporaryElement(target);
+                    this.removeTemporaryLink(link);
                     this.hideDialog();
                 }}/>
         );
-        this.showDialog({target, dialogType, content});
+        this.showDialog({target, dialogType, content, caption: 'Establish New Connection'});
     }
 
-    showEditLinkForm(target: Link) {
+    showEditLinkForm(link: Link) {
         const dialogType = DialogTypes.EditLinkForm;
+        const source = this.model.getElement(link.sourceId).data;
+        const target = this.model.getElement(link.targetId).data;
         const content = (
-            <EditLinkForm view={this.view}
+            <EditLinkForm editor={this}
+                view={this.view}
                 metadataApi={this.metadataApi}
-                link={target}
+                link={link.data}
+                source={source}
+                target={target}
                 onApply={(data: LinkModel) => {
-                    if (this.temporaryState.links.has(target.data)) {
-                        this.removeTemporaryLink(target);
+                    if (this.temporaryState.links.has(link.data)) {
+                        this.removeTemporaryLink(link);
                         this.createNewLink(new Link({
                             typeId: data.linkTypeId,
-                            sourceId: target.sourceId,
-                            targetId: target.targetId,
+                            sourceId: link.sourceId,
+                            targetId: link.targetId,
                             data,
                         }));
                     } else {
-                        this.changeLink(target.data, data);
+                        this.changeLink(link.data, data);
                     }
                     this.hideDialog();
                 }}
                 onCancel={() => {
-                    if (this.temporaryState.links.has(target.data)) {
-                        this.removeTemporaryLink(target);
+                    if (this.temporaryState.links.has(link.data)) {
+                        this.removeTemporaryLink(link);
                     }
                     this.hideDialog();
                 }}/>
         );
-        this.showDialog({target, dialogType, content});
+        const caption = this.temporaryState.links.has(link.data) ? 'Establish New Connection' : 'Edit Connection';
+        this.showDialog({target: link, dialogType, content, size: {width: 300, height: 160}, caption});
+    }
+
+    // Link editing implementation could be rethought in the future.
+    private showEditLinkLabelForm(link: Link) {
+        const linkType = this.view.model.getLinkType(link.typeId);
+        const template = this.view.createLinkTemplate(linkType);
+        const size = {width: 300, height: 145};
+        this.showDialog({
+            target: link,
+            dialogType: DialogTypes.EditLinkLabelForm,
+            content: (
+                <EditLinkLabelForm view={this.view}
+                    link={link}
+                    onApply={(label: string) => {
+                        template.setLinkLabel(link, label);
+                        this.hideDialog();
+                    }}
+                    onCancel={() => this.hideDialog()} />
+            ),
+            size,
+            caption: 'Edit Link Label',
+            offset: {x: 25, y: - size.height / 2},
+            calculatePosition: () => {
+                const {x, y, width, height} = link.labelBounds;
+                return {x: x + width, y: y + height / 2};
+            }
+        });
     }
 
     showDialog(params: {
         target: SelectionItem;
         dialogType: DialogTypes;
         content: React.ReactElement<any>;
+        size?: { width: number; height: number };
+        caption?: string;
+        offset?: Vector;
+        calculatePosition?: () => Vector;
     }) {
-        const {target, dialogType, content} = params;
+        const {target, dialogType, content, size, caption, offset, calculatePosition} = params;
 
         this.dialogTarget = target;
         this.dialogType = dialogType;
 
         const dialog = (
-            <Dialog view={this.view} target={target}>{content}</Dialog>
+            <Dialog view={this.view} target={target} size={size} caption={caption}
+                offset={offset} calculatePosition={calculatePosition}>{content}</Dialog>
         );
         this.view.setPaperWidget({key: 'dialog', widget: dialog});
         this.source.trigger('toggleDialog', {isOpened: false});
@@ -510,34 +558,12 @@ export class EditorController {
         }
     }
 
-    onDragDrop(e: DragEvent, paperPosition: Vector) {
-        e.preventDefault();
-
-        const tryGetData = (type: string) => {
-            try {
-                const iriString = e.dataTransfer.getData(type);
-                if (!iriString) { return undefined; }
-                let iris: ElementIri[];
-                try {
-                    iris = JSON.parse(iriString);
-                } catch (e) {
-                    iris = [iriString as ElementIri];
-                }
-                return iris.length === 0 ? undefined : iris;
-            } catch (e) {
-                return undefined;
-            }
-        };
-
-        const elementIris = tryGetData('application/x-ontodia-elements')
-            || tryGetData('text') // IE11, Edge
-            || tryGetData('text/uri-list');
-
+    onDragDrop(dragged: ReadonlyArray<ElementIri | ElementModel>, paperPosition: Vector) {
         const batch = this.model.history.startBatch('Drag and drop onto diagram');
-        const placedElements = placeElements(this.view, elementIris, paperPosition);
-        batch.history.execute(
-            restoreLinksBetweenElements(this.model, elementIris)
-        );
+        const placedElements = placeElements(this.view, dragged, paperPosition);
+        const irisToLoad = placedElements.map(elem => elem.iri);
+        batch.history.execute(requestElementData(this.model, irisToLoad));
+        batch.history.execute(restoreLinksBetweenElements(this.model));
         batch.store();
 
         if (placedElements.length > 0) {
@@ -577,9 +603,8 @@ export class EditorController {
             }));
         }
 
-        batch.history.execute(
-            restoreLinksBetweenElements(this.model, elementIris)
-        );
+        batch.history.execute(requestElementData(this.model, elementIris));
+        batch.history.execute(restoreLinksBetweenElements(this.model));
         batch.store();
     }
 
@@ -608,10 +633,13 @@ export class EditorController {
 
     createNewEntity(classIri: ElementTypeIri): Element {
         const batch = this.model.history.startBatch('Create new entity');
+
+        const type = this.model.getClass(classIri);
+        const typeName = formatLocalizedLabel(classIri, type ? type.label : [], 'en');
         const elementModel = {
             id: GenerateID.forNewEntity(),
             types: [classIri],
-            label: {values: [{text: 'New Entity', lang: ''}]},
+            label: {values: [{text: `New ${typeName}`, lang: ''}]},
             properties: {},
         };
 
@@ -803,7 +831,9 @@ export class EditorController {
     }
 
     private removeTemporaryElement(element: Element) {
+        const batch = this.model.history.startBatch();
         this.model.removeElement(element.id);
+        batch.discard();
         this.setTemporaryState(
             TemporaryState.deleteElement(this.temporaryState, element.data)
         );
@@ -873,9 +903,9 @@ class LoadingWidget extends React.Component<LoadingWidgetProps, {}> {
 }
 
 function placeElements(
-    view: DiagramView, elementIris: ReadonlyArray<ElementIri>, position: Vector
+    view: DiagramView, dragged: ReadonlyArray<ElementIri | ElementModel>, position: Vector
 ): Element[] {
-    const elements = elementIris.map(iri => view.model.createElement(iri));
+    const elements = dragged.map(item => view.model.createElement(item));
     view.performSyncUpdate();
 
     let {x, y} = position;

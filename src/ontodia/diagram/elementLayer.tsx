@@ -13,7 +13,7 @@ import { KeyedObserver, observeElementTypes, observeProperties } from '../viewUt
 import { setElementExpanded } from './commands';
 import { Element } from './elements';
 import { formatLocalizedLabel } from './model';
-import { DiagramView, RenderingLayer } from './view';
+import { DiagramView, RenderingLayer, IriClickIntent } from './view';
 
 export interface Props {
     view: DiagramView;
@@ -110,6 +110,7 @@ interface OverlayedElementProps {
 
 interface OverlayedElementState {
     readonly templateProps?: TemplateProps;
+    readonly isBlurred?: boolean;
 }
 
 export interface ElementContextWrapper { ontodiaElement: ElementContext; }
@@ -134,6 +135,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         super(props);
         this.state = {
             templateProps: this.templateProps(),
+            isBlurred: this.isBlurred(),
         };
     }
 
@@ -163,7 +165,10 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         // const angle = model.get('angle') || 0;
         // if (angle) { transform += `rotate(${angle}deg)`; }
 
-        return <div className='ontodia-overlayed-element'
+        const className = (
+            `ontodia-overlayed-element ${this.state.isBlurred ? 'ontodia-overlayed-element--blurred' : ''}`
+        );
+        return <div className={className}
             // set `element-id` to translate mouse events to paper
             data-element-id={model.id}
             style={{position: 'absolute', transform}}
@@ -193,7 +198,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         if (e.target instanceof HTMLElement && e.target.localName === 'a') {
             const anchor = e.target as HTMLAnchorElement;
             const {view, model} = this.props;
-            view.onIriClick(anchor.href, model, e);
+            const clickIntent = e.target.getAttribute('data-iri-click-intent') === IriClickIntent.OpenEntityIri ?
+                IriClickIntent.OpenEntityIri : IriClickIntent.OpenOtherIri;
+            view.onIriClick(anchor.href, model, clickIntent, e);
         }
     }
 
@@ -209,6 +216,9 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     componentDidMount() {
         const {model, view} = this.props;
         this.listener.listen(view.events, 'changeLanguage', this.rerenderTemplate);
+        this.listener.listen(view.events, 'changeHighlight', () => {
+            this.setState({isBlurred: this.isBlurred()});
+        });
         this.listener.listen(model.events, 'changeData', this.rerenderTemplate);
         this.listener.listen(model.events, 'changeExpanded', this.rerenderTemplate);
         this.listener.listen(model.events, 'changePosition', () => this.forceUpdate());
@@ -302,5 +312,10 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             icon,
             color: hcl(h, c, l).toString(),
         };
+    }
+
+    private isBlurred() {
+        const {view, model} = this.props;
+        return view.highlighter && !view.highlighter(model);
     }
 }

@@ -7,7 +7,7 @@ export const LINK_SHOW_IRI: LinkTemplate = {
             attrs: {
                 text: {
                     text: [{
-                        text: link.linkTypeId,
+                        text: link.typeId,
                         lang: '',
                     }],
                     fill: 'gray',

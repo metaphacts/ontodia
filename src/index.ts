@@ -28,7 +28,7 @@ export * from './ontodia/diagram/geometry';
 export * from './ontodia/diagram/history';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
-export { PointerEvent, PointerUpEvent } from './ontodia/diagram/paperArea';
+export { PointerEvent, PointerUpEvent, getContentFittingBox } from './ontodia/diagram/paperArea';
 
 export * from './ontodia/editor/asyncModel';
 export { AuthoredEntity, AuthoredEntityProps, AuthoredEntityContext } from './ontodia/editor/authoredEntity';
@@ -52,6 +52,7 @@ export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/conne
 export * from './ontodia/workspace/toolbar';
 export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
 export { WorkspaceEventHandler, WorkspaceEventKey } from './ontodia/workspace/workspaceContext';
+export { DraggableHandle } from './ontodia/workspace/draggableHandle';
 
 import * as InternalApi from './internalApi';
 export { InternalApi };

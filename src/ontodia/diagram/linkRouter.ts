@@ -7,10 +7,10 @@ export class DefaultLinkRouter implements LinkRouter {
     constructor(private gap = 20) {}
 
     route(model: DiagramModel): RoutedLinks {
-        const routings: RoutedLinks = {};
+        const routings: RoutedLinks = new Map();
 
         for (const link of model.links) {
-            if (routings[link.id]) {
+            if (routings.has(link.id)) {
                 continue;
             }
             // The cell is a link. Let's find its source and target models.
@@ -34,7 +34,7 @@ export class DefaultLinkRouter implements LinkRouter {
 
         let index = 0;
         for (const sibling of element.links) {
-            if (routings[sibling.id] || hasUserPlacedVertices(sibling)) {
+            if (routings.has(sibling.id) || hasUserPlacedVertices(sibling)) {
                 continue;
             }
             const {sourceId, targetId} = sibling;
@@ -45,7 +45,7 @@ export class DefaultLinkRouter implements LinkRouter {
                     {x: x - offset, y: y - offset},
                     {x: x + width / 2, y: y - offset},
                 ];
-                routings[sibling.id] = {linkId: sibling.id, vertices};
+                routings.set(sibling.id, {linkId: sibling.id, vertices});
                 index++;
             }
         }
@@ -73,7 +73,7 @@ export class DefaultLinkRouter implements LinkRouter {
 
         const siblings = source.links.filter(link =>
             (link.sourceId === targetId || link.targetId === targetId) &&
-            !routings[link.id] &&
+            !routings.has(link.id) &&
             !hasUserPlacedVertices(link)
         );
         if (siblings.length <= 1) {
@@ -103,11 +103,11 @@ export class DefaultLinkRouter implements LinkRouter {
                 x: midPoint.x + offsetDirection.x * offset,
                 y: midPoint.y + offsetDirection.y * offset,
             };
-            routings[sibling.id] = {
+            routings.set(sibling.id, {
                 linkId: sibling.id,
                 vertices: [vertex],
                 labelTextAnchor: this.getLabelAlignment(direction, siblingIndex, siblings.length),
-            };
+            });
         });
     }
 

@@ -47,6 +47,11 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
         const {view} = this.props;
 
         this.listener.listen(view.events, 'changeLanguage', this.scheduleUpdateAll);
+        this.listener.listen(view.events, 'changeHighlight', this.scheduleUpdateAll);
+        this.listener.listen(view.events, 'updateRoutings', ({previous}) => {
+            previous.forEach((routing, linkId) => this.scheduleUpdateLink(linkId));
+            view.getRoutings().forEach((routing, linkId) => this.scheduleUpdateLink(linkId));
+        });
         this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
         this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
             const elementEvent = data.changePosition || data.changeSize;
@@ -59,7 +64,8 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             const linkEvent = (
                 data.changeData ||
                 data.changeLayoutOnly ||
-                data.changeVertices
+                data.changeVertices ||
+                data.changeLinkState
             );
             if (linkEvent) {
                 this.scheduleUpdateLink(linkEvent.source.id);
@@ -225,11 +231,13 @@ class LinkView extends Component<LinkViewProps, {}> {
         const path = 'M' + polyline.map(({x, y}) => `${x},${y}`).join(' L');
 
         const {index: typeIndex, showLabel} = this.linkType;
-        const style = this.template.renderLink(model.data);
+        const style = this.template.renderLink(model);
         const pathAttributes = getPathAttributes(model, style);
 
+        const isBlurred = view.highlighter && !view.highlighter(model);
+        const className = `${LINK_CLASS} ${isBlurred ? `${LINK_CLASS}--blurred` : ''}`;
         return (
-            <g className={LINK_CLASS} data-link-id={model.id} data-source-id={source.id} data-target-id={target.id}>
+            <g className={className} data-link-id={model.id} data-source-id={source.id} data-target-id={target.id}>
                 <path className={`${LINK_CLASS}__connection`} d={path} {...pathAttributes}
                     markerStart={`url(#${linkMarkerKey(typeIndex, true)})`}
                     markerEnd={`url(#${linkMarkerKey(typeIndex, false)})`} />

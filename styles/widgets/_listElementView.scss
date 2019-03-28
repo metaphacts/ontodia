@@ -7,11 +7,11 @@
   margin: 0 0 2px 0;
   opacity: 1.0;
   cursor: move;
+  user-select: none;
 
   &--disabled {
     opacity: 0.4;
     cursor: default;
-    user-select: none;
   }
 
   &__label {
@@ -24,10 +24,8 @@
     padding-right: 5px;
     overflow-wrap: break-word;
   }
+}
 
-  &__highlight {
-    font-weight: bold;
-    color: darkred;
-    text-decoration: underline;
-  }
+.ontodia-text-highlight {
+  font-weight: bold;
 }

@@ -45,7 +45,7 @@ function onWorkspaceMounted(workspace: Workspace) {
 const props: WorkspaceProps & ClassAttributes<Workspace> = {
     ref: onWorkspaceMounted,
     viewOptions: {
-        onIriClick: iri => window.open(iri),
+        onIriClick: ({iri}) => window.open(iri),
     },
 };
 

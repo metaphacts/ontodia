@@ -1,7 +1,8 @@
 import { ComponentClass } from 'react';
 import { DiagramModel } from '../diagram/model';
 
-import { ElementIri, ElementModel, Dictionary, LinkModel, LocalizedString, Property } from '../data/model';
+import { ElementIri, ElementModel, Dictionary, LocalizedString, Property } from '../data/model';
+import { Link } from '../diagram/elements';
 
 export type TypeStyleResolver = (types: string[]) => CustomTypeStyle | undefined;
 export type LinkTemplateResolver = (linkType: string) => LinkTemplate | undefined;
@@ -37,7 +38,8 @@ export type PropArray = Array<{
 export interface LinkTemplate {
     markerSource?: LinkMarkerStyle;
     markerTarget?: LinkMarkerStyle;
-    renderLink?(link: LinkModel): LinkStyle;
+    renderLink?(link: Link): LinkStyle;
+    setLinkLabel?: (link: Link, label: string) => void;
 }
 
 export interface LinkStyle {
@@ -56,9 +58,7 @@ export interface LinkRouter {
     route(model: DiagramModel): RoutedLinks;
 }
 
-export interface RoutedLinks {
-    [linkId: string]: RoutedLink;
-}
+export type RoutedLinks = Map<string, RoutedLink>;
 
 export interface RoutedLink {
     linkId: string;

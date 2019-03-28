@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 
-import { LocalizedString, LinkCount } from '../data/model';
+import { LinkCount } from '../data/model';
 import { changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, FatLinkType } from '../diagram/elements';
 import { CommandHistory } from '../diagram/history';
@@ -12,6 +12,8 @@ import { EditorController } from '../editor/editorController';
 
 import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
+import { highlightSubstring } from '../widgets/listElementView';
+import { ProgressBar, ProgressState } from '../widgets/progressBar';
 
 interface LinkInToolBoxProps {
     history: CommandHistory;
@@ -48,31 +50,9 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private getText = () => {
-        const {link: linkType, language} = this.props;
-        const fullText = formatLocalizedLabel(linkType.id, linkType.label, language).toLowerCase();
-        if (this.props.filterKey) {
-            const filterKey = this.props.filterKey.toLowerCase();
-            const leftIndex =  fullText.toLowerCase().indexOf(filterKey);
-            const rightIndex = leftIndex + filterKey.length;
-            let firstPart = '';
-            let selectedPart = '';
-            let lastPart = '';
-
-            if (leftIndex === 0) {
-                selectedPart = fullText.substring(0, rightIndex);
-            } else {
-                firstPart = fullText.substring(0, leftIndex);
-                selectedPart = fullText.substring(leftIndex, rightIndex);
-            }
-            if (rightIndex <= fullText.length) {
-                lastPart = fullText.substring(rightIndex, fullText.length);
-            }
-            return <span>
-                {firstPart}<span style={{color: 'darkred', fontWeight: 'bold'}}>{selectedPart}</span>{lastPart}
-            </span>;
-        } else {
-            return <span>{fullText}</span>;
-        }
+        const {link: linkType, language, filterKey} = this.props;
+        const fullText = formatLocalizedLabel(linkType.id, linkType.label, language);
+        return highlightSubstring(fullText, filterKey);
     }
 
     render() {
@@ -116,7 +96,7 @@ interface LinkTypesToolboxViewProps {
     countMap: { readonly [linkTypeId: string]: number };
     selectedElement: Element;
     language: string;
-    dataState: string;
+    dataState: ProgressState;
     filterCallback: (type: FatLinkType) => void;
 }
 
@@ -168,9 +148,8 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
 
     render() {
         const className = 'link-types-toolbox';
-        const {history} = this.props;
+        const {history, dataState} = this.props;
 
-        const dataState = this.props.dataState || null;
         const links = this.getLinks();
         const views = this.getViews(links);
 
@@ -198,7 +177,7 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
         }
 
         return (
-            <div className={`${className} stateBasedProgress`} data-state={dataState}>
+            <div className={className}>
                 <div className={`${className}__heading`}>
                     <div className={`${className}__searching-box`}>
                         <input className='search-input ontodia-form-control'
@@ -229,13 +208,7 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
                         <span>&nbsp;Switch all</span>
                     </div>
                 </div>
-                <div className='ontodia-progress'>
-                    <div className='ontodia-progress-bar ontodia-progress-bar-striped active'
-                        role='progressbar'
-                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={100}
-                        style={{width: '100%'}}>
-                    </div>
-                </div>
+                <ProgressBar state={dataState} />
                 <div className={`${className}__rest`}>
                     {connectedTo}
                     <div className='link-lists'>
@@ -253,7 +226,7 @@ export interface LinkTypesToolboxProps {
 }
 
 export interface LinkTypesToolboxState {
-    readonly dataState?: 'querying' | 'error' | 'finished';
+    readonly dataState?: ProgressState;
     readonly selectedElement?: Element;
     readonly linksOfElement?: ReadonlyArray<FatLinkType>;
     readonly countMap?: { readonly [linkTypeId: string]: number };
@@ -277,7 +250,7 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
             this.debounceSelection.call(this.updateOnCurrentSelection);
         });
 
-        this.state = {};
+        this.state = {dataState: ProgressState.none};
     }
 
     componentDidMount() {
@@ -302,22 +275,22 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
         if (selectedElement) {
             const request = {elementId: selectedElement.iri};
             this.currentRequest = request;
-            this.setState({dataState: 'querying', selectedElement});
+            this.setState({dataState: ProgressState.loading, selectedElement});
             this.props.editor.model.dataProvider.linkTypesOf(request).then(linkTypes => {
                 if (this.currentRequest !== request) { return; }
                 const {linksOfElement, countMap} = this.computeStateFromRequestResult(linkTypes);
                 this.subscribeOnLinksEvents(linksOfElement);
-                this.setState({dataState: 'finished', linksOfElement, countMap});
+                this.setState({dataState: ProgressState.completed, linksOfElement, countMap});
             }).catch(error => {
                 if (this.currentRequest !== request) { return; }
                 // tslint:disable-next-line:no-console
                 console.error(error);
-                this.setState({dataState: 'error', linksOfElement: undefined, countMap: {}});
+                this.setState({dataState: ProgressState.error, linksOfElement: undefined, countMap: {}});
             });
         } else {
             this.currentRequest = null;
             this.setState({
-                dataState: 'finished',
+                dataState: ProgressState.completed,
                 selectedElement,
                 linksOfElement: undefined,
                 countMap: {},

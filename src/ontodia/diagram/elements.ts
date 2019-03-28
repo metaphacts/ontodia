@@ -4,6 +4,8 @@ import {
 } from '../data/model';
 import { GenerateID } from '../data/schema';
 
+import { LinkTemplateState } from '../editor/serializedDiagram';
+
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
 import { Vector, Size, isPolylineEqual, Rect } from './geometry';
@@ -223,6 +225,7 @@ export interface LinkEvents {
     changeLayoutOnly: PropertyChange<Link, boolean>;
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
     changeLabelBounds: PropertyChange<Link, Rect>;
+    changeLinkState: PropertyChange<Link, LinkTemplateState>;
 }
 
 export class Link {
@@ -240,6 +243,8 @@ export class Link {
     private _layoutOnly: boolean;
     private _vertices: ReadonlyArray<Vector>;
 
+    private _linkState: LinkTemplateState;
+
     constructor(props: {
         id?: string;
         typeId: LinkTypeIri;
@@ -247,14 +252,16 @@ export class Link {
         targetId: string;
         data?: LinkModel;
         vertices?: ReadonlyArray<Vector>;
+        linkState?: LinkTemplateState;
     }) {
-        const {id = GenerateID.forLink(), typeId, sourceId, targetId, data, vertices = []} = props;
+        const {id = GenerateID.forLink(), typeId, sourceId, targetId, data, vertices = [], linkState} = props;
         this.id = id;
         this._typeId = typeId;
         this._sourceId = sourceId;
         this._targetId = targetId;
         this._data = data;
         this._vertices = vertices;
+        this._linkState = linkState;
     }
 
     get typeId() { return this._typeId; }
@@ -292,6 +299,14 @@ export class Link {
         if (isPolylineEqual(this._vertices, value)) { return; }
         this._vertices = value;
         this.source.trigger('changeVertices', {source: this, previous});
+    }
+
+    get linkState(): LinkTemplateState { return this._linkState; }
+    setLinkState(value: LinkTemplateState) {
+        const previous = this._linkState;
+        if (previous === value) { return; }
+        this._linkState = value;
+        this.source.trigger('changeLinkState', {source: this, previous});
     }
 }
 

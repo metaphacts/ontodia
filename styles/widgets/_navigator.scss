@@ -1,0 +1,68 @@
+.ontodia-navigator {
+  display: block;
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+  overflow: hidden;
+
+  // increase specificity to override default box-sizing,
+  // so border size won't be included into total size
+  .ontodia & {
+    box-sizing: content-box;
+  }
+
+  background: #fff;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 15px 7px rgba(51, 51, 51, 0.05);
+
+  $transition: 0.3s;
+  transition: width $transition, height $transition;
+
+  &--collapsed {
+    width: 26px;
+    height: 26px;
+  }
+
+  > canvas {
+    transition: opacity $transition;
+  }
+  &--expanded > canvas { opacity: 1; }
+  &--collapsed > canvas { opacity: 0; }
+
+  &__toggle {
+    position: absolute;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 4px;
+
+    opacity: 0.5;
+    transition: opacity 0.3s;
+
+    &:hover {
+      // background: lightgray;
+      opacity: 1;
+    }
+  }
+  &--expanded &__toggle {
+    top: 5px;
+    left: 5px;
+  }
+  &--collapsed &__toggle {
+    top: 0px;
+    left: 0px;
+  }
+
+  &__toggle-icon {
+    width: 18px;
+    height: 18px;
+    background-size: 18px 18px;
+    background-repeat: no-repeat;
+  }
+  &--expanded &__toggle-icon {
+    background-image: url('../images/font-awesome/minus-square-regular.svg');
+  }
+  &--collapsed &__toggle-icon {
+    background-image: url('../images/font-awesome/plus-square-regular.svg');
+  }
+}

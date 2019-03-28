@@ -16,12 +16,23 @@ import { hashFnv32a, uri2name } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
-import { Element, FatLinkType, FatClassModel } from './elements';
+import { Element, Link, FatLinkType, FatClassModel } from './elements';
+import { Vector } from './geometry';
+import { DefaultLinkRouter } from './linkRouter';
 import { DiagramModel, chooseLocalizedText } from './model';
 
-import { DefaultLinkRouter } from './linkRouter';
-
-export type IriClickHandler = (iri: string, element: Element, event: MouseEvent<any>) => void;
+export enum IriClickIntent {
+    JumpToEntity = 'jumpToEntity',
+    OpenEntityIri = 'openEntityIri',
+    OpenOtherIri = 'openOtherIri',
+}
+export interface IriClickEvent {
+    iri: string;
+    element: Element;
+    clickIntent: IriClickIntent;
+    originalEvent: MouseEvent<any>;
+}
+export type IriClickHandler = (event: IriClickEvent) => void;
 
 export interface ViewOptions {
     typeStyleResolver?: TypeStyleResolver;
@@ -53,6 +64,8 @@ export interface DiagramViewEvents {
     syncUpdate: { layer: RenderingLayer };
     updateWidgets: UpdateWidgetsEvent;
     dispose: {};
+    changeHighlight: PropertyChange<DiagramView, Highlighter>;
+    updateRoutings: PropertyChange<DiagramView, RoutedLinks>;
 }
 
 export interface UpdateWidgetsEvent {
@@ -63,6 +76,13 @@ export interface WidgetDescription {
     element: ReactElement<any>;
     pinnedToScreen: boolean;
 }
+
+export interface DropOnPaperEvent {
+    dragEvent: DragEvent;
+    paperPosition: Vector;
+}
+
+export type Highlighter = ((item: Element | Link) => boolean) | undefined;
 
 export class DiagramView {
     private readonly listener = new EventObserver();
@@ -80,9 +100,11 @@ export class DiagramView {
     private _language = 'en';
 
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
-
     private router: LinkRouter;
     private routings: RoutedLinks;
+    private dropOnPaperHandler: ((e: DropOnPaperEvent) => void) | undefined;
+
+    private _highlighter: Highlighter;
 
     constructor(
         public readonly model: DiagramModel,
@@ -113,11 +135,17 @@ export class DiagramView {
     }
 
     private updateRoutings() {
+        const previous = this.routings;
         this.routings = this.router.route(this.model);
+        this.source.trigger('updateRoutings', {source: this, previous});
+    }
+
+    getRoutings() {
+        return this.routings;
     }
 
     getRouting(linkId: string): RoutedLink {
-        return this.routings[linkId];
+        return this.routings.get(linkId);
     }
 
     getLanguage(): string { return this._language; }
@@ -141,12 +169,12 @@ export class DiagramView {
         }
     }
 
-    onIriClick(iri: string, element: Element, event: React.MouseEvent<any>) {
+    onIriClick(iri: string, element: Element, clickIntent: IriClickIntent, event: React.MouseEvent<any>) {
         event.persist();
         event.preventDefault();
         const {onIriClick} = this.options;
         if (onIriClick) {
-            onIriClick(iri, element, event);
+            onIriClick({iri, element, clickIntent, originalEvent: event});
         }
     }
 
@@ -158,6 +186,20 @@ export class DiagramView {
         const {key, widget: element, pinnedToScreen} = widget;
         const widgets = {[widget.key]: element ? {element, pinnedToScreen} : undefined};
         this.source.trigger('updateWidgets', {widgets});
+    }
+
+    setHandlerForNextDropOnPaper(handler: (e: DropOnPaperEvent) => void) {
+        this.dropOnPaperHandler = handler;
+    }
+
+    _tryHandleDropOnPaper(e: DropOnPaperEvent): boolean {
+        const {dropOnPaperHandler} = this;
+        if (dropOnPaperHandler) {
+            this.dropOnPaperHandler = undefined;
+            dropOnPaperHandler(e);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -236,6 +278,14 @@ export class DiagramView {
         this.source.trigger('dispose', {});
         this.listener.stopListening();
         this.disposed = true;
+    }
+
+    get highlighter() { return this._highlighter; }
+    setHighlighter(value: Highlighter) {
+        const previous = this._highlighter;
+        if (previous === value) { return; }
+        this._highlighter = value;
+        this.source.trigger('changeHighlight', {source: this, previous});
     }
 }
 

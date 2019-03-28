@@ -29,4 +29,8 @@
   &:hover &__vertex-tools {
     opacity: 0.8;
   }
+
+  &--blurred {
+    opacity: 0.5;
+  }
 }
