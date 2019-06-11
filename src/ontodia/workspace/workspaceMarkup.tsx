@@ -1,11 +1,12 @@
 import * as React from 'react';
 
-import { ElementIri } from '../data/model';
+import { ElementIri, ElementTypeIri } from '../data/model';
 
 import { Element } from '../diagram/elements';
 import { Vector } from '../diagram/geometry';
 import { DiagramView, DropOnPaperEvent } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
+import { formatLocalizedLabel } from '../diagram/model';
 
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
@@ -23,6 +24,7 @@ import { Accordion } from './accordion';
 import { AccordionItem } from './accordionItem';
 
 import { MetadataApi } from '../data/metadataApi';
+import { Cancellation } from '../viewUtils/async';
 
 export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
@@ -56,6 +58,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     paperArea: PaperArea;
 
     private untilMouseUpClasses: string[] = [];
+    private readonly cancellation = new Cancellation();
 
     getChildContext(): WorkspaceContextWrapper {
         const {editor} = this.props;
@@ -78,6 +81,35 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         return <div className='ontodia__header'>{toolbar}</div>;
     }
 
+    private onCreateInstance = async (classId: ElementTypeIri, position: Vector) => {
+        const {editor} = this.props;
+        await forceNonReactExecutionContext();
+        const batch = this.props.model.history.startBatch();
+
+        const type = this.props.editor.model.getClass(classId);
+        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+
+        const types = [classId];
+        const signal = this.cancellation.signal;
+
+        const newEntityIri = await this.props.metadataApi.generateNewElementIri(types, signal);
+        if (signal.aborted) { return; }
+        const elementModel = {
+            id: newEntityIri,
+            types,
+            label: {values: [{text: `New ${typeName}`, lang: ''}]},
+            properties: {},
+        };
+        const element = editor.createNewEntity({elementModel});
+        this.props.view.performSyncUpdate();
+        const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
+        centerElementToPosition(element, targetPosition);
+
+        batch.store();
+        editor.setSelection([element]);
+        editor.showEditEntityForm(element);
+    }
+
     private renderLeftPanel = () => {
         const {hidePanels, editor, searchCriteria = {}} = this.props;
         if (hidePanels) {
@@ -93,19 +125,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
                         const elementType = this.props.model.createClass(classId);
                         this.props.onSearchCriteriaChanged({elementType});
                     }}
-                    onCreateInstance={async (classId, position) => {
-                        await forceNonReactExecutionContext();
-                        const batch = this.props.model.history.startBatch();
-
-                        const element = editor.createNewEntity(classId);
-                        this.props.view.performSyncUpdate();
-                        const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
-                        centerElementToPosition(element, targetPosition);
-
-                        batch.store();
-                        editor.setSelection([element]);
-                        editor.showEditEntityForm(element);
-                    }}
+                    onCreateInstance={this.onCreateInstance}
                 />
             </AccordionItem>
         );
@@ -205,6 +225,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
 
     componentWillUnmount() {
         document.removeEventListener('mouseup', this.onDocumentMouseUp);
+        this.cancellation.abort();
     }
 
     preventTextSelection() {

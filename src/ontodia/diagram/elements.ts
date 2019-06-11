@@ -12,6 +12,16 @@ import { Vector, Size, isPolylineEqual, Rect } from './geometry';
 
 export type Cell = Element | Link | LinkVertex;
 
+export enum LinkDirection {
+    in = 'in',
+    out = 'out',
+}
+
+export interface DirectedLinkType {
+    linkTypeIri: LinkTypeIri;
+    direction: LinkDirection;
+}
+
 export interface ElementEvents {
     changeData: PropertyChange<Element, ElementModel>;
     changePosition: PropertyChange<Element, Vector>;

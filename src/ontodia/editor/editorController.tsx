@@ -2,14 +2,13 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, ElementTypeIri, sameLink } from '../data/model';
-import { GenerateID } from '../data/schema';
+import { ElementModel, LinkModel, ElementIri, sameLink } from '../data/model';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel, formatLocalizedLabel } from '../diagram/model';
+import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView, IriClickIntent } from '../diagram/view';
 
@@ -34,7 +33,7 @@ import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './a
 import {
     AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange, ElementChange,
 } from './authoringState';
-import { EditLayer, EditLayerMode, isPlaceholderElementType, isPlaceholderLinkType } from './editLayer';
+import { EditLayer, EditLayerMode } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
 
 import { Cancellation } from '../viewUtils/async';
@@ -42,6 +41,7 @@ import { Cancellation } from '../viewUtils/async';
 export interface PropertyEditorOptions {
     elementData: ElementModel;
     onSubmit: (newData: ElementModel) => void;
+    onCancel?: () => void;
 }
 export type PropertyEditor = (options: PropertyEditorOptions) => React.ReactElement<any>;
 
@@ -375,17 +375,18 @@ export class EditorController {
 
     showConnectionsMenu(target: Element) {
         const dialogType = DialogTypes.ConnectionsMenu;
+        const onClose = () => this.hideDialog();
         const content = (
             <ConnectionsMenu view={this.view}
                 editor={this}
                 target={target}
                 onAddElements={(iris, linkType) =>
                     this.onAddElementsInConnectionMenu(iris, target, linkType)}
-                onClose={() => this.hideDialog()}
+                onClose={onClose}
                 suggestProperties={this.options.suggestProperties}
             />
         );
-        this.showDialog({target, dialogType, content});
+        this.showDialog({target, dialogType, content, onClose});
     }
 
     showEditEntityForm(target: Element) {
@@ -393,22 +394,28 @@ export class EditorController {
         const dialogType = DialogTypes.EditEntityForm;
         const onSubmit = (newData: ElementModel) => {
             this.hideDialog();
-            this.changeEntityData(newData.id, newData);
+            this.changeEntityData(target.data.id, newData);
         };
-        const content = propertyEditor ? propertyEditor({elementData: target.data, onSubmit}) : (
-            <EditEntityForm view={this.view} entity={target.data} onApply={onSubmit}
-                onCancel={() => this.hideDialog()} />
+        const onCancel = () => this.hideDialog();
+        const content = propertyEditor ? propertyEditor({elementData: target.data, onSubmit, onCancel}) : (
+            <EditEntityForm view={this.view} entity={target.data} onApply={onSubmit} onCancel={onCancel} />
         );
-        this.showDialog({target, dialogType, content});
+        this.showDialog({target, dialogType, content, onClose: onCancel});
     }
 
-    showEditElementTypeForm(params: {
-        link: Link;
-        source: Element;
-        target: Element;
-    }) {
-        const {link, source, target} = params;
+    showEditElementTypeForm(
+        {link, source, target}: {
+            link: Link;
+            source: Element;
+            target: Element;
+        }
+    ) {
         const dialogType = DialogTypes.EditEntityTypeForm;
+        const onCancel = () => {
+            this.removeTemporaryElement(target);
+            this.removeTemporaryLink(link);
+            this.hideDialog();
+        };
         const content = (
             <EditElementTypeForm editor={this}
                 view={this.view}
@@ -416,6 +423,21 @@ export class EditorController {
                 link={link.data}
                 source={source.data}
                 target={target.data}
+                onChangeElement={(data: ElementModel) => {
+                    this.setTemporaryState(TemporaryState.deleteElement(this.temporaryState, target.data));
+                    target.setData(data);
+                    this.setTemporaryState(TemporaryState.addElement(this.temporaryState, target.data));
+                }}
+                onChangeLink={(data: LinkModel) => {
+                    this.removeTemporaryLink(link);
+                    const newLink = createLinkAndChangeDirection({
+                        data,
+                        originalData: link.data,
+                        sourceId: link.sourceId,
+                        targetId: link.targetId,
+                    });
+                    link = this.createNewLink({link: newLink, temporary: true});
+                }}
                 onApply={(elementData: ElementModel, linkData: LinkModel) => {
                     const isNewElement = target.iri === elementData.id;
 
@@ -434,12 +456,13 @@ export class EditorController {
                     } else {
                         this.model.requestLinksOfType();
                     }
-                    this.createNewLink(new Link({
-                        typeId: linkData.linkTypeId,
+                    const newLink = createLinkAndChangeDirection({
+                        data: linkData,
+                        originalData: link.data,
                         sourceId: source.id,
                         targetId: newTarget.id,
-                        data: linkData,
-                    }));
+                    });
+                    this.createNewLink({link: newLink});
 
                     batch.store();
 
@@ -448,19 +471,21 @@ export class EditorController {
                         this.showEditEntityForm(newTarget);
                     }
                 }}
-                onCancel={() => {
-                    this.removeTemporaryElement(target);
-                    this.removeTemporaryLink(link);
-                    this.hideDialog();
-                }}/>
+                onCancel={onCancel}/>
         );
-        this.showDialog({target, dialogType, content, caption: 'Establish New Connection'});
+        this.showDialog({target, dialogType, content, caption: 'Establish New Connection', onClose: onCancel});
     }
 
     showEditLinkForm(link: Link) {
         const dialogType = DialogTypes.EditLinkForm;
         const source = this.model.getElement(link.sourceId).data;
         const target = this.model.getElement(link.targetId).data;
+        const onCancel = () => {
+            if (this.temporaryState.links.has(link.data)) {
+                this.removeTemporaryLink(link);
+            }
+            this.hideDialog();
+        };
         const content = (
             <EditLinkForm editor={this}
                 view={this.view}
@@ -468,29 +493,46 @@ export class EditorController {
                 link={link.data}
                 source={source}
                 target={target}
+                onChange={(data: LinkModel) => {
+                    if (this.temporaryState.links.has(link.data)) {
+                        this.removeTemporaryLink(link);
+                        const newLink = createLinkAndChangeDirection({
+                            data,
+                            originalData: link.data,
+                            sourceId: link.sourceId,
+                            targetId: link.targetId,
+                        });
+                        this.showEditLinkForm(
+                            this.createNewLink({link: newLink, temporary: true})
+                        );
+                    }
+                }}
                 onApply={(data: LinkModel) => {
                     if (this.temporaryState.links.has(link.data)) {
                         this.removeTemporaryLink(link);
-                        this.createNewLink(new Link({
-                            typeId: data.linkTypeId,
+                        const newLink = createLinkAndChangeDirection({
+                            data,
+                            originalData: link.data,
                             sourceId: link.sourceId,
                             targetId: link.targetId,
-                            data,
-                        }));
+                        });
+                        this.createNewLink({link: newLink});
                     } else {
                         this.changeLink(link.data, data);
                     }
                     this.hideDialog();
                 }}
-                onCancel={() => {
-                    if (this.temporaryState.links.has(link.data)) {
-                        this.removeTemporaryLink(link);
-                    }
-                    this.hideDialog();
-                }}/>
+                onCancel={onCancel}/>
         );
         const caption = this.temporaryState.links.has(link.data) ? 'Establish New Connection' : 'Edit Connection';
-        this.showDialog({target: link, dialogType, content, size: {width: 300, height: 160}, caption});
+        this.showDialog({
+            target: link,
+            dialogType,
+            content,
+            size: {width: 300, height: 160},
+            caption,
+            onClose: onCancel,
+        });
     }
 
     // Link editing implementation could be rethought in the future.
@@ -498,6 +540,7 @@ export class EditorController {
         const linkType = this.view.model.getLinkType(link.typeId);
         const template = this.view.createLinkTemplate(linkType);
         const size = {width: 300, height: 145};
+        const onCancel = () => this.hideDialog();
         this.showDialog({
             target: link,
             dialogType: DialogTypes.EditLinkLabelForm,
@@ -508,7 +551,7 @@ export class EditorController {
                         template.setLinkLabel(link, label);
                         this.hideDialog();
                     }}
-                    onCancel={() => this.hideDialog()} />
+                    onCancel={onCancel} />
             ),
             size,
             caption: 'Edit Link Label',
@@ -516,7 +559,8 @@ export class EditorController {
             calculatePosition: () => {
                 const {x, y, width, height} = link.labelBounds;
                 return {x: x + width, y: y + height / 2};
-            }
+            },
+            onClose: onCancel,
         });
     }
 
@@ -528,15 +572,16 @@ export class EditorController {
         caption?: string;
         offset?: Vector;
         calculatePosition?: () => Vector;
+        onClose: () => void;
     }) {
-        const {target, dialogType, content, size, caption, offset, calculatePosition} = params;
+        const {target, dialogType, content, size, caption, offset, calculatePosition, onClose} = params;
 
         this.dialogTarget = target;
         this.dialogType = dialogType;
 
         const dialog = (
             <Dialog view={this.view} target={target} size={size} caption={caption}
-                offset={offset} calculatePosition={calculatePosition}>{content}</Dialog>
+                offset={offset} calculatePosition={calculatePosition} onClose={onClose}>{content}</Dialog>
         );
         this.view.setPaperWidget({key: 'dialog', widget: dialog});
         this.source.trigger('toggleDialog', {isOpened: false});
@@ -631,22 +676,13 @@ export class EditorController {
         });
     }
 
-    createNewEntity(classIri: ElementTypeIri): Element {
+    createNewEntity({elementModel, temporary}: { elementModel: ElementModel; temporary?: boolean }): Element {
         const batch = this.model.history.startBatch('Create new entity');
-
-        const type = this.model.getClass(classIri);
-        const typeName = formatLocalizedLabel(classIri, type ? type.label : [], 'en');
-        const elementModel = {
-            id: GenerateID.forNewEntity(),
-            types: [classIri],
-            label: {values: [{text: `New ${typeName}`, lang: ''}]},
-            properties: {},
-        };
 
         const element = this.model.createElement(elementModel);
         element.setExpanded(true);
 
-        if (isPlaceholderElementType(classIri)) {
+        if (temporary) {
             this.setTemporaryState(
                 TemporaryState.addElement(this.temporaryState, element.data)
             );
@@ -703,13 +739,18 @@ export class EditorController {
         batch.store();
     }
 
-    createNewLink(base: Link): Link {
+    createNewLink({link: base, temporary}: { link: Link; temporary?: boolean }): Link {
+        const existingLink = this.model.findLink(base.typeId, base.sourceId, base.targetId);
+        if (existingLink) {
+            throw Error('The link already exists');
+        }
+
         const batch = this.model.history.startBatch('Create new link');
 
         this.model.createLinks(base.data);
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
-            if (isPlaceholderLinkType(base.typeId)) {
+            if (temporary) {
                 this.setTemporaryState(
                     TemporaryState.addLink(this.temporaryState, base.data)
                 );
@@ -950,4 +991,18 @@ export function recursiveForceLayout(params: {
             }
         },
     });
+}
+
+export function createLinkAndChangeDirection({data, originalData, sourceId, targetId}: {
+    data: LinkModel;
+    originalData: LinkModel;
+    sourceId: string;
+    targetId: string;
+}) {
+    // some of the ids can be totally different because of generating IRI so we use "OR" instead of "AND"
+    const directionHasChanged = originalData.sourceId === data.targetId || originalData.targetId === data.sourceId;
+    if (directionHasChanged) {
+        [sourceId, targetId] = [targetId, sourceId];
+    }
+    return new Link({typeId: data.linkTypeId, sourceId, targetId, data});
 }

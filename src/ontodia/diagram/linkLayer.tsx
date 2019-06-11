@@ -500,8 +500,11 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
             const {onBoundsUpdate} = this.props;
             this.shouldUpdateBounds = false;
             const bounds = this.text.getBBox();
-            const labelBounds = this.getLabelRectangle(bounds.width, bounds.height);
-            onBoundsUpdate(labelBounds);
+
+            if (onBoundsUpdate) {
+                const labelBounds = this.getLabelRectangle(bounds.width, bounds.height);
+                onBoundsUpdate(labelBounds);
+            }
 
             this.setState({
                 width: bounds.width,

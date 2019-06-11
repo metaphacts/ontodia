@@ -4,6 +4,7 @@ import { EditorController } from '../editor/editorController';
 import { DiagramView } from '../diagram/view';
 import { ElementModel, LinkModel, sameElement, sameLink } from '../data/model';
 import { MetadataApi } from '../data/metadataApi';
+import { LinkDirection } from '../diagram/elements';
 
 import { Cancellation } from '../viewUtils/async';
 
@@ -21,6 +22,8 @@ export interface Props {
     link: LinkModel;
     source: ElementModel;
     target: ElementModel;
+    onChangeElement: (elementData: ElementModel) => void;
+    onChangeLink: (linkData: LinkModel) => void;
     onApply: (elementData: ElementModel, linkData: LinkModel) => void;
     onCancel: () => void;
 }
@@ -38,8 +41,8 @@ export class EditElementTypeForm extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = {
-            elementValue: {value: props.target},
-            linkValue: {value: props.link},
+            elementValue: {value: props.target, validated: true},
+            linkValue: {value: {link: props.link, direction: LinkDirection.out}, validated: true},
             isValid: true,
         };
     }
@@ -50,12 +53,17 @@ export class EditElementTypeForm extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Props, prevState: State) {
         const {elementValue, linkValue} = this.state;
-        if (!sameElement(elementValue.value, prevState.elementValue.value)) {
-            this.resetLinkValue();
+        const elementChanged = !sameElement(elementValue.value, prevState.elementValue.value);
+        const linkChanged = !sameLink(linkValue.value.link, prevState.linkValue.value.link);
+        if (elementChanged || linkChanged) {
+            if (elementChanged) { this.resetLinkValue(); }
             this.validate();
         }
-        if (!sameLink(linkValue.value, prevState.linkValue.value)) {
-            this.validate();
+        if (elementValue !== prevState.elementValue && elementValue.validated && !elementValue.error) {
+            this.props.onChangeElement(elementValue.value);
+        }
+        if (linkValue !== prevState.linkValue && linkValue.validated && !linkValue.error) {
+            this.props.onChangeLink(linkValue.value.link);
         }
     }
 
@@ -64,15 +72,16 @@ export class EditElementTypeForm extends React.Component<Props, State> {
     }
 
     private resetLinkValue() {
-        const {link} = this.props;
-        this.setState(({elementValue: {value: element}}) =>
-            ({linkValue: {value: {...link, targetId: element.id}, error: undefined}})
-        );
+        const {link: originalLink} = this.props;
+        this.setState(({elementValue: {value: element}}): State => {
+            const link: LinkModel = {...originalLink, targetId: element.id};
+            return {linkValue: {value: {link, direction: LinkDirection.out}, error: undefined, validated: false}};
+        });
     }
 
     private validate() {
         const {editor, link: originalLink} = this.props;
-        const {elementValue: {value: element}, linkValue: {value: link}} = this.state;
+        const {elementValue: {value: element}, linkValue: {value}} = this.state;
         this.setState({isValidating: true});
 
         this.validationCancellation.abort();
@@ -80,12 +89,12 @@ export class EditElementTypeForm extends React.Component<Props, State> {
         const signal = this.validationCancellation.signal;
 
         const validateElement = validateElementType(element);
-        const validateLink = validateLinkType(editor, link, originalLink);
+        const validateLink = validateLinkType(editor, value.link, originalLink);
         Promise.all([validateElement, validateLink]).then(([elementError, linkError]) => {
             if (signal.aborted) { return; }
             this.setState(({elementValue, linkValue}) => ({
-                elementValue: {...elementValue, error: elementError},
-                linkValue: {...linkValue, error: linkError},
+                elementValue: {...elementValue, error: elementError, validated: true},
+                linkValue: {...linkValue, error: linkError, validated: true},
                 isValid: !(elementError || linkError),
                 isValidating: false,
             }));
@@ -103,14 +112,16 @@ export class EditElementTypeForm extends React.Component<Props, State> {
                         metadataApi={metadataApi}
                         source={source}
                         elementValue={elementValue}
-                        onChange={value => this.setState({elementValue: {value, error: undefined}})} />
+                        onChange={value =>
+                            this.setState({elementValue: {value, error: undefined, validated: false}})
+                        } />
                     <LinkTypeSelector editor={editor}
                         view={view}
                         metadataApi={metadataApi}
                         linkValue={linkValue}
                         source={source}
                         target={elementValue.value}
-                        onChange={value => this.setState({linkValue: {value, error: undefined}})}
+                        onChange={value => this.setState({linkValue: {value, error: undefined, validated: false}})}
                         disabled={elementValue.error !== undefined} />
                     {isValidating ? (
                         <div className={`${CLASS_NAME}__progress`}>
@@ -120,7 +131,7 @@ export class EditElementTypeForm extends React.Component<Props, State> {
                 </div>
                 <div className={`${CLASS_NAME}__controls`}>
                     <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__apply-button`}
-                        onClick={() => this.props.onApply(elementValue.value, linkValue.value)}
+                        onClick={() => this.props.onApply(elementValue.value, linkValue.value.link)}
                         disabled={!isValid || isValidating}>
                         Apply
                     </button>

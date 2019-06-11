@@ -5,6 +5,7 @@ import { ElementModel, LinkModel, sameLink } from '../data/model';
 
 import { EditorController } from '../editor/editorController';
 import { DiagramView } from '../diagram/view';
+import { LinkDirection } from '../diagram/elements';
 
 import { Cancellation } from '../viewUtils/async';
 
@@ -21,6 +22,7 @@ export interface Props {
     link: LinkModel;
     source: ElementModel;
     target: ElementModel;
+    onChange: (entity: LinkModel) => void;
     onApply: (entity: LinkModel) => void;
     onCancel: () => void;
 }
@@ -36,7 +38,13 @@ export class EditLinkForm extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
-        this.state = {linkValue: {value: props.link}, isValid: true};
+        this.state = {
+            linkValue: {
+                value: {link: props.link, direction: LinkDirection.out},
+                validated: true,
+            },
+            isValid: true,
+        };
     }
 
     componentDidMount() {
@@ -45,8 +53,11 @@ export class EditLinkForm extends React.Component<Props, State> {
 
     componentDidUpdate(prevProps: Props, prevState: State) {
         const {linkValue} = this.state;
-        if (!sameLink(linkValue.value, prevState.linkValue.value)) {
+        if (!sameLink(linkValue.value.link, prevState.linkValue.value.link)) {
             this.validate();
+        }
+        if (linkValue !== prevState.linkValue && linkValue.validated && !linkValue.error) {
+            this.props.onChange(linkValue.value.link);
         }
     }
 
@@ -56,17 +67,17 @@ export class EditLinkForm extends React.Component<Props, State> {
 
     private validate() {
         const {editor, link: originalLink} = this.props;
-        const {linkValue: {value: link}} = this.state;
+        const {linkValue: {value}} = this.state;
         this.setState({isValidating: true});
 
         this.validationCancellation.abort();
         this.validationCancellation = new Cancellation();
         const signal = this.validationCancellation.signal;
 
-        validateLinkType(editor, link, originalLink).then(error => {
+        validateLinkType(editor, value.link, originalLink).then(error => {
             if (signal.aborted) { return; }
             this.setState(({linkValue}) => ({
-                linkValue: {...linkValue, error},
+                linkValue: {...linkValue, error, validated: true},
                 isValid: !error,
                 isValidating: false,
             }));
@@ -85,7 +96,7 @@ export class EditLinkForm extends React.Component<Props, State> {
                         linkValue={linkValue}
                         source={source}
                         target={target}
-                        onChange={value => this.setState({linkValue: {value, error: undefined}})} />
+                        onChange={value => this.setState({linkValue: {value, error: undefined, validated: false}})} />
                     {isValidating ? (
                         <div className={`${CLASS_NAME}__progress`}>
                             <ProgressBar state={ProgressState.loading} height={10} />
@@ -94,7 +105,7 @@ export class EditLinkForm extends React.Component<Props, State> {
                 </div>
                 <div className={`${CLASS_NAME}__controls`}>
                     <button className={`ontodia-btn ontodia-btn-success ${CLASS_NAME}__apply-button`}
-                        onClick={() => this.props.onApply(linkValue.value)}
+                        onClick={() => this.props.onApply(linkValue.value.link)}
                         disabled={!isValid || isValidating}>
                         Apply
                     </button>

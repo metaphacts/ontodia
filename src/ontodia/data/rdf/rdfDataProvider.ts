@@ -622,13 +622,15 @@ export class RDFDataProvider implements DataProvider {
                     isLiteral(statemet.object) &&
                     statemet.predicate.nominalValue !== PREFIX_FACTORIES.RDFS('label')
                 ) {
+                    const property = props[statemet.predicate.nominalValue];
+                    const value = {
+                        text: statemet.object.nominalValue,
+                        lang: statemet.object.language || '',
+                    };
                     props[statemet.predicate.nominalValue] = {
                         type: 'string',
-                        values: [{
-                            text: statemet.object.nominalValue,
-                            lang: statemet.object.language || '',
-                        }],
-                    };
+                        values: property ? [...property.values, value] : [value],
+                    } as Property;
                 }
             }
             return props;

@@ -87,6 +87,11 @@ export class Debouncer extends BatchingScheduler {
 }
 
 export class Cancellation {
+    public static NEVER_SIGNAL: CancellationToken = {
+        aborted: false,
+        addEventListener: () => { /* nothing */ },
+        removeEventListener: () => { /* nothing */ },
+    };
     private source: EventSource<{ abort: undefined }> | undefined = new EventSource();
     private aborted = false;
 

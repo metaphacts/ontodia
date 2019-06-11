@@ -5,6 +5,7 @@ import { ElementModel, ElementTypeIri } from '../data/model';
 
 import { EditorController } from '../editor/editorController';
 import { DiagramView } from '../diagram/view';
+import { formatLocalizedLabel } from '../diagram/model';
 import { MetadataApi } from '../data/metadataApi';
 
 import { createRequest } from '../widgets/instancesSearch';
@@ -18,6 +19,7 @@ const CLASS_NAME = 'ontodia-edit-form';
 export interface ElementValue {
     value: ElementModel;
     error?: string;
+    validated: boolean;
 }
 
 export interface Props {
@@ -39,6 +41,7 @@ export interface State {
 export class ElementTypeSelector extends React.Component<Props, State> {
     private readonly cancellation = new Cancellation();
     private filterCancellation = new Cancellation();
+    private newIriCancellation = new Cancellation();
 
     constructor(props: Props) {
         super(props);
@@ -59,6 +62,22 @@ export class ElementTypeSelector extends React.Component<Props, State> {
     componentWillUnmount() {
         this.cancellation.abort();
         this.filterCancellation.abort();
+        this.newIriCancellation.abort();
+    }
+
+    private sortElementTypesByLabel = (a: ElementTypeIri, b: ElementTypeIri) => {
+        const {view} = this.props;
+        const typeA = view.model.createClass(a);
+        const typeB = view.model.createClass(b);
+        const labelA = view.getElementTypeLabel(typeA).text;
+        const labelB = view.getElementTypeLabel(typeB).text;
+        if (labelA < labelB) {
+            return - 1;
+        }
+        if (labelA > labelB) {
+            return 1;
+        }
+        return 0;
     }
 
     private fetchPossibleElementTypes() {
@@ -66,6 +85,7 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         if (!metadataApi) { return; }
         metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
             if (this.cancellation.signal.aborted) { return; }
+            elementTypes.sort(this.sortElementTypesByLabel);
             this.setState({elementTypes});
         });
     }
@@ -90,10 +110,29 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         }
     }
 
-    private onElementTypeChange = (e: React.FormEvent<HTMLSelectElement>) => {
-        const {elementValue, onChange} = this.props;
-        const type = (e.target as HTMLSelectElement).value as ElementTypeIri;
-        onChange({...elementValue.value, types: [type]});
+    private onElementTypeChange = async (e: React.FormEvent<HTMLSelectElement>) => {
+        this.setState({isLoading: true});
+
+        this.newIriCancellation.abort();
+        this.newIriCancellation = new Cancellation();
+        const signal = this.newIriCancellation.signal;
+
+        const {elementValue, onChange, metadataApi} = this.props;
+        const classId = (e.target as HTMLSelectElement).value as ElementTypeIri;
+        const type = this.props.editor.model.createClass(classId);
+        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+        const types = [classId];
+        const newId = await metadataApi.generateNewElementIri(types, signal);
+        if (signal.aborted) {
+            return;
+        }
+        this.setState({isLoading: false});
+        onChange({
+            ...elementValue.value,
+            id: newId,
+            types: types,
+            label: {values: [{text: `New ${typeName}`, lang: ''}]},
+        });
     }
 
     private renderPossibleElementType = (elementType: ElementTypeIri) => {
@@ -105,8 +144,11 @@ export class ElementTypeSelector extends React.Component<Props, State> {
 
     private renderElementTypeSelector() {
         const {elementValue} = this.props;
-        const {elementTypes} = this.state;
+        const {elementTypes, isLoading} = this.state;
         const value = elementValue.value.types.length ? elementValue.value.types[0] : '';
+        if (isLoading) {
+            return <HtmlSpinner width={20} height={20} />;
+        }
         return (
             <div className={`${CLASS_NAME}__control-row`}>
                 <label>Entity Type</label>

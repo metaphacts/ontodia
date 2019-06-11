@@ -12,7 +12,4 @@ const ONTODIA_ID_URL_PREFIX = 'http://ontodia.org/data/';
 export namespace GenerateID {
     export function forElement() { return `${ONTODIA_ID_URL_PREFIX}e_${generate128BitID()}`; }
     export function forLink() { return `${ONTODIA_ID_URL_PREFIX}l_${generate128BitID()}`; }
-    export function forNewEntity(): ElementIri {
-        return `http://ontodia.org/newEntity_${generate128BitID()}` as ElementIri;
-    }
 }

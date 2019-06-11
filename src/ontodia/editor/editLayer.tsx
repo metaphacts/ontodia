@@ -1,15 +1,16 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { ElementModel, ElementTypeIri, LinkTypeIri } from '../data/model';
-import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from '../data/schema';
+import { ElementModel, LinkModel } from '../data/model';
+import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE, GenerateID } from '../data/schema';
 
 import { DiagramView } from '../diagram/view';
 import { LinkLayer, LinkMarkers } from '../diagram/linkLayer';
-import { Element, Link } from '../diagram/elements';
+import { Element, Link, LinkDirection } from '../diagram/elements';
 import { boundsOf, Vector } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
+import { formatLocalizedLabel } from '../diagram/model';
 
 import { Cancellation } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
@@ -254,15 +255,25 @@ export class EditLayer extends React.Component<Props, State> {
         return Promise.resolve(originalLink);
     }
 
-    private createNewElement(source: ElementModel): Promise<Element | undefined> {
+    private createNewElement = async (source: ElementModel): Promise<Element | undefined> => {
         const {editor, metadataApi} = this.props;
         if (!metadataApi) {
-            return Promise.resolve(undefined);
+            return;
         }
-        return metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
-            const type = elementTypes.length === 1 ? elementTypes[0] : PLACEHOLDER_ELEMENT_TYPE;
-            return editor.createNewEntity(type);
-        });
+        const elementTypes = await metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal);
+        const classId = elementTypes.length === 1 ? elementTypes[0] : PLACEHOLDER_ELEMENT_TYPE;
+        const type = this.props.editor.model.createClass(classId);
+        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+        const labelText = classId === PLACEHOLDER_ELEMENT_TYPE ? 'New Entity' : `New ${typeName}`;
+        const types = [classId];
+        const entityIri = await metadataApi.generateNewElementIri(types, Cancellation.NEVER_SIGNAL);
+        const elementModel = {
+            id: entityIri,
+            types,
+            label: {values: [{text: labelText, lang: ''}]},
+            properties: {},
+        };
+        return editor.createNewEntity({elementModel, temporary: true});
     }
 
     private createNewLink(source: Element, target: Element): Promise<Link | undefined> {
@@ -271,18 +282,23 @@ export class EditLayer extends React.Component<Props, State> {
             return Promise.resolve(undefined);
         }
         return metadataApi.possibleLinkTypes(source.data, target.data, this.cancellation.signal).then(linkTypes => {
-            const typeId = linkTypes.length === 1 ? linkTypes[0] : PLACEHOLDER_LINK_TYPE;
-            const link = new Link({
-                typeId,
-                sourceId: source.id,
-                targetId: target.id,
-                data: {
-                    linkTypeId: typeId,
-                    sourceId: source.iri,
-                    targetId: target.iri,
-                },
-            });
-            return editor.createNewLink(link);
+            const placeholder = {linkTypeIri: PLACEHOLDER_LINK_TYPE, direction: LinkDirection.out};
+            const {linkTypeIri: typeId, direction} = linkTypes.length === 1 ? linkTypes[0] : placeholder;
+            const data: LinkModel = {
+                linkTypeId: typeId,
+                sourceId: source.iri,
+                targetId: target.iri,
+            };
+            let [sourceId, targetId] = [source.id, target.id];
+            // switches source and target if the direction equals 'in'
+            if (direction === LinkDirection.in) {
+                data.sourceId = target.iri;
+                data.targetId = source.iri;
+                [sourceId, targetId] = [targetId, sourceId];
+            }
+            const link = new Link({typeId, sourceId, targetId, data});
+            const existingLink = editor.model.findLink(link.typeId, link.sourceId, link.targetId);
+            return existingLink || editor.createNewLink({link, temporary: true});
         });
     }
 
@@ -369,12 +385,4 @@ export class EditLayer extends React.Component<Props, State> {
             </TransformedSvgCanvas>
         );
     }
-}
-
-export function isPlaceholderElementType(target: ElementTypeIri) {
-    return target === PLACEHOLDER_ELEMENT_TYPE;
-}
-
-export function isPlaceholderLinkType(target: LinkTypeIri) {
-    return target === PLACEHOLDER_LINK_TYPE;
 }

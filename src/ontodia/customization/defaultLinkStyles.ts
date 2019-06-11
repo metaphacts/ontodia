@@ -1,4 +1,5 @@
 import { LinkTemplate, LinkTemplateResolver } from './props';
+import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 export const LINK_SHOW_IRI: LinkTemplate = {
     renderLink: link => ({
@@ -80,6 +81,8 @@ export const DefaultLinkTemplateBundle: LinkTemplateResolver = type => {
         return LINK_RANGE;
     } else if (type === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
         return LINK_TYPE_OF;
+    } else if (type === PLACEHOLDER_LINK_TYPE) {
+        return {markerTarget: {fill: 'none'}};
     } else {
         return undefined;
     }

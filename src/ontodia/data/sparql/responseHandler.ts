@@ -15,21 +15,27 @@ const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 const RDF_TYPE_URI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
-    const tree: ClassModel[] = [];
     const treeNodes = createClassMap(response.results.bindings);
+    const allNodes: ClassModel[] = [];
+
     // createClassMap ensures we get both elements and parents and we can use treeNodes[treeNode.parent] safely
     treeNodes.forEach(node => {
-        if (node.parents.size > 0) {
-            node.parents.forEach(parent => {
-                treeNodes.get(parent).children.push(node);
-            });
-        } else {
-            tree.push(node);
-        }
+        allNodes.push(node);
+        node.parents.forEach(parent => {
+            treeNodes.get(parent).children.push(node);
+        });
         node.parents = undefined;
     });
 
-    calculateCounts(tree);
+    const withoutCycles = breakCyclesAndCalculateCounts(allNodes);
+    const leafs = new Set<ElementTypeIri>();
+    for (const node of withoutCycles) {
+        for (const child of node.children) {
+            leafs.add(child.id);
+        }
+    }
+
+    const tree = withoutCycles.filter(node => !leafs.has(node.id));
     return tree;
 }
 
@@ -88,12 +94,20 @@ function createClassMap(bindings: ClassBinding[]): Map<ElementTypeIri, Hierarchi
     return treeNodes;
 }
 
-function calculateCounts(children: ClassModel[]) {
-    for (const node of children) {
+function breakCyclesAndCalculateCounts(tree: ClassModel[]): ClassModel[] {
+    const visiting = new Set<ElementTypeIri>();
+
+    function reduceChildren(acc: ClassModel[], node: ClassModel): ClassModel[] {
+        if (visiting.has(node.id)) {
+            // prevent unbounded recursion
+            return acc;
+        }
         // no more to count
         if (!node.children) {return; }
         // ensure all children have their counts completed;
-        calculateCounts(node.children);
+        visiting.add(node.id);
+        node.children = node.children.reduce(reduceChildren, []);
+        visiting.delete(node.id);
         // we have to preserve no data here. If nor element nor childs have no count information,
         // we just pass undefined upwards.
         let childCount: number;
@@ -107,7 +121,12 @@ function calculateCounts(children: ClassModel[]) {
         if (childCount !== undefined) {
             node.count = node.count === undefined ? childCount : node.count + childCount;
         }
+
+        acc.push(node);
+        return acc;
     }
+
+    return tree.reduce(reduceChildren, []);
 }
 
 export function getClassInfo(response: SparqlResponse<ClassBinding>): ClassModel[] {

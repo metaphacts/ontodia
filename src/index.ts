@@ -22,7 +22,7 @@ export * from './ontodia/data/sparql/sparqlGraphBuilder';
 export { DIAGRAM_CONTEXT_URL_V1 } from './ontodia/data/schema';
 
 export { RestoreGeometry } from './ontodia/diagram/commands';
-export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell } from './ontodia/diagram/elements';
+export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell, LinkDirection } from './ontodia/diagram/elements';
 export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
 export * from './ontodia/diagram/geometry';
 export * from './ontodia/diagram/history';

@@ -33,6 +33,7 @@ export interface Props extends PaperWidgetProps {
     caption?: string;
     offset?: Vector;
     calculatePosition?: () => Vector;
+    onClose: () => void;
 }
 
 export interface State {
@@ -141,7 +142,7 @@ export class Dialog extends React.Component<Props, State> {
 
         const polyline = computePolyline(source, target, vertices);
         const polylineLength = computePolylineLength(polyline);
-        const targetPoint = getPointAlongPolyline(polyline, polylineLength);
+        const targetPoint = getPointAlongPolyline(polyline, polylineLength / 2);
 
         const {x, y} = paperArea.paperToScrollablePaneCoords(targetPoint.x, targetPoint.y);
 
@@ -283,6 +284,7 @@ export class Dialog extends React.Component<Props, State> {
 
         return (
             <div className={CLASS_NAME} style={style}>
+                <button className={`${CLASS_NAME}__close-button`} onClick={() => this.props.onClose()} />
                 {caption ? <div className='ontodia-dialog__caption'>{caption}</div> : null}
                 {this.props.children}
                 <DraggableHandle

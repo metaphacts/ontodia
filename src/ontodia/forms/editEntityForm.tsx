@@ -24,6 +24,12 @@ export class EditEntityForm extends React.Component<Props, State> {
         this.state = {elementModel: props.entity};
     }
 
+    componentWillReceiveProps(nextProps: Props) {
+        if (this.props.entity !== nextProps.entity) {
+            this.setState({elementModel: nextProps.entity});
+        }
+    }
+
     private renderProperty = (key: PropertyTypeIri, property: Property) => {
         const {view} = this.props;
         const richProperty = view.model.getProperty(key);

@@ -2,11 +2,11 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { LinkModel, LinkTypeIri, ElementModel, sameLink } from '../data/model';
-import { formatLocalizedLabel } from '../diagram/model';
+import { formatLocalizedLabel, chooseLocalizedText } from '../diagram/model';
 import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 import { EditorController } from '../editor/editorController';
-import { FatLinkType } from '../diagram/elements';
+import { FatLinkType, LinkDirection } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
 import { Cancellation } from '../viewUtils/async';
@@ -14,9 +14,20 @@ import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
+export interface Value {
+    link: LinkModel;
+    direction: LinkDirection;
+}
+
 export interface LinkValue {
-    value: LinkModel;
+    value: Value;
     error?: string;
+    validated: boolean;
+}
+
+interface DirectedFatLinkType {
+    fatLinkType: FatLinkType;
+    direction: LinkDirection;
 }
 
 export interface Props {
@@ -26,12 +37,12 @@ export interface Props {
     linkValue: LinkValue;
     source: ElementModel;
     target: ElementModel;
-    onChange: (value: LinkModel) => void;
+    onChange: (value: Value) => void;
     disabled?: boolean;
 }
 
 export interface State {
-    fatLinkTypes?: {[id: string]: FatLinkType};
+    fatLinkTypes?: Array<DirectedFatLinkType>;
 }
 
 export class LinkTypeSelector extends React.Component<Props, State> {
@@ -40,7 +51,9 @@ export class LinkTypeSelector extends React.Component<Props, State> {
 
     constructor(props: Props) {
         super(props);
-        this.state = {};
+        this.state = {
+            fatLinkTypes: [],
+        };
     }
 
     private updateAll = () => this.forceUpdate();
@@ -62,53 +75,92 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         this.cancellation.abort();
     }
 
+    private sortLinksByLabelAndDirection = (a: DirectedFatLinkType, b: DirectedFatLinkType) => {
+        const language = this.props.view.getLanguage();
+        const labelA = formatLocalizedLabel(a.fatLinkType.id, a.fatLinkType.label, language);
+        const labelB = formatLocalizedLabel(b.fatLinkType.id, b.fatLinkType.label, language);
+        if (labelA < labelB) {
+            return -1;
+        }
+        if (labelA > labelB) {
+            return 1;
+        }
+        if (a.direction === LinkDirection.out && b.direction === LinkDirection.in) {
+            return -1;
+        }
+        if (a.direction === LinkDirection.in && b.direction === LinkDirection.out) {
+            return 1;
+        }
+        return 0;
+    }
+
     private fetchPossibleLinkTypes() {
         const {view, metadataApi, source, target} = this.props;
         if (!metadataApi) { return; }
         metadataApi.possibleLinkTypes(source, target, this.cancellation.signal).then(linkTypes => {
             if (this.cancellation.signal.aborted) { return; }
-            const fatLinkTypes: {[id: string]: FatLinkType} = {};
-            linkTypes.forEach(linkTypeIri => fatLinkTypes[linkTypeIri] = view.model.createLinkType(linkTypeIri));
+            const fatLinkTypes: Array<DirectedFatLinkType> = [];
+            linkTypes.forEach(({linkTypeIri, direction}) => {
+                const fatLinkType = view.model.createLinkType(linkTypeIri);
+                fatLinkTypes.push({fatLinkType, direction});
+            });
+            fatLinkTypes.sort(this.sortLinksByLabelAndDirection);
             this.setState({fatLinkTypes});
             this.listenToLinkLabels(fatLinkTypes);
         });
     }
 
-    private listenToLinkLabels(fatLinkTypes: {[id: string]: FatLinkType}) {
-        Object.keys(fatLinkTypes).forEach(linkType =>
-            this.listener.listen(fatLinkTypes[linkType].events, 'changeLabel', this.updateAll)
+    private listenToLinkLabels(fatLinkTypes: Array<{ fatLinkType: FatLinkType; direction: LinkDirection }>) {
+        fatLinkTypes.forEach(({fatLinkType}) =>
+            this.listener.listen(fatLinkType.events, 'changeLabel', this.updateAll)
         );
     }
 
     private onChangeType = (e: React.FormEvent<HTMLSelectElement>) => {
-        const {linkValue, onChange} = this.props;
-        const linkTypeId = e.currentTarget.value as LinkTypeIri;
-        onChange({...linkValue.value, linkTypeId});
+        const {link: originalLink, direction: originalDirection} = this.props.linkValue.value;
+        const index = parseInt(e.currentTarget.value, 10);
+        const {fatLinkType, direction} = this.state.fatLinkTypes[index];
+        const link: LinkModel = {...originalLink, linkTypeId: fatLinkType.id};
+        // switches source and target if the direction has changed
+        if (originalDirection !== direction) {
+            link.sourceId = originalLink.targetId;
+            link.targetId = originalLink.sourceId;
+        }
+        this.props.onChange({link, direction});
     }
 
-    private renderPossibleLinkType(fatLinkType: FatLinkType) {
-        const {view} = this.props;
+    private renderPossibleLinkType = (
+        {fatLinkType, direction}: { fatLinkType: FatLinkType; direction: LinkDirection }, index: number
+    ) => {
+        const {view, linkValue, source, target} = this.props;
         const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
-        return <option key={fatLinkType.id} value={fatLinkType.id}>{label}</option>;
+        let [sourceLabel, targetLabel] = [source, target].map(element =>
+            chooseLocalizedText(element.label.values, view.getLanguage()).text
+        );
+        if (direction !== linkValue.value.direction) {
+            [sourceLabel, targetLabel] = [targetLabel, sourceLabel];
+        }
+        return <option key={index} value={index}>{label} [{sourceLabel} &rarr; {targetLabel}]</option>;
     }
 
     render() {
         const {linkValue, disabled} = this.props;
         const {fatLinkTypes} = this.state;
+        const value = (fatLinkTypes || []).findIndex(({fatLinkType, direction}) =>
+            fatLinkType.id === linkValue.value.link.linkTypeId && direction === linkValue.value.direction
+        );
         return (
             <div className={`${CLASS_NAME}__control-row`}>
                 <label>Link Type</label>
                 {
                     fatLinkTypes ? (
                         <select className='ontodia-form-control'
-                             value={linkValue.value.linkTypeId}
+                             value={value}
                              onChange={this.onChangeType}
                              disabled={disabled}>
-                            <option value={PLACEHOLDER_LINK_TYPE} disabled={true}>Select link type</option>
+                            <option value={-1} disabled={true}>Select link type</option>
                             {
-                                Object.keys(fatLinkTypes).map(linkType =>
-                                    this.renderPossibleLinkType(fatLinkTypes[linkType])
-                                )
+                                fatLinkTypes.map(this.renderPossibleLinkType)
                             }
                         </select>
                     ) : <div><HtmlSpinner width={20} height={20} /></div>
@@ -129,7 +181,10 @@ export function validateLinkType(
         return Promise.resolve(undefined);
     }
     const alreadyOnDiagram = editor.model.links.find(({data: {linkTypeId, sourceId, targetId}}) =>
-        linkTypeId === currentLink.linkTypeId && sourceId === currentLink.sourceId && targetId === currentLink.targetId
+        linkTypeId === currentLink.linkTypeId &&
+        sourceId === currentLink.sourceId &&
+        targetId === currentLink.targetId &&
+        !editor.temporaryState.links.has(currentLink)
     );
     if (alreadyOnDiagram) {
         return Promise.resolve('The link already exists!');

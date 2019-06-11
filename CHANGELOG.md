@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
+
+## [0.9.9] - 2019-03-11
+### Added
+- Allow to change IRI of new entities via custom editor.
+- Separate close button to every dialog.
+
+### Changed
+- **[Breaking]** Require `generateElementIri` to be implemented in `MetadataApi`.
+- Allow to choose link direction in "edit link" dialog.
+
+### Fixed
+- An error while calculating class stats with cyclically referenced classes.
+- Invalid authoring state after creating new entity by dragging from another one.
+- An error while rendering additional labels for link properties.
+- Prevent reusing the same "edit entity" form after switching to another entity.
+- Support multiple values of a property in `RdfDataProvider`.
+
+## [0.9.8] - 2019-03-26
 ### Added
 - Custom link state in the serialized diagram layout.
 - Link "renaming" using custom link template.

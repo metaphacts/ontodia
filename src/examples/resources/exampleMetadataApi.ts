@@ -1,7 +1,9 @@
 import {
     ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
     AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, formatLocalizedLabel,
+    LinkDirection, ElementIri,
 } from '../../index';
+import { DirectedLinkType } from '../../ontodia/diagram/elements';
 
 const OWL_PREFIX = 'http://www.w3.org/2002/07/owl#';
 const RDFS_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
@@ -16,6 +18,10 @@ const rdfs = {
     subClassOf: RDFS_PREFIX + 'subClassOf' as LinkTypeIri,
     subPropertyOf: RDFS_PREFIX + 'subPropertyOf' as LinkTypeIri,
 };
+
+function hasType(model: ElementModel, type: ElementTypeIri) {
+    return Boolean(model.types.find(t => t === type));
+}
 
 const METADATA_DELAY: number = 500; /* ms */
 function delay(): Promise<void> {
@@ -36,9 +42,25 @@ export class ExampleMetadataApi implements MetadataApi {
         return true;
     }
 
-    async possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]> {
+    async possibleLinkTypes(
+        source: ElementModel, target: ElementModel, ct: CancellationToken
+    ): Promise<DirectedLinkType[]> {
         await delay();
-        return [owl.domain, owl.range, rdfs.subClassOf, rdfs.subPropertyOf];
+        return (
+            hasType(source, owl.class) && hasType(target, owl.class) ?
+                mapLinkTypes([rdfs.subClassOf]).concat(mapLinkTypes([rdfs.subClassOf], LinkDirection.in)) :
+            hasType(source, owl.objectProperty) && hasType(target, owl.class) ?
+                mapLinkTypes([owl.domain, owl.range]) :
+            hasType(target, owl.objectProperty) && hasType(source, owl.class) ?
+                mapLinkTypes([owl.domain, owl.range], LinkDirection.in) :
+            hasType(source, owl.objectProperty) && hasType(target, owl.objectProperty) ?
+                mapLinkTypes([rdfs.subPropertyOf]).concat(mapLinkTypes([rdfs.subPropertyOf], LinkDirection.in)) :
+            []
+        );
+
+        function mapLinkTypes(types: LinkTypeIri[], direction: LinkDirection = LinkDirection.out): DirectedLinkType[] {
+            return types.map(linkTypeIri => ({linkTypeIri, direction}));
+        }
     }
 
     async typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
@@ -91,6 +113,12 @@ export class ExampleMetadataApi implements MetadataApi {
     ): Promise<boolean> {
         await delay();
         return true;
+    }
+
+    async generateNewElementIri(types: ReadonlyArray<ElementTypeIri>): Promise<ElementIri> {
+        await delay();
+        const random32BitDigits = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
+        return `${types[0]}_${random32BitDigits}` as ElementIri;
     }
 }
 

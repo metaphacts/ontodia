@@ -1,4 +1,5 @@
-import { ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkModel } from './model';
+import { ElementModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkModel, ElementIri } from './model';
+import { LinkDirection } from '../diagram/elements';
 import { CancellationToken } from '../viewUtils/async';
 
 export interface MetadataApi {
@@ -15,7 +16,9 @@ export interface MetadataApi {
     /**
      * Links of which types can we create between elements?
      */
-    possibleLinkTypes(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<LinkTypeIri[]>;
+    possibleLinkTypes(
+        source: ElementModel, target: ElementModel, ct: CancellationToken
+    ): Promise<Array<{ linkTypeIri: LinkTypeIri; direction: LinkDirection }>>;
 
     /**
      * If new element is created by dragging link from existing element, this should return available element types.
@@ -40,4 +43,6 @@ export interface MetadataApi {
     canDeleteLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 
     canEditLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
+
+    generateNewElementIri(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementIri>;
 }
