@@ -135,7 +135,7 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         const {view, linkValue, source, target} = this.props;
         const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
         let [sourceLabel, targetLabel] = [source, target].map(element =>
-            chooseLocalizedText(element.label.values, view.getLanguage()).text
+            formatLocalizedLabel(element.id, element.label.values, view.getLanguage())
         );
         if (direction !== linkValue.value.direction) {
             [sourceLabel, targetLabel] = [targetLabel, sourceLabel];

@@ -106,10 +106,10 @@ function exportSVG(options: ToSVGOptions): Promise<SVGElement> {
 
     return convertingImages.then(() => {
         // workaround to include only ontodia-related stylesheets
-        const cssTexts = extractCSSFromDocument(text => text.indexOf('.ontodia') >= 0);
+        const exportedCssText = extractCSSFromDocument(svgClone);
 
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        defs.innerHTML = `<style>${cssTexts.join('\n')}</style>`;
+        defs.innerHTML = `<style>${exportedCssText}</style>`;
         svgClone.insertBefore(defs, svgClone.firstChild);
 
         if (options.elementsToRemoveSelector) {
@@ -186,8 +186,8 @@ function clearAttributes(svg: SVGElement) {
     }
 }
 
-function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): string[] {
-    const cssTexts: string[] = [];
+function extractCSSFromDocument(targetSubtree: Element): string {
+    const exportedRules = new Set<CSSStyleRule>();
     for (let i = 0; i < document.styleSheets.length; i++) {
         let rules: CSSRuleList;
         try {
@@ -196,29 +196,23 @@ function extractCSSFromDocument(shouldInclude: (cssText: string) => boolean): st
             if (!rules) { continue; }
         } catch (e) { continue; }
 
-        const ruleTexts: string[] = [];
-        let allowToInclude = false;
-
         for (let j = 0; j < rules.length; j++) {
             const rule = rules[j];
             if (rule instanceof CSSStyleRule) {
-                const text = rule.cssText;
-                ruleTexts.push(rule.cssText);
-                if (shouldInclude(text)) {
-                    allowToInclude = true;
+                if (targetSubtree.querySelector(rule.selectorText)) {
+                    exportedRules.add(rule);
                 }
             }
         }
-
-        if (allowToInclude) {
-            cssTexts.push(ruleTexts.join('\n'));
-        }
     }
-    return cssTexts;
+
+    const exportedCssTexts: string[] = [];
+    exportedRules.forEach(rule => exportedCssTexts.push(rule.cssText));
+    return exportedCssTexts.join('\n');
 }
 
 function clonePaperSvg(options: ToSVGOptions, elementSizePadding: number): {
-    svgClone: SVGElement;
+    svgClone: SVGSVGElement;
     imageBounds: { [path: string]: Bounds };
 } {
     const {model, paper, getOverlayedElement} = options;
