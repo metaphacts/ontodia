@@ -105,7 +105,7 @@ interface ViewportAnimation {
     readonly cancellation: Cancellation;
 }
 
-interface ViewportOptions {
+export interface ViewportOptions {
     /**
      * True if operation should be animated.
      * If duration is not provided assumes default one.
@@ -116,6 +116,11 @@ interface ViewportOptions {
      * Implicitly sets `animate: true` if greater than zero.
      */
     duration?: number;
+    /**
+     * Elements to apply layout and zoomToFit operations.
+     * (In other words we narrowing down viewPort to selected elements)
+     */
+    elements?: ReadonlySet<Element>;
 }
 
 export interface ScaleOptions extends ViewportOptions {
@@ -587,7 +592,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         }
     }
 
-    centerTo(paperPosition?: { x: number; y: number }, options?: ViewportOptions): Promise<void> {
+    centerTo(paperPosition?: { x: number; y: number }, options: ViewportOptions = {}): Promise<void> {
         const {paperWidth, paperHeight} = this.state;
         const paperCenter = paperPosition || {x: paperWidth / 2, y: paperHeight / 2};
         const viewportState: Partial<ViewportState> = {
@@ -596,7 +601,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         return this.setViewportState(viewportState, options);
     }
 
-    centerContent(options?: ViewportOptions): Promise<void> {
+    centerContent(options: ViewportOptions = {}): Promise<void> {
         const bbox = this.getContentFittingBox();
         return this.centerTo({
             x: bbox.x + bbox.width / 2,
@@ -648,16 +653,27 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         return this.zoomBy(-this.zoomOptions.step, scaleOptions);
     }
 
-    zoomToFit(options?: ViewportOptions): Promise<void> {
+    zoomToFit(options: ViewportOptions = {}): Promise<void> {
+        if (options.elements && options.elements.size === 0) { return; }
         if (this.props.view.model.elements.length === 0) {
             return this.centerTo();
         }
-        const bbox = this.getContentFittingBox();
+
+        let bbox;
+        let elements: ReadonlyArray<Element>;
+        if (options.elements) {
+            const selectionElements: Element[] = [];
+            options.elements.forEach(el => selectionElements.push(el));
+            elements = selectionElements;
+        } else {
+            elements = this.props.view.model.elements;
+        }
+        bbox = getContentFittingBox(elements, []);
         return this.zoomToFitRect(bbox, options);
     }
 
     zoomToFitRect(
-        bbox: Rect, options?: ViewportOptions
+        bbox: Rect, options: ViewportOptions = {},
     ) {
         const {clientWidth, clientHeight} = this.area;
 

@@ -211,7 +211,7 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
                 <ProgressBar state={dataState} />
                 <div className={`${className}__rest`}>
                     {connectedTo}
-                    <div className='link-lists'>
+                    <div className='ontodia-scrollable'>
                         <ul className='ontodia-list-group connected-links'>{views}</ul>
                     </div>
                 </div>

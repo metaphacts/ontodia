@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.9.11] - 2019-07-25
+### Fixed
+- Add workaround for invalid rendering of items in scrollable containers in Chrome.
+
 ## [0.9.10] - 2019-06-28
 ### Fixed
 - Error in authoring mode when one of the ends of new link doesn't have a label.
@@ -436,7 +440,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/sputniq-space/ontodia/compare/v0.9.10...HEAD
+[Latest]: https://github.com/sputniq-space/ontodia/compare/v0.9.11...HEAD
+[0.9.11]: https://github.com/sputniq-space/ontodia/compare/v0.9.10...v0.9.11
 [0.9.10]: https://github.com/sputniq-space/ontodia/compare/v0.9.9...v0.9.10
 [0.9.9]: https://github.com/sputniq-space/ontodia/compare/v0.9.8...v0.9.9
 [0.9.8]: https://github.com/sputniq-space/ontodia/compare/v0.9.7...v0.9.8

@@ -97,7 +97,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 </div>
             </div>
             {/* specify resultId as key to reset scroll position when loaded new search results */}
-            <div className={`${CLASS_NAME}__rest`} key={this.state.resultId}>
+            <div className={`${CLASS_NAME}__rest ontodia-scrollable`} key={this.state.resultId}>
                 <SearchResults
                     view={this.props.view}
                     items={this.state.items}

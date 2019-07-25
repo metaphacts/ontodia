@@ -66,3 +66,13 @@
     height: 0;
   }
 }
+
+.ontodia-scrollable {
+  flex: 1 1 0px; // IE 11 requires a unit to be added to the third argument
+  overflow-y: scroll;
+}
+
+// fixes the bug in Chrome with redrawing children in scrollable elements
+.ontodia-scrollable > * {
+  position: relative;
+}

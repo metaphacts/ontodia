@@ -14,7 +14,7 @@ import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram
 import { DiagramView, IriClickHandler } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
-import { EditorController, PropertyEditor, recursiveForceLayout } from '../editor/editorController';
+import { EditorController, PropertyEditor } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
 import { dataURLToBlob } from '../viewUtils/toSvg';
@@ -26,6 +26,7 @@ import { Navigator } from '../widgets/navigator';
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
+import { recursiveForceLayout } from '../viewUtils/layout';
 
 const ONTODIA_WEBSITE = 'https://ontodia.org/';
 const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');

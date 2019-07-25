@@ -108,12 +108,6 @@
     background-image: url("../images/delete.svg");
   }
 
-  &__delete {
-    @include halo-button;
-    @include ne-docked;
-    background-image: url("../images/font-awesome/trash-alt.svg");
-  }
-
   &__expand {
     @include halo-button;
     @include s-docked;

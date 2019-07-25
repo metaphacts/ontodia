@@ -19,9 +19,6 @@
   }
 
   &__tree {
-    height: 0;
-    flex-grow: 1;
-    overflow-y: scroll;
     border-top: 1px solid rgb(221, 221, 221);
   }
 }

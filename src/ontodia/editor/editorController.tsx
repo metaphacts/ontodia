@@ -25,13 +25,13 @@ import { HaloLink } from '../widgets/haloLink';
 import { StatesWidget } from './statesWidget';
 
 import {
-    forceLayout, padded, removeOverlaps, recursiveLayout, placeElementsAround,
+    placeElementsAround, recursiveForceLayout,
 } from '../viewUtils/layout';
 import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, isLinkConnectedToElement, LinkChange, ElementChange,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState,
 } from './authoringState';
 import { EditLayer, EditLayerMode } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
@@ -967,30 +967,6 @@ function placeElements(
     }
 
     return elements;
-}
-
-export function recursiveForceLayout(params: {
-    model: DiagramModel;
-    fixedElementIds?: ReadonlySet<string>;
-    group?: string;
-}) {
-    const {model, group, fixedElementIds} = params;
-    recursiveLayout({
-        model,
-        group,
-        fixedElementIds,
-        layoutFunction: (nodes, links) => {
-            if (fixedElementIds && fixedElementIds.size > 0) {
-                padded(nodes, {x: 50, y: 50}, () => forceLayout({
-                    nodes, links, preferredLinkLength: 200,
-                    avoidOvelaps: true,
-                }));
-            } else {
-                forceLayout({nodes, links, preferredLinkLength: 200});
-                padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
-            }
-        },
-    });
 }
 
 export function createLinkAndChangeDirection({data, originalData, sourceId, targetId}: {

@@ -87,7 +87,7 @@ export class ClassTree extends React.Component<ClassTreeProps, State> {
                     </div>
                 </div>
                 <ProgressBar state={refreshingState} />
-                <Forest className={`${CLASS_NAME}__tree`}
+                <Forest className={`${CLASS_NAME}__tree ontodia-scrollable`}
                     view={view}
                     nodes={filteredRoots}
                     searchText={searchText}

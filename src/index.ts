@@ -28,7 +28,9 @@ export * from './ontodia/diagram/geometry';
 export * from './ontodia/diagram/history';
 export * from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
-export { PointerEvent, PointerUpEvent, getContentFittingBox } from './ontodia/diagram/paperArea';
+export {
+    PointerEvent, PointerUpEvent, getContentFittingBox, ViewportOptions, ScaleOptions,
+} from './ontodia/diagram/paperArea';
 
 export * from './ontodia/editor/asyncModel';
 export { AuthoredEntity, AuthoredEntityProps, AuthoredEntityContext } from './ontodia/editor/authoredEntity';
@@ -42,7 +44,7 @@ export {
     LayoutData, LayoutElement, LayoutLink, SerializedDiagram,
     convertToSerializedDiagram, makeSerializedDiagram, LinkTypeOptions, makeLayoutData
 } from './ontodia/editor/serializedDiagram';
-export { recursiveLayout } from './ontodia/viewUtils/layout';
+export { recursiveLayout, recursiveForceLayout } from './ontodia/viewUtils/layout';
 
 export { Cancellation, CancellationToken } from './ontodia/viewUtils/async';
 export * from './ontodia/viewUtils/events';
@@ -50,7 +52,9 @@ export * from './ontodia/viewUtils/events';
 export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/connectionsMenu';
 
 export * from './ontodia/workspace/toolbar';
-export { Workspace, WorkspaceProps, WorkspaceLanguage, renderTo } from './ontodia/workspace/workspace';
+export {
+    Workspace, WorkspaceProps, WorkspaceLanguage, renderTo,
+} from './ontodia/workspace/workspace';
 export { WorkspaceEventHandler, WorkspaceEventKey } from './ontodia/workspace/workspaceContext';
 export { DraggableHandle } from './ontodia/workspace/draggableHandle';
 

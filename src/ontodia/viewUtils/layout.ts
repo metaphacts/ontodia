@@ -115,17 +115,25 @@ export function padded(
 export function recursiveLayout(params: {
     model: DiagramModel;
     layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], group: string) => void;
-    fixedElementIds?: ReadonlySet<string>;
+    fixedElements?: ReadonlySet<Element>;
     group?: string;
+    selectedElements?: ReadonlySet<Element>;
 }) {
     const grouping = computeGrouping(params.model.elements);
-    const {layoutFunction, model, fixedElementIds} = params;
+    const {layoutFunction, model, fixedElements, selectedElements} = params;
+
+    if (selectedElements && selectedElements.size <= 1) {
+        return;
+    }
     internalRecursion(params.group);
 
     function internalRecursion(group: string) {
-        const elements = group
+        const elementsToProcess = group
             ? grouping.get(group)
             : model.elements.filter(el => el.group === undefined);
+        const elements = selectedElements
+            ? elementsToProcess.filter(el => selectedElements.has(el))
+            : elementsToProcess;
 
         for (const element of elements) {
             if (grouping.has(element.id)) {
@@ -140,7 +148,7 @@ export function recursiveLayout(params: {
             const node: LayoutNode = {
                 id: element.id,
                 x, y, width, height,
-                fixed: fixedElementIds && fixedElementIds.has(element.id) ? 1 : 0,
+                fixed: fixedElements && fixedElements.has(element) ? 1 : 0,
             };
             nodeById[element.id] = node;
             nodes.push(node);
@@ -162,15 +170,44 @@ export function recursiveLayout(params: {
         layoutFunction(nodes, links, group);
 
         if (group) {
-            const offset = getContentFittingBox(elements, []);
+            const offset: Vector = getContentFittingBox(elements, []);
             translateToPositiveQuadrant(nodes, offset);
         }
 
+        const averagePosition = calcAveragePosition(elements);
         for (const node of nodes) {
             const element = model.getElement(node.id);
             element.setPosition({x: node.x, y: node.y});
         }
+
+        if (selectedElements) {
+            const newAveragePosition = calcAveragePosition(elements);
+            const averageDiff = {
+                x: averagePosition.x - newAveragePosition.x,
+                y: averagePosition.y - newAveragePosition.y,
+            };
+            for (const node of nodes) {
+                const element = model.getElement(node.id);
+                element.setPosition({
+                    x: node.x + averageDiff.x,
+                    y: node.y + averageDiff.y,
+                });
+            }
+        }
     }
+}
+
+export function calcAveragePosition(elements: ReadonlyArray<Element>): Vector {
+    let xSum = 0;
+    let ySum = 0;
+    for (const element of elements) {
+        xSum += element.position.x + element.size.width / 2;
+        ySum += element.position.y + element.size.height / 2;
+    }
+    return {
+        x: xSum / elements.length,
+        y: ySum / elements.length,
+    };
 }
 
 export function placeElementsAround(params: {
@@ -188,17 +225,12 @@ export function placeElementsAround(params: {
     };
     let outgoingAngle = 0;
     if (targetElement.links.length > 0) {
-        let xSum = 0;
-        let ySum = 0;
-        for (const link of targetElement.links) {
-            const linkSource = model.sourceOf(link);
-            const source = linkSource !== targetElement ? linkSource : model.targetOf(link);
-            xSum += source.position.x + source.size.width / 2;
-            ySum += source.position.y + source.size.height / 2;
-        }
-        const averageSourcePosition: Vector = {
-            x: xSum / targetElement.links.length, y: ySum / targetElement.links.length,
-        };
+        const averageSourcePosition = calcAveragePosition(
+            targetElement.links.map(link => {
+                const linkSource = model.sourceOf(link);
+                return linkSource !== targetElement ? linkSource : model.targetOf(link);
+            }),
+        );
         const vectorDiff: Vector = {
             x: targetPosition.x - averageSourcePosition.x, y: targetPosition.y - averageSourcePosition.y,
         };
@@ -250,17 +282,43 @@ export function placeElementsAround(params: {
 
 export function recursiveRemoveOverlaps(params: {
     model: DiagramModel;
-    fixedElementIds?: ReadonlySet<string>;
+    fixedElements?: ReadonlySet<Element>;
     padding?: Vector;
     group?: string;
 }) {
-    const {padding, model, group, fixedElementIds} = params;
+    const {padding, model, group, fixedElements} = params;
     recursiveLayout({
         model,
         group,
-        fixedElementIds,
+        fixedElements,
         layoutFunction: (nodes) => {
             padded(nodes, padding, () => removeOverlaps(nodes));
+        },
+    });
+}
+
+export function recursiveForceLayout(params: {
+    model: DiagramModel;
+    fixedElements?: ReadonlySet<Element>;
+    group?: string;
+    selectedElements?: ReadonlySet<Element>;
+}) {
+    const {model, group, fixedElements, selectedElements} = params;
+    recursiveLayout({
+        model,
+        group,
+        fixedElements,
+        selectedElements,
+        layoutFunction: (nodes, links) => {
+            if (fixedElements && fixedElements.size > 0) {
+                padded(nodes, {x: 50, y: 50}, () => forceLayout({
+                    nodes, links, preferredLinkLength: 200,
+                    avoidOvelaps: true,
+                }));
+            } else {
+                forceLayout({nodes, links, preferredLinkLength: 200});
+                padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
+            }
         },
     });
 }
