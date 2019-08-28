@@ -37,6 +37,7 @@ import { EditLayer, EditLayerMode } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
 
 import { Cancellation } from '../viewUtils/async';
+import { makeMoveComparator, MoveDirection } from '../viewUtils/collections';
 
 export interface PropertyEditorOptions {
     elementData: ElementModel;
@@ -301,6 +302,7 @@ export class EditorController {
             if (this.dialogTarget && selected !== this.dialogTarget) {
                 this.hideDialog();
             }
+            this.bringSelectedElementsToFront();
             this.renderDefaultHalo();
         });
 
@@ -309,6 +311,16 @@ export class EditorController {
         });
 
         this.renderDefaultHalo();
+    }
+
+    private bringSelectedElementsToFront() {
+        if (this.selection.length === 0) { return; }
+        this.model.reorderElements(makeMoveComparator(
+            this.model.elements,
+            this.selection.filter(item => item instanceof Element),
+            MoveDirection.ToEnd,
+        ));
+        this.view.performSyncUpdate();
     }
 
     private renderDefaultHalo() {

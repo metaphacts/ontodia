@@ -21,6 +21,12 @@
   &__tree {
     border-top: 1px solid rgb(221, 221, 221);
   }
+
+  &__spinner {
+    align-self: center;
+    /* center vertically in flexbox */
+    margin: auto;
+  }
 }
 
 .ontodia-class-leaf {

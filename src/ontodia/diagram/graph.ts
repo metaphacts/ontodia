@@ -53,6 +53,10 @@ export class Graph {
         return this.getElement(link.targetId);
     }
 
+    reorderElements(compare: (a: DiagramElement, b: DiagramElement) => number) {
+        this.elements.reorder(compare);
+    }
+
     getElement(elementId: string): DiagramElement | undefined {
         return this.elements.get(elementId);
     }

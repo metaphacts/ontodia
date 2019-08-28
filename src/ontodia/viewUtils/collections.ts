@@ -47,6 +47,10 @@ export class OrderedMap<V> {
         this.ordered = [];
     }
 
+    reorder(compare: (a: V, b: V) => number) {
+        this.ordered.sort(compare);
+    }
+
     get items(): ReadonlyArray<V> {
         return this.ordered;
     }
@@ -163,4 +167,36 @@ export class HashMap<K, V> implements ReadonlyHashMap<K, V> {
         this.map.forEach((value, key) => clone.map.set(key, [...value]));
         return clone;
     }
+}
+
+export enum MoveDirection {
+    ToStart = -1,
+    ToEnd = 1,
+}
+
+export function makeMoveComparator<T>(
+    items: ReadonlyArray<T>,
+    selected: ReadonlyArray<T>,
+    moveDirection: MoveDirection,
+): (a: T, b: T) => number {
+    const orderMap = new Map<T, number>();
+    const selectionIndexOffset = moveDirection * items.length;
+
+    items.forEach((item, index) => {
+        orderMap.set(item, index);
+    });
+
+    for (const selectedItem of selected) {
+        orderMap.set(selectedItem, selectionIndexOffset + orderMap.get(selectedItem));
+    }
+
+    return (a: T, b: T) => {
+        const orderA = orderMap.get(a);
+        const orderB = orderMap.get(b);
+        return (
+            orderA > orderB ? 1 :
+            orderA < orderB ? -1 :
+            0
+        );
+    };
 }

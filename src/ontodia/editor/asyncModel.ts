@@ -29,7 +29,6 @@ export interface AsyncModelEvents extends DiagramModelEvents {
         source: AsyncModel;
         error: any;
     };
-    changeClassTree: { source: AsyncModel };
     createLoadedLink: {
         source: AsyncModel;
         model: LinkModel;
@@ -43,7 +42,6 @@ export class AsyncModel extends DiagramModel {
     private _dataProvider: DataProvider;
     private fetcher: DataFetcher;
 
-    private classTree: ReadonlyArray<ClassModel> = [];
     private linkSettings: { [linkTypeId: string]: LinkTypeOptions } = {};
 
     constructor(
@@ -58,10 +56,6 @@ export class AsyncModel extends DiagramModel {
     }
 
     get dataProvider() { return this._dataProvider; }
-
-    getClasses(): ReadonlyArray<ClassModel> {
-        return this.classTree;
-    }
 
     subscribeGraph() {
         super.subscribeGraph();
@@ -83,11 +77,7 @@ export class AsyncModel extends DiagramModel {
         this.setDataProvider(dataProvider);
         this.asyncSource.trigger('loadingStart', {source: this});
 
-        return Promise.all([
-            this.dataProvider.classTree(),
-            this.dataProvider.linkTypes(),
-        ]).then(([classTree, linkTypes]: [ClassModel[], LinkType[]]) => {
-            this.setClassTree(classTree);
+        return this.dataProvider.linkTypes().then((linkTypes: LinkType[]) => {
             const allLinkTypes = this.initLinkTypes(linkTypes);
             return this.loadAndRenderLayout({
                 allLinkTypes,
@@ -112,11 +102,7 @@ export class AsyncModel extends DiagramModel {
         this.setDataProvider(params.dataProvider);
         this.asyncSource.trigger('loadingStart', {source: this});
 
-        return Promise.all<ClassModel[], LinkType[]>([
-            this.dataProvider.classTree(),
-            this.dataProvider.linkTypes(),
-        ]).then(([classTree, linkTypes]) => {
-            this.setClassTree(classTree);
+        return this.dataProvider.linkTypes().then(linkTypes => {
             const allLinkTypes = this.initLinkTypes(linkTypes);
             const diagram = params.diagram ? params.diagram : emptyDiagram();
             this.setLinkSettings(diagram.linkTypeOptions);
@@ -148,33 +134,6 @@ export class AsyncModel extends DiagramModel {
             .map(({id, visible, showLabel}): LinkTypeOptions =>
                 ({'@type': 'LinkTypeOptions', property: id, visible, showLabel}));
         return makeSerializedDiagram({layoutData, linkTypeOptions});
-    }
-
-    private setClassTree(roots: ClassModel[]) {
-        const visiting = new Set<ElementTypeIri>();
-        const reduceNonCycle = (acc: ClassModel[], model: ClassModel) => {
-            if (!visiting.has(model.id)) {
-                visiting.add(model.id);
-                const children = model.children.reduce(reduceNonCycle, []);
-                acc.push({...model, children});
-                visiting.delete(model.id);
-            }
-            return acc;
-        };
-        this.classTree = roots.reduce(reduceNonCycle, []);
-
-        const addClass = (model: ClassModel) => {
-            const existing = this.getClass(model.id);
-            if (!existing) {
-                const {id, label, count, children} = model;
-                const richClass = new FatClassModel({id, label: label.values, count});
-                this.graph.addClass(richClass);
-                children.forEach(addClass);
-            }
-        };
-        this.classTree.forEach(addClass);
-
-        this.asyncSource.trigger('changeClassTree', {source: this});
     }
 
     private initLinkTypes(linkTypes: LinkType[]): FatLinkType[] {
@@ -285,7 +244,7 @@ export class AsyncModel extends DiagramModel {
 
     createClass(classId: ElementTypeIri): FatClassModel {
         if (this.graph.getClass(classId)) {
-            return super.createClass(classId);
+            return super.getClass(classId);
         }
         const classModel = super.createClass(classId);
         this.fetcher.fetchClass(classModel);

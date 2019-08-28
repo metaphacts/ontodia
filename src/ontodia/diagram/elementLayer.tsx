@@ -200,7 +200,7 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             const {view, model} = this.props;
             const clickIntent = e.target.getAttribute('data-iri-click-intent') === IriClickIntent.OpenEntityIri ?
                 IriClickIntent.OpenEntityIri : IriClickIntent.OpenOtherIri;
-            view.onIriClick(anchor.href, model, clickIntent, e);
+            view.onIriClick(decodeURI(anchor.href), model, clickIntent, e);
         }
     }
 

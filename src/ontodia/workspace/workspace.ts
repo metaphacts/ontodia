@@ -56,6 +56,8 @@ export interface WorkspaceProps {
     hideTutorial?: boolean;
     /** @default false */
     hideNavigator?: boolean;
+    /** @default false */
+    collapseNavigator?: boolean;
     /** @default true */
     leftPanelInitiallyOpen?: boolean;
     /** @default false */
@@ -123,6 +125,7 @@ export interface State {
 export class Workspace extends Component<WorkspaceProps, State> {
     static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
+        collapseNavigator: false,
         leftPanelInitiallyOpen: true,
         rightPanelInitiallyOpen: false,
         languages: [
@@ -303,7 +306,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     private updateNavigator(showNavigator: boolean) {
         if (showNavigator) {
-            const widget = createElement(Navigator, {view: this.view});
+            const widget = createElement(Navigator, {view: this.view, expanded: !this.props.collapseNavigator});
             this.view.setPaperWidget({key: 'navigator', widget, pinnedToScreen: true});
         } else {
             this.view.setPaperWidget({key: 'navigator', widget: undefined});

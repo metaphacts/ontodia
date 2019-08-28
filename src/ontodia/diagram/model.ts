@@ -89,6 +89,10 @@ export class DiagramModel {
         this.source.trigger('changeCells', {source: this});
     }
 
+    reorderElements(compare: (a: Element, b: Element) => number) {
+        this.graph.reorderElements(compare);
+    }
+
     createElement(elementIriOrModel: ElementIri | ElementModel, group?: string): Element {
         const elementIri = typeof elementIriOrModel === 'string'
             ? elementIriOrModel : (elementIriOrModel as ElementModel).id;
@@ -164,8 +168,12 @@ export class DiagramModel {
             return existing;
         }
         const classModel = new FatClassModel({id: classIri});
-        this.graph.addClass(classModel);
+        this.addClass(classModel);
         return classModel;
+    }
+
+    addClass(model: FatClassModel) {
+        this.graph.addClass(model);
     }
 
     getLinkType(linkTypeIri: LinkTypeIri): FatLinkType | undefined {

@@ -17,6 +17,7 @@ export interface NavigatorProps extends PaperWidgetProps {
     width?: number;
     height?: number;
     scalePadding?: number;
+    expanded?: boolean;
 }
 
 interface NavigatorTransform {
@@ -37,6 +38,7 @@ export class Navigator extends React.Component<NavigatorProps, State> {
         width: 300,
         height: 160,
         scalePadding: 0.2,
+        expanded: true,
     };
 
     private readonly delayedRedraw = new Debouncer();
@@ -48,7 +50,7 @@ export class Navigator extends React.Component<NavigatorProps, State> {
 
     constructor(props: NavigatorProps, context: any) {
         super(props, context);
-        this.state = {expanded: true};
+        this.state = {expanded: this.props.expanded};
     }
 
     componentDidMount() {
