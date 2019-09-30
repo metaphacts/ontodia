@@ -4,6 +4,7 @@
     "rules": {
         "array-type": [false],
         "arrow-parens": [false, "ban-single-arg-parens"],
+        "indent": [true, "spaces", 4],
         "interface-name": [false],
         "max-classes-per-file": [false, 1],
         "member-access": [false],

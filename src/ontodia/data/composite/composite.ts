@@ -58,7 +58,7 @@ export class CompositeDataProvider implements DataProvider {
     }
 
     classTree(): Promise<ClassModel[]> {
-        return this.fetchSequentially('classTree', mergeClassTree);
+        return this.fetchSequentially('classTree', mergeClassTree, undefined);
     }
 
     propertyInfo(params: { propertyIds: PropertyTypeIri[] }): Promise<Dictionary<PropertyModel>> {
@@ -99,7 +99,7 @@ export class CompositeDataProvider implements DataProvider {
     }
 
     linkTypes(): Promise<LinkType[]> {
-        return this.fetchSequentially('linkTypes', mergeLinkTypes);
+        return this.fetchSequentially('linkTypes', mergeLinkTypes, undefined);
     }
 
     elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
@@ -223,12 +223,24 @@ export class CompositeDataProvider implements DataProvider {
         return recursiveCall();
     }
 
-    private fetchSequentially<ResponseType>(
-        functionName: keyof DataProvider, mergeFunction: (...args: any[]) => ResponseType, params?: any,
+    private fetchSequentially<K extends keyof DataProvider>(
+        functionName: K,
+        mergeFunction: (response: CompositeResponse<OperationResult<K>>[]) => OperationResult<K>,
+        params: OperationParams<K>,
     ) {
-        const resultPromises = this.dataProviders.map((dp: DPDefinition) =>
-            this.processResults(dp.dataProvider[functionName].call(dp.dataProvider, params), dp.name, dp.useInStats)
-        );
+        const resultPromises = this.dataProviders.map((dp: DPDefinition) => {
+            const providerMethod = dp.dataProvider[functionName] as any as
+                (this: DataProvider, params: OperationParams<K>) => Promise<OperationResult<K>>;
+            return this.processResults(providerMethod.call(dp.dataProvider, params), dp.name, dp.useInStats);
+        });
         return Promise.all(resultPromises).then(mergeFunction);
     }
 }
+
+type OperationParams<K> = any;
+type OperationResult<K> = any;
+// TODO: replace on compiler update
+// type OperationParams<K extends keyof DataProvider> =
+//     DataProvider[K] extends (params: infer P) => any ? P : never;
+// type OperationResult<K extends keyof DataProvider> =
+//     ReturnType<DataProvider[K]> extends Promise<infer R> ? R : never;

@@ -3,7 +3,7 @@ import { pick } from 'lodash';
 import { ElementIri, LinkTypeIri } from '../data/model';
 import { DIAGRAM_CONTEXT_URL_V1 } from '../data/schema';
 
-import { Element as DiagramElement, Link as DiagramLink } from '../diagram/elements';
+import { Element, ElementTemplateState, Link, LinkTemplateState } from '../diagram/elements';
 import { Vector, Size } from '../diagram/geometry';
 
 export interface SerializedDiagram {
@@ -35,6 +35,7 @@ export interface LayoutElement {
     angle?: number;
     isExpanded?: boolean;
     group?: string;
+    elementState?: ElementTemplateState;
 }
 
 export interface LayoutLink {
@@ -143,8 +144,8 @@ export function makeSerializedDiagram(params: {
 }
 
 export function makeLayoutData(
-    modelElements: ReadonlyArray<DiagramElement>,
-    modelLinks: ReadonlyArray<DiagramLink>,
+    modelElements: ReadonlyArray<Element>,
+    modelLinks: ReadonlyArray<Link>,
 ): LayoutData {
     const elements = modelElements.map((element): LayoutElement => ({
         '@type': 'Element',
@@ -154,6 +155,7 @@ export function makeLayoutData(
         size: element.size,
         isExpanded: element.isExpanded,
         group: element.group,
+        elementState: element.elementState,
     }));
     const links = modelLinks.map((link): LayoutLink => ({
         '@type': 'Link',
@@ -165,8 +167,4 @@ export function makeLayoutData(
         linkState: link.linkState,
     }));
     return {'@type': 'Layout', elements, links};
-}
-
-export interface LinkTemplateState {
-    [propertyIri: string]: any;
 }

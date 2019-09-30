@@ -1,8 +1,7 @@
 import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
-import { LinkModel, LinkTypeIri, ElementModel, sameLink } from '../data/model';
-import { formatLocalizedLabel, chooseLocalizedText } from '../diagram/model';
+import { LinkModel, ElementModel, sameLink } from '../data/model';
 import { PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 import { EditorController } from '../editor/editorController';
@@ -75,25 +74,6 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         this.cancellation.abort();
     }
 
-    private sortLinksByLabelAndDirection = (a: DirectedFatLinkType, b: DirectedFatLinkType) => {
-        const language = this.props.view.getLanguage();
-        const labelA = formatLocalizedLabel(a.fatLinkType.id, a.fatLinkType.label, language);
-        const labelB = formatLocalizedLabel(b.fatLinkType.id, b.fatLinkType.label, language);
-        if (labelA < labelB) {
-            return -1;
-        }
-        if (labelA > labelB) {
-            return 1;
-        }
-        if (a.direction === LinkDirection.out && b.direction === LinkDirection.in) {
-            return -1;
-        }
-        if (a.direction === LinkDirection.in && b.direction === LinkDirection.out) {
-            return 1;
-        }
-        return 0;
-    }
-
     private fetchPossibleLinkTypes() {
         const {view, metadataApi, source, target} = this.props;
         if (!metadataApi) { return; }
@@ -104,7 +84,7 @@ export class LinkTypeSelector extends React.Component<Props, State> {
                 const fatLinkType = view.model.createLinkType(linkTypeIri);
                 fatLinkTypes.push({fatLinkType, direction});
             });
-            fatLinkTypes.sort(this.sortLinksByLabelAndDirection);
+            fatLinkTypes.sort(makeLinkTypeComparatorByLabelAndDirection(view));
             this.setState({fatLinkTypes});
             this.listenToLinkLabels(fatLinkTypes);
         });
@@ -133,9 +113,9 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         {fatLinkType, direction}: { fatLinkType: FatLinkType; direction: LinkDirection }, index: number
     ) => {
         const {view, linkValue, source, target} = this.props;
-        const label = formatLocalizedLabel(fatLinkType.id, fatLinkType.label, view.getLanguage());
+        const label = view.formatLabel(fatLinkType.label, fatLinkType.id);
         let [sourceLabel, targetLabel] = [source, target].map(element =>
-            formatLocalizedLabel(element.id, element.label.values, view.getLanguage())
+            view.formatLabel(element.label.values, element.id)
         );
         if (direction !== linkValue.value.direction) {
             [sourceLabel, targetLabel] = [targetLabel, sourceLabel];
@@ -169,6 +149,24 @@ export class LinkTypeSelector extends React.Component<Props, State> {
             </div>
         );
     }
+}
+
+function makeLinkTypeComparatorByLabelAndDirection(view: DiagramView) {
+    return (a: DirectedFatLinkType, b: DirectedFatLinkType) => {
+        const labelA = view.formatLabel(a.fatLinkType.label, a.fatLinkType.id);
+        const labelB = view.formatLabel(b.fatLinkType.label, b.fatLinkType.id);
+        const labelCompareResult = labelA.localeCompare(labelB);
+        if (labelCompareResult !== 0) {
+            return labelCompareResult;
+        }
+        if (a.direction === LinkDirection.out && b.direction === LinkDirection.in) {
+            return -1;
+        }
+        if (a.direction === LinkDirection.in && b.direction === LinkDirection.out) {
+            return 1;
+        }
+        return 0;
+    };
 }
 
 export function validateLinkType(

@@ -312,7 +312,7 @@ function loadCrossOriginImage(src: string): Promise<HTMLImageElement> {
     image.crossOrigin = 'anonymous';
     const promise = new Promise<HTMLImageElement>((resolve, reject) => {
         image.onload = () => resolve(image);
-        image.onerror = ev => reject(ev.error);
+        image.onerror = ev => reject(ev);
     });
     image.src = src;
     return promise;
@@ -403,7 +403,7 @@ export function loadImage(source: string): Promise<HTMLImageElement> {
         image.onload = function () {
             resolve(image);
         };
-        image.onerror = function (ev: ErrorEvent) {
+        image.onerror = function (ev) {
             reject(ev);
         };
         image.src = source;

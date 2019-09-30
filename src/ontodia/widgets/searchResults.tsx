@@ -1,8 +1,9 @@
 import * as React from 'react';
 
-import { Dictionary, ElementModel, ElementIri } from '../data/model';
+import { ElementModel, ElementIri } from '../data/model';
 import { DiagramView } from '../diagram/view';
 import { cloneSet } from '../viewUtils/collections';
+import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { ListElementView, startDragElements } from './listElementView';
 
@@ -20,6 +21,7 @@ const enum Direction { Up, Down }
 
 export class SearchResults extends React.Component<SearchResultProps, {}> {
     private readonly listener = new EventObserver();
+    private readonly delayedChangeCells = new Debouncer();
 
     private root: HTMLElement;
 
@@ -74,23 +76,26 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
 
     componentDidMount() {
         this.listener.listen(this.props.view.model.events, 'changeCells', () => {
-            const {items, selection} = this.props;
-
-            if (selection.size === 0) {
-                if (items && items.length > 0) {
-                    // redraw "already on diagram" state
-                    this.forceUpdate();
-                }
-            } else {
-                const newSelection = cloneSet(selection);
-                for (const element of this.props.view.model.elements) {
-                    if (element.group === undefined && selection.has(element.iri)) {
-                        newSelection.delete(element.iri);
-                    }
-                }
-                this.updateSelection(newSelection);
-            }
+            this.delayedChangeCells.call(this.onChangeCells);
         });
+    }
+
+    private onChangeCells = () => {
+        const {items, selection} = this.props;
+        if (selection.size === 0) {
+            if (items && items.length > 0) {
+                // redraw "already on diagram" state
+                this.forceUpdate();
+            }
+        } else {
+            const newSelection = cloneSet(selection);
+            for (const element of this.props.view.model.elements) {
+                if (element.group === undefined && selection.has(element.iri)) {
+                    newSelection.delete(element.iri);
+                }
+            }
+            this.updateSelection(newSelection);
+        }
     }
 
     componentWillReceiveProps(props: SearchResultProps) {
@@ -100,6 +105,7 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
     componentWillUnmount() {
         this.removeKeyListener();
         this.listener.stopListening();
+        this.delayedChangeCells.dispose();
     }
 
     private updateSelection(selection: ReadonlySet<ElementIri>) {

@@ -24,6 +24,7 @@
     display: flex;
     flex: auto;
     overflow: hidden;
+    flex-direction: column;
   }
 
   &__main-panel {

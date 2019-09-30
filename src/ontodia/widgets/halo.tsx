@@ -128,7 +128,9 @@ export class Halo extends React.Component<Props, State> {
             bbox.x + bbox.width,
             bbox.y + bbox.height,
         );
-        const style: React.CSSProperties = {left: x0, top: y0, width: x1 - x0, height: y1 - y0};
+        const MARGIN = 5;
+        const style: React.CSSProperties = {left: x0 - MARGIN, top: y0 - MARGIN,
+            width: ((x1 - x0) + MARGIN * 2), height: ((y1 - y0) + MARGIN * 2)};
 
         return (
             <div className={CLASS_NAME} style={style}>

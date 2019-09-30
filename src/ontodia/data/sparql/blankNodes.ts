@@ -1,6 +1,6 @@
 import { Dictionary } from '../model';
 import { FilterParams } from '../provider';
-import { uri2name } from '../utils';
+import { getUriLocalName } from '../utils';
 
 import { SparqlDataProviderSettings } from './sparqlDataProviderSettings';
 import {
@@ -199,7 +199,7 @@ export function createLabelForBlankBinding(bn: BlankBinding): RdfLiteral {
     } else {
         return {
             type: 'literal',
-            value: bn.class ? uri2name(bn.class.value) : 'anonymous',
+            value: bn.class ? (getUriLocalName(bn.class.value) || bn.class.value) : 'anonymous',
             'xml:lang': '',
         };
     }

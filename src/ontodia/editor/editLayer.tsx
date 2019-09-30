@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ElementModel, LinkModel } from '../data/model';
-import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE, GenerateID } from '../data/schema';
+import { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from '../data/schema';
 
 import { DiagramView } from '../diagram/view';
 import { LinkLayer, LinkMarkers } from '../diagram/linkLayer';
@@ -10,7 +10,6 @@ import { Element, Link, LinkDirection } from '../diagram/elements';
 import { boundsOf, Vector } from '../diagram/geometry';
 import { TransformedSvgCanvas } from '../diagram/paper';
 import { PaperWidgetProps } from '../diagram/paperArea';
-import { formatLocalizedLabel } from '../diagram/model';
 
 import { Cancellation } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
@@ -263,7 +262,7 @@ export class EditLayer extends React.Component<Props, State> {
         const elementTypes = await metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal);
         const classId = elementTypes.length === 1 ? elementTypes[0] : PLACEHOLDER_ELEMENT_TYPE;
         const type = this.props.editor.model.createClass(classId);
-        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+        const typeName = this.props.view.formatLabel(type.label, type.id);
         const labelText = classId === PLACEHOLDER_ELEMENT_TYPE ? 'New Entity' : `New ${typeName}`;
         const types = [classId];
         const entityIri = await metadataApi.generateNewElementIri(types, Cancellation.NEVER_SIGNAL);

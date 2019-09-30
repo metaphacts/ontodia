@@ -2,7 +2,6 @@ import * as React from 'react';
 
 import { ElementTypeIri, ClassModel } from '../../data/model';
 import { DataProvider } from '../../data/provider';
-import { formatLocalizedLabel } from '../../diagram/model';
 import { FatClassModel } from '../../diagram/elements';
 import { Vector } from '../../diagram/geometry';
 import { DiagramView } from '../../diagram/view';
@@ -216,8 +215,7 @@ export class ClassTree extends React.Component<ClassTreeProps, State> {
             }
 
             const roots = createRoots(this.classTree, props.view);
-            const sortedRoots = sortTree(roots, props.view.getLanguage());
-            return applyFilters({...state, roots: sortedRoots, refreshingState});
+            return applyFilters({...state, roots: sortTree(roots), refreshingState});
         });
     }
 
@@ -270,12 +268,11 @@ export class ClassTree extends React.Component<ClassTreeProps, State> {
 }
 
 function createRoots(classTree: ReadonlyArray<ClassModel>, view: DiagramView) {
-    const lang = view.getLanguage();
     const mapClass = (model: ClassModel): TreeNode => {
         const richClass = view.model.createClass(model.id);
         return {
             model: richClass,
-            label: formatLocalizedLabel(richClass.id, richClass.label, lang),
+            label: view.formatLabel(richClass.label, richClass.id),
             derived: model.children.map(mapClass),
         };
     };
@@ -301,18 +298,20 @@ function normalizeSearchText(text: string) {
     return text.trim().toLowerCase();
 }
 
-function sortTree(roots: ReadonlyArray<TreeNode>, lang: string): ReadonlyArray<TreeNode> {
-    if (roots.length === 0) {
-        return roots;
+function sortTree(roots: ReadonlyArray<TreeNode>): ReadonlyArray<TreeNode> {
+    function mapNodes(nodes: ReadonlyArray<TreeNode>): ReadonlyArray<TreeNode> {
+        if (nodes.length === 0) { return nodes; }
+        const mapped = nodes.map(mapNode);
+        mapped.sort(compareByLabel);
+        return mapped;
     }
-    const compareByLabel = (left: TreeNode, right: TreeNode) => {
-        const leftLabel = formatLocalizedLabel(left.model.id, left.model.label, lang);
-        const rightLabel = formatLocalizedLabel(right.model.id, right.model.label, lang);
-        return leftLabel.localeCompare(rightLabel);
-    };
-    const mapped = roots.map(root => TreeNode.setDerived(root, sortTree(root.derived, lang)));
-    mapped.sort(compareByLabel);
-    return mapped;
+    function mapNode(node: TreeNode): TreeNode {
+        return TreeNode.setDerived(node, mapNodes(node.derived));
+    }
+    function compareByLabel(left: TreeNode, right: TreeNode) {
+        return left.label.localeCompare(right.label);
+    }
+    return mapNodes(roots);
 }
 
 function applyFilters(state: State): State {

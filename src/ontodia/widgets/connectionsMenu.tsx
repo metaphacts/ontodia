@@ -1,10 +1,9 @@
 import * as React from 'react';
 
-import { Dictionary, LocalizedString, ElementModel, ElementIri, LinkTypeIri, LinkCount } from '../data/model';
+import { Dictionary, ElementModel, ElementIri, LinkTypeIri } from '../data/model';
 
 import { FatLinkType, Element } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
-import { formatLocalizedLabel } from '../diagram/model';
 
 import { EditorController } from '../editor/editorController';
 import { EventObserver } from '../viewUtils/events';
@@ -305,8 +304,7 @@ class ConnectionsMenuMarkup extends React.Component<ConnectionsMenuMarkupProps, 
     private getBreadCrumbs = () => {
         if (this.props.objectsData && this.state.panel === 'objects') {
             const {link, direction} = this.props.objectsData.linkDataChunk;
-            const lang = this.props.view.getLanguage();
-            const localizedText = formatLocalizedLabel(link.id, link.label, lang).toLowerCase();
+            const localizedText = this.props.view.formatLabel(link.label, link.id);
 
             return <span className='ontodia-connections-menu_bread-crumbs'>
                 <a className='ontodia-connections-menu__link' onClick={this.onCollapseLink}>Connections</a>
@@ -453,20 +451,16 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const lang = this.props.view.getLanguage();
-        const aText = formatLocalizedLabel(a.id, a.label, lang).toLowerCase();
-        const bText = formatLocalizedLabel(b.id, b.label, lang).toLowerCase();
-        return (
-            aText < bText ? -1 :
-            aText > bText ? 1 :
-            0
-        );
+        const {view} = this.props;
+        const aText = view.formatLabel(a.label, a.id);
+        const bText = view.formatLabel(b.label, b.id);
+        return aText.localeCompare(bText);
     }
 
     private compareLinksByWeight = (a: FatLinkType, b: FatLinkType) => {
-        const lang = this.props.view.getLanguage();
-        const aText = formatLocalizedLabel(a.id, a.label, lang).toLowerCase();
-        const bText = formatLocalizedLabel(b.id, b.label, lang).toLowerCase();
+        const {view} = this.props;
+        const aText = view.formatLabel(a.label, a.id);
+        const bText = view.formatLabel(b.label, b.id);
 
         const aWeight = this.state.scores[a.id] ? this.state.scores[a.id].score : 0;
         const bWeight = this.state.scores[b.id] ? this.state.scores[b.id].score : 0;
@@ -479,10 +473,10 @@ class ConnectionsList extends React.Component<ConnectionsListProps, { scores: Di
     }
 
     private getLinks = () => {
-        const lang = this.props.view.getLanguage();
-        return (this.props.data.links || []).filter(link => {
-            const text = formatLocalizedLabel(link.id, link.label, lang).toLowerCase();
-            return !this.props.filterKey || (text && text.indexOf(this.props.filterKey.toLowerCase()) !== -1);
+        const {view, data, filterKey} = this.props;
+        return (data.links || []).filter(link => {
+            const text = view.formatLabel(link.label, link.id).toLowerCase();
+            return !filterKey || text.indexOf(filterKey.toLowerCase()) >= 0;
         })
         .sort(this.compareLinks);
     }
@@ -613,7 +607,7 @@ class LinkInPopupMenu extends React.Component<LinkInPopupMenuProps, {}> {
 
     render() {
         const {view, link} = this.props;
-        const fullText = formatLocalizedLabel(link.id, link.label, view.getLanguage());
+        const fullText = view.formatLabel(link.label, link.id);
         const probability = Math.round(this.props.probability * 100);
         const textLine = highlightSubstring(
             fullText + (probability > 0 ? ' (' + probability + '%)' : ''),
@@ -686,9 +680,10 @@ class ObjectsPanel extends React.Component<ObjectsPanelProps, ObjectsPanelState>
             return this.props.data.objects;
         }
         const filterKey = this.props.filterKey.toLowerCase();
-        const lang = this.props.view.getLanguage();
         return this.props.data.objects.filter(element => {
-            const text  = formatLocalizedLabel(element.model.id, element.model.label.values, lang).toLowerCase();
+            const text = this.props.view.formatLabel(
+                element.model.label.values, element.model.id
+            ).toLowerCase();
             return text && text.indexOf(filterKey) >= 0;
         });
     }

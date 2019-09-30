@@ -2,6 +2,10 @@
   position: absolute;
   pointer-events: none;
 
+  border: 1.5px dashed #d8956d;
+  border-radius: 2px;
+  box-shadow: 0 0 5px 0 #d8956d inset;
+
   $buttonWidth: 20px;
   $buttonHeight: 20px;
   $buttonMargin: 2px;

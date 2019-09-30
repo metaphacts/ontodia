@@ -1,7 +1,6 @@
 import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
-import { formatLocalizedLabel, chooseLocalizedText } from '../diagram/model';
 import { ElementModel, PropertyTypeIri, Property, isIriProperty, isLiteralProperty } from '../data/model';
 
 const CLASS_NAME = 'ontodia-edit-form';
@@ -33,7 +32,7 @@ export class EditEntityForm extends React.Component<Props, State> {
     private renderProperty = (key: PropertyTypeIri, property: Property) => {
         const {view} = this.props;
         const richProperty = view.model.getProperty(key);
-        const label = formatLocalizedLabel(key, richProperty.label, view.getLanguage());
+        const label = view.formatLabel(richProperty.label, key);
 
         let values: string[] = [];
         if (isIriProperty(property)) {
@@ -92,12 +91,12 @@ export class EditEntityForm extends React.Component<Props, State> {
 
     private renderLabel() {
         const {view} = this.props;
-        const labels = this.state.elementModel.label.values;
-        const label = labels.length > 0 ? chooseLocalizedText(labels, view.getLanguage()).text : '';
+        const label = view.selectLabel(this.state.elementModel.label.values);
+        const text = label ? label.text : '';
         return (
             <label>
                 Label
-                <input className='ontodia-form-control' value={label} onChange={this.onChangeLabel} />
+                <input className='ontodia-form-control' value={text} onChange={this.onChangeLabel} />
             </label>
         );
     }

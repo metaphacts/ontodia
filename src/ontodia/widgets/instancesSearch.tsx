@@ -4,7 +4,6 @@ import { ElementModel, ElementIri, Dictionary } from '../data/model';
 import { FilterParams } from '../data/provider';
 
 import { Element as DiagramElement, FatLinkType, FatClassModel } from '../diagram/elements';
-import { formatLocalizedLabel } from '../diagram/model';
 import { DiagramView } from '../diagram/view';
 
 import { AsyncModel } from '../editor/asyncModel';
@@ -129,7 +128,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
 
         if (criteria.elementType) {
             const classInfo = criteria.elementType;
-            const classLabel = formatLocalizedLabel(classInfo.id, classInfo.label, view.getLanguage());
+            const classLabel = view.formatLabel(classInfo.label, classInfo.id);
             criterions.push(<div key='hasType' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
                     {...this.props.criteria, elementType: undefined}))}
@@ -138,11 +137,10 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
             </div>);
         } else if (criteria.refElement) {
             const element = criteria.refElement;
-            const elementLabel = formatLocalizedLabel(element.iri, element.data.label.values, view.getLanguage());
+            const elementLabel = view.formatLabel(element.data.label.values, element.iri);
 
             const linkType = criteria.refElementLink;
-            const linkTypeLabel = linkType
-                ? formatLocalizedLabel(linkType.id, linkType.label, view.getLanguage()) : undefined;
+            const linkTypeLabel = linkType ? view.formatLabel(linkType.label, linkType.id) : undefined;
 
             criterions.push(<div key='hasLinkedElement' className={`${CLASS_NAME}__criterion`}>
                 {this.renderRemoveCriterionButtons(() => this.props.onCriteriaChanged(
@@ -152,7 +150,7 @@ export class InstancesSearch extends React.Component<InstancesSearchProps, State
                 {linkType && <span>
                     {' through '}
                     <span className={`${CLASS_NAME}__criterion-link-type`}
-                        title={linkType && linkType.id}>{linkTypeLabel}</span>
+                        title={linkType ? linkType.id : undefined}>{linkTypeLabel}</span>
                     {criteria.linkDirection === 'in' && <span>
                         {' as '}<img className={`${CLASS_NAME}__link-direction`} src={DirectionInImage} />&nbsp;source
                     </span>}

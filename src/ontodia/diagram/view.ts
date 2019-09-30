@@ -1,10 +1,11 @@
+import { ReactNode } from 'react';
 import { hcl } from 'd3-color';
 import { defaultsDeep, cloneDeep } from 'lodash';
 import { ReactElement, MouseEvent } from 'react';
 
 import {
     LinkRouter, TypeStyleResolver, LinkTemplateResolver, TemplateResolver,
-    CustomTypeStyle, ElementTemplate, LinkTemplate, RoutedLink, RoutedLinks,
+    ElementTemplate, LinkTemplate, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { DefaultTypeStyleBundle } from '../customization/defaultTypeStyles';
 import { DefaultLinkTemplateBundle } from '../customization/defaultLinkStyles';
@@ -12,14 +13,14 @@ import { StandardTemplate, DefaultElementTemplateBundle } from '../customization
 
 import { ElementModel, LocalizedString, ElementTypeIri, LinkTypeIri } from '../data/model';
 import { isEncodedBlank } from '../data/sparql/blankNodes';
-import { hashFnv32a, uri2name } from '../data/utils';
+import { hashFnv32a, getUriLocalName } from '../data/utils';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
-import { Element, Link, FatLinkType, FatClassModel } from './elements';
-import { Vector } from './geometry';
+import { Element, Link, FatLinkType } from './elements';
+import { Vector, isPolylineEqual } from './geometry';
 import { DefaultLinkRouter } from './linkRouter';
-import { DiagramModel, chooseLocalizedText } from './model';
+import { DiagramModel } from './model';
 
 export enum IriClickIntent {
     JumpToEntity = 'jumpToEntity',
@@ -34,10 +35,14 @@ export interface IriClickEvent {
 }
 export type IriClickHandler = (event: IriClickEvent) => void;
 
+export type LabelLanguageSelector =
+    (labels: ReadonlyArray<LocalizedString>, language: string) => LocalizedString | undefined;
+
 export interface ViewOptions {
     typeStyleResolver?: TypeStyleResolver;
     linkTemplateResolver?: LinkTemplateResolver;
     elementTemplateResolver?: TemplateResolver;
+    selectLabelLanguage?: LabelLanguageSelector;
     linkRouter?: LinkRouter;
     onIriClick?: IriClickHandler;
 }
@@ -72,9 +77,15 @@ export interface UpdateWidgetsEvent {
     widgets: { [key: string]: WidgetDescription };
 }
 
+export enum WidgetAttachment {
+    Viewport = 1,
+    OverElements,
+    OverLinks,
+}
+
 export interface WidgetDescription {
     element: ReactElement<any>;
-    pinnedToScreen: boolean;
+    attachment: WidgetAttachment;
 }
 
 export interface DropOnPaperEvent {
@@ -83,6 +94,8 @@ export interface DropOnPaperEvent {
 }
 
 export type Highlighter = ((item: Element | Link) => boolean) | undefined;
+
+export type ElementDecoratorResolver = (element: Element) => ReactNode | undefined;
 
 export class DiagramView {
     private readonly listener = new EventObserver();
@@ -101,10 +114,12 @@ export class DiagramView {
 
     private linkTemplates = new Map<LinkTypeIri, LinkTemplate>();
     private router: LinkRouter;
-    private routings: RoutedLinks;
+    private routings: RoutedLinks = new Map<string, RoutedLink>();
     private dropOnPaperHandler: ((e: DropOnPaperEvent) => void) | undefined;
 
     private _highlighter: Highlighter;
+
+    private _elementDecorator: ElementDecoratorResolver;
 
     constructor(
         public readonly model: DiagramModel,
@@ -135,9 +150,18 @@ export class DiagramView {
     }
 
     private updateRoutings() {
-        const previous = this.routings;
-        this.routings = this.router.route(this.model);
-        this.source.trigger('updateRoutings', {source: this, previous});
+        const previousRoutes = this.routings;
+        const computedRoutes = this.router.route(this.model);
+        previousRoutes.forEach((previous, linkId) => {
+            const computed = computedRoutes.get(linkId);
+            if (computed && sameRoutedLink(previous, computed)) {
+                // replace new route with the old one if they're equal
+                // so other components can use a simple reference equality checks
+                computedRoutes.set(linkId, previous);
+            }
+        });
+        this.routings = computedRoutes;
+        this.source.trigger('updateRoutings', {source: this, previous: previousRoutes});
     }
 
     getRoutings() {
@@ -181,10 +205,10 @@ export class DiagramView {
     setPaperWidget(widget: {
         key: string;
         widget: ReactElement<any> | undefined;
-        pinnedToScreen?: boolean;
+        attachment: WidgetAttachment;
     }) {
-        const {key, widget: element, pinnedToScreen} = widget;
-        const widgets = {[widget.key]: element ? {element, pinnedToScreen} : undefined};
+        const {key, widget: element, attachment} = widget;
+        const widgets = {[key]: element ? {element, attachment} : undefined};
         this.source.trigger('updateWidgets', {widgets});
     }
 
@@ -202,30 +226,29 @@ export class DiagramView {
         return false;
     }
 
-    /**
-     * Obsolete. Use `chooseLocalizedText()` or `formatLocalizedLabel()` instead.
-     * @deprecated
-     */
-    public getLocalizedText(texts: ReadonlyArray<LocalizedString>): LocalizedString | undefined {
-        return chooseLocalizedText(texts, this.getLanguage());
+    selectLabel(
+        labels: ReadonlyArray<LocalizedString>,
+        language?: string
+    ): LocalizedString | undefined {
+        const targetLanguage = typeof language === 'undefined' ? this.getLanguage() : language;
+        const {selectLabelLanguage = defaultSelectLabel} = this.options;
+        return selectLabelLanguage(labels, targetLanguage);
+    }
+
+    formatLabel(
+        labels: ReadonlyArray<LocalizedString>,
+        fallbackIri: string,
+        language?: string
+    ): string {
+        const label = this.selectLabel(labels, language);
+        return resolveLabel(label, fallbackIri);
     }
 
     public getElementTypeString(elementModel: ElementModel): string {
         return elementModel.types.map(typeId => {
             const type = this.model.createClass(typeId);
-            return this.getElementTypeLabel(type).text;
+            return this.formatLabel(type.label, type.id);
         }).sort().join(', ');
-    }
-
-    public getElementTypeLabel(type: FatClassModel): LocalizedString {
-        const label = this.getLocalizedText(type.label);
-        return label ? label : { text: uri2name(type.id), lang: '' };
-    }
-
-    public getLinkLabel(linkTypeId: LinkTypeIri): LocalizedString {
-        const type = this.model.createLinkType(linkTypeId);
-        const label = type ? this.getLocalizedText(type.label) : null;
-        return label ? label : { text: uri2name(linkTypeId), lang: '' };
     }
 
     public getTypeStyle(types: ElementTypeIri[]): TypeStyle {
@@ -287,6 +310,22 @@ export class DiagramView {
         this._highlighter = value;
         this.source.trigger('changeHighlight', {source: this, previous});
     }
+
+    _setElementDecorator(decorator: ElementDecoratorResolver) {
+        this._elementDecorator = decorator;
+    }
+
+    _decorateElement(element: Element): ReactNode | undefined {
+        return this._elementDecorator(element);
+    }
+}
+
+function sameRoutedLink(a: RoutedLink, b: RoutedLink) {
+    return (
+        a.linkId === b.linkId &&
+        a.labelTextAnchor === b.labelTextAnchor &&
+        isPolylineEqual(a.vertices, b.vertices)
+    );
 }
 
 function getHueFromClasses(classes: ReadonlyArray<ElementTypeIri>, seed?: number): number {
@@ -306,4 +345,32 @@ function fillLinkTemplateDefaults(template: LinkTemplate) {
     if (!template.renderLink) {
         template.renderLink = () => ({});
     }
+}
+
+function defaultSelectLabel(
+    texts: ReadonlyArray<LocalizedString>,
+    language: string
+): LocalizedString | undefined {
+    if (texts.length === 0) { return undefined; }
+    let defaultValue: LocalizedString;
+    let englishValue: LocalizedString;
+    for (const text of texts) {
+        if (text.lang === language) {
+            return text;
+        } else if (text.lang === '') {
+            defaultValue = text;
+        } else if (text.lang === 'en') {
+            englishValue = text;
+        }
+    }
+    return (
+        defaultValue !== undefined ? defaultValue :
+        englishValue !== undefined ? englishValue :
+        texts[0]
+    );
+}
+
+function resolveLabel(label: LocalizedString | undefined, fallbackIri: string): string {
+    if (label) { return label.text; }
+    return getUriLocalName(fallbackIri) || fallbackIri;
 }

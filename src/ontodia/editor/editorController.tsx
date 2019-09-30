@@ -8,9 +8,8 @@ import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibili
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
 import { Vector, boundsOf } from '../diagram/geometry';
 import { Command } from '../diagram/history';
-import { DiagramModel } from '../diagram/model';
 import { PaperArea, PointerUpEvent, PaperWidgetProps } from '../diagram/paperArea';
-import { DiagramView, IriClickIntent } from '../diagram/view';
+import { DiagramView, IriClickIntent, WidgetAttachment } from '../diagram/view';
 
 import { Events, EventSource, EventObserver, PropertyChange } from '../viewUtils/events';
 
@@ -22,11 +21,10 @@ import { EditLinkForm } from '../forms/editLinkForm';
 import { EditLinkLabelForm } from '../forms/editLinkLabelForm';
 import { Halo } from '../widgets/halo';
 import { HaloLink } from '../widgets/haloLink';
-import { StatesWidget } from './statesWidget';
+import { LinkStateWidget } from './linkStateWidget';
+import { ElementDecorator } from './elementDecorator';
 
-import {
-    placeElementsAround, recursiveForceLayout,
-} from '../viewUtils/layout';
+import { placeElementsAround, forceLayout, applyLayout } from '../viewUtils/layout';
 import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
@@ -124,6 +122,13 @@ export class EditorController {
                 );
             }
         });
+
+        this.view._setElementDecorator((element: Element) =>
+            <ElementDecorator model={element}
+                view={this.view}
+                editor={this}
+                position={element.position} />
+        );
     }
 
     _initializePaperComponents(paperArea: PaperArea) {
@@ -139,8 +144,8 @@ export class EditorController {
         this.listener.listen(this.model.events, 'loadingSuccess', () => {
             this.setSpinner(undefined);
 
-            const widget = <StatesWidget editor={this} view={this.view} />;
-            this.view.setPaperWidget({key: 'states', widget});
+            const widget = <LinkStateWidget view={this.view} editor={this} />;
+            this.view.setPaperWidget({key: 'states', widget, attachment: WidgetAttachment.OverLinks});
         });
         this.listener.listen(this.model.events, 'loadingError', ({error}) => {
             const statusText = error ? error.message : undefined;
@@ -291,7 +296,7 @@ export class EditorController {
 
     setSpinner(props: SpinnerProps | undefined) {
         const widget = props ? <LoadingWidget spinnerProps={props} /> : undefined;
-        this.view.setPaperWidget({key: LoadingWidget.Key, widget, pinnedToScreen: true});
+        this.view.setPaperWidget({key: LoadingWidget.Key, widget, attachment: WidgetAttachment.Viewport});
     }
 
     private configureHalo() {
@@ -382,7 +387,7 @@ export class EditorController {
             );
         }
 
-        this.view.setPaperWidget({key: 'halo', widget: halo});
+        this.view.setPaperWidget({key: 'halo', widget: halo, attachment: WidgetAttachment.OverElements});
     }
 
     showConnectionsMenu(target: Element) {
@@ -595,7 +600,7 @@ export class EditorController {
             <Dialog view={this.view} target={target} size={size} caption={caption}
                 offset={offset} calculatePosition={calculatePosition} onClose={onClose}>{content}</Dialog>
         );
-        this.view.setPaperWidget({key: 'dialog', widget: dialog});
+        this.view.setPaperWidget({key: 'dialog', widget: dialog, attachment: WidgetAttachment.OverElements});
         this.source.trigger('toggleDialog', {isOpened: false});
     }
 
@@ -610,7 +615,7 @@ export class EditorController {
             }
             this.dialogType = undefined;
             this.dialogTarget = undefined;
-            this.view.setPaperWidget({key: 'dialog', widget: undefined});
+            this.view.setPaperWidget({key: 'dialog', widget: undefined, attachment: WidgetAttachment.OverElements});
             this.source.trigger('toggleDialog', {isOpened: false});
         }
     }
@@ -679,10 +684,10 @@ export class EditorController {
                 this.model.requestLinksOfType(),
             ]).then(() => {
                 this.view.performSyncUpdate();
-                recursiveForceLayout({
+                applyLayout(this.model, forceLayout({
                     model: this.model,
                     group: element.id,
-                });
+                }));
                 this.model.triggerChangeGroupContent(element.id);
             });
         });
@@ -851,11 +856,11 @@ export class EditorController {
                 point={point}
             />
         );
-        this.view.setPaperWidget({key: 'editLayer', widget: editLayer});
+        this.view.setPaperWidget({key: 'editLayer', widget: editLayer, attachment: WidgetAttachment.OverElements});
     }
 
     finishEditing() {
-        this.view.setPaperWidget({key: 'editLayer', widget: undefined});
+        this.view.setPaperWidget({key: 'editLayer', widget: undefined, attachment: WidgetAttachment.OverElements});
     }
 
     private addNewEntity(element: ElementModel) {

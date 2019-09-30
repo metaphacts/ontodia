@@ -1,27 +1,118 @@
 .ontodia-accordion {
   flex: auto;
-  flex-direction: column;
+  display: flex;
   height: 100%;
+  width: 100%;
 
-  &:not(&--resizing) .ontodia-accordion-item {
+  &--scrollable {
+    overflow: auto;
+  }
+
+  &--vertical {
+    flex-direction: column;
+  }
+
+  &--vertical:not(&--resizing) > .ontodia-accordion-item {
     transition: height 0.3s ease-in-out;
   }
 }
 
 .ontodia-accordion-item {
   display: flex;
-  flex-direction: column;
   position: relative;
-  border-top: 1px solid lightgray;
+  flex: auto;
+
+  &--resizing > &__handle, &__handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  &--vertical {
+    border-top: 1px solid lightgray;
+
+    &:first-child {
+      border-top-width: 0;
+    }
+  }
+
+  &--horizontal {
+    border-right: 1px solid lightgray;
+
+    &:last-child {
+      border-right-width: 0;
+    }
+  }
 
   &__handle {
     position: absolute;
+    z-index: 2;
+  }
+
+  &__handle-vertical {
     height: 5px;
     bottom: -2.5px;
     left: 0;
     width: 100%;
-    z-index: 2;
     cursor: ns-resize;
+  }
+
+  &__handle-horizontal {
+    height: 100%;
+    top: 0;
+    right: -2.5px;
+    width: 5px;
+    cursor: ew-resize;
+  }
+
+  &__handle-btn {
+    background: #fff;
+    border: 2px solid #17b;
+    box-shadow: 0 0 0 1px rgba(9, 30, 66, 0.08), 0 2px 4px 1px rgba(9, 30, 66, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    height: 20px;
+    position: absolute;
+    top: 50%;
+    margin-top: -10px;
+    width: 20px;
+    z-index: 20;
+    transition: 0.3s;
+
+    &::before {
+      background-position: 0 0;
+      background-repeat: no-repeat;
+      background-size: cover;
+      content: "";
+      height: 8px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -4px;
+      margin-left: -4px;
+      width: 8px;
+      transition: background 0.3s;
+    }
+
+    &:hover {
+      background: #17b;
+    }
+  }
+
+  &__handle-btn-left {
+    left: 100%;
+    margin-left: -10px;
+    &:before { background-image: url("../images/arrow-left.png"); }
+    &:hover:before { background-image: url("../images/arrow-left1.png"); }
+  }
+
+  &__handle-btn-right {
+    right: 100%;
+    margin-right: -10px;
+    &:before { background-image: url("../images/arrow-right.png"); }
+    &:hover:before { background-image: url("../images/arrow-right1.png"); }
+  }
+
+  &--collapsed &__handle-btn:before {
+    transform: rotate(180deg);
   }
 
   &__inner {
@@ -32,7 +123,7 @@
   }
 
   &__body {
-    flex: auto;
+    flex: 1 1 0px; // IE 11 requires a unit to be added to the third argument
     display: flex;
     flex-direction: column;
   }

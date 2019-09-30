@@ -5,14 +5,12 @@ import { hcl } from 'd3-color';
 import { Property, ElementTypeIri, PropertyTypeIri } from '../data/model';
 import { TemplateProps } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
-import { createStringMap } from '../viewUtils/collections';
-import { EventObserver, Unsubscribe } from '../viewUtils/events';
+import { EventObserver } from '../viewUtils/events';
 import { PropTypes } from '../viewUtils/react';
 import { KeyedObserver, observeElementTypes, observeProperties } from '../viewUtils/keyedObserver';
 
 import { setElementExpanded } from './commands';
 import { Element } from './elements';
-import { formatLocalizedLabel } from './model';
 import { DiagramView, RenderingLayer, IriClickIntent } from './view';
 
 export interface Props {
@@ -21,32 +19,97 @@ export interface Props {
     style: React.CSSProperties;
 }
 
-interface BatchUpdateItem {
+interface State {
+    readonly elementStates?: ReadonlyMap<string, ElementState>;
+}
+
+interface ElementState {
+    element: Element;
+    templateProps: TemplateProps;
+    blurred: boolean;
+}
+
+// tslint:disable:no-bitwise
+enum RedrawFlags {
+    None = 0,
+    Render = 1,
+    RecomputeTemplate = 1 | 2,
+    RecomputeBlurred = 1 | 4,
+}
+// tslint:enable:no-bitwise
+
+interface RedrawBatch {
+    requests: Map<string, RedrawFlags>;
+    forAll: RedrawFlags;
+}
+
+interface SizeUpdateRequest {
     element: Element;
     node: HTMLDivElement;
 }
 
-export class ElementLayer extends React.Component<Props, {}> {
+export class ElementLayer extends React.Component<Props, State> {
     private readonly listener = new EventObserver();
 
-    private batch = createStringMap<BatchUpdateItem>();
-    private renderElements = new Debouncer();
-    private updateSizes = new Debouncer();
+    private redrawBatch: RedrawBatch = {
+        requests: new Map<string, RedrawFlags>(),
+        forAll: RedrawFlags.None,
+    };
+    private delatedRedraw = new Debouncer();
+
+    private sizeRequests = new Map<string, SizeUpdateRequest>();
+    private delayedUpdateSizes = new Debouncer();
 
     private layer: HTMLDivElement;
 
+    constructor(props: Props, context: any) {
+        super(props, context);
+        const {view, group} = this.props;
+        this.state = {
+            elementStates: applyRedrawRequests(
+                view,
+                group,
+                this.redrawBatch,
+                new Map<string, ElementState>()
+            )
+        };
+    }
+
     render() {
-        const {view, group, style} = this.props;
-        const models = view.model.elements.filter(model => model.group === group);
+        const {view, style} = this.props;
+        const {elementStates} = this.state;
+
+        const elementsToRender: ElementState[] = [];
+        for (const {id} of view.model.elements) {
+            const state = elementStates.get(id);
+            if (state) {
+                elementsToRender.push(state);
+            }
+        }
 
         return <div className='ontodia-element-layer'
             ref={this.onMount}
             style={style}>
-            {models.map(model => <OverlayedElement key={model.id}
-                model={model}
-                view={view}
-                onResize={this.updateElementSize}
-                onRender={this.updateElementSize} />)}
+            {elementsToRender.map(state => {
+                const overlayElement = (
+                    <OverlayedElement key={state.element.id}
+                        state={state}
+                        view={view}
+                        onInvalidate={this.requestRedraw}
+                        onResize={this.requestSizeUpdate}
+                    />
+                );
+                const elementDecorator = view._decorateElement(state.element);
+                if (elementDecorator) {
+                    return (
+                        <div key={state.element.id}>
+                            {overlayElement}
+                            {elementDecorator}
+                        </div>
+                    );
+                }
+                return overlayElement;
+            })}
         </div>;
     }
 
@@ -57,60 +120,143 @@ export class ElementLayer extends React.Component<Props, {}> {
     componentDidMount() {
         const {view} = this.props;
         this.listener.listen(view.model.events, 'changeCells', () => {
-            this.renderElements.call(this.performRendering);
+            this.requestRedrawAll(RedrawFlags.None);
+        });
+        this.listener.listen(view.events, 'changeLanguage', () => {
+            this.requestRedrawAll(RedrawFlags.RecomputeTemplate);
+        });
+        this.listener.listen(view.events, 'changeHighlight', () => {
+            this.requestRedrawAll(RedrawFlags.RecomputeBlurred);
+        });
+        this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
+            const invalidatesTemplate = data.changeData || data.changeExpanded || data.changeElementState;
+            if (invalidatesTemplate) {
+                this.requestRedraw(invalidatesTemplate.source, RedrawFlags.RecomputeTemplate);
+            }
+            const invalidatesRender = data.changePosition || data.requestedRedraw;
+            if (invalidatesRender) {
+                this.requestRedraw(invalidatesRender.source, RedrawFlags.Render);
+            }
         });
         this.listener.listen(view.events, 'syncUpdate', ({layer}) => {
             if (layer === RenderingLayer.Element) {
-                this.renderElements.runSynchronously();
+                this.delatedRedraw.runSynchronously();
             } else if (layer === RenderingLayer.ElementSize) {
-                this.updateSizes.runSynchronously();
+                this.delayedUpdateSizes.runSynchronously();
             }
         });
     }
 
-    componentDidUpdate() {
-        this.updateSizes.call(this.recomputeQueuedSizes);
+    componentWillReceiveProps(nextProps: Props) {
+        if (this.props.group !== nextProps.group) {
+            this.setState((state): State => ({
+                elementStates: applyRedrawRequests(
+                    nextProps.view,
+                    nextProps.group,
+                    this.redrawBatch,
+                    state.elementStates
+                )
+            }));
+        }
     }
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.renderElements.dispose();
-        this.updateSizes.dispose();
+        this.delatedRedraw.dispose();
+        this.delayedUpdateSizes.dispose();
     }
 
-    private performRendering = () => {
-        this.forceUpdate();
+    private requestRedraw = (element: Element, request: RedrawFlags) => {
+        // tslint:disable:no-bitwise
+        const flagsWithForAll = this.redrawBatch.forAll | request;
+        if (flagsWithForAll === this.redrawBatch.forAll) {
+            // forAll flags already include the request
+            return;
+        }
+        const existing = this.redrawBatch.requests.get(element.id);
+        this.redrawBatch.requests.set(element.id, existing | request);
+        this.delatedRedraw.call(this.redrawElements);
+        // tslint:enable:no-bitwise
     }
 
-    private updateElementSize = (element: Element, node: HTMLDivElement) => {
-        this.batch[element.id] = {element, node};
-        this.updateSizes.call(this.recomputeQueuedSizes);
+    private requestRedrawAll(request: RedrawFlags) {
+        // tslint:disable-next-line:no-bitwise
+        this.redrawBatch.forAll |= request;
+        this.delatedRedraw.call(this.redrawElements);
+    }
+
+    private redrawElements = () => {
+        const props = this.props;
+        this.setState((state): State => ({
+            elementStates: applyRedrawRequests(
+                props.view,
+                props.group,
+                this.redrawBatch,
+                state.elementStates
+            )
+        }));
+    }
+
+    private requestSizeUpdate = (element: Element, node: HTMLDivElement) => {
+        this.sizeRequests.set(element.id, {element, node});
+        this.delayedUpdateSizes.call(this.recomputeQueuedSizes);
     }
 
     private recomputeQueuedSizes = () => {
-        const batch = this.batch;
-        this.batch = createStringMap<BatchUpdateItem>();
-
-        // hasOwnProperty() check is unneccessary here because of `createStringMap`
-        // tslint:disable-next-line:forin
-        for (const id in batch) {
-            const {element, node} = batch[id];
+        const batch = this.sizeRequests;
+        this.sizeRequests = new Map<string, SizeUpdateRequest>();
+        batch.forEach(({element, node}) => {
             const {clientWidth, clientHeight} = node;
             element.setSize({width: clientWidth, height: clientHeight});
-        }
+        });
     }
 }
 
-interface OverlayedElementProps {
-    view: DiagramView;
-    model: Element;
-    onResize: (model: Element, node: HTMLDivElement) => void;
-    onRender: (model: Element, node: HTMLDivElement) => void;
+function applyRedrawRequests(
+    view: DiagramView,
+    targetGroup: string | undefined,
+    batch: RedrawBatch,
+    previous: ReadonlyMap<string, ElementState>,
+): ReadonlyMap<string, ElementState> {
+    const computed = new Map<string, ElementState>();
+    for (const element of view.model.elements) {
+        if (element.group !== targetGroup) { continue; }
+        const elementId = element.id;
+        if (previous.has(elementId)) {
+            let state = previous.get(elementId);
+            // tslint:disable:no-bitwise
+            const request = (batch.requests.get(elementId) || RedrawFlags.None) | batch.forAll;
+            if (request & RedrawFlags.Render) {
+                state = {
+                    element: state.element,
+                    templateProps:
+                        (request & RedrawFlags.RecomputeTemplate) === RedrawFlags.RecomputeTemplate
+                        ? computeTemplateProps(state.element, view) : state.templateProps,
+                    blurred:
+                        (request & RedrawFlags.RecomputeBlurred) === RedrawFlags.RecomputeBlurred
+                        ? computeIsBlurred(state.element, view) : state.blurred,
+                };
+            }
+            computed.set(elementId, state);
+            batch.requests.delete(elementId);
+            // tslint:enable:no-bitwise
+        } else {
+            computed.set(element.id, {
+                element,
+                templateProps: computeTemplateProps(element, view),
+                blurred: computeIsBlurred(element, view),
+            });
+        }
+    }
+    batch.forAll = RedrawFlags.None;
+    return computed;
 }
 
-interface OverlayedElementState {
-    readonly templateProps?: TemplateProps;
-    readonly isBlurred?: boolean;
+interface OverlayedElementProps {
+    state: ElementState;
+    view: DiagramView;
+    onInvalidate: (model: Element, request: RedrawFlags) => void;
+    onResize: (model: Element, node: HTMLDivElement) => void;
 }
 
 export interface ElementContextWrapper { ontodiaElement: ElementContext; }
@@ -122,7 +268,7 @@ export interface ElementContext {
     element: Element;
 }
 
-class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedElementState> {
+class OverlayedElement extends React.Component<OverlayedElementProps, {}> {
     static childContextTypes = ElementContextTypes;
 
     private readonly listener = new EventObserver();
@@ -131,46 +277,36 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
     private typesObserver: KeyedObserver<ElementTypeIri>;
     private propertiesObserver: KeyedObserver<PropertyTypeIri>;
 
-    constructor(props: OverlayedElementProps) {
-        super(props);
-        this.state = {
-            templateProps: this.templateProps(),
-            isBlurred: this.isBlurred(),
-        };
-    }
-
     getChildContext(): ElementContextWrapper {
         const ontodiaElement: ElementContext = {
-            element: this.props.model,
+            element: this.props.state.element,
         };
         return {ontodiaElement};
     }
 
     private rerenderTemplate = () => {
         if (this.disposed) { return; }
-        this.setState({templateProps: this.templateProps()});
+        this.props.onInvalidate(this.props.state.element, RedrawFlags.RecomputeTemplate);
     }
 
     render(): React.ReactElement<any> {
-        const {model, view, onResize, onRender} = this.props;
-        if (model.temporary) {
+        const {state: {element, blurred}} = this.props;
+        if (element.temporary) {
             return <div />;
         }
 
-        const template = view.getElementTemplate(model.data.types);
-
-        const {x = 0, y = 0} = model.position;
+        const {x = 0, y = 0} = element.position;
         const transform = `translate(${x}px,${y}px)`;
 
         // const angle = model.get('angle') || 0;
         // if (angle) { transform += `rotate(${angle}deg)`; }
 
         const className = (
-            `ontodia-overlayed-element ${this.state.isBlurred ? 'ontodia-overlayed-element--blurred' : ''}`
+            `ontodia-overlayed-element ${blurred ? 'ontodia-overlayed-element--blurred' : ''}`
         );
         return <div className={className}
             // set `element-id` to translate mouse events to paper
-            data-element-id={model.id}
+            data-element-id={element.id}
             style={{position: 'absolute', transform}}
             tabIndex={0}
             ref={this.onMount}
@@ -179,59 +315,51 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
             onError={this.onLoadOrErrorEvent}
             onClick={this.onClick}
             onDoubleClick={this.onDoubleClick}>
-            {React.createElement(template, this.state.templateProps)}
+            <TemplatedElement {...this.props} />
         </div>;
     }
 
     private onMount = (node: HTMLDivElement | undefined) => {
         if (!node) { return; }
-        const {onRender, model} = this.props;
-        onRender(model, node);
+        const {state, onResize} = this.props;
+        onResize(state.element, node);
     }
 
     private onLoadOrErrorEvent = () => {
-        const {onResize, model} = this.props;
-        onResize(model, findDOMNode(this) as HTMLDivElement);
+        const {state, onResize} = this.props;
+        onResize(state.element, findDOMNode(this) as HTMLDivElement);
     }
 
     private onClick = (e: React.MouseEvent<EventTarget>) => {
         if (e.target instanceof HTMLElement && e.target.localName === 'a') {
             const anchor = e.target as HTMLAnchorElement;
-            const {view, model} = this.props;
+            const {view, state} = this.props;
             const clickIntent = e.target.getAttribute('data-iri-click-intent') === IriClickIntent.OpenEntityIri ?
                 IriClickIntent.OpenEntityIri : IriClickIntent.OpenOtherIri;
-            view.onIriClick(decodeURI(anchor.href), model, clickIntent, e);
+            view.onIriClick(decodeURI(anchor.href), state.element, clickIntent, e);
         }
     }
 
     private onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        const {view, model} = this.props;
+        const {view, state: {element}} = this.props;
         view.model.history.execute(
-            setElementExpanded(model, !model.isExpanded)
+            setElementExpanded(element, !element.isExpanded)
         );
     }
 
     componentDidMount() {
-        const {model, view} = this.props;
-        this.listener.listen(view.events, 'changeLanguage', this.rerenderTemplate);
-        this.listener.listen(view.events, 'changeHighlight', () => {
-            this.setState({isBlurred: this.isBlurred()});
-        });
-        this.listener.listen(model.events, 'changeData', this.rerenderTemplate);
-        this.listener.listen(model.events, 'changeExpanded', this.rerenderTemplate);
-        this.listener.listen(model.events, 'changePosition', () => this.forceUpdate());
-        this.listener.listen(model.events, 'requestedRedraw', () => this.forceUpdate());
-        this.listener.listen(model.events, 'requestedFocus', () => {
+        const {state, view} = this.props;
+        this.listener.listen(state.element.events, 'requestedFocus', () => {
             const element = findDOMNode(this) as HTMLElement;
             if (element) { element.focus(); }
         });
         this.typesObserver = observeElementTypes(
-            this.props.view.model, 'changeLabel', this.rerenderTemplate
+            view.model, 'changeLabel', this.rerenderTemplate
         );
         this.propertiesObserver = observeProperties(
-            this.props.view.model, 'changeLabel', this.rerenderTemplate
+            view.model, 'changeLabel', this.rerenderTemplate
         );
         this.observeTypes();
     }
@@ -243,79 +371,98 @@ class OverlayedElement extends React.Component<OverlayedElementProps, OverlayedE
         this.disposed = true;
     }
 
-    shouldComponentUpdate(nextProps: OverlayedElementProps, nextState: OverlayedElementState) {
-        return nextState !== this.state;
+    shouldComponentUpdate(nextProps: OverlayedElementProps) {
+        return this.props.state !== nextProps.state;
     }
 
     componentDidUpdate() {
         this.observeTypes();
-        this.props.onResize(this.props.model, findDOMNode(this) as HTMLDivElement);
+        this.props.onResize(this.props.state.element, findDOMNode(this) as HTMLDivElement);
     }
 
     private observeTypes() {
-        const {model} = this.props;
-        this.typesObserver.observe(model.data.types);
-        this.propertiesObserver.observe(Object.keys(model.data.properties) as PropertyTypeIri[]);
+        const {state: {element}} = this.props;
+        this.typesObserver.observe(element.data.types);
+        this.propertiesObserver.observe(Object.keys(element.data.properties) as PropertyTypeIri[]);
+    }
+}
+
+class TemplatedElement extends React.Component<OverlayedElementProps, {}> {
+    private cachedTemplateClass: React.ComponentClass<TemplateProps>;
+    private cachedTemplateProps: TemplateProps;
+
+    render() {
+        const {state, view} = this.props;
+        const {element, templateProps} = state;
+        const templateClass = view.getElementTemplate(element.data.types);
+        this.cachedTemplateClass = templateClass;
+        this.cachedTemplateProps = templateProps;
+        return React.createElement(templateClass, templateProps);
     }
 
-    private templateProps(): TemplateProps {
-        const {model, view} = this.props;
+    shouldComponentUpdate(nextProps: OverlayedElementProps) {
+        const templateClass = nextProps.view.getElementTemplate(nextProps.state.element.data.types);
+        return !(
+            this.cachedTemplateClass === templateClass &&
+            this.cachedTemplateProps === nextProps.state.templateProps
+        );
+    }
+}
 
-        const types = model.data.types.length > 0
-            ? view.getElementTypeString(model.data) : 'Thing';
-        const label = formatLocalizedLabel(model.iri, model.data.label.values, view.getLanguage());
-        const {color, icon} = this.styleFor(model);
-        const propsAsList = this.getPropertyTable();
+function computeTemplateProps(model: Element, view: DiagramView): TemplateProps {
+    const types = model.data.types.length > 0
+        ? view.getElementTypeString(model.data) : 'Thing';
+    const label = view.formatLabel(model.data.label.values, model.iri);
+    const {color, icon} = computeStyleFor(model, view);
+    const propsAsList = computePropertyTable(model, view);
 
+    return {
+        elementId: model.id,
+        data: model.data,
+        iri: model.iri,
+        types,
+        label,
+        color,
+        iconUrl: icon,
+        imgUrl: model.data.image,
+        isExpanded: model.isExpanded,
+        props: model.data.properties,
+        propsAsList,
+    };
+}
+
+function computePropertyTable(
+    model: Element, view: DiagramView
+): Array<{ id: string; name: string; property: Property }> {
+    if (!model.data.properties) { return []; }
+
+    const propertyIris = Object.keys(model.data.properties) as PropertyTypeIri[];
+    const propTable = propertyIris.map(key => {
+        const property = view.model.createProperty(key);
+        const name = view.formatLabel(property.label, key);
         return {
-            elementId: model.id,
-            data: model.data,
-            iri: model.iri,
-            types,
-            label,
-            color,
-            iconUrl: icon,
-            imgUrl: model.data.image,
-            isExpanded: model.isExpanded,
-            props: model.data.properties,
-            propsAsList,
+            id: key,
+            name: name,
+            property: model.data.properties[key],
         };
-    }
+    });
 
-    private getPropertyTable(): Array<{ id: string; name: string; property: Property }> {
-        const {model, view} = this.props;
+    propTable.sort((a, b) => {
+        const aLabel = (a.name || a.id).toLowerCase();
+        const bLabel = (b.name || b.id).toLowerCase();
+        return aLabel.localeCompare(bLabel);
+    });
+    return propTable;
+}
 
-        if (!model.data.properties) { return []; }
+function computeStyleFor(model: Element, view: DiagramView) {
+    const {color: {h, c, l}, icon} = view.getTypeStyle(model.data.types);
+    return {
+        icon,
+        color: hcl(h, c, l).toString(),
+    };
+}
 
-        const propertyIris = Object.keys(model.data.properties) as PropertyTypeIri[];
-        const propTable = propertyIris.map(key => {
-            const property = view.model.createProperty(key);
-            const name = formatLocalizedLabel(key, property.label, view.getLanguage());
-            return {
-                id: key,
-                name: name,
-                property: model.data.properties[key],
-            };
-        });
-
-        propTable.sort((a, b) => {
-            const aLabel = (a.name || a.id).toLowerCase();
-            const bLabel = (b.name || b.id).toLowerCase();
-            return aLabel.localeCompare(bLabel);
-        });
-        return propTable;
-    }
-
-    private styleFor(model: Element) {
-        const {color: {h, c, l}, icon} = this.props.view.getTypeStyle(model.data.types);
-        return {
-            icon,
-            color: hcl(h, c, l).toString(),
-        };
-    }
-
-    private isBlurred() {
-        const {view, model} = this.props;
-        return view.highlighter && !view.highlighter(model);
-    }
+function computeIsBlurred(element: Element, view: DiagramView): boolean {
+    return view.highlighter && !view.highlighter(element);
 }

@@ -3,7 +3,7 @@ import { Component, ReactElement, SVGAttributes, CSSProperties } from 'react';
 
 import { LocalizedString } from '../data/model';
 import {
-    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink,
+    LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
 import { createStringMap } from '../viewUtils/collections';
@@ -48,9 +48,17 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
         this.listener.listen(view.events, 'changeLanguage', this.scheduleUpdateAll);
         this.listener.listen(view.events, 'changeHighlight', this.scheduleUpdateAll);
+        const updateChangedRoutes = (changed: RoutedLinks, previous: RoutedLinks) => {
+            changed.forEach((routing, linkId) => {
+                if (previous.get(linkId) !== routing) {
+                    this.scheduleUpdateLink(linkId);
+                }
+            });
+        };
         this.listener.listen(view.events, 'updateRoutings', ({previous}) => {
-            previous.forEach((routing, linkId) => this.scheduleUpdateLink(linkId));
-            view.getRoutings().forEach((routing, linkId) => this.scheduleUpdateLink(linkId));
+            const newRoutes = view.getRoutings();
+            updateChangedRoutes(newRoutes, previous);
+            updateChangedRoutes(previous, newRoutes);
         });
         this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
         this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
@@ -328,12 +336,21 @@ function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramVi
 
     const labelStyle = style.label || {};
     const labelTexts = labelStyle.attrs && labelStyle.attrs.text ? labelStyle.attrs.text.text : undefined;
-    const labelText = (labelTexts && labelTexts.length > 0)
-        ? view.getLocalizedText(labelTexts)
-        : view.getLinkLabel(model.typeId);
+
+    let text: LocalizedString | undefined;
+    if (labelTexts && labelTexts.length > 0) {
+        text = view.selectLabel(labelTexts);
+    } else {
+        const type = view.model.getLinkType(model.typeId);
+        text = view.selectLabel(type.label) || {
+            text: view.formatLabel(type.label, type.id),
+            lang: '',
+        };
+    }
+
     labels.push({
         offset: labelStyle.position || 0.5,
-        text: labelText,
+        text,
         attributes: {
             text: getLabelTextAttributes(labelStyle),
             rect: getLabelRectAttributes(labelStyle),
@@ -345,10 +362,9 @@ function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramVi
             if (!(property.attrs && property.attrs.text && property.attrs.text.text)) {
                 continue;
             }
-            const text = view.getLocalizedText(property.attrs.text.text);
             labels.push({
                 offset: property.position || 0.5,
-                text,
+                text: view.selectLabel(property.attrs.text.text),
                 attributes: {
                     text: getLabelTextAttributes(property),
                     rect: getLabelRectAttributes(property),

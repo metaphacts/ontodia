@@ -11,7 +11,7 @@ import { Rect } from '../diagram/geometry';
 import { RestoreGeometry } from '../diagram/commands';
 import { Command, CommandHistory, NonRememberingHistory } from '../diagram/history';
 import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram/paperArea';
-import { DiagramView, IriClickHandler } from '../diagram/view';
+import { DiagramView, IriClickHandler, LabelLanguageSelector, WidgetAttachment } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
 import { EditorController, PropertyEditor } from '../editor/editorController';
@@ -26,7 +26,7 @@ import { Navigator } from '../widgets/navigator';
 import { DefaultToolbar, ToolbarProps } from './toolbar';
 import { WorkspaceMarkup, WorkspaceMarkupProps } from './workspaceMarkup';
 import { WorkspaceEventHandler, WorkspaceEventKey } from './workspaceContext';
-import { recursiveForceLayout } from '../viewUtils/layout';
+import { forceLayout, applyLayout } from '../viewUtils/layout';
 
 const ONTODIA_WEBSITE = 'https://ontodia.org/';
 const ONTODIA_LOGO_SVG = require<string>('../../../images/ontodia-logo.svg');
@@ -101,6 +101,10 @@ export interface WorkspaceProps {
     typeStyleResolver?: TypeStyleResolver;
     linkTemplateResolver?: LinkTemplateResolver;
     elementTemplateResolver?: TemplateResolver;
+    /**
+     * Overrides label selection based on target language.
+     */
+    selectLabelLanguage?: LabelLanguageSelector;
 }
 
 export interface DiagramViewOptions {
@@ -116,13 +120,11 @@ export interface WorkspaceLanguage {
     label: string;
 }
 
-export interface State {
+export interface WorkspaceState {
     readonly criteria?: SearchCriteria;
-    readonly isLeftPanelOpen?: boolean;
-    readonly isRightPanelOpen?: boolean;
 }
 
-export class Workspace extends Component<WorkspaceProps, State> {
+export class Workspace extends Component<WorkspaceProps, WorkspaceState> {
     static readonly defaultProps: Partial<WorkspaceProps> = {
         hideTutorial: true,
         collapseNavigator: false,
@@ -152,7 +154,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         const {
             hideHalo, history, viewOptions = {},
             metadataApi, validationApi, propertyEditor,
-            elementTemplateResolver, linkTemplateResolver, typeStyleResolver,
+            elementTemplateResolver, linkTemplateResolver, typeStyleResolver, selectLabelLanguage,
         } = this.props;
         const {
             linkRouter, onIriClick,
@@ -167,6 +169,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
             elementTemplateResolver,
             linkTemplateResolver,
             typeStyleResolver,
+            selectLabelLanguage,
             linkRouter,
             onIriClick,
         });
@@ -181,10 +184,7 @@ export class Workspace extends Component<WorkspaceProps, State> {
         this.editor.setMetadataApi(metadataApi);
 
         this.view.setLanguage(this.props.language);
-        this.state = {
-            isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
-            isRightPanelOpen: this.props.rightPanelInitiallyOpen,
-        };
+        this.state = {};
     }
 
     _getPaperArea(): PaperArea | undefined {
@@ -217,10 +217,8 @@ export class Workspace extends Component<WorkspaceProps, State> {
             onSearchCriteriaChanged: criteria => this.setState({criteria}),
             zoomOptions: this.props.zoomOptions,
             onZoom: this.props.onZoom,
-            isLeftPanelOpen: this.state.isLeftPanelOpen,
-            onToggleLeftPanel: isLeftPanelOpen => this.setState({isLeftPanelOpen}),
-            isRightPanelOpen: this.state.isRightPanelOpen,
-            onToggleRightPanel: isRightPanelOpen => this.setState({isRightPanelOpen}),
+            isLeftPanelOpen: this.props.leftPanelInitiallyOpen,
+            isRightPanelOpen: this.props.rightPanelInitiallyOpen,
             toolbar: createElement(ToolbarWrapper, {workspace: this}),
             onWorkspaceEvent,
             watermarkSvg: this._watermarkSvg,
@@ -307,9 +305,9 @@ export class Workspace extends Component<WorkspaceProps, State> {
     private updateNavigator(showNavigator: boolean) {
         if (showNavigator) {
             const widget = createElement(Navigator, {view: this.view, expanded: !this.props.collapseNavigator});
-            this.view.setPaperWidget({key: 'navigator', widget, pinnedToScreen: true});
+            this.view.setPaperWidget({key: 'navigator', widget, attachment: WidgetAttachment.Viewport});
         } else {
-            this.view.setPaperWidget({key: 'navigator', widget: undefined});
+            this.view.setPaperWidget({key: 'navigator', widget: undefined, attachment: WidgetAttachment.Viewport});
         }
     }
 
@@ -347,24 +345,15 @@ export class Workspace extends Component<WorkspaceProps, State> {
 
     forceLayout = () => {
         const batch = this.model.history.startBatch('Force layout');
-        batch.history.registerToUndo(this.makeSyncAndZoom());
         batch.history.registerToUndo(RestoreGeometry.capture(this.model));
 
-        recursiveForceLayout({model: this.model});
+        applyLayout(this.model, forceLayout({model: this.model}));
 
         for (const link of this.model.links) {
             link.setVertices([]);
         }
 
-        batch.history.execute(this.makeSyncAndZoom());
         batch.store();
-    }
-
-    private makeSyncAndZoom(): Command {
-        return Command.effect('Sync and zoom to fit', () => {
-            this.view.performSyncUpdate();
-            this.zoomToFit();
-        });
     }
 
     exportSvg = (fileName?: string) => {
@@ -459,6 +448,7 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
             onPersistChanges: onPersistChanges ? () => onPersistChanges(workspace) : undefined,
             onForceLayout: () => {
                 workspace.forceLayout();
+                workspace.getDiagram().performSyncUpdate();
                 workspace.zoomToFit();
             },
             onClearAll: workspace.clearAll,
@@ -466,14 +456,6 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
             selectedLanguage: view.getLanguage(),
             onChangeLanguage: workspace.changeLanguage,
             hidePanels,
-            isLeftPanelOpen: workspace.state.isLeftPanelOpen,
-            onLeftPanelToggle: () => {
-                workspace.setState(prevState => ({isLeftPanelOpen: !prevState.isLeftPanelOpen}));
-            },
-            isRightPanelOpen: workspace.state.isRightPanelOpen,
-            onRightPanelToggle: () => {
-                workspace.setState(prevState => ({isRightPanelOpen: !prevState.isRightPanelOpen}));
-            },
         };
         if (toolbar) {
             const toolbarProps: ToolbarProps = {

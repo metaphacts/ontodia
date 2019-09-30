@@ -1,7 +1,6 @@
 import {
-    LocalizedString, ElementModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    ElementModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
-import { uri2name } from '../data/utils';
 import { GenerateID } from '../data/schema';
 
 import { EventSource, Events, EventObserver, AnyEvent } from '../viewUtils/events';
@@ -249,37 +248,4 @@ function removeElement(graph: Graph, element: Element): Command {
         graph.removeElement(element.id);
         return addElement(graph, element, connectedLinks);
     });
-}
-
-export function chooseLocalizedText(
-    texts: ReadonlyArray<LocalizedString>,
-    language: string
-): LocalizedString | undefined {
-    if (texts.length === 0) { return undefined; }
-    let defaultValue: LocalizedString;
-    let englishValue: LocalizedString;
-    for (const text of texts) {
-        if (text.lang === language) {
-            return text;
-        } else if (text.lang === '') {
-            defaultValue = text;
-        } else if (text.lang === 'en') {
-            englishValue = text;
-        }
-    }
-    return (
-        defaultValue !== undefined ? defaultValue :
-        englishValue !== undefined ? englishValue :
-        texts[0]
-    );
-}
-
-export function formatLocalizedLabel(
-    fallbackIri: string,
-    labels: ReadonlyArray<LocalizedString>,
-    language: string
-): string {
-    return labels.length > 0
-        ? chooseLocalizedText(labels, language).text
-        : uri2name(fallbackIri);
 }

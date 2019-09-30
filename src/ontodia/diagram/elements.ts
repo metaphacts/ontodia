@@ -1,10 +1,7 @@
 import {
-    ClassModel, ElementModel, LinkModel, LocalizedString, Property,
-    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    ElementModel, LinkModel, LocalizedString, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { GenerateID } from '../data/schema';
-
-import { LinkTemplateState } from '../editor/serializedDiagram';
 
 import { EventSource, Events, PropertyChange } from '../viewUtils/events';
 
@@ -28,6 +25,7 @@ export interface ElementEvents {
     changeSize: PropertyChange<Element, Size>;
     changeExpanded: PropertyChange<Element, boolean>;
     changeGroup: PropertyChange<Element, string>;
+    changeElementState: PropertyChange<Element, ElementTemplateState | undefined>;
     requestedFocus: { source: Element };
     requestedGroupContent: { source: Element };
     requestedAddToFilter: {
@@ -51,6 +49,7 @@ export class Element {
     private _size: Size;
     private _expanded: boolean;
     private _group: string | undefined;
+    private _elementState: ElementTemplateState | undefined;
     private _temporary: boolean;
 
     constructor(props: {
@@ -60,6 +59,7 @@ export class Element {
         size?: Size;
         expanded?: boolean;
         group?: string;
+        elementState?: ElementTemplateState;
         temporary?: boolean;
     }) {
         const {
@@ -69,6 +69,7 @@ export class Element {
             size = {width: 0, height: 0},
             expanded = false,
             group,
+            elementState,
             temporary = false,
         } = props;
 
@@ -78,6 +79,7 @@ export class Element {
         this._size = size;
         this._expanded = expanded;
         this._group = group;
+        this._elementState = elementState;
         this._temporary = temporary;
     }
 
@@ -131,6 +133,14 @@ export class Element {
         this.source.trigger('changeGroup', {source: this, previous});
     }
 
+    get elementState(): ElementTemplateState | undefined { return this._elementState; }
+    setElementState(value: ElementTemplateState | undefined) {
+        const previous = this._elementState;
+        if (previous === value) { return; }
+        this._elementState = value;
+        this.source.trigger('changeElementState', {source: this, previous});
+    }
+
     get temporary(): boolean { return this._temporary; }
 
     focus() {
@@ -150,6 +160,10 @@ export class Element {
     redraw() {
         this.source.trigger('requestedRedraw', {source: this});
     }
+}
+
+export interface ElementTemplateState {
+    [propertyIri: string]: any;
 }
 
 export interface AddToFilterRequest {
@@ -235,7 +249,7 @@ export interface LinkEvents {
     changeLayoutOnly: PropertyChange<Link, boolean>;
     changeVertices: PropertyChange<Link, ReadonlyArray<Vector>>;
     changeLabelBounds: PropertyChange<Link, Rect>;
-    changeLinkState: PropertyChange<Link, LinkTemplateState>;
+    changeLinkState: PropertyChange<Link, LinkTemplateState | undefined>;
 }
 
 export class Link {
@@ -253,7 +267,7 @@ export class Link {
     private _layoutOnly: boolean;
     private _vertices: ReadonlyArray<Vector>;
 
-    private _linkState: LinkTemplateState;
+    private _linkState: LinkTemplateState | undefined;
 
     constructor(props: {
         id?: string;
@@ -311,13 +325,17 @@ export class Link {
         this.source.trigger('changeVertices', {source: this, previous});
     }
 
-    get linkState(): LinkTemplateState { return this._linkState; }
-    setLinkState(value: LinkTemplateState) {
+    get linkState(): LinkTemplateState | undefined { return this._linkState; }
+    setLinkState(value: LinkTemplateState | undefined) {
         const previous = this._linkState;
         if (previous === value) { return; }
         this._linkState = value;
         this.source.trigger('changeLinkState', {source: this, previous});
     }
+}
+
+export interface LinkTemplateState {
+    [propertyIri: string]: any;
 }
 
 export function linkMarkerKey(linkTypeIndex: number, startMarker: boolean) {

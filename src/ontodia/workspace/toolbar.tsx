@@ -19,10 +19,6 @@ export interface ToolbarProps {
     selectedLanguage?: string;
     onChangeLanguage?: (language: string) => void;
     hidePanels?: boolean;
-    isLeftPanelOpen?: boolean;
-    onLeftPanelToggle?: () => void;
-    isRightPanelOpen?: boolean;
-    onRightPanelToggle?: () => void;
 }
 
 const CLASS_NAME = 'ontodia-toolbar';
@@ -77,25 +73,6 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
         );
     }
 
-    private renderButtonsTogglePanels() {
-        const {hidePanels, isLeftPanelOpen, onLeftPanelToggle, isRightPanelOpen, onRightPanelToggle} = this.props;
-        if (hidePanels) { return null; }
-
-        const className = `ontodia-btn ontodia-btn-default ${CLASS_NAME}__toggle`;
-        return (
-            <div className='ontodia-btn-group ontodia-btn-group-sm'>
-                <button type='button'
-                        className={`${className} ${CLASS_NAME}__toggle-left ${isLeftPanelOpen ? 'active' : ''}`}
-                        onClick={onLeftPanelToggle}
-                        title='Classes Panel'/>
-                <button type='button'
-                        className={`${className} ${CLASS_NAME}__toggle-right ${isRightPanelOpen ? 'active' : ''}`}
-                        onClick={onRightPanelToggle}
-                        title='Connections Panel'/>
-            </div>
-        );
-    }
-
     render() {
         return (
             <div className={CLASS_NAME}>
@@ -138,7 +115,6 @@ export class DefaultToolbar extends React.Component<ToolbarProps, {}> {
                     </button>
                     {this.renderLanguages()}
                 </div>
-                {this.renderButtonsTogglePanels()}
             </div>
         );
     }

@@ -39,8 +39,8 @@ export class EditLinkLabelForm extends React.Component<Props, State> {
 
         const labelTexts = label.attrs && label.attrs.text ? label.attrs.text.text : undefined;
         return (labelTexts && labelTexts.length > 0)
-            ? view.getLocalizedText(labelTexts).text
-            : view.getLinkLabel(link.typeId).text;
+            ? view.selectLabel(labelTexts).text
+            : view.formatLabel(linkType.label, linkType.id);
     }
 
     render() {

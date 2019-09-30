@@ -22,11 +22,13 @@ export * from './ontodia/data/sparql/sparqlGraphBuilder';
 export { DIAGRAM_CONTEXT_URL_V1 } from './ontodia/data/schema';
 
 export { RestoreGeometry } from './ontodia/diagram/commands';
-export { Element, ElementEvents, Link, LinkEvents, LinkVertex, Cell, LinkDirection } from './ontodia/diagram/elements';
+export {
+    Element, ElementEvents, ElementTemplateState, Link, LinkEvents, LinkTemplateState, LinkVertex, Cell, LinkDirection
+} from './ontodia/diagram/elements';
 export { EmbeddedLayer } from './ontodia/diagram/embeddedLayer';
 export * from './ontodia/diagram/geometry';
 export * from './ontodia/diagram/history';
-export * from './ontodia/diagram/model';
+export { DiagramModel, DiagramModelEvents } from './ontodia/diagram/model';
 export * from './ontodia/diagram/view';
 export {
     PointerEvent, PointerUpEvent, getContentFittingBox, ViewportOptions, ScaleOptions,
@@ -44,19 +46,23 @@ export {
     LayoutData, LayoutElement, LayoutLink, SerializedDiagram,
     convertToSerializedDiagram, makeSerializedDiagram, LinkTypeOptions, makeLayoutData
 } from './ontodia/editor/serializedDiagram';
-export { recursiveLayout, recursiveForceLayout } from './ontodia/viewUtils/layout';
+export {
+    calculateLayout, removeOverlaps, CalculatedLayout,
+    UnzippedCalculatedLayout, LayoutNode, applyLayout, forceLayout,
+} from './ontodia/viewUtils/layout';
 
 export { Cancellation, CancellationToken } from './ontodia/viewUtils/async';
 export * from './ontodia/viewUtils/events';
 
 export { PropertySuggestionParams, PropertyScore } from './ontodia/widgets/connectionsMenu';
 
-export * from './ontodia/workspace/toolbar';
+export { DefaultToolbar, ToolbarProps } from './ontodia/workspace/toolbar';
 export {
-    Workspace, WorkspaceProps, WorkspaceLanguage, renderTo,
+    Workspace, WorkspaceProps, WorkspaceState, WorkspaceLanguage, renderTo,
 } from './ontodia/workspace/workspace';
 export { WorkspaceEventHandler, WorkspaceEventKey } from './ontodia/workspace/workspaceContext';
 export { DraggableHandle } from './ontodia/workspace/draggableHandle';
+export * from './ontodia/workspace/layout/layout';
 
 import * as InternalApi from './internalApi';
 export { InternalApi };

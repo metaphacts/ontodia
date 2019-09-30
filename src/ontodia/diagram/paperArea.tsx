@@ -10,7 +10,7 @@ import { RestoreGeometry } from './commands';
 import { Element, Link, Cell, LinkVertex } from './elements';
 import { Vector, Rect, computePolyline, findNearestSegmentIndex } from './geometry';
 import { Batch } from './history';
-import { DiagramView, RenderingLayer, WidgetDescription } from './view';
+import { DiagramView, RenderingLayer, WidgetDescription, WidgetAttachment } from './view';
 import { Paper, PaperTransform } from './paper';
 
 export interface PaperAreaProps {
@@ -219,20 +219,28 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
                     onMouseDown={this.onAreaPointerDown}>
                     <Paper view={view}
                         paperTransform={paperTransform}
-                        onPointerDown={this.onPaperPointerDown}>
-                        <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
-                            {renderedWidgets.filter(w => !w.pinnedToScreen).map(widget => {
-                                return React.cloneElement(widget.element, widgetProps);
-                            })}
-                        </div>
-                    </Paper>
+                        onPointerDown={this.onPaperPointerDown}
+                        linkLayerWidgets={
+                            <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
+                                {renderedWidgets.filter(w => w.attachment === WidgetAttachment.OverLinks).map(
+                                    widget => React.cloneElement(widget.element, widgetProps)
+                                )}
+                            </div>
+                        }
+                        elementLayerWidgets={
+                            <div className={`${CLASS_NAME}__widgets`} onMouseDown={this.onWidgetsMouseDown}>
+                                {renderedWidgets.filter(w => w.attachment === WidgetAttachment.OverElements).map(
+                                    widget => React.cloneElement(widget.element, widgetProps)
+                                )}
+                            </div>
+                        } />
                     {watermarkSvg ? (
                         <a href={watermarkUrl} target='_blank' rel='noopener'>
                             <img className={`${CLASS_NAME}__watermark`} src={watermarkSvg} draggable={false} />
                         </a>
                     ) : null}
                 </div>
-                {renderedWidgets.filter(w => w.pinnedToScreen).map(widget => {
+                {renderedWidgets.filter(w => w.attachment === WidgetAttachment.Viewport).map(widget => {
                     return React.cloneElement(widget.element, widgetProps);
                 })}
             </div>

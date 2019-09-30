@@ -124,7 +124,12 @@ export class Leaf extends React.Component<LeafProps, State> {
         this.props.onClickCreate(this.props.node);
     }
 
-    private onDragCreate = () => {
+    private onDragCreate = (e: React.DragEvent<any>) => {
+        // sets the drag data to support drag-n-drop in Firefox
+        // see https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations for more details
+        // IE supports only 'text' and 'URL' formats, see https://msdn.microsoft.com/en-us/ie/ms536744(v=vs.94)
+        e.dataTransfer.setData('text', '');
+
         this.props.onDragCreate(this.props.node);
     }
 }

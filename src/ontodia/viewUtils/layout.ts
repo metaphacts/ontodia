@@ -1,7 +1,7 @@
 import * as cola from 'webcola';
 
 import { DiagramModel } from '../diagram/model';
-import { boundsOf, Vector, computeGrouping } from '../diagram/geometry';
+import { boundsOf, Vector, computeGrouping, Size } from '../diagram/geometry';
 import { Element } from '../diagram/elements';
 import { EventObserver } from './events';
 import { getContentFittingBox } from '../diagram/paperArea';
@@ -22,7 +22,7 @@ export interface LayoutLink {
     target: LayoutNode;
 }
 
-export function forceLayout(params: {
+export function groupForceLayout(params: {
     nodes: LayoutNode[];
     links: LayoutLink[];
     preferredLinkLength: number;
@@ -38,7 +38,7 @@ export function forceLayout(params: {
     layout.start(30, 0, 10, undefined, false);
 }
 
-export function removeOverlaps(nodes: LayoutNode[]) {
+export function groupRemoveOverlaps(nodes: LayoutNode[]) {
     const nodeRectangles: cola.Rectangle[] = [];
     for (const node of nodes) {
         nodeRectangles.push(new cola.Rectangle(
@@ -56,18 +56,20 @@ export function removeOverlaps(nodes: LayoutNode[]) {
     }
 }
 
-export function translateToPositiveQuadrant(nodes: ReadonlyArray<LayoutNode>, offset: Vector) {
+export function translateToPositiveQuadrant(positions: Map<string, Vector>, offset: Vector) {
     let minX = Infinity, minY = Infinity;
-    for (const node of nodes) {
-        minX = Math.min(minX, node.x);
-        minY = Math.min(minY, node.y);
-    }
+    positions.forEach(position => {
+        minX = Math.min(minX, position.x);
+        minY = Math.min(minY, position.y);
+    });
 
     const {x, y} = offset;
-    for (const node of nodes) {
-        node.x = node.x - minX + x;
-        node.y = node.y - minY + y;
-    }
+    positions.forEach((position, key) => {
+        positions.set(key, {
+            x: position.x - minX + x,
+            y: position.y - minY + y,
+        });
+    });
 }
 
 export function uniformGrid(params: {
@@ -112,22 +114,66 @@ export function padded(
     }
 }
 
-export function recursiveLayout(params: {
+export function biasFreePadded(
+    nodes: LayoutNode[],
+    padding: { x: number; y: number } | undefined,
+    transform: () => void,
+) {
+    const nodeSizeMap = new Map<string, Size>();
+    const possibleCompression = {x: Infinity, y: Infinity};
+    for (const node of nodes) {
+        nodeSizeMap.set(node.id, {width: node.width, height: node.height});
+        const maxSide = Math.max(node.width, node.height);
+
+        const compressionX = node.width ? (maxSide / node.width) : 1;
+        const compressionY = node.height ? (maxSide / node.height) : 1;
+        possibleCompression.x = Math.min(1 + (compressionX - 1), possibleCompression.x);
+        possibleCompression.y = Math.min(1 + (compressionY - 1), possibleCompression.y);
+
+        node.height = maxSide;
+        node.width = maxSide;
+    }
+    padded(nodes, padding, () => transform());
+
+    const fittingBox = getContentFittingBoxForLayout(nodes);
+    for (const node of nodes) {
+        const size = nodeSizeMap.get(node.id);
+        node.x = (node.x - fittingBox.x) / possibleCompression.x + fittingBox.x;
+        node.y = (node.y - fittingBox.y) / possibleCompression.y + fittingBox.y;
+        node.height = size.height;
+        node.width = size.width;
+    }
+}
+
+export type CalculatedLayout = object & { readonly layoutBrand: void };
+
+export interface UnzippedCalculatedLayout extends CalculatedLayout {
+    group?: string;
+    keepAveragePosition: boolean;
+    positions: Map<string, Vector>;
+    nestedLayouts: UnzippedCalculatedLayout[];
+}
+
+export function calculateLayout(params: {
     model: DiagramModel;
     layoutFunction: (nodes: LayoutNode[], links: LayoutLink[], group: string) => void;
     fixedElements?: ReadonlySet<Element>;
     group?: string;
     selectedElements?: ReadonlySet<Element>;
-}) {
+}): CalculatedLayout {
     const grouping = computeGrouping(params.model.elements);
     const {layoutFunction, model, fixedElements, selectedElements} = params;
 
     if (selectedElements && selectedElements.size <= 1) {
-        return;
+        return {
+            positions: new Map(),
+            nestedLayouts: [],
+            keepAveragePosition: false,
+        } as UnzippedCalculatedLayout;
     }
-    internalRecursion(params.group);
+    return internalRecursion(params.group);
 
-    function internalRecursion(group: string) {
+    function internalRecursion(group: string): CalculatedLayout {
         const elementsToProcess = group
             ? grouping.get(group)
             : model.elements.filter(el => el.group === undefined);
@@ -135,9 +181,10 @@ export function recursiveLayout(params: {
             ? elementsToProcess.filter(el => selectedElements.has(el))
             : elementsToProcess;
 
+        const nestedLayouts: CalculatedLayout[] = [];
         for (const element of elements) {
             if (grouping.has(element.id)) {
-                internalRecursion(element.id);
+                nestedLayouts.push(internalRecursion(element.id));
             }
         }
 
@@ -169,44 +216,66 @@ export function recursiveLayout(params: {
         }
         layoutFunction(nodes, links, group);
 
-        if (group) {
-            const offset: Vector = getContentFittingBox(elements, []);
-            translateToPositiveQuadrant(nodes, offset);
-        }
-
-        const averagePosition = calcAveragePosition(elements);
+        const positions: Map<string, Vector> = new Map();
         for (const node of nodes) {
-            const element = model.getElement(node.id);
-            element.setPosition({x: node.x, y: node.y});
+            positions.set(node.id, {x: node.x, y: node.y});
         }
 
-        if (selectedElements) {
-            const newAveragePosition = calcAveragePosition(elements);
-            const averageDiff = {
-                x: averagePosition.x - newAveragePosition.x,
-                y: averagePosition.y - newAveragePosition.y,
-            };
-            for (const node of nodes) {
-                const element = model.getElement(node.id);
-                element.setPosition({
-                    x: node.x + averageDiff.x,
-                    y: node.y + averageDiff.y,
-                });
-            }
-        }
+        return {
+            positions,
+            group,
+            nestedLayouts,
+            keepAveragePosition: Boolean(selectedElements)
+        } as UnzippedCalculatedLayout;
     }
 }
 
-export function calcAveragePosition(elements: ReadonlyArray<Element>): Vector {
+export function applyLayout(
+    model: DiagramModel,
+    layout: CalculatedLayout,
+) {
+    const {positions, group, nestedLayouts, keepAveragePosition} = layout as UnzippedCalculatedLayout;
+    const elements = model.elements.filter(({id}) => positions.has(id));
+    for (const nestedLayout of nestedLayouts) {
+        applyLayout(model, nestedLayout);
+    }
+
+    if (group) {
+        const offset: Vector = getContentFittingBox(elements, []);
+        translateToPositiveQuadrant(positions, offset);
+    }
+
+    const averagePosition = keepAveragePosition ? calculateAveragePosition(elements) : undefined;
+    for (const element of elements) {
+        element.setPosition(positions.get(element.id));
+    }
+
+    if (keepAveragePosition) {
+        const newAveragePosition = calculateAveragePosition(elements);
+        const averageDiff = {
+            x: averagePosition.x - newAveragePosition.x,
+            y: averagePosition.y - newAveragePosition.y,
+        };
+        positions.forEach((position, elementId) => {
+            const element = model.getElement(elementId);
+            element.setPosition({
+                x: position.x + averageDiff.x,
+                y: position.y + averageDiff.y,
+            });
+        });
+    }
+}
+
+export function calculateAveragePosition(position: ReadonlyArray<Element>): Vector {
     let xSum = 0;
     let ySum = 0;
-    for (const element of elements) {
+    for (const element of position) {
         xSum += element.position.x + element.size.width / 2;
         ySum += element.position.y + element.size.height / 2;
     }
     return {
-        x: xSum / elements.length,
-        y: ySum / elements.length,
+        x: xSum / position.length,
+        y: ySum / position.length,
     };
 }
 
@@ -225,7 +294,7 @@ export function placeElementsAround(params: {
     };
     let outgoingAngle = 0;
     if (targetElement.links.length > 0) {
-        const averageSourcePosition = calcAveragePosition(
+        const averageSourcePosition = calculateAveragePosition(
             targetElement.links.map(link => {
                 const linkSource = model.sourceOf(link);
                 return linkSource !== targetElement ? linkSource : model.targetOf(link);
@@ -271,7 +340,7 @@ export function placeElementsAround(params: {
         listener.listen(model.events, 'changeCells', () => {
             listener.stopListening();
 
-            recursiveRemoveOverlaps({
+            removeOverlaps({
                 model,
                 padding: { x: 15, y: 15 },
             });
@@ -280,45 +349,69 @@ export function placeElementsAround(params: {
     });
 }
 
-export function recursiveRemoveOverlaps(params: {
+export function removeOverlaps(params: {
     model: DiagramModel;
     fixedElements?: ReadonlySet<Element>;
     padding?: Vector;
     group?: string;
-}) {
-    const {padding, model, group, fixedElements} = params;
-    recursiveLayout({
+    selectedElements?: ReadonlySet<Element>;
+}): CalculatedLayout {
+    const {padding, model, group, fixedElements, selectedElements} = params;
+    return calculateLayout({
         model,
         group,
         fixedElements,
+        selectedElements,
         layoutFunction: (nodes) => {
-            padded(nodes, padding, () => removeOverlaps(nodes));
+            padded(nodes, padding, () => groupRemoveOverlaps(nodes));
         },
     });
 }
 
-export function recursiveForceLayout(params: {
+export function forceLayout(params: {
     model: DiagramModel;
     fixedElements?: ReadonlySet<Element>;
     group?: string;
     selectedElements?: ReadonlySet<Element>;
-}) {
+}): CalculatedLayout {
     const {model, group, fixedElements, selectedElements} = params;
-    recursiveLayout({
+    return calculateLayout({
         model,
         group,
         fixedElements,
         selectedElements,
         layoutFunction: (nodes, links) => {
             if (fixedElements && fixedElements.size > 0) {
-                padded(nodes, {x: 50, y: 50}, () => forceLayout({
+                biasFreePadded(nodes, {x: 50, y: 50}, () => groupForceLayout({
                     nodes, links, preferredLinkLength: 200,
                     avoidOvelaps: true,
                 }));
             } else {
-                forceLayout({nodes, links, preferredLinkLength: 200});
-                padded(nodes, {x: 50, y: 50}, () => removeOverlaps(nodes));
+                groupForceLayout({nodes, links, preferredLinkLength: 200});
+                biasFreePadded(nodes, {x: 50, y: 50}, () => groupRemoveOverlaps(nodes));
             }
         },
     });
+}
+
+export function getContentFittingBoxForLayout(
+    nodes: ReadonlyArray<LayoutNode>
+): { x: number; y: number; width: number; height: number } {
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
+
+    for (const node of nodes) {
+        const {x, y, width, height} = node;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + width);
+        maxY = Math.max(maxY, y + height);
+    }
+
+    return {
+        x: Number.isFinite(minX) ? minX : 0,
+        y: Number.isFinite(minY) ? minY : 0,
+        width: Number.isFinite(minX) && Number.isFinite(maxX) ? (maxX - minX) : 0,
+        height: Number.isFinite(minY) && Number.isFinite(maxY) ? (maxY - minY) : 0,
+    };
 }

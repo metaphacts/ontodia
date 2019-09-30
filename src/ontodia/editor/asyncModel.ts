@@ -177,10 +177,10 @@ export class AsyncModel extends DiagramModel {
         const usedLinkTypes: { [typeId: string]: FatLinkType } = {};
 
         for (const layoutElement of layoutData.elements) {
-            const {'@id': id, iri, position, size, isExpanded, group} = layoutElement;
+            const {'@id': id, iri, position, size, isExpanded, group, elementState} = layoutElement;
             const template = preloadedElements[iri];
             const data = template || placeholderDataFromIri(iri);
-            const element = new Element({id, data, position, size, expanded: isExpanded, group});
+            const element = new Element({id, data, position, size, expanded: isExpanded, group, elementState});
             this.graph.addElement(element);
             if (!template) {
                 elementIrisToRequestData.push(element.iri);

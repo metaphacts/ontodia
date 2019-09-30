@@ -1,4 +1,4 @@
-import { ElementIri, ElementTypeIri, LinkTypeIri } from './model';
+import { ElementTypeIri, LinkTypeIri } from './model';
 import { generate128BitID } from './utils';
 
 // context could be imported directly from NPM package, e.g.
@@ -12,4 +12,9 @@ const ONTODIA_ID_URL_PREFIX = 'http://ontodia.org/data/';
 export namespace GenerateID {
     export function forElement() { return `${ONTODIA_ID_URL_PREFIX}e_${generate128BitID()}`; }
     export function forLink() { return `${ONTODIA_ID_URL_PREFIX}l_${generate128BitID()}`; }
+}
+
+export namespace TemplateProperties {
+    export const PinnedProperties = 'ontodia:pinnedProperties';
+    export const CustomLabel = 'ontodia:customLabel';
 }

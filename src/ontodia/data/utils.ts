@@ -29,19 +29,19 @@ export function hashFnv32a(str: string, seed = 0x811c9dc5): number {
     /* tslint:enable:no-bitwise */
 }
 
-export function uri2name(uri: string): string {
-    const hashIndex = uri.lastIndexOf('#');
-    if (hashIndex !== -1 && hashIndex !== uri.length - 1) {
-        return uri.substring(hashIndex + 1);
+/**
+ * Extracts local name for URI the same way as it's done in RDF4J.
+ */
+export function getUriLocalName(uri: string): string | undefined {
+    let index = uri.indexOf('#');
+    if (index < 0) {
+        index = uri.lastIndexOf('/');
     }
-    const endsWithSlash = uri[uri.length - 1] === '/';
-    if (endsWithSlash) {
-        uri = uri.substring(0, uri.length - 1);
+    if (index < 0) {
+        index = uri.lastIndexOf(':');
     }
-
-    const lastPartStart = uri.lastIndexOf('/');
-    if (lastPartStart !== -1 && lastPartStart !== uri.length - 1) {
-        return uri.substring(lastPartStart + 1);
+    if (index < 0) {
+        return undefined;
     }
-    return uri;
+    return uri.substring(index + 1);
 }

@@ -6,7 +6,6 @@ import { Element } from '../diagram/elements';
 import { Vector } from '../diagram/geometry';
 import { DiagramView, DropOnPaperEvent } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
-import { formatLocalizedLabel } from '../diagram/model';
 
 import { ClassTree } from '../widgets/classTree';
 import { InstancesSearch, SearchCriteria } from '../widgets/instancesSearch';
@@ -19,12 +18,10 @@ import {
     WorkspaceContextWrapper, WorkspaceContext, WorkspaceContextTypes, WorkspaceEventHandler, WorkspaceEventKey,
 } from './workspaceContext';
 
-import { ResizableSidebar, DockSide } from './resizableSidebar';
-import { Accordion } from './accordion';
-import { AccordionItem } from './accordionItem';
-
 import { MetadataApi } from '../data/metadataApi';
 import { Cancellation } from '../viewUtils/async';
+
+import { WorkspaceLayout, WorkspaceLayoutType, WorkspaceLayoutNode } from './layout/layout';
 
 export interface WorkspaceMarkupProps {
     toolbar: React.ReactElement<any>;
@@ -40,9 +37,7 @@ export interface WorkspaceMarkupProps {
     zoomOptions?: ZoomOptions;
     onZoom?: (scaleX: number, scaleY: number) => void;
     isLeftPanelOpen?: boolean;
-    onToggleLeftPanel?: (toggle: boolean) => void;
     isRightPanelOpen?: boolean;
-    onToggleRightPanel?: (toggle: boolean) => void;
     onWorkspaceEvent?: WorkspaceEventHandler;
     watermarkSvg?: string;
     watermarkUrl?: string;
@@ -53,8 +48,6 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     static childContextTypes = WorkspaceContextTypes;
 
     element: HTMLElement;
-    classTreePanel: HTMLElement;
-    linkTypesPanel: HTMLElement;
     paperArea: PaperArea;
 
     private untilMouseUpClasses: string[] = [];
@@ -82,17 +75,17 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
     }
 
     private onCreateInstance = async (classId: ElementTypeIri, position: Vector) => {
-        const {editor} = this.props;
+        const {editor, view, model, metadataApi} = this.props;
         await forceNonReactExecutionContext();
-        const batch = this.props.model.history.startBatch();
+        const batch = model.history.startBatch();
 
-        const type = this.props.editor.model.getClass(classId);
-        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+        const type = editor.model.getClass(classId);
+        const typeName = view.formatLabel(type.label, type.id);
 
         const types = [classId];
         const signal = this.cancellation.signal;
 
-        const newEntityIri = await this.props.metadataApi.generateNewElementIri(types, signal);
+        const newEntityIri = await metadataApi.generateNewElementIri(types, signal);
         if (signal.aborted) { return; }
         const elementModel = {
             id: newEntityIri,
@@ -101,7 +94,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
             properties: {},
         };
         const element = editor.createNewEntity({elementModel});
-        this.props.view.performSyncUpdate();
+        view.performSyncUpdate();
         const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
         centerElementToPosition(element, targetPosition);
 
@@ -110,110 +103,107 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         editor.showEditEntityForm(element);
     }
 
-    private renderLeftPanel = () => {
-        const {hidePanels, editor, searchCriteria = {}} = this.props;
-        if (hidePanels) {
-            return null;
-        }
-
-        const items: Array<React.ReactElement<any>> = [];
-        items.push(
-            <AccordionItem key='classTree' heading='Classes'>
-                <ClassTree view={this.props.view}
-                    editor={this.props.editor}
-                    onClassSelected={classId => {
-                        const elementType = this.props.model.createClass(classId);
-                        this.props.onSearchCriteriaChanged({elementType});
-                    }}
-                    onCreateInstance={this.onCreateInstance}
-                />
-            </AccordionItem>
+    private getLeftPanelLayout(): WorkspaceLayoutNode {
+        const {view, editor, model, searchCriteria, onSearchCriteriaChanged} = this.props;
+        const classTree = (
+            <ClassTree view={view}
+                editor={editor}
+                onClassSelected={classId => {
+                    const elementType = model.createClass(classId);
+                    onSearchCriteriaChanged({elementType});
+                }}
+                onCreateInstance={this.onCreateInstance}
+            />
         );
-        items.push(
-            <AccordionItem key='instancesSearch' heading='Instances'>
-                <InstancesSearch view={this.props.view}
-                    model={this.props.model}
-                    criteria={searchCriteria}
-                    onCriteriaChanged={this.props.onSearchCriteriaChanged}
-                />
-            </AccordionItem>
+        const instancesSearch = (
+            <InstancesSearch view={view}
+                model={model}
+                criteria={searchCriteria || {}}
+                onCriteriaChanged={onSearchCriteriaChanged}
+            />
         );
-
-        return (
-            <ResizableSidebar dockSide={DockSide.Left}
-                isOpen={this.props.isLeftPanelOpen}
-                onOpenOrClose={this.props.onToggleLeftPanel}
-                onStartResize={() => this.untilMouseUp({
-                    preventTextSelection: true,
-                    horizontalResizing: true,
-                })}>
-                {/* Use different key to update when switching mode */}
-                <Accordion key={`accordion--${editor.inAuthoringMode ? 'exploring' : 'authoring'}`}
-                    onStartResize={() => this.untilMouseUp({
-                        preventTextSelection: true,
-                        verticalResizing: true,
-                    })}>
-                    {items}
-                </Accordion>
-            </ResizableSidebar>
-        );
+        return {
+            type: WorkspaceLayoutType.Column,
+            children: [{
+                id: 'classes',
+                type: WorkspaceLayoutType.Component,
+                content: classTree,
+                heading: 'Classes',
+            }, {
+                id: 'instances',
+                type: WorkspaceLayoutType.Component,
+                content: instancesSearch,
+                heading: 'Instances',
+            }],
+            defaultSize: 275,
+            defaultCollapsed: !this.props.isLeftPanelOpen,
+        };
     }
 
-    private renderRightPanel = () => {
-        if (this.props.hidePanels) { return null; }
-
+    private getRightPanelLayout(): WorkspaceLayoutNode {
         const {view, editor, elementsSearchPanel} = this.props;
-
-        const items: Array<React.ReactElement<any>> = [];
-        items.push(
-            <AccordionItem key='connections' heading='Connections' bodyClassName='link-types-toolbox'>
-                <LinkTypesToolbox view={view} editor={editor} />
-            </AccordionItem>
-        );
+        const rightPanel: WorkspaceLayoutNode = {
+            type: WorkspaceLayoutType.Column,
+            children: [{
+                id: 'connections',
+                type: WorkspaceLayoutType.Component,
+                content: <LinkTypesToolbox view={view} editor={editor}/>,
+                heading: 'Connections',
+            }],
+            defaultSize: 275,
+            defaultCollapsed: !this.props.isRightPanelOpen,
+        };
         if (elementsSearchPanel) {
-            items.push(
-                <AccordionItem key='search' heading='Search in diagram'>
-                    {React.cloneElement(elementsSearchPanel, {view, editor})}
-                </AccordionItem>
-            );
+            rightPanel.children = [
+                ...rightPanel.children,
+                {
+                    id: 'search',
+                    type: WorkspaceLayoutType.Component,
+                    content: React.cloneElement(elementsSearchPanel, {view, editor}),
+                    heading: 'Search in diagram',
+                }
+            ];
         }
-
-        return (
-            <ResizableSidebar dockSide={DockSide.Right}
-                isOpen={this.props.isRightPanelOpen}
-                onOpenOrClose={this.props.onToggleRightPanel}
-                onStartResize={() => this.untilMouseUp({
-                    preventTextSelection: true,
-                    horizontalResizing: true,
-                })}>
-                <Accordion onStartResize={() => this.untilMouseUp({
-                    preventTextSelection: true,
-                    verticalResizing: true,
-                })}>
-                    {items}
-                </Accordion>
-            </ResizableSidebar>
-        );
+        return rightPanel;
     }
 
     render() {
+        const paper: WorkspaceLayoutNode = {
+            id: 'paper',
+            type: WorkspaceLayoutType.Component,
+            content: (
+                <div className='ontodia__main-panel' style={{flex: '1 1 0px', width: '100%'}}>
+                    <PaperArea ref={el => this.paperArea = el}
+                        view={this.props.view}
+                        zoomOptions={this.props.zoomOptions}
+                        hideScrollBars={this.props.hideScrollBars}
+                        watermarkSvg={this.props.watermarkSvg}
+                        watermarkUrl={this.props.watermarkUrl}
+                        onDragDrop={this.onDropOnPaper}
+                        onZoom={this.props.onZoom}>
+                    </PaperArea>
+                </div>
+            ),
+        };
+        const workspaceLayout: WorkspaceLayoutNode = this.props.hidePanels ? paper : {
+            type: WorkspaceLayoutType.Row,
+            children: [
+                this.getLeftPanelLayout(),
+                paper,
+                this.getRightPanelLayout(),
+            ]
+        };
         return (
             <div ref={e => this.element = e} className='ontodia'>
                 {this.renderToolbar()}
                 <div className='ontodia__workspace'>
-                    {this.renderLeftPanel()}
-                    <div className='ontodia__main-panel'>
-                        <PaperArea ref={el => this.paperArea = el}
-                            view={this.props.view}
-                            zoomOptions={this.props.zoomOptions}
-                            hideScrollBars={this.props.hideScrollBars}
-                            watermarkSvg={this.props.watermarkSvg}
-                            watermarkUrl={this.props.watermarkUrl}
-                            onDragDrop={this.onDropOnPaper}
-                            onZoom={this.props.onZoom}>
-                        </PaperArea>
-                    </div>
-                    {this.renderRightPanel()}
+                    <WorkspaceLayout layout={workspaceLayout} _onStartResize={direction =>
+                        this.untilMouseUp({
+                            preventTextSelection: true,
+                            verticalResizing: direction === 'vertical',
+                            horizontalResizing: direction === 'horizontal',
+                        })
+                    } />
                 </div>
             </div>
         );

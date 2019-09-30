@@ -1,6 +1,6 @@
 import {
     ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
-    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError, formatLocalizedLabel,
+    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError,
     LinkDirection, ElementIri,
 } from '../../index';
 import { DirectedLinkType } from '../../ontodia/diagram/elements';
@@ -137,11 +137,10 @@ export class ExampleValidationApi implements ValidationApi {
                         message: 'Cannot add any new link from a Class',
                     });
                     const linkType = event.model.createLinkType(newLinkEvent.after.linkTypeId);
-                    const linkTypeLabel = formatLocalizedLabel(linkType.id, linkType.label, 'en');
                     errors.push({
                         type: 'element',
                         target: event.target.id,
-                        message: `Cannot create "${linkTypeLabel}" link from a Class`,
+                        message: `Cannot create <${linkType.id}> link from a Class`,
                     });
                 });
         }

@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.10.0] - 2019-09-30
+### Added
+- Custom element state in the serialized diagram layout via
+`elementTemplateState` property.
+- Enhance standard template with ability to "pin" properties to display them
+even in collapsed state.
+- Add options to override `selectLabelLanguage` to customize label language
+selection based on user-preferred language.
+
+### Changed
+- **[Breaking]** New look for collapsible sidebar panels,
+remove sidebar expand/collapse state props from `ToolbarProps`.
+- Use first character of types instead of label as thubmnail fallback in
+standard element template.
+- Highlight single-selected nodes with additional border in Halo.
+- Changed the look for temporary elements in authoring mode.
+
+### Fixed
+- Incorrectly overlapping authoring status overlays of elements and links
+(new, changed, deleted, etc).
+- Scrolling to canvas location on navigator click when there are any vertical
+scrolling on a page (`Window.pageYOffset` is not zero).
+- Bias in layout algorithms making diagrams look too vertical.
+- Drag'n'drop button to create entity from class tree in Firefox.
+
 ## [0.9.12] - 2019-08-27
 ### Added
 - Bringing selected elements to front
@@ -450,8 +475,9 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/metaphacts/ontodia/compare/v0.9.12...HEAD
-[0.9.11]: https://github.com/metaphacts/ontodia/compare/v0.9.11...v0.9.12
+[Latest]: https://github.com/metaphacts/ontodia/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/metaphacts/ontodia/compare/v0.9.12...v0.10.0
+[0.9.12]: https://github.com/metaphacts/ontodia/compare/v0.9.11...v0.9.12
 [0.9.11]: https://github.com/metaphacts/ontodia/compare/v0.9.10...v0.9.11
 [0.9.10]: https://github.com/metaphacts/ontodia/compare/v0.9.9...v0.9.10
 [0.9.9]: https://github.com/metaphacts/ontodia/compare/v0.9.8...v0.9.9

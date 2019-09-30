@@ -13,13 +13,15 @@ export interface PaperProps {
     paperTransform: PaperTransform;
     onPointerDown?: (e: React.MouseEvent<HTMLElement>, cell: Cell | undefined) => void;
     group?: string;
+    linkLayerWidgets?: React.ReactElement<any>;
+    elementLayerWidgets?: React.ReactElement<any>;
 }
 
 const CLASS_NAME = 'ontodia-paper';
 
 export class Paper extends Component<PaperProps, {}> {
     render() {
-        const {view, group, paperTransform} = this.props;
+        const {view, group, paperTransform, linkLayerWidgets, elementLayerWidgets} = this.props;
         const {width, height, originX, originY, scale, paddingX, paddingY} = paperTransform;
 
         const scaledWidth = width * scale;
@@ -48,8 +50,9 @@ export class Paper extends Component<PaperProps, {}> {
                     <LinkMarkers view={view} />
                     <LinkLayer view={view} links={view.model.links} group={group} />
                 </TransformedSvgCanvas>
+                {linkLayerWidgets}
                 <ElementLayer view={view} group={group} style={htmlTransformStyle} />
-                {this.props.children}
+                {elementLayerWidgets}
             </div>
         );
     }

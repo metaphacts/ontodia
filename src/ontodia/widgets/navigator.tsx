@@ -206,7 +206,10 @@ export class Navigator extends React.Component<NavigatorProps, State> {
 
     private canvasFromPageCoords(pageX: number, pageY: number): Vector {
         const {top, left} = this.canvas.getBoundingClientRect();
-        return {x: pageX - left, y: pageY - top};
+        return {
+            x: pageX - left - window.pageXOffset,
+            y: pageY - top - window.pageYOffset,
+        };
     }
 
     render() {

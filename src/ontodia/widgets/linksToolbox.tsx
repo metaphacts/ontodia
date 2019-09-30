@@ -1,12 +1,10 @@
 import * as React from 'react';
-import * as _ from 'lodash';
 
 import { LinkCount } from '../data/model';
 import { changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, FatLinkType } from '../diagram/elements';
 import { CommandHistory } from '../diagram/history';
 import { DiagramView } from '../diagram/view';
-import { formatLocalizedLabel } from '../diagram/model';
 
 import { EditorController } from '../editor/editorController';
 
@@ -16,10 +14,9 @@ import { highlightSubstring } from '../widgets/listElementView';
 import { ProgressBar, ProgressState } from '../widgets/progressBar';
 
 interface LinkInToolBoxProps {
-    history: CommandHistory;
+    view: DiagramView;
     link: FatLinkType;
     count: number;
-    language?: string;
     onPressFilter?: (type: FatLinkType) => void;
     filterKey?: string;
 }
@@ -34,7 +31,8 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private changeState = (state: LinkTypeVisibility) => {
-        changeLinkTypeState(this.props.history, state, [this.props.link]);
+        const history = this.props.view.model.history;
+        changeLinkTypeState(history, state, [this.props.link]);
     }
 
     private isChecked = (stateName: LinkTypeVisibility): boolean => {
@@ -50,8 +48,8 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
     }
 
     private getText = () => {
-        const {link: linkType, language, filterKey} = this.props;
-        const fullText = formatLocalizedLabel(linkType.id, linkType.label, language);
+        const {link: linkType, view, filterKey} = this.props;
+        const fullText = view.formatLabel(linkType.label, linkType.id);
         return highlightSubstring(fullText, filterKey);
     }
 
@@ -91,11 +89,10 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
 }
 
 interface LinkTypesToolboxViewProps {
-    history: CommandHistory;
+    view: DiagramView;
     links: ReadonlyArray<FatLinkType>;
     countMap: { readonly [linkTypeId: string]: number };
     selectedElement: Element;
-    language: string;
     dataState: ProgressState;
     filterCallback: (type: FatLinkType) => void;
 }
@@ -107,9 +104,10 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
     }
 
     private compareLinks = (a: FatLinkType, b: FatLinkType) => {
-        const aText = formatLocalizedLabel(a.id, a.label, this.props.language).toLowerCase();
-        const bText = formatLocalizedLabel(b.id, b.label, this.props.language).toLowerCase();
-        return aText < bText ? -1 : (aText > bText ? 1 : 0);
+        const {view} = this.props;
+        const aText = view.formatLabel(a.label, a.id);
+        const bText = view.formatLabel(b.label, b.id);
+        return aText.localeCompare(bText);
     }
 
     private onChangeInput = (e: React.SyntheticEvent<HTMLInputElement>) => {
@@ -121,9 +119,10 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
     }
 
     private getLinks = () => {
-        return (this.props.links || []).filter(linkType => {
-            const text = formatLocalizedLabel(linkType.id, linkType.label, this.props.language).toLowerCase();
-            return (!this.state.filterKey) || (text && text.indexOf(this.state.filterKey.toLowerCase()) !== -1);
+        const {view, links = []} = this.props;
+        return links.filter(linkType => {
+            const text = view.formatLabel(linkType.label, linkType.id).toLowerCase();
+            return !this.state.filterKey || text.indexOf(this.state.filterKey.toLowerCase()) >= 0;
         })
         .sort(this.compareLinks);
     }
@@ -134,10 +133,9 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
         for (const link of links) {
             views.push(
                 <LinkInToolBox key={link.id}
-                    history={this.props.history}
+                    view={this.props.view}
                     link={link}
                     onPressFilter={this.props.filterCallback}
-                    language={this.props.language}
                     count={countMap[link.id] || 0}
                     filterKey={this.state.filterKey}
                 />
@@ -148,17 +146,17 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
 
     render() {
         const className = 'link-types-toolbox';
-        const {history, dataState} = this.props;
+        const {view, dataState, selectedElement} = this.props;
+        const history = view.model.history;
 
         const links = this.getLinks();
         const views = this.getViews(links);
 
-        let connectedTo: React.ReactElement<any> = null;
-        if (this.props.selectedElement) {
-            const selectedElementLabel = formatLocalizedLabel(
-                this.props.selectedElement.iri,
-                this.props.selectedElement.data.label.values,
-                this.props.language
+        let connectedTo: JSX.Element | null = null;
+        if (selectedElement) {
+            const selectedElementLabel = view.formatLabel(
+                selectedElement.data.label.values,
+                selectedElement.iri
             );
             connectedTo = (
                 <h4 className='links-heading' style={{display: 'block'}}>
@@ -168,7 +166,7 @@ class LinkTypesToolboxView extends React.Component<LinkTypesToolboxViewProps, { 
             );
         }
 
-        let dropButton: React.ReactElement<any> = null;
+        let dropButton: JSX.Element | null = null;
         if (this.state.filterKey) {
             dropButton = <button type='button' className={`${className}__clearSearch`}
                 onClick={this.onDropFilter}>
@@ -327,14 +325,13 @@ export class LinkTypesToolbox extends React.Component<LinkTypesToolboxProps, Lin
     }
 
     render() {
-        const {view, editor} = this.props;
+        const {view} = this.props;
         const {selectedElement, dataState, linksOfElement, countMap} = this.state;
-        return <LinkTypesToolboxView history={editor.model.history}
+        return <LinkTypesToolboxView view={view}
             dataState={dataState}
             links={linksOfElement}
             countMap={countMap}
             filterCallback={this.onAddToFilter}
-            language={view.getLanguage()}
             selectedElement={selectedElement}
         />;
     }

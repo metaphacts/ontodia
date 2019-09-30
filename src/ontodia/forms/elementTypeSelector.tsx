@@ -5,7 +5,6 @@ import { ElementModel, ElementTypeIri } from '../data/model';
 
 import { EditorController } from '../editor/editorController';
 import { DiagramView } from '../diagram/view';
-import { formatLocalizedLabel } from '../diagram/model';
 import { MetadataApi } from '../data/metadataApi';
 
 import { createRequest } from '../widgets/instancesSearch';
@@ -65,27 +64,12 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         this.newIriCancellation.abort();
     }
 
-    private sortElementTypesByLabel = (a: ElementTypeIri, b: ElementTypeIri) => {
-        const {view} = this.props;
-        const typeA = view.model.createClass(a);
-        const typeB = view.model.createClass(b);
-        const labelA = view.getElementTypeLabel(typeA).text;
-        const labelB = view.getElementTypeLabel(typeB).text;
-        if (labelA < labelB) {
-            return - 1;
-        }
-        if (labelA > labelB) {
-            return 1;
-        }
-        return 0;
-    }
-
     private fetchPossibleElementTypes() {
-        const {metadataApi, source} = this.props;
+        const {view, metadataApi, source} = this.props;
         if (!metadataApi) { return; }
         metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
             if (this.cancellation.signal.aborted) { return; }
-            elementTypes.sort(this.sortElementTypesByLabel);
+            elementTypes.sort(makeElementTypeComparatorByLabel(view));
             this.setState({elementTypes});
         });
     }
@@ -120,7 +104,7 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         const {elementValue, onChange, metadataApi} = this.props;
         const classId = (e.target as HTMLSelectElement).value as ElementTypeIri;
         const type = this.props.editor.model.createClass(classId);
-        const typeName = formatLocalizedLabel(classId, type.label, this.props.view.getLanguage());
+        const typeName = this.props.view.formatLabel(type.label, type.id);
         const types = [classId];
         const newId = await metadataApi.generateNewElementIri(types, signal);
         if (signal.aborted) {
@@ -138,7 +122,7 @@ export class ElementTypeSelector extends React.Component<Props, State> {
     private renderPossibleElementType = (elementType: ElementTypeIri) => {
         const {view} = this.props;
         const type = view.model.createClass(elementType);
-        const label = view.getElementTypeLabel(type).text;
+        const label = view.formatLabel(type.label, type.id);
         return <option key={elementType} value={elementType}>{label}</option>;
     }
 
@@ -221,6 +205,16 @@ export class ElementTypeSelector extends React.Component<Props, State> {
             </div>
         );
     }
+}
+
+function makeElementTypeComparatorByLabel(view: DiagramView) {
+    return (a: ElementTypeIri, b: ElementTypeIri) => {
+        const typeA = view.model.createClass(a);
+        const typeB = view.model.createClass(b);
+        const labelA = view.formatLabel(typeA.label, typeA.id);
+        const labelB = view.formatLabel(typeB.label, typeB.id);
+        return labelA.localeCompare(labelB);
+    };
 }
 
 export function validateElementType(element: ElementModel): Promise<string | undefined> {

@@ -3,8 +3,10 @@ import { Component } from 'react';
 
 import { isEncodedBlank } from '../../data/sparql/blankNodes';
 
-import { TemplateProps } from '../props';
+import { TemplateProps, PropArray } from '../props';
 import { getProperty, getPropertyValues } from './utils';
+
+import { TemplateProperties } from '../../data/schema';
 
 import { AuthoredEntity, AuthoredEntityContext } from '../../editor/authoredEntity';
 import { AuthoringState } from '../../editor/authoringState';
@@ -25,24 +27,32 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
     }
 
     private renderTemplate(context: AuthoredEntityContext) {
-        const {color, types, isExpanded, iri} = this.props;
+        const {color, types, isExpanded, iri, propsAsList} = this.props;
         const label = this.getLabel();
 
         const {editor} = context;
         const isNewElement = AuthoringState.isNewElement(editor.authoringState, iri);
         const leftStripeColor = isNewElement ? 'white' : color;
+        const pinnedProperties = this.findPinnedProperties(context);
 
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__main`} style={{backgroundColor: leftStripeColor, borderColor: color}}>
                     <div className={`${CLASS_NAME}__body`} style={{borderLeftColor: color}}>
-                        {this.renderThumbnail()}
-                        <div className={`${CLASS_NAME}__body-content`}>
-                            <div title={types} className={`${CLASS_NAME}__type`}>
-                                <div className={`${CLASS_NAME}__type-value`}>{this.getTypesLabel()}</div>
+                        <div className={`${CLASS_NAME}__body-horizontal`}>
+                            {this.renderThumbnail()}
+                            <div className={`${CLASS_NAME}__body-content`}>
+                                <div title={types} className={`${CLASS_NAME}__type`}>
+                                    <div className={`${CLASS_NAME}__type-value`}>{this.getTypesLabel()}</div>
+                                </div>
+                                <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                             </div>
-                            <div className={`${CLASS_NAME}__label`} title={label}>{label}</div>
                         </div>
+                        {pinnedProperties ? (
+                            <div className={`${CLASS_NAME}__pinned-props`} style={{borderColor: color}}>
+                                {this.renderProperties(pinnedProperties)}
+                            </div>
+                        ) : null}
                     </div>
                 </div>
                 {isExpanded ? (
@@ -50,7 +60,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                         {this.renderPhoto()}
                         <div className={`${CLASS_NAME}__dropdown-content`}>
                             {this.renderIri()}
-                            {this.renderProperties()}
+                            {this.renderProperties(propsAsList)}
                             {editor.inAuthoringMode ? <hr className={`${CLASS_NAME}__hr`} /> : null}
                             {editor.inAuthoringMode ? this.renderActions(context) : null}
                         </div>
@@ -60,9 +70,18 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         );
     }
 
-    private renderProperties() {
-        const {propsAsList} = this.props;
+    private findPinnedProperties(context: AuthoredEntityContext): PropArray | undefined {
+        const {isExpanded, propsAsList, elementId} = this.props;
+        if (isExpanded) { return undefined; }
+        const templateState = context.view.model.getElement(elementId).elementState;
+        if (!templateState) { return undefined; }
+        const pinned = templateState[TemplateProperties.PinnedProperties] as PinnedProperties;
+        if (!pinned) { return undefined; }
+        const filtered = propsAsList.filter(prop => Boolean(pinned[prop.id]));
+        return filtered.length === 0 ? undefined : filtered;
+    }
 
+    private renderProperties(propsAsList: PropArray) {
         if (!propsAsList.length) {
             return <div>no properties</div>;
         }
@@ -136,10 +155,10 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
             );
         }
 
-        const label = this.getLabel();
+        const typeLabel = this.getTypesLabel();
         return (
             <div className={`${CLASS_NAME}__thumbnail`} aria-hidden='true' style={{color}}>
-                {label.charAt(0).toUpperCase()}
+                {typeLabel.length > 0 ? typeLabel.charAt(0).toUpperCase() : '✳'}
             </div>
         );
     }
@@ -182,4 +201,8 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
             </div>
         );
     }
+}
+
+interface PinnedProperties {
+    [propertyId: string]: boolean;
 }
