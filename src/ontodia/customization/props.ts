@@ -82,6 +82,7 @@ export interface LinkMarkerStyle {
 
 export interface LinkLabel {
     position?: number;
+    title?: string;
     attrs?: {
         rect?: {
             fill?: string;

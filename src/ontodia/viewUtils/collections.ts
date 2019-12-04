@@ -13,6 +13,15 @@ export function hasOwnProperty(collection: object, key: string | number) {
     return Object.prototype.hasOwnProperty.call(collection, key);
 }
 
+export function objectValues<T>(obj: { [key: string]: T }): T[] {
+    const items: T[] = [];
+    for (const key in obj) {
+        if (!Object.hasOwnProperty.call(obj, key)) { continue; }
+        items.push(obj[key]);
+    }
+    return items;
+}
+
 export function isEmptyMap(map: object) {
     for (const key in map) {
         if (hasOwnProperty(map, key)) { return false; }
@@ -36,6 +45,24 @@ export function cloneSet<T>(set: ReadonlySet<T>): Set<T> {
     const clone = new Set<T>();
     set.forEach(item => clone.add(item));
     return clone;
+}
+
+export function getOrCreateArrayInMap<K, V>(map: Map<K, V[]>, key: K): V[] {
+    let values = map.get(key);
+    if (!values) {
+        values = [];
+        map.set(key, values);
+    }
+    return values;
+}
+
+export function getOrCreateSetInMap<K, V>(map: Map<K, Set<V>>, key: K): Set<V> {
+    let values = map.get(key);
+    if (!values) {
+        values = new Set();
+        map.set(key, values);
+    }
+    return values;
 }
 
 export class OrderedMap<V> {

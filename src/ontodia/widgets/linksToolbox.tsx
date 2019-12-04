@@ -59,7 +59,7 @@ class LinkInToolBox extends React.Component<LinkInToolBoxProps, {}> {
         const badgeContainer = (newIcon || countIcon ? <div>{newIcon}{countIcon}</div> : '');
 
         return (
-            <li data-linkTypeId={this.props.link.id} className='ontodia-list-group-item linkInToolBox clearfix'>
+            <li data-linktypeid={this.props.link.id} className='ontodia-list-group-item linkInToolBox clearfix'>
                 <span className='ontodia-btn-group ontodia-btn-group-xs' data-toggle='buttons'>
                     <label className={
                             'ontodia-btn ontodia-btn-default' + (this.isChecked('invisible') ? ' active' : '')}

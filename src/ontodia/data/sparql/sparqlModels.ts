@@ -70,7 +70,7 @@ export interface ClassBinding {
 }
 
 export interface PropertyBinding {
-    prop: RdfIri;
+    property: RdfIri;
     label?: RdfLiteral;
 }
 
@@ -98,6 +98,17 @@ export interface ElementImageBinding {
     inst: RdfIri;
     linkType: RdfIri;
     image: RdfIri;
+}
+
+export interface ElementTypeBinding {
+    inst: RdfIri;
+    class: RdfIri;
+}
+
+export interface FilterBinding {
+    classAll?: RdfIri;
+    link?: RdfIri;
+    direction?: RdfLiteral;
 }
 
 export interface SparqlResponse<Binding> {

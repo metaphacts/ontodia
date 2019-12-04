@@ -33,6 +33,9 @@ export interface RDFDataProviderOptions {
     proxy?: string;
 }
 
+/** An opaque reference to RDFGraph type from `rdf-ext` library */
+export type RDFExtGraph = object;
+
 export class RDFDataProvider implements DataProvider {
     public  dataFetching: boolean;
     private initStatement: Promise<any> | undefined;
@@ -69,8 +72,8 @@ export class RDFDataProvider implements DataProvider {
         this.options = options;
     }
 
-    addGraph(graph: RDFGraph) {
-        this.rdfStorage.add(graph);
+    addGraph(graph: RDFExtGraph) {
+        this.rdfStorage.add(graph as RDFGraph);
     }
 
     private waitInitCompleted(): Promise<void> {
@@ -553,7 +556,7 @@ export class RDFDataProvider implements DataProvider {
             for (const el of elements) {
                 let acceptableKey = false;
                 for (const label of el.label.values) {
-                    acceptableKey = acceptableKey || label.text.toLowerCase().indexOf(key) !== -1;
+                    acceptableKey = acceptableKey || label.value.toLowerCase().indexOf(key) !== -1;
                     if (acceptableKey) { break; }
                 }
                 acceptableKey = acceptableKey || el.id.toLowerCase().indexOf(key) !== -1;
@@ -605,9 +608,9 @@ export class RDFDataProvider implements DataProvider {
 
     private getLabels(id: string): Promise<LocalizedString[]> {
         return this.rdfStorage.getLabels(id).then(labelTriples => {
-            return labelTriples.toArray().map(l => ({
-                text: l.object.nominalValue,
-                lang: isLiteral(l.object) ? l.object.language || '' : '',
+            return labelTriples.toArray().map((l): LocalizedString => ({
+                value: l.object.nominalValue,
+                language: isLiteral(l.object) ? l.object.language || '' : '',
             }));
         });
     }

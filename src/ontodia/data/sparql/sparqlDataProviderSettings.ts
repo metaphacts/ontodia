@@ -1,64 +1,173 @@
 /**
- * this is dataset-schema specific settings
+ * Dataset-schema specific settings for SPARQL data provider.
  */
 export interface SparqlDataProviderSettings {
     /**
-     * default prefix to be used in every query
+     * Default prefix to be used in every query.
      */
     defaultPrefix: string;
 
     /**
-     *  property to use as label in schema (classes, properties)
+     * Property path for querying schema labels in schema (classes, link types, properties).
      */
     schemaLabelProperty: string;
 
     /**
-     * property to use as instance label
-     * todo: make it an array
+     * Property path for querying instance data labels (elements, links).
      */
     dataLabelProperty: string;
 
     /**
-     * full-text search settings
+     * Full-text search settings.
      */
     fullTextSearch: FullTextSearchSettings;
 
     /**
-     * query to retreive class tree. Should return class, label, parent, instcount (optional)
+     * SELECT query to retreive class tree.
+     *
+     * Parametrized variables:
+     *   - `${schemaLabelProperty}` `schemaLabelProperty` property from the settings
+     *
+     * Expected output bindings:
+     *   - `?class`
+     *   - `?label` (optional)
+     *   - `?parent` (optional)
+     *   - `?instcount` (optional)
      */
-    classTreeQuery: string;
+    classTreeQuery?: string;
 
     /**
-     * link types pattern - what to consider a link on initial fetch
+     * SELECT query to retrieve data for each class in a set.
+     *
+     * Parametrized variables:
+     *   - `${ids}` VALUES clause content with class IRIs
+     *   - `${schemaLabelProperty}` `schemaLabelProperty` property from the settings
+     *
+     * Expected output bindings:
+     *   - `?class`
+     *   - `?label` (optional)
+     *   - `?instcount` (optional)
      */
-    linkTypesPattern: string;
+    classInfoQuery?: string;
 
     /**
-     * query for fetching all information on element: labels, classes, properties
+     * SELECT query to retrieve initial link types.
+     *
+     * Parametrized variables:
+     *   - `${linkTypesPattern}` `linkTypesPattern` property from the settings
+     *   - `${schemaLabelProperty}` `schemaLabelProperty` property from the settings
+     *
+     * Expected output bindings:
+     *   - `?link`
+     *   - `?label` (optional)
+     *   - `?instcount` (optional)
+     */
+    linkTypesQuery?: string;
+
+    /**
+     * Overridable part of `linkTypesQuery` with same output bindings.
+     *
+     * Parametrized variables: none
+     */
+    linkTypesPattern?: string;
+
+    /**
+     * SELECT query to retrieve data for each link type in a set.
+     *
+     * Parametrized variables:
+     *   - `${ids}` VALUES clause content with link type IRIs
+     *   - `${schemaLabelProperty}` `schemaLabelProperty` property from the settings
+     *
+     * Expected output bindings:
+     *   - `?link`
+     *   - `?label` (optional)
+     *   - `?instcount` (optional)
+     */
+    linkTypesInfoQuery?: string;
+
+    /**
+     * SELECT query to retrieve data for each datatype property in a set.
+     *
+     * Parametrized variables:
+     *   - `${ids}` VALUES clause content with datatype property IRIs
+     *   - `${schemaLabelProperty}` `schemaLabelProperty` property from the settings
+     *
+     * Expected output bindings:
+     *   - `?property`
+     *   - `?label` (optional)
+     */
+    propertyInfoQuery?: string;
+
+    /**
+     * CONSTRUCT query to retrieve data for each element (types, labels, properties).
+     *
+     * Parametrized variables:
+     *   - `${ids}` VALUES clause content with element IRIs
+     *   - `${dataLabelProperty}` `dataLabelProperty` property from the settings
+     *   - `${propertyConfigurations}`
+     *
+     * Expected output format for triples:
+     *   - `?inst rdf:type ?class` element has type
+     *   - `?inst rdfs:label ?label` element has label
+     *   - `?inst ?property ?value` element has value for a datatype property
      */
     elementInfoQuery: string;
 
     /**
-     * Query on all links between said instances. Should return source type target
+     * SELECT query to retrieve all links between specified elements.
+     *
+     * Parametrized variables:
+     *   - `${ids}` VALUES clause content with element IRIs
+     *   - `${linkConfigurations}`
+     *
+     * Expected output bindings:
+     *   - `?type` link type
+     *   - `?source` link source
+     *   - `?target` link target
+     *   - `?propType` (optional) link property type
+     *   - `?propValue` (optional) link property value
      */
     linksInfoQuery: string;
 
     /**
-     * this should return image URL for ?inst as instance and ?linkType for image property IRI
-     * todo: move to runtime settings instead? proxying is runtime thing
+     * Query pattern to retrieve image URL for an element.
+     *
+     * Expected bindings:
+     *   - `?inst` element IRI
+     *   - `?linkType` image property IRI
+     *   - `?image` result image URL
      */
     imageQueryPattern: string;
 
     /**
-     * link types of returns possible link types from specified instance with statistics
+     * SELECT query to retrieve incoming/outgoing link types from specified element with statistics.
+     *
+     * Parametrized variables:
+     *   - `${elementIri}`
+     *   - `${linkConfigurations}`
+     *
+     * Expected bindings:
+     *   - `?link`
+     *   - `?label` (optional)
+     *   - `?instcount` (optional)
      */
     linkTypesOfQuery: string;
 
     /**
-     * link types of stats returns statistics of a link type for specified resource.
-     * To support blank nodes, query should use ?inObject and ?outObject variables for counting incoming and
-     * outgoing links, and provide ${navigateElementFilterOut} and ${navigateElementFilterIn} variables,
-     * see OWLRDFSSettings for example
+     * SELECT query to retrieve statistics of incoming/outgoing link types for specified element.
+     *
+     * Parametrized variables:
+     *   - `${linkId}`
+     *   - `${elementIri}`
+     *   - `${linkConfigurationOut}`
+     *   - `${linkConfigurationIn}`
+     *   - `${navigateElementFilterOut}` (optional; for blank node support only)
+     *   - `${navigateElementFilterIn}` (optional; for blank node support only)
+     *
+     * Expected bindings:
+     *   - `?link` link type
+     *   - `?inCount` incoming links count
+     *   - `?outCount` outgoing links count
      */
     linkTypesStatisticsQuery: string;
 
@@ -68,7 +177,11 @@ export interface SparqlDataProviderSettings {
     filterRefElementLinkPattern: string;
 
     /**
-     * filter by type pattern. One could use transitive type resolution here.
+     * SPARQL query pattern to retrieve transitive type sets for elements.
+     *
+     * Expected output bindings:
+     *   - `?inst` element IRI
+     *   - `?class` element type (there may be multiple or transitive types for an element)
      */
     filterTypePattern: string;
 
@@ -83,16 +196,30 @@ export interface SparqlDataProviderSettings {
     filterAdditionalRestriction: string;
 
     /**
-     * Abstract links configuration - one could abstract a property path as a link on the diagram
-     * If you choose to set linkConfiguration, please ensure you'll have corresponding handling of linkConfiguration in
-     * linkTypeOf query, refElement* queries, linkInfos query.
+     * Abstract links configuration - one could abstract a property path as a link on the diagram.
      */
     linkConfigurations: LinkConfiguration[];
+
+    /**
+     * (Experimental) Allows data provider to find links other than specified in `linkConfigurations`
+     * when `linkConfigurations` has at least one value set.
+     *
+     * @default false
+     */
+    openWorldLinks?: boolean;
 
     /**
      * Abstract property configuration similar to abstract link configuration. Not type-specific yet.
      */
     propertyConfigurations: PropertyConfiguration[];
+
+    /**
+     * (Experimental) Allows data provider to find element properties other than specified in
+     * `propertyConfigurations` when `propertyConfigurations` has at least one value set.
+     *
+     * @default false
+     */
+    openWorldProperties?: boolean;
 }
 
 /**
@@ -102,19 +229,27 @@ export interface SparqlDataProviderSettings {
  */
 export interface FullTextSearchSettings {
     /**
-     * prefix to use in FTS queries
+     * Prefixes to use in full text search queries.
      */
     prefix: string;
 
     /**
-     * query pattern should return ?inst and ?score for given ${text}.
+     * SPARQL query pattern to search/restrict results by text token.
+     *
+     * Parametrized variables:
+     *   - `${text}` text token
+     *   - `${dataLabelProperty}` `dataLabelProperty` property from the settings
+     *
+     * Expected bindings:
+     *   - `?inst` link type
+     *   - `?score` numerical score for ordering search results by relevance
+     *   - `?extractedLabel` (optional; if `extractLabel` is enabled)
      */
     queryPattern: string;
 
     /**
-     * try to extract label from IRI for usage in search purposes.
-     * If you have no labels in the dataset and want to search, you
-     * can use ?extractedLabel as something to search for.
+     * When enabled, adds SPARQL patterns to try to extract label from IRI and
+     * makes it available as `?extractedLabel` binding in `queryPattern`.
      */
     extractLabel?: boolean;
 }
@@ -127,16 +262,42 @@ export interface LinkConfiguration {
      * IRI of the "virtual" link
      */
     id: string;
+
     /**
-     * IRI of the inverse
+     * Optional domain constraint for source element of the link.
+     * If specified checks RDF type of source element to match one from this set.
      */
-    inverseId?: string;
+    domain?: ReadonlyArray<string>;
+
     /**
-     * Sparql pattern connecting $source to $target. It's required to use those specific variables.
+     * SPARQL predicate or pattern connecting source element to target element.
+     *
+     * Expected bindings (if it is a pattern):
+     *   - `?source` source element
+     *   - `?target` target element
+     *
+     * @example
+     * Direct configuration: `ex:relatedToOther`
+     *
+     * Pattern configuration: `
+     *   ?source ex:hasAddress ?addr .
+     *   ?addr ex:hasCountry ?target .
+     *   OPTIONAL {
+     *     BIND(ex:addressType as ?propType)
+     *     ?addr ex:addressType ?propValue
+     *   }
+     * `
      */
     path: string;
+
     /**
-     * Additional sparql patterns can be used for getting properties of the link. (propValue propType should be bound)
+     * Additional SPARQL patterns can be used for getting properties of the link.
+     *
+     * Expected bindings
+     *   - `?source` source element
+     *   - `?target` target element
+     *   - `?propType` link property type
+     *   - `?propValue` link property value
      */
     properties?: string;
 }
@@ -151,18 +312,39 @@ export interface PropertyConfiguration {
     id: string;
 
     /**
-     * Sparql pattern connecting $subject to $value. It's required to use those specific variables.
+     * Optional domain constraint for source element of the property.
+     * If specified checks RDF type of source element to match one from this set.
+     */
+    domain?: ReadonlyArray<string>;
+
+    /**
+     * SPARQL predicate or pattern connecting source element to property value.
+     *
+     * Expected bindings (if it is a pattern):
+     *   - `?inst` source element
+     *   - `?value` property value
+     *
+     * @example
+     * Direct configuration: `ex:firstName`
+     *
+     * Pattern configuration: `
+     *   ?inst ex:hasAddress ?addr .
+     *   ?addr ex:hasApartmentNumber ?value
+     * `
      */
     path: string;
 }
 
 export const RDFSettings: SparqlDataProviderSettings = {
     linkConfigurations: [],
+    openWorldLinks: false,
+
     propertyConfigurations: [],
+    openWorldProperties: false,
 
     linksInfoQuery: `SELECT ?source ?type ?target
             WHERE {
-                ?source ?type ?target.
+                \${linkConfigurations}
                 VALUES (?source) {\${ids}}
                 VALUES (?target) {\${ids}}
             }`,
@@ -179,7 +361,32 @@ export const RDFSettings: SparqlDataProviderSettings = {
 
     classTreeQuery: ``,
 
+    classInfoQuery:
+`SELECT ?class ?label ?instcount WHERE {
+    VALUES(?class) {\${ids}}
+    OPTIONAL { ?class \${schemaLabelProperty} ?label }
+    BIND("" as ?instcount)
+}`,
+
+    linkTypesQuery:
+`SELECT DISTINCT ?link ?instcount ?label WHERE {
+    \${linkTypesPattern}
+    OPTIONAL { ?link \${schemaLabelProperty} ?label }
+}`,
+
     linkTypesPattern: ``,
+
+    linkTypesInfoQuery:
+`SELECT ?link ?label WHERE {
+    VALUES(?link) {\${ids}}
+    OPTIONAL { ?link \${schemaLabelProperty} ?label }
+}`,
+
+    propertyInfoQuery:
+`SELECT ?property ?label WHERE {
+    VALUES(?property) {\${ids}}
+    OPTIONAL { ?property \${schemaLabelProperty} ?label }
+}`,
 
     elementInfoQuery: ``,
     imageQueryPattern: ``,
@@ -246,11 +453,11 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         } WHERE {
             VALUES (?inst) {\${ids}}
             OPTIONAL {
-                ?inst wdt:P31 ?class .
+                ?inst wdt:P31 ?class
             }
             OPTIONAL {?inst rdfs:label ?label}
             OPTIONAL {
-                ?inst ?propType ?propValue .
+                \${propertyConfigurations}
                 FILTER (isLiteral(?propValue))
             }
         }
@@ -261,11 +468,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
     linkTypesOfQuery: `
         SELECT DISTINCT ?link
         WHERE {
-            {
-                \${elementIri} ?link ?outObject
-            } UNION {
-                ?inObject ?link \${elementIri}
-            }
+            \${linkConfigurations}
             ?claim <http://wikiba.se/ontology#directClaim> ?link .
         }
     `,
@@ -275,7 +478,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             {
                 {
                     SELECT DISTINCT ?outObject WHERE {
-                        \${elementIri} \${linkId} ?outObject.
+                        \${linkConfigurationOut}
                         FILTER(ISIRI(?outObject))
                         ?outObject ?someprop ?someobj.
                     }
@@ -284,7 +487,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
             } UNION {
                 {
                     SELECT DISTINCT ?inObject WHERE {
-                        ?inObject \${linkId} \${elementIri}.
+                        \${linkConfigurationIn}
                         FILTER(ISIRI(?inObject))
                         ?inObject ?someprop ?someobj.
                     }
@@ -294,7 +497,7 @@ const WikidataSettingsOverride: Partial<SparqlDataProviderSettings> = {
         }
     `,
     filterRefElementLinkPattern: '?claim <http://wikiba.se/ontology#directClaim> ?link .',
-    filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* \${elementTypeIri} . ${'\n'}`,
+    filterTypePattern: `?inst wdt:P31 ?instType. ?instType wdt:P279* ?class`,
     filterAdditionalRestriction: `FILTER ISIRI(?inst)
                         BIND(STR(?inst) as ?strInst)
                         FILTER exists {?inst ?someprop ?someobj}
@@ -353,19 +556,19 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
             ?inst ?propType ?propValue.
         } WHERE {
             VALUES (?inst) {\${ids}}
-            OPTIONAL {?inst rdf:type ?class . }
+            OPTIONAL { ?inst a ?class }
             OPTIONAL {?inst \${dataLabelProperty} ?label}
-            OPTIONAL {?inst ?propType ?propValue.
-            FILTER (isLiteral(?propValue)) }
+            OPTIONAL {
+                \${propertyConfigurations}
+                FILTER (isLiteral(?propValue))
+            }
         }
     `,
     imageQueryPattern: `{ ?inst ?linkType ?image } UNION { [] ?linkType ?inst. BIND(?inst as ?image) }`,
     linkTypesOfQuery: `
         SELECT DISTINCT ?link
         WHERE {
-            { \${elementIri} ?link ?outObject }
-            UNION
-            { ?inObject ?link \${elementIri} }
+            \${linkConfigurations}
         }
     `,
     linkTypesStatisticsQuery: `
@@ -373,19 +576,19 @@ export const OWLRDFSSettingsOverride: Partial<SparqlDataProviderSettings> = {
         WHERE {
             {
                 SELECT (\${linkId} as ?link) (count(?outObject) as ?outCount) WHERE {
-                    \${elementIri} \${linkId} ?outObject.
+                    \${linkConfigurationOut}
                     \${navigateElementFilterOut}
                 } LIMIT 101
             } {
                 SELECT (\${linkId} as ?link) (count(?inObject) as ?inCount) WHERE {
-                    ?inObject \${linkId} \${elementIri}.
+                    \${linkConfigurationIn}
                     \${navigateElementFilterIn}
                 } LIMIT 101
             }
         }
     `,
     filterRefElementLinkPattern: '',
-    filterTypePattern: `?inst rdf:type \${elementTypeIri} . ${'\n'}`,
+    filterTypePattern: `?inst a ?instType. ?instType rdfs:subClassOf* ?class`,
     filterElementInfoPattern: `OPTIONAL {?inst rdf:type ?foundClass}
                 BIND (coalesce(?foundClass, owl:Thing) as ?class)
                 OPTIONAL {?inst \${dataLabelProperty} ?label}`,
@@ -442,14 +645,17 @@ const DBPediaOverride: Partial<SparqlDataProviderSettings> = {
             ?inst ?propType ?propValue.
         } WHERE {
             VALUES (?inst) {\${ids}}
-            ?inst rdf:type ?class .
+            ?inst a ?class .
             ?inst rdfs:label ?label .
             FILTER (!contains(str(?class), 'http://dbpedia.org/class/yago'))
-            OPTIONAL {?inst ?propType ?propValue.
-            FILTER (isLiteral(?propValue)) }
+            OPTIONAL {
+                \${propertyConfigurations}
+                FILTER (isLiteral(?propValue))
+            }
         }
     `,
 
+    filterTypePattern: `?inst a ?instType. ?instType rdfs:subClassOf* ?class`,
     filterElementInfoPattern: `
         OPTIONAL {?inst rdf:type ?foundClass. FILTER (!contains(str(?foundClass), 'http://dbpedia.org/class/yago'))}
         BIND (coalesce(?foundClass, owl:Thing) as ?class)

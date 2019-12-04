@@ -88,8 +88,8 @@ export class Halo extends React.Component<Props, State> {
             this.setState({canLink: false});
             return;
         }
-        const event = editor.authoringState.index.elements.get(target.iri);
-        if (event && event.type === AuthoringKind.DeleteElement) {
+        const event = editor.authoringState.elements.get(target.iri);
+        if (event && event.deleted) {
             this.setState({canLink: false});
         } else {
             this.setState({canLink: undefined});

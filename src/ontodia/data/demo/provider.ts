@@ -139,7 +139,7 @@ export class DemoDataProvider implements DataProvider {
                     found = true;
                 } else {
                     found = element.label.values.some(
-                        label => label.text.toLowerCase().indexOf(text) >= 0);
+                        label => label.value.toLowerCase().indexOf(text) >= 0);
                 }
                 if (found) {
                     filteredByText[element.id] = element;

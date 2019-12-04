@@ -1,28 +1,33 @@
-import * as N3 from 'n3';
+import { objectValues, getOrCreateArrayInMap } from '../../viewUtils/collections';
 import { DataProvider, LinkElementsParams, FilterParams } from '../provider';
 import {
     Dictionary, ClassModel, LinkType, ElementModel, LinkModel, LinkCount, PropertyModel,
-    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LocalizedString
 } from '../model';
 import {
-    triplesToElementBinding,
+    prependAdditionalBindings,
+    enrichElementsWithImages,
+    flattenClassTree,
     getClassTree,
     getClassInfo,
     getPropertyInfo,
     getLinkTypes,
     getElementsInfo,
+    getElementTypes,
     getLinksInfo,
     getLinksTypeIds,
     getFilteredData,
-    getEnrichedElementsInfo,
     getLinksTypesOf,
     getLinkStatistics,
+    triplesToElementBinding,
+    isDirectLink,
+    isDirectProperty,
 } from './responseHandler';
 import {
-    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding,
-    LinkCountBinding, LinkTypeBinding, ElementImageBinding, SparqlResponse, Triple, RdfNode,
+    ClassBinding, ElementBinding, LinkBinding, PropertyBinding, BlankBinding, FilterBinding,
+    LinkCountBinding, LinkTypeBinding, ElementImageBinding, ElementTypeBinding, SparqlResponse, Triple,
 } from './sparqlModels';
-import { SparqlDataProviderSettings, OWLStatsSettings } from './sparqlDataProviderSettings';
+import { SparqlDataProviderSettings, OWLStatsSettings, LinkConfiguration, PropertyConfiguration } from './sparqlDataProviderSettings';
 import * as BlankNodes from './blankNodes';
 import { parseTurtleText } from './turtle';
 
@@ -60,9 +65,15 @@ export interface SparqlDataProviderOptions {
     imagePropertyUris?: string[];
 
     /**
-     * you can specify prepareImages function to extract image URL from element model
+     * Allows to extract/fetch image URLs externally instead of using `imagePropertyUris` option.
      */
     prepareImages?: (elementInfo: Dictionary<ElementModel>) => Promise<Dictionary<string>>;
+
+    /**
+     * Allows to extract/fetch labels separately from SPARQL query as an alternative or
+     * in addition to `label` output binding.
+     */
+    prepareLabels?: (resources: Set<string>) => Promise<Map<string, LocalizedString[]>>;
 
     /**
      * wether to use GET (more compatible (Virtuozo), more error-prone due to large request URLs)
@@ -80,6 +91,13 @@ export class SparqlDataProvider implements DataProvider {
     readonly options: SparqlDataProviderOptions;
     readonly settings: SparqlDataProviderSettings;
 
+    private linkByPredicate = new Map<string, LinkConfiguration[]>();
+    private linkById = new Map<LinkTypeIri, LinkConfiguration>();
+    private openWorldLinks: boolean;
+
+    private propertyByPredicate = new Map<string, PropertyConfiguration[]>();
+    private openWorldProperties: boolean;
+
     constructor(
         options: SparqlDataProviderOptions,
         settings: SparqlDataProviderSettings = OWLStatsSettings,
@@ -87,97 +105,184 @@ export class SparqlDataProvider implements DataProvider {
         const {queryFunction = queryInternal} = options;
         this.options = {...options, queryFunction};
         this.settings = settings;
+
+        for (const link of settings.linkConfigurations) {
+            this.linkById.set(link.id as LinkTypeIri, link);
+            const predicate = isDirectLink(link) ? link.path : link.id;
+            getOrCreateArrayInMap(this.linkByPredicate, predicate).push(link);
+        }
+        this.openWorldLinks = settings.linkConfigurations.length === 0 ||
+            Boolean(settings.openWorldLinks);
+
+        for (const property of settings.propertyConfigurations) {
+            const predicate = isDirectProperty(property) ? property.path : property.id;
+            getOrCreateArrayInMap(this.propertyByPredicate, predicate).push(property);
+        }
+        this.openWorldProperties = settings.propertyConfigurations.length === 0 ||
+            Boolean(settings.openWorldProperties);
     }
 
-    classTree(): Promise<ClassModel[]> {
-        const query = this.settings.defaultPrefix + this.settings.classTreeQuery;
-        return this.executeSparqlQuery<ClassBinding>(query).then(getClassTree);
+    async classTree(): Promise<ClassModel[]> {
+        const {defaultPrefix, schemaLabelProperty, classTreeQuery} = this.settings;
+        if (!classTreeQuery) {
+            return [];
+        }
+
+        const query = defaultPrefix + resolveTemplate(classTreeQuery, {
+            schemaLabelProperty,
+        });
+        const result = await this.executeSparqlQuery<ClassBinding>(query);
+        const classTree = getClassTree(result);
+
+        if (this.options.prepareLabels) {
+            await attachLabels(flattenClassTree(classTree), this.options.prepareLabels);
+        }
+
+        return classTree;
     }
 
-    propertyInfo(params: { propertyIds: PropertyTypeIri[] }): Promise<Dictionary<PropertyModel>> {
-        const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = this.settings.defaultPrefix + `
-            SELECT ?prop ?label
-            WHERE {
-                VALUES (?prop) {${ids}}.
-                OPTIONAL { ?prop ${this.settings.schemaLabelProperty} ?label. }
+    async propertyInfo(params: { propertyIds: PropertyTypeIri[] }): Promise<Dictionary<PropertyModel>> {
+        const {defaultPrefix, schemaLabelProperty, propertyInfoQuery} = this.settings;
+
+        let properties: Dictionary<PropertyModel>;
+        if (propertyInfoQuery) {
+            const ids = params.propertyIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+            const query = defaultPrefix + resolveTemplate(propertyInfoQuery, {
+                ids,
+                schemaLabelProperty,
+            });
+            const result = await this.executeSparqlQuery<PropertyBinding>(query);
+            properties = getPropertyInfo(result);
+        } else {
+            properties = {};
+            for (const id of params.propertyIds) {
+                properties[id] = {id, label: {values: []}};
             }
-        `;
-        return this.executeSparqlQuery<PropertyBinding>(query).then(getPropertyInfo);
+        }
+
+        if (this.options.prepareLabels) {
+            await attachLabels(objectValues(properties), this.options.prepareLabels);
+        }
+
+        return properties;
     }
 
-    classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
-        const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = this.settings.defaultPrefix + `
-            SELECT ?class ?label ?instcount
-            WHERE {
-                VALUES (?class) {${ids}}.
-                OPTIONAL { ?class ${this.settings.schemaLabelProperty} ?label. }
-                BIND("" as ?instcount)
-            }
-        `;
-        return this.executeSparqlQuery<ClassBinding>(query).then(getClassInfo);
+    async classInfo(params: { classIds: ElementTypeIri[] }): Promise<ClassModel[]> {
+        const {defaultPrefix, schemaLabelProperty, classInfoQuery} = this.settings;
+
+        let classes: ClassModel[];
+        if (classInfoQuery) {
+            const ids = params.classIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+            const query = defaultPrefix + resolveTemplate(classInfoQuery, {
+                ids,
+                schemaLabelProperty,
+            });
+            const result = await this.executeSparqlQuery<ClassBinding>(query);
+            classes = getClassInfo(result);
+        } else {
+            classes = params.classIds.map((id): ClassModel => (
+                {id, label: {values: []}, children: []}
+            ));
+        }
+
+        if (this.options.prepareLabels) {
+            await attachLabels(classes, this.options.prepareLabels);
+        }
+
+        return classes;
     }
 
-    linkTypesInfo(params: { linkTypeIds: LinkTypeIri[] }): Promise<LinkType[]> {
-        const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const query = this.settings.defaultPrefix + `
-            SELECT ?link ?label ?instcount
-            WHERE {
-                VALUES (?link) {${ids}}.
-                OPTIONAL { ?link ${this.settings.schemaLabelProperty} ?label. }
-                BIND("" as ?instcount)
-            }
-        `;
-        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
+    async linkTypesInfo(params: { linkTypeIds: LinkTypeIri[] }): Promise<LinkType[]> {
+        const {defaultPrefix, schemaLabelProperty, linkTypesInfoQuery} = this.settings;
+
+        let linkTypes: LinkType[];
+        if (linkTypesInfoQuery) {
+            const ids = params.linkTypeIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+            const query = defaultPrefix + resolveTemplate(linkTypesInfoQuery, {
+                ids,
+                schemaLabelProperty,
+            });
+            const result = await this.executeSparqlQuery<LinkTypeBinding>(query);
+            linkTypes = getLinkTypes(result);
+        } else {
+            linkTypes = params.linkTypeIds.map((id): LinkType => (
+                {id, label: {values: []}}
+            ));
+        }
+
+        if (this.options.prepareLabels) {
+            await attachLabels(linkTypes, this.options.prepareLabels);
+        }
+
+        return linkTypes;
     }
 
-    linkTypes(): Promise<LinkType[]> {
-        const query = this.settings.defaultPrefix + `
-            SELECT DISTINCT ?link ?instcount ?label
-            WHERE {
-                  ${this.settings.linkTypesPattern}
-                  OPTIONAL { ?link ${this.settings.schemaLabelProperty} ?label. }
-            }
-        `;
-        return this.executeSparqlQuery<LinkTypeBinding>(query).then(getLinkTypes);
+    async linkTypes(): Promise<LinkType[]> {
+        const {defaultPrefix, schemaLabelProperty, linkTypesQuery, linkTypesPattern} = this.settings;
+        if (!linkTypesQuery) {
+            return [];
+        }
+
+        const query = defaultPrefix + resolveTemplate(linkTypesQuery, {
+            linkTypesPattern,
+            schemaLabelProperty,
+        });
+        const result = await this.executeSparqlQuery<LinkTypeBinding>(query);
+        const linkTypes = getLinkTypes(result);
+
+        if (this.options.prepareLabels) {
+            await attachLabels(linkTypes, this.options.prepareLabels);
+        }
+
+        return linkTypes;
     }
 
-    elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
-        const blankIds: string[] = [];
-
-        const elementIds = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
+    async elementInfo(params: { elementIds: ElementIri[] }): Promise<Dictionary<ElementModel>> {
+        const nonBlankResources = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
         const blankNodeResponse = this.options.acceptBlankNodes
             ? BlankNodes.elementInfo(params.elementIds) : undefined;
 
-        if (elementIds.length === 0 && this.options.acceptBlankNodes) {
-            return Promise.resolve(getElementsInfo(blankNodeResponse, params.elementIds));
+        let triples: Triple[];
+        if (nonBlankResources.length > 0) {
+            const ids = nonBlankResources.map(escapeIri).map(id => ` (${id})`).join(' ');
+            const {defaultPrefix, dataLabelProperty, elementInfoQuery} = this.settings;
+            const query = defaultPrefix + resolveTemplate(elementInfoQuery, {
+                ids,
+                dataLabelProperty,
+                propertyConfigurations: this.formatPropertyInfo(),
+            });
+            triples = await this.executeSparqlConstruct(query);
+        } else {
+            triples = [];
         }
 
-        const ids = elementIds.map(escapeIri).map(id => ` (${id})`).join(' ');
-        const {defaultPrefix, dataLabelProperty, elementInfoQuery, propertyConfigurations} = this.settings;
-        const query = defaultPrefix + resolveTemplate(
-            elementInfoQuery, {ids, dataLabelProperty, propertyConfigurations: this.formatPropertyInfo()});
+        const types = this.queryManyElementTypes(
+            this.settings.propertyConfigurations.length > 0 ? params.elementIds : []
+        );
 
-        return this.executeSparqlConstruct(query)
-            .then(triplesToElementBinding)
-            .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
-            .then(elementsInfo => getElementsInfo(elementsInfo, params.elementIds))
-            .then(elementModels => {
-                if (this.options.prepareImages) {
-                    return this.prepareElementsImage(elementModels);
-                } else if (this.options.imagePropertyUris && this.options.imagePropertyUris.length) {
-                    return this.enrichedElementsInfo(elementModels, this.options.imagePropertyUris);
-                } else {
-                    return elementModels;
-                }
-            });
+        const bindings = triplesToElementBinding(triples);
+        const bindingsWithBlanks = prependAdditionalBindings(bindings, blankNodeResponse);
+        const elementModels = getElementsInfo(
+            bindingsWithBlanks,
+            await types,
+            this.propertyByPredicate,
+            this.openWorldProperties
+        );
+
+        if (this.options.prepareLabels) {
+            await attachLabels(objectValues(elementModels), this.options.prepareLabels);
+        }
+
+        if (this.options.prepareImages) {
+            await prepareElementImages(this.options.prepareImages, elementModels);
+        } else if (this.options.imagePropertyUris && this.options.imagePropertyUris.length) {
+            await this.attachImages(elementModels, this.options.imagePropertyUris);
+        }
+
+        return elementModels;
     }
 
-    private enrichedElementsInfo(
-        elementsInfo: Dictionary<ElementModel>,
-        types: string[],
-    ): Promise<Dictionary<ElementModel>> {
+    private async attachImages(elementsInfo: Dictionary<ElementModel>, types: string[]): Promise<void> {
         const ids = Object.keys(elementsInfo).filter(id => !BlankNodes.isEncodedBlank(id))
             .map(escapeIri).map(id => ` ( ${id} )`).join(' ');
         const typesString = types.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
@@ -190,87 +295,122 @@ export class SparqlDataProvider implements DataProvider {
                 ${this.settings.imageQueryPattern}
             }}
         `;
-        return this.executeSparqlQuery<ElementImageBinding>(query)
-            .then(imageResponse => getEnrichedElementsInfo(imageResponse, elementsInfo))
-            .catch(err => {
-                // tslint:disable-next-line:no-console
-                console.error(err);
-                return elementsInfo;
-            });
+        try {
+            const bindings = await this.executeSparqlQuery<ElementImageBinding>(query);
+            enrichElementsWithImages(bindings, elementsInfo);
+        } catch (err) {
+            // tslint:disable-next-line:no-console
+            console.error(err);
+        }
     }
 
-    private prepareElementsImage(
-        elementsInfo: Dictionary<ElementModel>,
-    ): Promise<Dictionary<ElementModel>> {
-        return this.options.prepareImages(elementsInfo).then(images => {
-            for (const key in images) {
-                if (images.hasOwnProperty(key) && elementsInfo[key]) {
-                    elementsInfo[key].image = images[key];
-                }
-            }
-            return elementsInfo;
-        });
-    }
-
-    linksInfo(params: {
+    async linksInfo(params: {
         elementIds: ElementIri[];
         linkTypeIds: LinkTypeIri[];
     }): Promise<LinkModel[]> {
-        const elementIds = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
-
+        const nonBlankResources = params.elementIds.filter(id => !BlankNodes.isEncodedBlank(id));
         const blankNodeResponse = this.options.acceptBlankNodes
             ? BlankNodes.linksInfo(params.elementIds) : undefined;
 
-        if (elementIds.length === 0 && this.options.acceptBlankNodes) {
-            return Promise.resolve(getLinksInfo(blankNodeResponse));
+        const linkConfigurations = this.formatLinkLinks();
+
+        let bindings: Promise<SparqlResponse<LinkBinding>>;
+        let types: Promise<Map<ElementIri, Set<ElementTypeIri>>>;
+        if (nonBlankResources.length > 0) {
+            const ids = nonBlankResources.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
+            const linksInfoQuery =  this.settings.defaultPrefix + resolveTemplate(this.settings.linksInfoQuery, {
+                ids,
+                linkConfigurations,
+            });
+            bindings = this.executeSparqlQuery<LinkBinding>(linksInfoQuery);
+            types = this.queryManyElementTypes(params.elementIds);
+        } else {
+            bindings = Promise.resolve({
+                head: {vars: []},
+                results: {bindings: []},
+            });
+            types = this.queryManyElementTypes([]);
         }
 
-        const ids = elementIds.map(escapeIri).map(id => ` ( ${id} )`).join(' ');
-        const linksInfoQuery = resolveTemplate(
-            this.settings.linksInfoQuery,
-            {ids: ids, linkConfigurations: this.formatLinkLinks()},
+        const bindingsWithBlanks = prependAdditionalBindings(await bindings, blankNodeResponse);
+        const linksInfo = getLinksInfo(
+            bindingsWithBlanks,
+            await types,
+            this.linkByPredicate,
+            this.openWorldLinks
         );
-        const query = this.settings.defaultPrefix + linksInfoQuery;
-        return this.executeSparqlQuery<LinkBinding>(query)
-            .then(result => this.concatWithBlankNodeResponse(result, blankNodeResponse))
-            .then(getLinksInfo);
+        return linksInfo;
     }
 
-    linkTypesOf(params: { elementId: ElementIri }): Promise<LinkCount[]> {
+    async linkTypesOf(params: { elementId: ElementIri }): Promise<LinkCount[]> {
         if (this.options.acceptBlankNodes && BlankNodes.isEncodedBlank(params.elementId)) {
             return Promise.resolve(getLinksTypesOf(BlankNodes.linkTypesOf(params)));
         }
+        const {defaultPrefix, linkTypesOfQuery, linkTypesStatisticsQuery, filterTypePattern} = this.settings;
+
         const elementIri = escapeIri(params.elementId);
-        // Ask for linkTypes
-        const query = this.settings.defaultPrefix
-            + resolveTemplate(this.settings.linkTypesOfQuery,
-                {elementIri, linkConfigurations: this.formatLinkTypesOf(params.elementId)},
-            );
-        return this.executeSparqlQuery<LinkTypeBinding>(query)
-            .then(linkTypeBinding => {
-                const linkTypeIds = getLinksTypeIds(linkTypeBinding);
-                const requests: Promise<LinkCount>[] = [];
+        const forAll = this.formatLinkUnion(
+            params.elementId, undefined, undefined, '?outObject', '?inObject', false
+        );
+        if (forAll.usePredicatePart) {
+            forAll.unionParts.push(`{ ${elementIri} ?link ?outObject }`);
+            forAll.unionParts.push(`{ ?inObject ?link ${elementIri} }`);
+        }
 
-                const navigateElementFilterOut = this.options.acceptBlankNodes ?
-                    `FILTER (IsIri(?outObject) || IsBlank(?outObject))` : `FILTER IsIri(?outObject)`;
-                const navigateElementFilterIn = this.options.acceptBlankNodes ?
-                    `FILTER (IsIri(?inObject) || IsBlank(?inObject))` : `FILTER IsIri(?inObject)`;
+        const query = defaultPrefix + resolveTemplate(linkTypesOfQuery, {
+            elementIri,
+            linkConfigurations: forAll.unionParts.join('\nUNION\n'),
+        });
 
-                for (const id of linkTypeIds) {
-                    const q = this.settings.defaultPrefix
-                    + resolveTemplate(this.settings.linkTypesStatisticsQuery, {
-                        linkId:  escapeIri(id),
-                        elementIri,
-                        linkConfigurations: this.formatLinkTypesStatistics(params.elementId, id),
-                        navigateElementFilterOut,
-                        navigateElementFilterIn,
-                    });
-                    requests.push(
-                        this.executeSparqlQuery<LinkCountBinding>(q).then(getLinkStatistics)
-                    );
-                }
-                return Promise.all(requests);
+        const linkTypeBindings = await this.executeSparqlQuery<LinkTypeBinding>(query);
+        const linkTypeIds = getLinksTypeIds(linkTypeBindings, this.linkByPredicate, this.openWorldLinks);
+
+        const navigateElementFilterOut = this.options.acceptBlankNodes
+            ? `FILTER (IsIri(?outObject) || IsBlank(?outObject))`
+            : `FILTER IsIri(?outObject)`;
+        const navigateElementFilterIn = this.options.acceptBlankNodes
+            ? `FILTER (IsIri(?inObject) || IsBlank(?inObject))`
+            : `FILTER IsIri(?inObject)`;
+
+        const foundLinkStats: LinkCount[] = [];
+        await Promise.all(linkTypeIds.map(async linkId => {
+            const linkConfig = this.linkById.get(linkId);
+            let linkConfigurationOut: string;
+            let linkConfigurationIn: string;
+
+            if (!linkConfig || isDirectLink(linkConfig)) {
+                const predicate = escapeIri(linkConfig && isDirectLink(linkConfig) ? linkConfig.path : linkId);
+                linkConfigurationOut = `${elementIri} ${predicate} ?outObject`;
+                linkConfigurationIn = `?inObject ${predicate} ${elementIri}`;
+            } else {
+                linkConfigurationOut = this.formatLinkPath(linkConfig.path, elementIri, '?outObject');
+                linkConfigurationIn = this.formatLinkPath(linkConfig.path, '?inObject', elementIri);
+            }
+
+            if (linkConfig && linkConfig.domain?.length > 0) {
+                const commaSeparatedDomains = linkConfig.domain.map(escapeIri).join(', ');
+                const restrictionOut = filterTypePattern.replace(/[?$]inst\b/g, elementIri);
+                const restrictionIn = filterTypePattern.replace(/[?$]inst\b/g, '?inObject');
+                linkConfigurationOut += ` { ${restrictionOut} FILTER(?class IN (${commaSeparatedDomains})) }`;
+                linkConfigurationIn += ` { ${restrictionIn} FILTER(?class IN (${commaSeparatedDomains})) }`;
+            }
+
+            const statsQuery = defaultPrefix + resolveTemplate(linkTypesStatisticsQuery, {
+                linkId: escapeIri(linkId),
+                elementIri,
+                linkConfigurationOut,
+                linkConfigurationIn,
+                navigateElementFilterOut,
+                navigateElementFilterIn,
             });
+
+            const bindings = await this.executeSparqlQuery<LinkCountBinding>(statsQuery);
+            const linkStats = getLinkStatistics(bindings);
+            if (linkStats) {
+                foundLinkStats.push(linkStats);
+            }
+        }));
+        return foundLinkStats;
     }
 
     linkElements(params: LinkElementsParams): Promise<Dictionary<ElementModel>> {
@@ -281,94 +421,124 @@ export class SparqlDataProvider implements DataProvider {
             linkDirection: params.direction,
             limit: params.limit,
             offset: params.offset,
-            languageCode: ''});
+            languageCode: ''
+        });
     }
 
-    filter(params: FilterParams): Promise<Dictionary<ElementModel>> {
-        if (params.limit === undefined) { params.limit = 100; }
-        const blankFiltration = this.options.acceptBlankNodes
-            ? BlankNodes.filter(params) : undefined;
-
-        if (this.options.acceptBlankNodes && blankFiltration.results.bindings.length > 0) {
-            return Promise.resolve(getFilteredData(blankFiltration));
+    async filter(baseParams: FilterParams): Promise<Dictionary<ElementModel>> {
+        const params: FilterParams = {...baseParams};
+        if (params.limit === undefined) {
+            params.limit = 100;
         }
 
+        // query types to match link configuration domains
+        const types = this.querySingleElementTypes(
+            params.refElementId && this.settings.linkConfigurations.length > 0
+                ? params.refElementId : undefined
+        );
+
+        const blankFiltration = this.options.acceptBlankNodes ? BlankNodes.filter(params) : undefined;
+        if (blankFiltration && blankFiltration.results.bindings.length > 0) {
+            return getFilteredData(blankFiltration, await types, this.linkByPredicate, this.openWorldLinks);
+        }
+
+        const filterQuery = this.createFilterQuery(params);
+        const bindings = await this.executeSparqlQuery<ElementBinding & FilterBinding>(filterQuery);
+
+        let bindingsWithBlanks: SparqlResponse<ElementBinding & FilterBinding>;
+        if (this.options.acceptBlankNodes) {
+            bindingsWithBlanks = await BlankNodes.updateFilterResults(
+                bindings,
+                blankQuery => this.executeSparqlQuery<BlankBinding>(blankQuery),
+                this.settings
+            );
+        } else {
+            bindingsWithBlanks = bindings as SparqlResponse<ElementBinding & FilterBinding>;
+        }
+
+        const elementModels = getFilteredData(
+            bindingsWithBlanks, await types, this.linkByPredicate, this.openWorldLinks
+        );
+
+        if (this.options.prepareLabels) {
+            await attachLabels(objectValues(elementModels), this.options.prepareLabels);
+        }
+
+        return elementModels;
+    }
+
+    private createFilterQuery(params: FilterParams): string {
         if (!params.refElementId && params.refElementLinkId) {
-            throw new Error(`Can't execute refElementLink filter without refElement`);
+            throw new Error('Cannot execute refElementLink filter without refElement');
         }
+
+        let outerProjection = '?inst ?class ?label ?blankType';
+        let innerProjection = '?inst';
 
         let refQueryPart = '';
+        let refQueryTypes = '';
         if (params.refElementId) {
+            outerProjection += ' ?link ?direction';
+            innerProjection += ' ?link ?direction';
             refQueryPart = this.createRefQueryPart({
                 elementId: params.refElementId,
                 linkId: params.refElementLinkId,
                 direction: params.linkDirection,
             });
+
+            if (this.settings.linkConfigurations.length > 0) {
+                outerProjection += ' ?classAll';
+                refQueryTypes = this.settings.filterTypePattern.replace(/[?$]class\b/g, '?classAll');
+            }
         }
 
         let elementTypePart = '';
         if (params.elementTypeId) {
             const elementTypeIri = escapeIri(params.elementTypeId);
-            elementTypePart = resolveTemplate(this.settings.filterTypePattern, {elementTypeIri});
+            elementTypePart = this.settings.filterTypePattern.replace(/[?$]class\b/g, elementTypeIri);
         }
 
         const {defaultPrefix, fullTextSearch, dataLabelProperty} = this.settings;
 
         let textSearchPart = '';
         if (params.text) {
+            innerProjection += ' ?score';
+            if (this.settings.fullTextSearch.extractLabel) {
+                textSearchPart += sparqlExtractLabel('?inst', '?extractedLabel');
+            }
             textSearchPart = resolveTemplate(fullTextSearch.queryPattern, {text: params.text, dataLabelProperty});
         }
 
         const blankNodes = this.options.acceptBlankNodes;
-        const query = `${defaultPrefix}
+        if (blankNodes) {
+            outerProjection += ` ${BlankNodes.BLANK_NODE_QUERY_PARAMETERS}`;
+        }
+
+        return `${defaultPrefix}
             ${fullTextSearch.prefix}
 
-        SELECT ?inst ?class ?label ?blankType ${blankNodes ? BlankNodes.BLANK_NODE_QUERY_PARAMETERS : ''}
+        SELECT ${outerProjection}
         WHERE {
             {
-                SELECT DISTINCT ?inst ${textSearchPart ? '?score' : ''} WHERE {
+                SELECT DISTINCT ${innerProjection} WHERE {
                     ${elementTypePart}
                     ${refQueryPart}
-                    ${this.settings.fullTextSearch.extractLabel ? sparqlExtractLabel('?inst', '?extractedLabel') : ''}
                     ${textSearchPart}
                     ${this.settings.filterAdditionalRestriction}
                 }
                 ${textSearchPart ? 'ORDER BY DESC(?score)' : ''}
                 LIMIT ${params.limit} OFFSET ${params.offset}
             }
+            ${refQueryTypes}
             ${resolveTemplate(this.settings.filterElementInfoPattern, {dataLabelProperty})}
             ${blankNodes ? BlankNodes.BLANK_NODE_QUERY : ''}
         } ${textSearchPart ? 'ORDER BY DESC(?score)' : ''}
         `;
-
-        return this.executeSparqlQuery<ElementBinding | BlankBinding>(query)
-            .then(result => {
-                if (this.options.acceptBlankNodes) {
-                    return BlankNodes.updateFilterResults(result, blankQuery =>
-                        this.executeSparqlQuery<BlankBinding>(blankQuery), this.settings);
-                }
-                return result;
-            }).then(getFilteredData);
     }
 
     executeSparqlQuery<Binding>(query: string) {
         const method = this.options.queryMethod ? this.options.queryMethod : SparqlQueryMethod.GET;
         return executeSparqlQuery<Binding>(this.options.endpointUrl, query, method, this.options.queryFunction);
-    }
-
-    concatWithBlankNodeResponse<Binding>(
-        response: SparqlResponse<Binding>,
-        blankNodeResponse: SparqlResponse<Binding>,
-    ): SparqlResponse<Binding> {
-        if (!this.options.acceptBlankNodes) {
-            return response;
-        }
-        return {
-            head: { vars: response.head.vars },
-            results: {
-                bindings: blankNodeResponse.results.bindings.concat(response.results.bindings)
-            },
-        };
     }
 
     executeSparqlConstruct(query: string): Promise<Triple[]> {
@@ -378,147 +548,200 @@ export class SparqlDataProvider implements DataProvider {
 
     protected createRefQueryPart(params: { elementId: ElementIri; linkId?: LinkTypeIri; direction?: 'in' | 'out' }) {
         const {elementId, linkId, direction} = params;
-        const refElementIRI = escapeIri(params.elementId);
 
-        // If no link configuration is passed, use rdf predicates as links
-        if (this.settings.linkConfigurations.length === 0) {
-            const linkPattern = linkId ? escapeIri(params.linkId) : '?link';
+        const {unionParts, usePredicatePart} = this.formatLinkUnion(
+            elementId, linkId, direction, '?inst', '?inst', true
+        );
+
+        if (usePredicatePart) {
+            const refElementIRI = escapeIri(params.elementId);
+            let refLinkType: string | undefined;
+            if (linkId) {
+                const link = this.linkById.get(linkId);
+                refLinkType = link && isDirectLink(link) ? escapeIri(link.path) : escapeIri(linkId);
+            }
+
+            const linkPattern = refLinkType || '?link';
+            const bindType = refLinkType ? `BIND(${refLinkType} as ?link)` : '';
+            // FILTER ISIRI is used to prevent blank nodes appearing in results
             const blankFilter = this.options.acceptBlankNodes
                 ? 'FILTER(isIri(?inst) || isBlank(?inst))'
                 : 'FILTER(isIri(?inst))';
-            // link to element with specified link type
-            // if direction is not specified, provide both patterns and union them
-            // FILTER ISIRI is used to prevent blank nodes appearing in results
-            let part = '';
-            if (params.direction !== 'in') {
-                part += `{ ${refElementIRI} ${linkPattern} ?inst . ${blankFilter} }`;
+
+            if (!direction || direction === 'out') {
+                unionParts.push(`{ ${refElementIRI} ${linkPattern} ?inst BIND("out" as ?direction) ${bindType} ${blankFilter} }`);
             }
-            if (!params.direction) { part += ' UNION '; }
-            if (params.direction !== 'out') {
-                part += `{ ?inst ${linkPattern} ${refElementIRI} . ${blankFilter} }`;
+            if (!direction || direction === 'in') {
+                unionParts.push(`{ ?inst ${linkPattern} ${refElementIRI} BIND("in" as ?direction) ${bindType} ${blankFilter} }`);
             }
-            if (this.settings.filterRefElementLinkPattern.length && !linkId) {
-                part += `\n${this.settings.filterRefElementLinkPattern}`;
-            }
-            return part;
-        } else {
-            // use link configuration in filter. If you need more or somehow mix it with rdf predicates, override
-            // this function and provide nessesary sparql for this.
-            const linkConfigurations = this.formatLinkElements(params.elementId, params.linkId, params.direction);
-            return linkConfigurations;
         }
 
+        let resultPattern = unionParts.length === 0 ? 'FILTER(false)' : unionParts.join(`\nUNION\n`);
+
+        const useAllLinksPattern = !linkId && this.settings.filterRefElementLinkPattern.length > 0;
+        if (useAllLinksPattern) {
+            resultPattern += `\n${this.settings.filterRefElementLinkPattern}`;
+        }
+
+        return resultPattern;
     }
 
-    formatLinkTypesOf(elementIri: ElementIri): string {
-        const elementIriConst = escapeIri(elementIri);
-        return this.settings.linkConfigurations.map(linkConfig => {
-            const links: string[] = [];
-            links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?outObject')}
-                BIND(<${linkConfig.id}> as ?link )
-            }`);
-            links.push(`{ ${this.formatLinkPath(linkConfig.path, '?inObject', elementIriConst)}
-                BIND(<${linkConfig.id}> as ?link )
-            }`);
-            if (linkConfig.inverseId) {
-                links.push(`{ ${this.formatLinkPath(linkConfig.path, elementIriConst, '?inObject')}
-                BIND(<${linkConfig.inverseId}> as ?link )
-            }`);
-                links.push(`{ ${this.formatLinkPath(linkConfig.path, '?outObject', elementIriConst)}
-                BIND(<${linkConfig.inverseId}> as ?link )
-            }`);
-            }
-            return links;
-        }).map(links => links.join(`
-            UNION
-            `)).join(`
-            UNION
-            `);
-    }
-
-    formatLinkTypesStatistics(elementIri: ElementIri, linkIri: LinkTypeIri): string {
-        const elementIriConst = escapeIri(elementIri);
-
-        const links: string[] = [];
-        this.settings.linkConfigurations.filter(link => link.id === linkIri).forEach(link => {
-            links.push(`{ ${this.formatLinkPath(link.path, elementIriConst, '?outObject')}
-                BIND(<${linkIri}> as ?link)
-            }`);
-            links.push(`{ ${this.formatLinkPath(link.path, '?inObject', elementIriConst)}
-                BIND(<${linkIri}> as ?link)
-            }`);
-        });
-        this.settings.linkConfigurations.filter(link => link.inverseId === linkIri).forEach(link => {
-            links.push(`{ ${this.formatLinkPath(link.path, elementIriConst, '?inObject')}
-                BIND(<${linkIri}> as ?link)
-            }`);
-            links.push(`{ ${this.formatLinkPath(link.path, '?outObject', elementIriConst)}
-                BIND(<${linkIri}> as ?link)
-            }`);
-        });
-        return links.join(` \n UNION \n `);
-    }
-
-    formatLinkElements(refElementIri: ElementIri, linkIri?: LinkTypeIri, direction?: 'in' | 'out'): string {
+    private formatLinkUnion(
+        refElementIri: ElementIri,
+        linkIri: LinkTypeIri | undefined,
+        direction: 'in' | 'out' | undefined,
+        outElementVar: string,
+        inElementVar: string,
+        bindDirection: boolean
+    ) {
         const {linkConfigurations} = this.settings;
-        const elementIriConst = `<${refElementIri}>`;
-        let parts: string[] = [];
-        if (!linkIri) {
-            if (!direction || direction === 'out') {
-                parts = parts.concat(linkConfigurations.map(link =>
-                    `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`)
-                );
-            }
-            if (!direction || direction === 'in') {
-                parts = parts.concat(linkConfigurations.map(link =>
-                    `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`)
-                );
-            }
-        } else {
-            const outLinks = linkConfigurations.filter(link => link.id === linkIri);
-            const inLinks = linkConfigurations.filter(link => link.inverseId === linkIri);
-            if (!direction || direction === 'out') {
-                parts = parts.concat(
-                    outLinks.map(link => `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`),
-                    inLinks.map(link => `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`),
-                );
-            }
-            if (!direction || direction === 'in') {
-                parts = parts.concat(
-                    inLinks.map(link => `{ ${this.formatLinkPath(link.path, elementIriConst, '?inst')} }`),
-                    outLinks.map(link => `{ ${this.formatLinkPath(link.path, '?inst', elementIriConst)} }`),
-                );
+        const fixedIri = escapeIri(refElementIri);
+
+        const unionParts: string[] = [];
+        let hasDirectLink = false;
+
+        for (const link of linkConfigurations) {
+            if (linkIri && link.id !== linkIri) { continue; }
+            if (isDirectLink(link)) {
+                hasDirectLink = true;
+            } else {
+                const linkType = escapeIri(link.id);
+                if (!direction || direction === 'out') {
+                    const path = this.formatLinkPath(link.path, fixedIri, outElementVar);
+                    const boundedDirection = bindDirection ? `BIND("out" as ?direction) ` : '';
+                    unionParts.push(
+                        `{ ${path} BIND(${linkType} as ?link) ${boundedDirection}}`
+                    );
+                }
+                if (!direction || direction === 'in') {
+                    const path = this.formatLinkPath(link.path, inElementVar, fixedIri);
+                    const boundedDirection = bindDirection ? `BIND("in" as ?direction) ` : '';
+                    unionParts.push(
+                        `{ ${path} BIND(${linkType} as ?link) ${boundedDirection}}`
+                    );
+                }
             }
         }
-        return parts.join(` \n UNION \n `);
+
+        const usePredicatePart = this.openWorldLinks || hasDirectLink;
+        return {unionParts, usePredicatePart};
     }
 
     formatLinkLinks(): string {
-        return this.settings.linkConfigurations.map(linkConfig =>
-            `{ ${this.formatLinkPath(linkConfig.path, '?source', '?target')}
-                BIND(<${linkConfig.id}> as ?type )
-               ${linkConfig.properties ? this.formatLinkPath(linkConfig.properties, '?source', '?target') : ''}
-            }`).join(`
-            UNION
-            `);
+        const unionParts: string[] = [];
+        let hasDirectLink = false;
+        for (const link of this.settings.linkConfigurations) {
+            if (isDirectLink(link)) {
+                hasDirectLink = true;
+            } else {
+                const linkType = escapeIri(link.id);
+                unionParts.push(
+                    `{ ${this.formatLinkPath(link.path, '?source', '?target')} BIND(${linkType} as ?type) }`
+                );
+            }
+        }
+
+        const usePredicatePart = this.openWorldLinks || hasDirectLink;
+        if (usePredicatePart) {
+            unionParts.push(`{ ?source ?type ?target }`);
+        }
+
+        return unionParts.join('\nUNION\n');
     }
 
     formatLinkPath(path: string, source: string, target: string): string {
-        return path.replace(/\$source/g, source).replace(/\$target/g, target);
+        return path.replace(/[?$]source\b/g, source).replace(/[?$]target\b/g, target);
     }
 
-    formatPropertyInfo() {
-        return this.settings.propertyConfigurations.map( propConfig =>
-            `{ ${this.formatPropertyPath(propConfig.path, '?inst', '?propValue')}
-                BIND(<${propConfig.id}> as ?propType )
-            }`).join(`
-            UNION
-            `);
+    formatPropertyInfo(): string {
+        const unionParts: string[] = [];
+        let hasDirectProperty = false;
+        for (const property of this.settings.propertyConfigurations) {
+            if (isDirectProperty(property)) {
+                hasDirectProperty = true;
+            } else {
+                const propType = escapeIri(property.id);
+                const formatted = this.formatPropertyPath(property.path, '?inst', '?propValue');
+                unionParts.push(
+                    `{ ${formatted} BIND(${propType} as ?propType) }`
+                );
+            }
+        }
+
+        const usePredicatePart = this.openWorldProperties || hasDirectProperty;
+        if (usePredicatePart) {
+            unionParts.push(`{ ?inst ?propType ?propValue }`);
+        }
+
+        return unionParts.join('\nUNION\n');
     }
 
     formatPropertyPath(path: string, subject: string, value: string): string {
-        return path.replace(/\$subject/g, subject).replace(/\$value/g, value);
+        return path.replace(/[?$]inst\b/g, subject).replace(/[?$]value\b/g, value);
     }
+
+    private async querySingleElementTypes(element: ElementIri | undefined): Promise<Set<ElementTypeIri> | undefined> {
+        const types = await this.queryManyElementTypes(element ? [element] : []);
+        return types.get(element);
+    }
+
+    private async queryManyElementTypes(
+        elements: ReadonlyArray<ElementIri>
+    ): Promise<Map<ElementIri, Set<ElementTypeIri>>> {
+        if (elements.length === 0) {
+            return new Map();
+        }
+        const {filterTypePattern} = this.settings;
+        const ids = elements
+            .filter(iri => !BlankNodes.isEncodedBlank(iri))
+            .map(iri => `(${escapeIri(iri)})`).join(' ');
+
+        const queryTemplate = `SELECT ?inst ?class { VALUES(?inst) { \${ids} } \${filterTypePattern} }`;
+        const query = resolveTemplate(queryTemplate, {ids, filterTypePattern});
+        let response = await this.executeSparqlQuery<ElementTypeBinding>(query);
+
+        if (this.options.acceptBlankNodes && elements.find(BlankNodes.isEncodedBlank)) {
+            const blankResponse = BlankNodes.getElementTypes(elements);
+            response = prependAdditionalBindings(response, blankResponse);
+        }
+
+        return getElementTypes(response);
+    }
+}
+
+interface LabeledItem {
+    id: string;
+    label: { values: LocalizedString[] };
+}
+
+async function attachLabels(
+    items: ReadonlyArray<LabeledItem>,
+    fetchLabels: SparqlDataProviderOptions['prepareLabels']
+): Promise<void> {
+    const resources = new Set<string>();
+    for (const item of items) {
+        if (BlankNodes.isEncodedBlank(item.id)) { continue; }
+        resources.add(item.id);
+    }
+    const labels = await fetchLabels(resources);
+    for (const item of items) {
+        if (labels.has(item.id)) {
+            item.label = {values: labels.get(item.id)};
+        }
+    }
+}
+
+function prepareElementImages(
+    fetchImages: SparqlDataProviderOptions['prepareImages'],
+    elementsInfo: Dictionary<ElementModel>
+): Promise<void> {
+    return fetchImages(elementsInfo).then(images => {
+        for (const iri in images) {
+            if (Object.prototype.hasOwnProperty.call(images, iri) && elementsInfo[iri]) {
+                elementsInfo[iri].image = images[iri];
+            }
+        }
+    });
 }
 
 function resolveTemplate(template: string, values: Dictionary<string>) {
@@ -526,7 +749,9 @@ function resolveTemplate(template: string, values: Dictionary<string>) {
     for (const replaceKey in values) {
         if (!values.hasOwnProperty(replaceKey)) { continue; }
         const replaceValue = values[replaceKey];
-        result = result.replace(new RegExp('\\${' + replaceKey + '}', 'g'), replaceValue);
+        if (replaceValue) {
+            result = result.replace(new RegExp('\\${' + replaceKey + '}', 'g'), replaceValue);
+        }
     }
     return result;
 }

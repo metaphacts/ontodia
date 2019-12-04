@@ -3,255 +3,233 @@ import { ElementModel, LinkModel, ElementIri, sameLink, hashLink } from '../data
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
 
 export interface AuthoringState {
-    readonly events: ReadonlyArray<AuthoringEvent>;
-    readonly index: AuthoringIndex;
+    readonly elements: ReadonlyMap<ElementIri, ElementChange>;
+    readonly links: ReadonlyHashMap<LinkModel, LinkChange>;
 }
 
-export type AuthoringEvent =
-    | ElementChange
-    | ElementDeletion
-    | LinkChange
-    | LinkDeletion;
+export type AuthoringEvent = ElementChange | LinkChange;
 
 export enum AuthoringKind {
     ChangeElement = 'changeElement',
-    DeleteElement = 'deleteElement',
     ChangeLink = 'changeLink',
-    DeleteLink = 'deleteLink',
-}
-
-export interface ElementDeletion {
-    readonly type: AuthoringKind.DeleteElement;
-    readonly model: ElementModel;
-}
-
-export interface LinkDeletion {
-    readonly type: AuthoringKind.DeleteLink;
-    readonly model: LinkModel;
 }
 
 export interface ElementChange {
     readonly type: AuthoringKind.ChangeElement;
     readonly before?: ElementModel;
     readonly after: ElementModel;
+    readonly newIri?: ElementIri;
+    readonly deleted: boolean;
 }
 
 export interface LinkChange {
     readonly type: AuthoringKind.ChangeLink;
     readonly before?: LinkModel;
     readonly after: LinkModel;
+    readonly deleted: boolean;
 }
 
-export interface AuthoringIndex {
-    readonly elements: ReadonlyMap<ElementIri, ElementChange | ElementDeletion>;
-    readonly links: ReadonlyHashMap<LinkModel, LinkChange | LinkDeletion>;
+interface MutableAuthoringState extends AuthoringState {
+    readonly elements: Map<ElementIri, ElementChange>;
+    readonly links: HashMap<LinkModel, LinkChange>;
 }
 
 export namespace AuthoringState {
     export const empty: AuthoringState = {
-        events: [],
-        index: makeIndex([]),
+        elements: new Map<ElementIri, ElementChange>(),
+        links: new HashMap<LinkModel, LinkChange>(hashLink, sameLink),
     };
 
-    export function set(state: AuthoringState, change: Pick<AuthoringState, 'events'>): AuthoringState {
-        const events = change.events || state.events;
-        const index = makeIndex(events);
-        return {...state, events, index};
+    export function isEmpty(state: AuthoringState) {
+        return state.elements.size === 0 && state.links.size === 0;
+    }
+
+    export function clone(index: AuthoringState): MutableAuthoringState {
+        return {
+            elements: cloneMap(index.elements),
+            links: index.links.clone(),
+        };
+    }
+
+    export function has(state: AuthoringState, event: AuthoringEvent): boolean {
+        return event.type === AuthoringKind.ChangeElement
+            ? state.elements.get(event.after.id) === event
+            : state.links.get(event.after) === event;
     }
 
     export function discard(state: AuthoringState, discarded: AuthoringEvent): AuthoringState {
-        const index = state.events.indexOf(discarded);
-        if (index < 0) {
+        if (!has(state, discarded)) {
             return state;
         }
-        const newElementIri = discarded.type === AuthoringKind.ChangeElement && !discarded.before
-            ? discarded.after.id : undefined;
-        const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.ChangeLink) {
-                if (newElementIri && isLinkConnectedToElement(e.after, newElementIri)) {
-                    return false;
-                }
+        const newState = clone(state);
+        if (discarded.type === AuthoringKind.ChangeElement) {
+            newState.elements.delete(discarded.after.id);
+            if (!discarded.before) {
+                state.links.forEach(e => {
+                    if (isLinkConnectedToElement(e.after, discarded.after.id)) {
+                        newState.links.delete(e.after);
+                    }
+                });
             }
-            return e !== discarded;
-        });
-        return set(state, {events});
-    }
-
-    export function addElement(state: AuthoringState, item: ElementModel) {
-        const event: ElementChange = {type: AuthoringKind.ChangeElement, after: item};
-        return AuthoringState.set(state, {events: [...state.events, event]});
-    }
-
-    export function addLink(state: AuthoringState, item: LinkModel) {
-        const event: LinkChange = {type: AuthoringKind.ChangeLink, after: item};
-        return AuthoringState.set(state, {events: [...state.events, event]});
-    }
-
-    export function changeElement(state: AuthoringState, before: ElementModel, after: ElementModel) {
-        const iriChanged = after.id !== before.id;
-        if (iriChanged) {
-            // disallow changing IRI for existing (non-new) entities
-            const isNewEntity = state.events.find(e =>
-                e.type === AuthoringKind.ChangeElement &&
-                e.after.id === before.id &&
-                !e.before
-            );
-            if (!isNewEntity) {
-                throw new Error('Cannot change IRI of already persisted entity');
-            }
+        } else {
+            newState.links.delete(discarded.after);
         }
-        let previousBefore: ElementModel | undefined = before;
-        const additional: AuthoringEvent[] = [];
-        const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.DeleteElement) {
-                if (e.model.id === before.id) {
-                    previousBefore = e.model;
-                    return false;
-                }
-            } else if (e.type === AuthoringKind.ChangeElement) {
-                if (e.after.id === before.id) {
-                    previousBefore = e.before;
-                    return false;
-                }
-            } else if (e.type === AuthoringKind.ChangeLink) {
-                if (iriChanged && isLinkConnectedToElement(e.after, before.id)) {
-                    additional.push({
-                        type: AuthoringKind.ChangeLink,
-                        before: e.before,
-                        after: updateLinkToReferByNewIri(e.after, before.id, after.id),
-                    });
-                    return false;
-                }
-            }
-            return true;
-        });
-        additional.unshift({
-            type: AuthoringKind.ChangeElement,
-            before: previousBefore,
-            after: after,
-        });
-        return AuthoringState.set(state, {events: [...events, ...additional]});
+        return newState;
     }
 
-    export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel) {
+    export function addElement(state: AuthoringState, item: ElementModel): AuthoringState {
+        const event: ElementChange = {type: AuthoringKind.ChangeElement, after: item, deleted: false};
+        const newState = clone(state);
+        newState.elements.set(event.after.id, event);
+        return newState;
+    }
+
+    export function addLink(state: AuthoringState, item: LinkModel): AuthoringState {
+        const event: LinkChange = {type: AuthoringKind.ChangeLink, after: item, deleted: false};
+        const newState = clone(state);
+        newState.links.set(event.after, event);
+        return newState;
+    }
+
+    export function changeElement(state: AuthoringState, before: ElementModel, after: ElementModel): AuthoringState {
+        const newState = clone(state);
+        // delete previous state for an entity
+        newState.elements.delete(before.id);
+
+        const previous = state.elements.get(before.id);
+        if (previous && !previous.before) {
+            // adding or changing new entity
+            newState.elements.set(after.id, {
+                type: AuthoringKind.ChangeElement,
+                after,
+                deleted: false,
+            });
+            if (before.id !== after.id) {
+                state.links.forEach(e => {
+                    if (!e.before && isLinkConnectedToElement(e.after, before.id)) {
+                        const updatedLink = updateLinkToReferByNewIri(e.after, before.id, after.id);
+                        newState.links.delete(e.after);
+                        newState.links.set(updatedLink, {
+                            type: AuthoringKind.ChangeLink,
+                            after: updatedLink,
+                            deleted: false,
+                        });
+                    }
+                });
+            }
+        } else {
+            // changing existing entity
+            const iriChanged = after.id !== before.id;
+            const previousBefore = previous ? previous.before : undefined;
+            newState.elements.set(before.id, {
+                type: AuthoringKind.ChangeElement,
+                // always initialize 'before', otherwise entity will be considered new
+                before: previousBefore || before,
+                after: iriChanged ? {...after, id: before.id} : after,
+                newIri: iriChanged ? after.id : undefined,
+                deleted: false,
+            });
+        }
+
+        return newState;
+    }
+
+    export function changeLink(state: AuthoringState, before: LinkModel, after: LinkModel): AuthoringState {
         if (!sameLink(before, after)) {
             throw new Error('Cannot move link to another element or change its type');
         }
-        let previousBefore: LinkModel | undefined = before;
-        const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.ChangeLink) {
-                if (sameLink(e.after, before)) {
-                    previousBefore = e.before;
-                    return false;
-                }
-            }
-            return true;
-        });
-        const event: AuthoringEvent = {
+        const newState = clone(state);
+        const previous = state.links.get(before);
+        newState.links.set(before, {
             type: AuthoringKind.ChangeLink,
-            before: previousBefore,
+            before: previous ? previous.before : undefined,
             after: after,
-        };
-        return AuthoringState.set(state, {events: [...events, event]});
+            deleted: false,
+        });
+        return newState;
     }
 
-    export function deleteElement(state: AuthoringState, model: ElementModel) {
-        const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.ChangeElement) {
-                if (e.after.id === model.id) {
-                    return false;
-                }
-            } else if (e.type === AuthoringKind.ChangeLink) {
-                if (isLinkConnectedToElement(e.after, model.id)) {
-                    return false;
-                }
-            } else if (e.type === AuthoringKind.DeleteLink) {
-                if (isLinkConnectedToElement(e.model, model.id)) {
-                    return false;
-                }
+    export function deleteElement(state: AuthoringState, model: ElementModel): AuthoringState {
+        const newState = clone(state);
+        newState.elements.delete(model.id);
+        state.links.forEach(e => {
+            if (isLinkConnectedToElement(e.after, model.id)) {
+                newState.links.delete(e.after);
             }
-            return true;
         });
-
         if (!isNewElement(state, model.id)) {
-            events.push({type: AuthoringKind.DeleteElement, model});
-        }
-        return AuthoringState.set(state, {events});
-    }
-
-    export function deleteLink(state: AuthoringState, target: LinkModel) {
-        const events = state.events.filter(e => {
-            if (e.type === AuthoringKind.ChangeLink) {
-                if (sameLink(e.after, target)) {
-                    return false;
-                }
-            } else if (e.type === AuthoringKind.DeleteLink) {
-                if (sameLink(e.model, target)) {
-                    return false;
-                }
-            }
-            return true;
-        });
-        if (!isNewLink(state, target)) {
-            events.push({
-                type: AuthoringKind.DeleteLink,
-                model: target,
+            newState.elements.set(model.id, {
+                type: AuthoringKind.ChangeElement,
+                before: model,
+                after: model,
+                deleted: true,
             });
         }
-        return AuthoringState.set(state, {events});
+        return newState;
+    }
+
+    export function deleteLink(state: AuthoringState, target: LinkModel): AuthoringState {
+        const newState = clone(state);
+        newState.links.delete(target);
+        if (!isNewLink(state, target)) {
+            newState.links.set(target, {
+                type: AuthoringKind.ChangeLink,
+                before: target,
+                after: target,
+                deleted: true,
+            });
+        }
+        return newState;
     }
 
     export function deleteNewLinksConnectedToElements(
         state: AuthoringState, elementIris: Set<ElementIri>
     ): AuthoringState {
-        const events = state.events.filter(event => {
-            if (event.type !== AuthoringKind.ChangeLink || event.before) { return true; }
-
-            const linkModel = event.after;
-
-            return !elementIris.has(linkModel.sourceId) &&
-                !elementIris.has(linkModel.targetId);
-        });
-        return AuthoringState.set(state, {events});
-    }
-
-    function makeIndex(events: ReadonlyArray<AuthoringEvent>): AuthoringIndex {
-        const elements = new Map<ElementIri, ElementChange | ElementDeletion>();
-        const links = new HashMap<LinkModel, LinkChange | LinkDeletion>(hashLink, sameLink);
-        for (const e of events) {
-            if (e.type === AuthoringKind.ChangeElement) {
-                elements.set(e.after.id, e);
-            } else if (e.type === AuthoringKind.DeleteElement) {
-                elements.set(e.model.id, e);
-            } else if (e.type === AuthoringKind.ChangeLink) {
-                links.set(e.after, e);
-            } else if (e.type === AuthoringKind.DeleteLink) {
-                links.set(e.model, e);
+        const newState = clone(state);
+        state.links.forEach(e => {
+            if (!e.before) {
+                const target = e.after;
+                if (elementIris.has(target.sourceId) || elementIris.has(target.targetId)) {
+                    newState.links.delete(target);
+                }
             }
-        }
-        return {elements, links};
+        });
+        return newState;
     }
 
     export function isNewElement(state: AuthoringState, target: ElementIri): boolean {
-        const event = state.index.elements.get(target);
+        const event = state.elements.get(target);
         return event && event.type === AuthoringKind.ChangeElement && !event.before;
     }
 
     export function isDeletedElement(state: AuthoringState, target: ElementIri): boolean {
-        const event = state.index.elements.get(target);
-        return event && event.type === AuthoringKind.DeleteElement;
+        const event = state.elements.get(target);
+        return event && event.deleted;
+    }
+
+    export function isElementWithModifiedIri(state: AuthoringState, target: ElementIri): boolean {
+        const event = state.elements.get(target);
+        return event && event.type === AuthoringKind.ChangeElement &&
+            event.before && Boolean(event.newIri);
     }
 
     export function isNewLink(state: AuthoringState, linkModel: LinkModel): boolean {
-        const event = state.index.links.get(linkModel);
-        return event && event.type === AuthoringKind.ChangeLink && !event.before;
+        const event = state.links.get(linkModel);
+        return event && !event.before;
     }
 
     export function isDeletedLink(state: AuthoringState, linkModel: LinkModel): boolean {
-        const event = state.index.links.get(linkModel);
-        return event && event.type === AuthoringKind.DeleteLink ||
+        const event = state.links.get(linkModel);
+        return event && event.deleted ||
             isDeletedElement(state, linkModel.sourceId) ||
             isDeletedElement(state, linkModel.targetId);
+    }
+
+    export function isUncertainLink(state: AuthoringState, linkModel: LinkModel): boolean {
+        return !isDeletedLink(state, linkModel) && (
+            isElementWithModifiedIri(state, linkModel.sourceId) ||
+            isElementWithModifiedIri(state, linkModel.targetId)
+        );
     }
 }
 

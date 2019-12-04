@@ -103,24 +103,9 @@ export function setElementData(model: DiagramModel, target: ElementIri, data: El
     return Command.create('Set element data', () => {
         for (const element of model.elements.filter(el => el.iri === target)) {
             element.setData(data);
-            updateLinksToReferByNewIri(element, previous.id, data.id);
         }
-        return setElementData(model, target, previous);
+        return setElementData(model, data.id, previous);
     });
-}
-
-function updateLinksToReferByNewIri(element: Element, oldIri: ElementIri, newIri: ElementIri) {
-    if (oldIri === newIri) { return; }
-    for (const link of element.links) {
-        let data = link.data;
-        if (data.sourceId === oldIri) {
-            data = {...data, sourceId: newIri};
-        }
-        if (data.targetId === oldIri) {
-            data = {...data, targetId: newIri};
-        }
-        link.setData(data);
-    }
 }
 
 export function setLinkData(model: DiagramModel, oldData: LinkModel, newData: LinkModel): Command {

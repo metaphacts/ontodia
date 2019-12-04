@@ -338,19 +338,24 @@ function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramVi
     const labelTexts = labelStyle.attrs && labelStyle.attrs.text ? labelStyle.attrs.text.text : undefined;
 
     let text: LocalizedString | undefined;
+    let title: string | undefined = labelStyle.title;
     if (labelTexts && labelTexts.length > 0) {
         text = view.selectLabel(labelTexts);
     } else {
         const type = view.model.getLinkType(model.typeId);
         text = view.selectLabel(type.label) || {
-            text: view.formatLabel(type.label, type.id),
-            lang: '',
+            value: view.formatLabel(type.label, type.id),
+            language: '',
         };
+        if (title === undefined) {
+            title = `${text.value} ${view.formatIri(model.typeId)}`;
+        }
     }
 
     labels.push({
         offset: labelStyle.position || 0.5,
         text,
+        title,
         attributes: {
             text: getLabelTextAttributes(labelStyle),
             rect: getLabelRectAttributes(labelStyle),
@@ -365,6 +370,7 @@ function computeLinkLabels(model: DiagramLink, style: LinkStyle, view: DiagramVi
             labels.push({
                 offset: property.position || 0.5,
                 text: view.selectLabel(property.attrs.text.text),
+                title: property.title,
                 attributes: {
                     text: getLabelTextAttributes(property),
                     rect: getLabelRectAttributes(property),
@@ -415,6 +421,7 @@ function getLabelRectAttributes(label: LinkLabelProperties): CSSProperties {
 interface LabelAttributes {
     offset: number;
     text: LocalizedString;
+    title?: string;
     attributes: {
         text: CSSProperties;
         rect: CSSProperties;
@@ -458,6 +465,7 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
 
         return (
           <g style={transform ? {transform} : undefined}>
+              {label.title ? <title>{label.title}</title> : undefined}
               <rect x={rectX} y={rectY}
                   width={width} height={height}
                   style={label.attributes.rect}
@@ -466,7 +474,7 @@ class LinkLabel extends Component<LinkLabelProps, LinkLabelState> {
                 x={x} y={y} dy={dy}
                 textAnchor={textAnchor}
                 style={label.attributes.text}>
-                  {label.text.text}
+                  {label.text.value}
               </text>
           </g>
         );

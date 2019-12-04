@@ -12,7 +12,7 @@ export function getPropertyValues(property: Property): string[] {
     if (isIriProperty(property)) {
         return property.values.map(({value}) => value);
     } else if (isLiteralProperty(property)) {
-        return property.values.map(({text}) => text);
+        return property.values.map(({value}) => value);
     }
     return [];
 }

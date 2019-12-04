@@ -4,12 +4,12 @@
     "label": {
       "values": [
         {
-          "text": "Thing",
-          "lang": "en"
+          "value": "Thing",
+          "language": "en"
         },
         {
-          "text": "Вещь",
-          "lang": "ru"
+          "value": "Вещь",
+          "language": "ru"
         }
       ]
     },
@@ -20,8 +20,8 @@
         "label": {
           "values": [
             {
-              "text": "ServiceProvider",
-              "lang": ""
+              "value": "ServiceProvider",
+              "language": ""
             }
           ]
         },
@@ -33,8 +33,8 @@
         "label": {
           "values": [
             {
-              "text": "SimpleProperty",
-              "lang": ""
+              "value": "SimpleProperty",
+              "language": ""
             }
           ]
         },
@@ -45,8 +45,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Image",
-                  "lang": ""
+                  "value": "Image",
+                  "language": ""
                 }
               ]
             },
@@ -58,8 +58,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Speed",
-                  "lang": ""
+                  "value": "Speed",
+                  "language": ""
                 }
               ]
             },
@@ -73,8 +73,8 @@
         "label": {
           "values": [
             {
-              "text": "RTService",
-              "lang": ""
+              "value": "RTService",
+              "language": ""
             }
           ]
         },
@@ -86,8 +86,8 @@
         "label": {
           "values": [
             {
-              "text": "Operation",
-              "lang": ""
+              "value": "Operation",
+              "language": ""
             }
           ]
         },
@@ -98,8 +98,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Subscription",
-                  "lang": ""
+                  "value": "Subscription",
+                  "language": ""
                 }
               ]
             },
@@ -110,8 +110,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Unsubscribe",
-                      "lang": ""
+                      "value": "Unsubscribe",
+                      "language": ""
                     }
                   ]
                 },
@@ -123,8 +123,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Subscribe",
-                      "lang": ""
+                      "value": "Subscribe",
+                      "language": ""
                     }
                   ]
                 },
@@ -138,8 +138,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Contact",
-                  "lang": ""
+                  "value": "Contact",
+                  "language": ""
                 }
               ]
             },
@@ -150,8 +150,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "TurnOff",
-                      "lang": ""
+                      "value": "TurnOff",
+                      "language": ""
                     }
                   ]
                 },
@@ -163,8 +163,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Соединение",
-                      "lang": ""
+                      "value": "Соединение",
+                      "language": ""
                     }
                   ]
                 },
@@ -176,8 +176,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Disconnect",
-                      "lang": ""
+                      "value": "Disconnect",
+                      "language": ""
                     }
                   ]
                 },
@@ -189,8 +189,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "TurnOn",
-                      "lang": ""
+                      "value": "TurnOn",
+                      "language": ""
                     }
                   ]
                 },
@@ -204,8 +204,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Observe",
-                  "lang": ""
+                  "value": "Observe",
+                  "language": ""
                 }
               ]
             },
@@ -216,8 +216,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Disappear",
-                      "lang": ""
+                      "value": "Disappear",
+                      "language": ""
                     }
                   ]
                 },
@@ -229,8 +229,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Appear",
-                      "lang": ""
+                      "value": "Appear",
+                      "language": ""
                     }
                   ]
                 },
@@ -246,8 +246,8 @@
         "label": {
           "values": [
             {
-              "text": "Service",
-              "lang": ""
+              "value": "Service",
+              "language": ""
             }
           ]
         },
@@ -258,8 +258,8 @@
             "label": {
               "values": [
                 {
-                  "text": "TVChannel",
-                  "lang": ""
+                  "value": "TVChannel",
+                  "language": ""
                 }
               ]
             },
@@ -270,8 +270,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "DigitalTVChannel",
-                      "lang": ""
+                      "value": "DigitalTVChannel",
+                      "language": ""
                     }
                   ]
                 },
@@ -283,8 +283,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "AnalogueTVChannel",
-                      "lang": ""
+                      "value": "AnalogueTVChannel",
+                      "language": ""
                     }
                   ]
                 },
@@ -298,8 +298,8 @@
             "label": {
               "values": [
                 {
-                  "text": "ServiceDevice",
-                  "lang": ""
+                  "value": "ServiceDevice",
+                  "language": ""
                 }
               ]
             },
@@ -310,8 +310,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Battery",
-                      "lang": ""
+                      "value": "Battery",
+                      "language": ""
                     }
                   ]
                 },
@@ -323,8 +323,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Router",
-                      "lang": ""
+                      "value": "Router",
+                      "language": ""
                     }
                   ]
                 },
@@ -335,8 +335,8 @@
                     "label": {
                       "values": [
                         {
-                          "text": "WiFiRouter",
-                          "lang": ""
+                          "value": "WiFiRouter",
+                          "language": ""
                         }
                       ]
                     },
@@ -350,8 +350,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "CamModule",
-                      "lang": ""
+                      "value": "CamModule",
+                      "language": ""
                     }
                   ]
                 },
@@ -363,8 +363,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "TVSet",
-                      "lang": ""
+                      "value": "TVSet",
+                      "language": ""
                     }
                   ]
                 },
@@ -376,8 +376,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "ControlPanel",
-                      "lang": ""
+                      "value": "ControlPanel",
+                      "language": ""
                     }
                   ]
                 },
@@ -389,8 +389,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Cable",
-                      "lang": ""
+                      "value": "Cable",
+                      "language": ""
                     }
                   ]
                 },
@@ -402,8 +402,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "SetTopBox",
-                      "lang": ""
+                      "value": "SetTopBox",
+                      "language": ""
                     }
                   ]
                 },
@@ -417,8 +417,8 @@
             "label": {
               "values": [
                 {
-                  "text": "All",
-                  "lang": ""
+                  "value": "All",
+                  "language": ""
                 }
               ]
             },
@@ -430,8 +430,8 @@
             "label": {
               "values": [
                 {
-                  "text": "SubscribableService",
-                  "lang": ""
+                  "value": "SubscribableService",
+                  "language": ""
                 }
               ]
             },
@@ -442,8 +442,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "TVService",
-                      "lang": ""
+                      "value": "TVService",
+                      "language": ""
                     }
                   ]
                 },
@@ -454,8 +454,8 @@
                     "label": {
                       "values": [
                         {
-                          "text": "DigitalTVService",
-                          "lang": ""
+                          "value": "DigitalTVService",
+                          "language": ""
                         }
                       ]
                     },
@@ -469,8 +469,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Internet",
-                      "lang": ""
+                      "value": "Internet",
+                      "language": ""
                     }
                   ]
                 },
@@ -482,8 +482,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "ChannelPack",
-                      "lang": ""
+                      "value": "ChannelPack",
+                      "language": ""
                     }
                   ]
                 },
@@ -499,8 +499,8 @@
         "label": {
           "values": [
             {
-              "text": "ServiceDesk",
-              "lang": ""
+              "value": "ServiceDesk",
+              "language": ""
             }
           ]
         },
@@ -512,8 +512,8 @@
         "label": {
           "values": [
             {
-              "text": "PropertyAsGoods",
-              "lang": ""
+              "value": "PropertyAsGoods",
+              "language": ""
             }
           ]
         },
@@ -524,8 +524,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Home",
-                  "lang": ""
+                  "value": "Home",
+                  "language": ""
                 }
               ]
             },
@@ -536,8 +536,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "Flat",
-                      "lang": ""
+                      "value": "Flat",
+                      "language": ""
                     }
                   ]
                 },
@@ -551,8 +551,8 @@
             "label": {
               "values": [
                 {
-                  "text": "Phone",
-                  "lang": ""
+                  "value": "Phone",
+                  "language": ""
                 }
               ]
             },
@@ -563,8 +563,8 @@
                 "label": {
                   "values": [
                     {
-                      "text": "HomePhone",
-                      "lang": ""
+                      "value": "HomePhone",
+                      "language": ""
                     }
                   ]
                 },
@@ -580,8 +580,8 @@
         "label": {
           "values": [
             {
-              "text": "User",
-              "lang": ""
+              "value": "User",
+              "language": ""
             }
           ]
         },
@@ -593,8 +593,8 @@
         "label": {
           "values": [
             {
-              "text": "ServiceMan",
-              "lang": ""
+              "value": "ServiceMan",
+              "language": ""
             }
           ]
         },
@@ -608,8 +608,8 @@
     "label": {
       "values": [
         {
-          "text": "Property",
-          "lang": ""
+          "value": "Property",
+          "language": ""
         }
       ]
     },
@@ -621,8 +621,8 @@
     "label": {
       "values": [
         {
-          "text": "Datatype",
-          "lang": ""
+          "value": "Datatype",
+          "language": ""
         }
       ]
     },
@@ -634,8 +634,8 @@
     "label": {
       "values": [
         {
-          "text": "Class",
-          "lang": ""
+          "value": "Class",
+          "language": ""
         }
       ]
     },
@@ -647,8 +647,8 @@
     "label": {
       "values": [
         {
-          "text": "Ontology",
-          "lang": ""
+          "value": "Ontology",
+          "language": ""
         }
       ]
     },
@@ -660,8 +660,8 @@
     "label": {
       "values": [
         {
-          "text": "AnnotationProperty",
-          "lang": ""
+          "value": "AnnotationProperty",
+          "language": ""
         }
       ]
     },
@@ -673,8 +673,8 @@
     "label": {
       "values": [
         {
-          "text": "ObjectProperty",
-          "lang": ""
+          "value": "ObjectProperty",
+          "language": ""
         }
       ]
     },
@@ -686,8 +686,8 @@
     "label": {
       "values": [
         {
-          "text": "DatatypeProperty",
-          "lang": ""
+          "value": "DatatypeProperty",
+          "language": ""
         }
       ]
     },

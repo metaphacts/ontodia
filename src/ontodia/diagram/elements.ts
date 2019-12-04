@@ -1,5 +1,5 @@
 import {
-    ElementModel, LinkModel, LocalizedString, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
+    ElementModel, LinkModel, LocalizedString, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri,
 } from '../data/model';
 import { GenerateID } from '../data/schema';
 
@@ -12,11 +12,6 @@ export type Cell = Element | Link | LinkVertex;
 export enum LinkDirection {
     in = 'in',
     out = 'out',
-}
-
-export interface DirectedLinkType {
-    linkTypeIri: LinkTypeIri;
-    direction: LinkDirection;
 }
 
 export interface ElementEvents {
@@ -91,6 +86,7 @@ export class Element {
         if (previous === value) { return; }
         this._data = value;
         this.source.trigger('changeData', {source: this, previous});
+        updateLinksToReferByNewIri(this, previous.id, value.id);
     }
 
     get position(): Vector { return this._position; }
@@ -170,6 +166,20 @@ export interface AddToFilterRequest {
     element: Element;
     linkType?: FatLinkType;
     direction?: 'in' | 'out';
+}
+
+function updateLinksToReferByNewIri(element: Element, oldIri: ElementIri, newIri: ElementIri) {
+    if (oldIri === newIri) { return; }
+    for (const link of element.links) {
+        let data = link.data;
+        if (data.sourceId === oldIri) {
+            data = {...data, sourceId: newIri};
+        }
+        if (data.targetId === oldIri) {
+            data = {...data, targetId: newIri};
+        }
+        link.setData(data);
+    }
 }
 
 export interface FatClassModelEvents {

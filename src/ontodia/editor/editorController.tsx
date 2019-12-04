@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { MetadataApi } from '../data/metadataApi';
 import { ValidationApi } from '../data/validationApi';
-import { ElementModel, LinkModel, ElementIri, sameLink } from '../data/model';
+import { ElementModel, LinkModel, ElementIri, sameLink, sameElement } from '../data/model';
 
 import { setElementExpanded, setElementData, setLinkData, changeLinkTypeVisibility } from '../diagram/commands';
 import { Element, Link, LinkVertex, FatLinkType } from '../diagram/elements';
@@ -29,7 +29,7 @@ import { Spinner, SpinnerProps } from '../viewUtils/spinner';
 
 import { AsyncModel, requestElementData, restoreLinksBetweenElements } from './asyncModel';
 import {
-    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState,
+    AuthoringState, AuthoringKind, AuthoringEvent, TemporaryState, ElementChange,
 } from './authoringState';
 import { EditLayer, EditLayerMode } from './editLayer';
 import { ValidationState, changedElementsToValidate, validateElements } from './validation';
@@ -243,8 +243,10 @@ export class EditorController {
 
         for (const item of items) {
             if (item instanceof Element) {
-                const event = this.authoringState.index.elements.get(item.iri);
-                this.discardChange(event);
+                const event = this.authoringState.elements.get(item.iri);
+                if (event) {
+                    this.discardChange(event);
+                }
                 this.model.removeElement(item.id);
                 deletedElementIris.add(item.iri);
             } else if (item instanceof Link) {
@@ -370,12 +372,6 @@ export class EditorController {
                     target={selected}
                     onEdit={() => this.showEditLinkForm(selected)}
                     onDelete={() => this.deleteLink(selected.data)}
-                    onRevert={() => {
-                        const deletion = this.authoringState.index.links.get(selected.data);
-                        if (deletion && deletion.type === AuthoringKind.DeleteLink) {
-                            this.discardChange(deletion);
-                        }
-                    }}
                     onSourceMove={(point: { x: number; y: number }) =>
                         this.startEditing({target: selected, mode: EditLayerMode.moveLinkSource, point})
                     }
@@ -413,9 +409,24 @@ export class EditorController {
             this.hideDialog();
             this.changeEntityData(target.data.id, newData);
         };
+        const isIriModified = AuthoringState.isElementWithModifiedIri(this.authoringState, target.data.id);
+        let modelToEdit;
+        if (isIriModified) {
+            const relatedEvent = this.authoringState.elements.get(target.data.id);
+            modelToEdit = {
+                ...target.data,
+                id: (relatedEvent as ElementChange).newIri,
+            };
+        } else {
+            modelToEdit = target.data;
+        }
         const onCancel = () => this.hideDialog();
         const content = propertyEditor ? propertyEditor({elementData: target.data, onSubmit, onCancel}) : (
-            <EditEntityForm view={this.view} entity={target.data} onApply={onSubmit} onCancel={onCancel} />
+            <EditEntityForm
+                view={this.view}
+                entity={modelToEdit}
+                onApply={onSubmit}
+                onCancel={onCancel}/>
         );
         this.showDialog({target, dialogType, content, onClose: onCancel});
     }
@@ -720,10 +731,13 @@ export class EditorController {
         }
         const oldData = elements[0].data;
         const batch = this.model.history.startBatch('Edit entity');
-        this.model.history.execute(setElementData(this.model, targetIri, newData));
-        this.setAuthoringState(
-            AuthoringState.changeElement(this._authoringState, oldData, newData)
-        );
+
+        const newState = AuthoringState.changeElement(this._authoringState, oldData, newData);
+        // get created authoring event by either old or new IRI (in case of new entities)
+        const event = newState.elements.get(targetIri) || newState.elements.get(newData.id);
+        this.model.history.execute(setElementData(this.model, targetIri, event.after));
+        this.setAuthoringState(newState);
+
         batch.store();
     }
 
@@ -737,7 +751,7 @@ export class EditorController {
         const batch = this.model.history.startBatch('Delete entity');
         const model = elements[0].data;
 
-        const event = state.index.elements.get(elementIri);
+        const event = state.elements.get(elementIri);
         // remove new connected links
         const linksToRemove = new Set<string>();
         for (const element of elements) {
@@ -830,8 +844,7 @@ export class EditorController {
 
     deleteLink(model: LinkModel) {
         const state = this.authoringState;
-        const event = state.index.links.get(model);
-        if (event && event.type === AuthoringKind.DeleteLink) {
+        if (AuthoringState.isDeletedLink(state, model)) {
             return;
         }
         const batch = this.model.history.startBatch('Delete link');
@@ -910,7 +923,9 @@ export class EditorController {
 
         const batch = this.model.history.startBatch('Discard change');
         if (event.type === AuthoringKind.ChangeElement) {
-            if (event.before) {
+            if (event.deleted) {
+                /* nothing */
+            } else if (event.before) {
                 this.model.history.execute(
                     setElementData(this.model, event.after.id, event.before)
                 );
@@ -920,7 +935,9 @@ export class EditorController {
                     .forEach(el => this.model.removeElement(el.id));
             }
         } else if (event.type === AuthoringKind.ChangeLink) {
-            if (event.before) {
+            if (event.deleted) {
+                /* nothing */
+            } else if (event.before) {
                 this.model.history.execute(
                     setLinkData(this.model, event.after, event.before)
                 );

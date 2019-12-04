@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { ElementIri, ElementTypeIri } from '../data/model';
+import { ElementIri, ElementTypeIri, ElementModel } from '../data/model';
 
 import { Element } from '../diagram/elements';
 import { Vector } from '../diagram/geometry';
@@ -87,10 +87,10 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
 
         const newEntityIri = await metadataApi.generateNewElementIri(types, signal);
         if (signal.aborted) { return; }
-        const elementModel = {
+        const elementModel: ElementModel = {
             id: newEntityIri,
             types,
-            label: {values: [{text: `New ${typeName}`, lang: ''}]},
+            label: {values: [{value: `New ${typeName}`, language: ''}]},
             properties: {},
         };
         const element = editor.createNewEntity({elementModel});

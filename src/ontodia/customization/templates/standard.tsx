@@ -59,7 +59,7 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
                     <div className={`${CLASS_NAME}__dropdown`} style={{borderColor: color}}>
                         {this.renderPhoto()}
                         <div className={`${CLASS_NAME}__dropdown-content`}>
-                            {this.renderIri()}
+                            {this.renderIri(context)}
                             {this.renderProperties(propsAsList)}
                             {editor.inAuthoringMode ? <hr className={`${CLASS_NAME}__hr`} /> : null}
                             {editor.inAuthoringMode ? this.renderActions(context) : null}
@@ -119,18 +119,23 @@ export class StandardTemplate extends Component<TemplateProps, {}> {
         );
     }
 
-    private renderIri() {
+    private renderIri(context: AuthoredEntityContext) {
         const {iri} = this.props;
+        const finalIri = context.editedIri === undefined ? iri : context.editedIri;
         return (
             <div>
                 <div className={`${CLASS_NAME}__iri`}>
                     <div className={`${CLASS_NAME}__iri-key`}>
-                        IRI:
+                        IRI{context.editedIri ? '\u00A0(edited)' : ''}:
                     </div>
                     <div className={`${CLASS_NAME}__iri-value`}>
-                        {isEncodedBlank(iri)
+                        {isEncodedBlank(finalIri)
                             ? <span>(blank node)</span>
-                            : <a href={iri} title={iri} data-iri-click-intent='openEntityIri'>{iri}</a>}
+                            : <a href={finalIri}
+                                title={finalIri}
+                                data-iri-click-intent='openEntityIri'>
+                                {finalIri}
+                            </a>}
                     </div>
                 </div>
                 <hr className={`${CLASS_NAME}__hr`} />

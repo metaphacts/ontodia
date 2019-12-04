@@ -15,11 +15,17 @@ export interface SearchResultProps {
     selection: ReadonlySet<ElementIri>;
     onSelectionChanged: (newSelection: ReadonlySet<ElementIri>) => void;
     highlightText?: string;
+    /** @default true */
+    useDragAndDrop?: boolean;
 }
 
 const enum Direction { Up, Down }
 
 export class SearchResults extends React.Component<SearchResultProps, {}> {
+    static defaultProps: Partial<SearchResultProps> = {
+        useDragAndDrop: true,
+    };
+
     private readonly listener = new EventObserver();
     private readonly delayedChangeCells = new Debouncer();
 
@@ -51,17 +57,18 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
     }
 
     private renderResultItem = (model: ElementModel) => {
-        const alreadyOnDiagram = this.isOnDiagram(model);
+        const {useDragAndDrop} = this.props;
+        const canBeSelected = this.canBeSelected(model);
         return (
             <ListElementView
                 key={model.id}
                 model={model}
                 view={this.props.view}
                 highlightText={this.props.highlightText}
-                disabled={alreadyOnDiagram}
+                disabled={!canBeSelected}
                 selected={this.props.selection.has(model.id)}
-                onClick={alreadyOnDiagram ? undefined : this.onItemClick}
-                onDragStart={e => {
+                onClick={canBeSelected ? this.onItemClick : undefined}
+                onDragStart={useDragAndDrop ? e => {
                     const {selection} = this.props;
                     const iris: ElementIri[] = [];
                     selection.forEach(iri => iris.push(iri));
@@ -69,7 +76,7 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
                         iris.push(model.id);
                     }
                     return startDragElements(e, iris);
-                }}
+                } : undefined}
             />
         );
     }
@@ -199,51 +206,51 @@ export class SearchResults extends React.Component<SearchResultProps, {}> {
         const selection = new Set<ElementIri>();
         for (let i = start; i <= end; i++) {
             const selectedModel = items[i];
-            if (!this.isOnDiagram(selectedModel)) {
+            if (this.canBeSelected(selectedModel)) {
                 selection.add(selectedModel.id);
             }
         }
         return selection;
     }
 
-    private getNextIndex(curIndex: number, direction: Direction) {
-        const items = this.props.items;
-        const step = direction === Direction.Up ? -1 : 1;
-        for (let i = curIndex + step; i !== curIndex; i += step) {
-            if (i < 0) {
-                i = items.length - 1;
-            }
-            if (i >= items.length) {
-                i = 0;
-            }
-            if (!this.isOnDiagram(items[i])) {
-                return i;
+    private getNextIndex(startIndex: number, direction: Direction) {
+        const {items} = this.props;
+        if (items.length === 0) {
+            return startIndex;
+        }
+        const indexDelta = direction === Direction.Up ? -1 : 1;
+        for (let step = 1; step < items.length; step++) {
+            let nextIndex = startIndex + step * indexDelta;
+            if (nextIndex < 0) { nextIndex += items.length; }
+            if (nextIndex >= items.length) { nextIndex -= items.length; }
+            if (this.canBeSelected(items[nextIndex])) {
+                return nextIndex;
             }
         }
-        return 0;
+        return startIndex;
     }
 
-    private isOnDiagram(model: ElementModel): boolean {
-        return this.props.view.model.elements.findIndex(
+    private canBeSelected(model: ElementModel) {
+        const alreadyOnDiagram = this.props.view.model.elements.findIndex(
             element => element.iri === model.id && element.group === undefined
         ) >= 0;
+        return !this.props.useDragAndDrop || !alreadyOnDiagram;
     }
 
     private focusOn(index: number) {
-        const container = this.root.parentElement;
+        const scrollableContainer = this.root.parentElement;
+
+        const containerBounds = scrollableContainer.getBoundingClientRect();
+
         const item = this.root.children.item(index) as HTMLElement;
+        const itemBounds = item.getBoundingClientRect();
+        const itemTop = itemBounds.top - containerBounds.top;
+        const itemBottom = itemBounds.bottom - containerBounds.top;
 
-        const rootOffset = container.clientTop + container.offsetTop;
-        const minPosition = container.scrollTop + rootOffset;
-        const itemTopOffset = item.offsetTop;
-        if (itemTopOffset < minPosition) {
-            container.scrollTop = itemTopOffset - rootOffset;
-        }
-
-        const maxPosition = minPosition + container.clientHeight;
-        const itemBottomOffset = item.offsetTop + item.clientHeight;
-        if (itemBottomOffset > maxPosition) {
-            container.scrollTop = itemBottomOffset - container.clientHeight - rootOffset;
+        if (itemTop < 0) {
+            scrollableContainer.scrollTop += itemTop;
+        } else if (itemBottom > containerBounds.height) {
+            scrollableContainer.scrollTop += (itemBottom - containerBounds.height);
         }
 
         item.focus();

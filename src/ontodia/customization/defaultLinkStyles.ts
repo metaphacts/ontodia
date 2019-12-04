@@ -8,8 +8,8 @@ export const LINK_SHOW_IRI: LinkTemplate = {
             attrs: {
                 text: {
                     text: [{
-                        text: link.typeId,
-                        lang: '',
+                        value: link.typeId,
+                        language: '',
                     }],
                     fill: 'gray',
                     'font-size': 12,

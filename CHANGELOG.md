@@ -6,13 +6,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.11.0] - 2019-12-04
+### Added
+- Ability to externally fetch labels for resources in `SparqlDataProvider`
+using `prepareLabels` option.
+- Options to override schema info queries (classes, link types, datatype properties)
+in `SparqlDataProviderSettings`.
+- Support for "direct" link and property configurations in `SparqlDataProviderSettings`,
+explicit domain types matching and experimental "open world" mode for link and property
+configurations.
+- Support for changing IRI of existing entities in authoring mode.
+- Display link type IRI as default title for link labels.
+
+### Changed
+- **[Breaking]** Made `LocalizedString` compatible with `Literal` interface
+from [RDF/JS Data Model](https://rdf.js.org/data-model-spec/) specification.
+- **[Breaking]** Replaced separate authoring event types for deleting entities
+and links by `deleted` flag in corresponding events, replaced `AuthoringState`
+representation by only using authoring event index.
+- **[Breaking]** Renamed `SparqlDataProviderSettings.filterTypePattern` binding
+`${elementTypeIri}` -> `?class`.
+- **[Breaking]** Removed `LinkConfiguration.inverseId`.
+
+### Fixed
+- Stale `ElementLayer` rendering after calling `importLayout()` if diagram
+already contains elements with the same IDs.
+- React 16.x warning about uppercase characters in `data-linkTypeId` attribute name.
+- `SparqlDataProvider` only adds `extractLabel` pattern to queries if text token is
+provided when searching/filtering elements.
+
 ## [0.10.0] - 2019-09-30
 ### Added
 - Custom element state in the serialized diagram layout via
 `elementTemplateState` property.
 - Enhance standard template with ability to "pin" properties to display them
 even in collapsed state.
-- Add options to override `selectLabelLanguage` to customize label language
+- Options to override `selectLabelLanguage` to customize label language
 selection based on user-preferred language.
 
 ### Changed
@@ -33,13 +62,14 @@ scrolling on a page (`Window.pageYOffset` is not zero).
 
 ## [0.9.12] - 2019-08-27
 ### Added
-- Bringing selected elements to front
-- Added ability to collapse navigator by default
-- Implemented lazy class tree loading
-- Implemented copyright changes due to transfer IP to metaphacts GmbH
+- Option to collapse diagram navigator by default.
 
 ### Changed
-- **[Breaking]** decoding href value of anchor before calling UI callback
+- **[Breaking]** decoding href value of anchor before calling UI callback.
+- Selected elements on a diagram are always brought to front.
+- Loading class tree is now done in a lazy way and separately from importing
+diagram layout.
+- Changed copyright due to IP transfer to metaphacts GmbH.
 
 ## [0.9.11] - 2019-07-25
 ### Fixed
@@ -475,7 +505,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/metaphacts/ontodia/compare/v0.10.0...HEAD
+[Latest]: https://github.com/metaphacts/ontodia/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/metaphacts/ontodia/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/metaphacts/ontodia/compare/v0.9.12...v0.10.0
 [0.9.12]: https://github.com/metaphacts/ontodia/compare/v0.9.11...v0.9.12
 [0.9.11]: https://github.com/metaphacts/ontodia/compare/v0.9.10...v0.9.11

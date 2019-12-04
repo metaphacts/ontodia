@@ -4,13 +4,12 @@ import { RdfIri } from './sparql/sparqlModels';
 export interface Dictionary<T> { [key: string]: T; }
 
 export interface LocalizedString {
-    text: string;
-    lang: string;
+    readonly value: string;
+    readonly language: string;
     /** Equals `xsd:string` if not defined. */
-    datatype?: string;
+    readonly datatype?: { readonly value: string };
 }
 
-// tslint:disable-next-line:interface-over-type-literal
 export interface IriProperty {
     type: 'uri';
     values: ReadonlyArray<RdfIri>;
@@ -65,7 +64,7 @@ export interface LinkCount {
 export interface LinkType {
     id: LinkTypeIri;
     label: { values: LocalizedString[] };
-    count: number;
+    count?: number;
 }
 
 export interface PropertyModel {
@@ -93,7 +92,7 @@ export function sameElement(left: ElementModel, right: ElementModel): boolean {
     return (
         left.id === right.id &&
         isArraysEqual(left.types, right.types) &&
-        isLocalizedStringsEqual(left.label.values, right.label.values) &&
+        isLiteralsEqual(left.label.values, right.label.values) &&
         left.image === right.image &&
         isPropertiesEqual(left.properties, right.properties) &&
         (
@@ -111,12 +110,12 @@ function isArraysEqual(left: string[], right: string[]): boolean {
     return true;
 }
 
-function isLocalizedStringsEqual(left: ReadonlyArray<LocalizedString>, right: ReadonlyArray<LocalizedString>): boolean {
+function isLiteralsEqual(left: ReadonlyArray<LocalizedString>, right: ReadonlyArray<LocalizedString>): boolean {
     if (left.length !== right.length) { return false; }
     for (let i = 0; i < left.length; i++) {
         const leftValue = left[i];
         const rightValue = right[i];
-        if (leftValue.text !== rightValue.text || leftValue.lang !== rightValue.lang) {
+        if (leftValue.value !== rightValue.value || leftValue.language !== rightValue.language) {
             return false;
         }
     }
@@ -138,7 +137,7 @@ function isIriPropertiesEqual(left: Property, right: Property): boolean {
 
 function isLiteralPropertiesEqual(left: Property, right: Property): boolean {
     if (!isLiteralProperty(left) || !isLiteralProperty(right)) { return false; }
-    return isLocalizedStringsEqual(left.values, right.values);
+    return isLiteralsEqual(left.values, right.values);
 }
 
 function isPropertiesEqual(left: { [id: string]: Property }, right: { [id: string]: Property }) {

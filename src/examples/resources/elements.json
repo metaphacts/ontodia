@@ -7,8 +7,8 @@
         "label": {
             "values": [
                 {
-                    "text": "schema",
-                    "lang": ""
+                    "value": "schema",
+                    "language": ""
                 }
             ]
         },
@@ -17,8 +17,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Created with TopBraid Composer",
-                        "lang": ""
+                        "value": "Created with TopBraid Composer",
+                        "language": ""
                     }
                 ]
             }
@@ -32,8 +32,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ortChannel",
-                    "lang": ""
+                    "value": "ortChannel",
+                    "language": ""
                 }
             ]
         },
@@ -42,8 +42,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "орт",
-                        "lang": ""
+                        "value": "орт",
+                        "language": ""
                     }
                 ]
             }
@@ -57,8 +57,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Battery",
-                    "lang": ""
+                    "value": "Battery",
+                    "language": ""
                 }
             ]
         },
@@ -67,8 +67,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "батарейка",
-                        "lang": ""
+                        "value": "батарейка",
+                        "language": ""
                     }
                 ]
             }
@@ -82,8 +82,8 @@
         "label": {
             "values": [
                 {
-                    "text": "rostelekom",
-                    "lang": ""
+                    "value": "rostelekom",
+                    "language": ""
                 }
             ]
         },
@@ -92,8 +92,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "ростелеком",
-                        "lang": ""
+                        "value": "ростелеком",
+                        "language": ""
                     }
                 ]
             }
@@ -107,8 +107,8 @@
         "label": {
             "values": [
                 {
-                    "text": "problemStated",
-                    "lang": ""
+                    "value": "problemStated",
+                    "language": ""
                 }
             ]
         },
@@ -122,8 +122,8 @@
         "label": {
             "values": [
                 {
-                    "text": "hdPremiumChannelPack",
-                    "lang": ""
+                    "value": "hdPremiumChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -132,8 +132,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "эйчди-премиум",
-                        "lang": ""
+                        "value": "эйчди-премиум",
+                        "language": ""
                     }
                 ]
             }
@@ -147,8 +147,8 @@
         "label": {
             "values": [
                 {
-                    "text": "subscriberName",
-                    "lang": ""
+                    "value": "subscriberName",
+                    "language": ""
                 }
             ]
         },
@@ -157,8 +157,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Имя человека, на которого оформлен договор.",
-                        "lang": ""
+                        "value": "Имя человека, на которого оформлен договор.",
+                        "language": ""
                     }
                 ]
             },
@@ -166,8 +166,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "оформлять",
-                        "lang": ""
+                        "value": "оформлять",
+                        "language": ""
                     }
                 ]
             }
@@ -181,8 +181,8 @@
         "label": {
             "values": [
                 {
-                    "text": "encryptedSignal",
-                    "lang": ""
+                    "value": "encryptedSignal",
+                    "language": ""
                 }
             ]
         },
@@ -191,8 +191,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "На экаране показывается, что сигнал зашифрован ил нет доступа",
-                        "lang": ""
+                        "value": "На экаране показывается, что сигнал зашифрован ил нет доступа",
+                        "language": ""
                     }
                 ]
             }
@@ -206,8 +206,8 @@
         "label": {
             "values": [
                 {
-                    "text": "forwardedToAccounts",
-                    "lang": ""
+                    "value": "forwardedToAccounts",
+                    "language": ""
                 }
             ]
         },
@@ -221,8 +221,8 @@
         "label": {
             "values": [
                 {
-                    "text": "TVService",
-                    "lang": ""
+                    "value": "TVService",
+                    "language": ""
                 }
             ]
         },
@@ -231,8 +231,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Услуга телевидения. Пока нахождение на этом уровне определяется только необходимостью преобразования в онто-факты.",
-                        "lang": ""
+                        "value": "Услуга телевидения. Пока нахождение на этом уровне определяется только необходимостью преобразования в онто-факты.",
+                        "language": ""
                     }
                 ]
             },
@@ -240,8 +240,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "телевидение",
-                        "lang": ""
+                        "value": "телевидение",
+                        "language": ""
                     }
                 ]
             }
@@ -255,8 +255,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Address",
-                    "lang": ""
+                    "value": "Address",
+                    "language": ""
                 }
             ]
         },
@@ -270,8 +270,8 @@
         "label": {
             "values": [
                 {
-                    "text": "TurnOff",
-                    "lang": ""
+                    "value": "TurnOff",
+                    "language": ""
                 }
             ]
         },
@@ -280,8 +280,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "выключать",
-                        "lang": ""
+                        "value": "выключать",
+                        "language": ""
                     }
                 ]
             }
@@ -295,8 +295,8 @@
         "label": {
             "values": [
                 {
-                    "text": "TVChannel",
-                    "lang": ""
+                    "value": "TVChannel",
+                    "language": ""
                 }
             ]
         },
@@ -305,8 +305,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Телевизионный канал.",
-                        "lang": ""
+                        "value": "Телевизионный канал.",
+                        "language": ""
                     }
                 ]
             },
@@ -314,8 +314,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "канал",
-                        "lang": ""
+                        "value": "канал",
+                        "language": ""
                     }
                 ]
             }
@@ -329,8 +329,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ServiceDevice",
-                    "lang": ""
+                    "value": "ServiceDevice",
+                    "language": ""
                 }
             ]
         },
@@ -339,8 +339,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Устройство у пользователя, отвечающее за предоставление услуг",
-                        "lang": ""
+                        "value": "Устройство у пользователя, отвечающее за предоставление услуг",
+                        "language": ""
                     }
                 ]
             }
@@ -354,8 +354,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Соединение",
-                    "lang": ""
+                    "value": "Соединение",
+                    "language": ""
                 }
             ]
         },
@@ -364,12 +364,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "втыкать",
-                        "lang": ""
+                        "value": "втыкать",
+                        "language": ""
                     },
                     {
-                        "text": "вставлять",
-                        "lang": ""
+                        "value": "вставлять",
+                        "language": ""
                     }
                 ]
             }
@@ -383,8 +383,8 @@
         "label": {
             "values": [
                 {
-                    "text": "falseExpressedBy",
-                    "lang": ""
+                    "value": "falseExpressedBy",
+                    "language": ""
                 }
             ]
         },
@@ -398,8 +398,8 @@
         "label": {
             "values": [
                 {
-                    "text": "changedSpeed",
-                    "lang": ""
+                    "value": "changedSpeed",
+                    "language": ""
                 }
             ]
         },
@@ -408,24 +408,24 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "уменьшать",
-                        "lang": ""
+                        "value": "уменьшать",
+                        "language": ""
                     },
                     {
-                        "text": "увеличивать",
-                        "lang": ""
+                        "value": "увеличивать",
+                        "language": ""
                     },
                     {
-                        "text": "снижать",
-                        "lang": ""
+                        "value": "снижать",
+                        "language": ""
                     },
                     {
-                        "text": "поднимать",
-                        "lang": ""
+                        "value": "поднимать",
+                        "language": ""
                     },
                     {
-                        "text": "изменять",
-                        "lang": ""
+                        "value": "изменять",
+                        "language": ""
                     }
                 ]
             }
@@ -439,8 +439,8 @@
         "label": {
             "values": [
                 {
-                    "text": "kinoChannelPack",
-                    "lang": ""
+                    "value": "kinoChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -449,8 +449,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "кино",
-                        "lang": ""
+                        "value": "кино",
+                        "language": ""
                     }
                 ]
             }
@@ -464,8 +464,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Subscription",
-                    "lang": ""
+                    "value": "Subscription",
+                    "language": ""
                 }
             ]
         },
@@ -479,8 +479,8 @@
         "label": {
             "values": [
                 {
-                    "text": "switchedOn",
-                    "lang": ""
+                    "value": "switchedOn",
+                    "language": ""
                 }
             ]
         },
@@ -489,8 +489,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Включено ли устройство.",
-                        "lang": ""
+                        "value": "Включено ли устройство.",
+                        "language": ""
                     }
                 ]
             },
@@ -498,8 +498,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:TurnOff",
-                        "lang": ""
+                        "value": "tv:TurnOff",
+                        "language": ""
                     }
                 ]
             },
@@ -507,8 +507,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:TurnOn",
-                        "lang": ""
+                        "value": "tv:TurnOn",
+                        "language": ""
                     }
                 ]
             }
@@ -522,8 +522,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Contact",
-                    "lang": ""
+                    "value": "Contact",
+                    "language": ""
                 }
             ]
         },
@@ -537,8 +537,8 @@
         "label": {
             "values": [
                 {
-                    "text": "canHelp",
-                    "lang": ""
+                    "value": "canHelp",
+                    "language": ""
                 }
             ]
         },
@@ -547,8 +547,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Система спрашивает 'Я могу еще чем-либо помочь?'",
-                        "lang": ""
+                        "value": "Система спрашивает 'Я могу еще чем-либо помочь?'",
+                        "language": ""
                     }
                 ]
             }
@@ -562,8 +562,8 @@
         "label": {
             "values": [
                 {
-                    "text": "trueExpressedBy",
-                    "lang": ""
+                    "value": "trueExpressedBy",
+                    "language": ""
                 }
             ]
         },
@@ -577,8 +577,8 @@
         "label": {
             "values": [
                 {
-                    "text": "inserted",
-                    "lang": ""
+                    "value": "inserted",
+                    "language": ""
                 }
             ]
         },
@@ -587,8 +587,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Вставлен ли Cam-модуль в ТВ или приставку",
-                        "lang": ""
+                        "value": "Вставлен ли Cam-модуль в ТВ или приставку",
+                        "language": ""
                     }
                 ]
             },
@@ -596,8 +596,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Disconnect",
-                        "lang": ""
+                        "value": "tv:Disconnect",
+                        "language": ""
                     }
                 ]
             },
@@ -605,8 +605,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Connect",
-                        "lang": ""
+                        "value": "tv:Connect",
+                        "language": ""
                     }
                 ]
             }
@@ -620,8 +620,8 @@
         "label": {
             "values": [
                 {
-                    "text": "operational",
-                    "lang": ""
+                    "value": "operational",
+                    "language": ""
                 }
             ]
         },
@@ -630,8 +630,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Работает в смысле 'Не сломано и может выполняет основные фунции'",
-                        "lang": ""
+                        "value": "Работает в смысле 'Не сломано и может выполняет основные фунции'",
+                        "language": ""
                     }
                 ]
             },
@@ -639,8 +639,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Disappear",
-                        "lang": ""
+                        "value": "tv:Disappear",
+                        "language": ""
                     }
                 ]
             },
@@ -648,20 +648,20 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "работать",
-                        "lang": ""
+                        "value": "работать",
+                        "language": ""
                     },
                     {
-                        "text": "показывать",
-                        "lang": ""
+                        "value": "показывать",
+                        "language": ""
                     },
                     {
-                        "text": "включаться",
-                        "lang": ""
+                        "value": "включаться",
+                        "language": ""
                     },
                     {
-                        "text": "включать",
-                        "lang": ""
+                        "value": "включать",
+                        "language": ""
                     }
                 ]
             }
@@ -675,8 +675,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Name",
-                    "lang": ""
+                    "value": "Name",
+                    "language": ""
                 }
             ]
         },
@@ -690,8 +690,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Router",
-                    "lang": ""
+                    "value": "Router",
+                    "language": ""
                 }
             ]
         },
@@ -700,8 +700,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Роутер - устройство маршрутизации между сетями, компонент услуги предоставление доступа в интернет или интерактивного телевидения.",
-                        "lang": ""
+                        "value": "Роутер - устройство маршрутизации между сетями, компонент услуги предоставление доступа в интернет или интерактивного телевидения.",
+                        "language": ""
                     }
                 ]
             },
@@ -709,8 +709,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "роутер",
-                        "lang": ""
+                        "value": "роутер",
+                        "language": ""
                     }
                 ]
             }
@@ -724,8 +724,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Disconnect",
-                    "lang": ""
+                    "value": "Disconnect",
+                    "language": ""
                 }
             ]
         },
@@ -734,16 +734,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "извлекать",
-                        "lang": ""
+                        "value": "извлекать",
+                        "language": ""
                     },
                     {
-                        "text": "вытаскивать",
-                        "lang": ""
+                        "value": "вытаскивать",
+                        "language": ""
                     },
                     {
-                        "text": "вынимать",
-                        "lang": ""
+                        "value": "вынимать",
+                        "language": ""
                     }
                 ]
             }
@@ -757,8 +757,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Unsubscribe",
-                    "lang": ""
+                    "value": "Unsubscribe",
+                    "language": ""
                 }
             ]
         },
@@ -767,16 +767,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "отписываться",
-                        "lang": ""
+                        "value": "отписываться",
+                        "language": ""
                     },
                     {
-                        "text": "отключать",
-                        "lang": ""
+                        "value": "отключать",
+                        "language": ""
                     },
                     {
-                        "text": "отказываться",
-                        "lang": ""
+                        "value": "отказываться",
+                        "language": ""
                     }
                 ]
             }
@@ -790,8 +790,8 @@
         "label": {
             "values": [
                 {
-                    "text": "CamModule",
-                    "lang": ""
+                    "value": "CamModule",
+                    "language": ""
                 }
             ]
         },
@@ -800,8 +800,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Cam-модуль, отвечает за декодирование платных каналов DVB. Может вставляться в телевизор или в теле-приставку.",
-                        "lang": ""
+                        "value": "Cam-модуль, отвечает за декодирование платных каналов DVB. Может вставляться в телевизор или в теле-приставку.",
+                        "language": ""
                     }
                 ]
             },
@@ -809,12 +809,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "к-модуль",
-                        "lang": ""
+                        "value": "к-модуль",
+                        "language": ""
                     },
                     {
-                        "text": "cam-модуль",
-                        "lang": ""
+                        "value": "cam-модуль",
+                        "language": ""
                     }
                 ]
             }
@@ -828,8 +828,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Subscribe",
-                    "lang": ""
+                    "value": "Subscribe",
+                    "language": ""
                 }
             ]
         },
@@ -838,20 +838,20 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "устанавливать",
-                        "lang": ""
+                        "value": "устанавливать",
+                        "language": ""
                     },
                     {
-                        "text": "подключать",
-                        "lang": ""
+                        "value": "подключать",
+                        "language": ""
                     },
                     {
-                        "text": "переходить",
-                        "lang": ""
+                        "value": "переходить",
+                        "language": ""
                     },
                     {
-                        "text": "настраивать",
-                        "lang": ""
+                        "value": "настраивать",
+                        "language": ""
                     }
                 ]
             }
@@ -865,8 +865,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Internet",
-                    "lang": ""
+                    "value": "Internet",
+                    "language": ""
                 }
             ]
         },
@@ -875,8 +875,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "интернет",
-                        "lang": ""
+                        "value": "интернет",
+                        "language": ""
                     }
                 ]
             }
@@ -890,8 +890,8 @@
         "label": {
             "values": [
                 {
-                    "text": "sufficientFunds",
-                    "lang": ""
+                    "value": "sufficientFunds",
+                    "language": ""
                 }
             ]
         },
@@ -905,8 +905,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ServiceProvider",
-                    "lang": ""
+                    "value": "ServiceProvider",
+                    "language": ""
                 }
             ]
         },
@@ -915,8 +915,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Поставщик услуг.",
-                        "lang": ""
+                        "value": "Поставщик услуг.",
+                        "language": ""
                     }
                 ]
             }
@@ -930,8 +930,8 @@
         "label": {
             "values": [
                 {
-                    "text": "suspended",
-                    "lang": ""
+                    "value": "suspended",
+                    "language": ""
                 }
             ]
         },
@@ -940,8 +940,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Приостановлено ли предоставление услуги из-за отсутствия оплаты или еще каких причин.",
-                        "lang": ""
+                        "value": "Приостановлено ли предоставление услуги из-за отсутствия оплаты или еще каких причин.",
+                        "language": ""
                     }
                 ]
             },
@@ -949,12 +949,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "отключать",
-                        "lang": ""
+                        "value": "отключать",
+                        "language": ""
                     },
                     {
-                        "text": "заблокировать",
-                        "lang": ""
+                        "value": "заблокировать",
+                        "language": ""
                     }
                 ]
             }
@@ -968,8 +968,8 @@
         "label": {
             "values": [
                 {
-                    "text": "SimpleProperty",
-                    "lang": ""
+                    "value": "SimpleProperty",
+                    "language": ""
                 }
             ]
         },
@@ -983,8 +983,8 @@
         "label": {
             "values": [
                 {
-                    "text": "RTService",
-                    "lang": ""
+                    "value": "RTService",
+                    "language": ""
                 }
             ]
         },
@@ -993,8 +993,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Услуга ростелекома как элемент оплаты, биллинга, части договора.",
-                        "lang": ""
+                        "value": "Услуга ростелекома как элемент оплаты, биллинга, части договора.",
+                        "language": ""
                     }
                 ]
             },
@@ -1002,8 +1002,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "услуга",
-                        "lang": ""
+                        "value": "услуга",
+                        "language": ""
                     }
                 ]
             }
@@ -1017,8 +1017,8 @@
         "label": {
             "values": [
                 {
-                    "text": "serviceNumber",
-                    "lang": ""
+                    "value": "serviceNumber",
+                    "language": ""
                 }
             ]
         },
@@ -1027,8 +1027,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Номер услуги клиента. Используется для идентификации клиента.",
-                        "lang": ""
+                        "value": "Номер услуги клиента. Используется для идентификации клиента.",
+                        "language": ""
                     }
                 ]
             },
@@ -1036,8 +1036,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "номер",
-                        "lang": ""
+                        "value": "номер",
+                        "language": ""
                     }
                 ]
             }
@@ -1051,8 +1051,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Disappear",
-                    "lang": ""
+                    "value": "Disappear",
+                    "language": ""
                 }
             ]
         },
@@ -1061,16 +1061,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "отключаться",
-                        "lang": ""
+                        "value": "отключаться",
+                        "language": ""
                     },
                     {
-                        "text": "пропадать",
-                        "lang": ""
+                        "value": "пропадать",
+                        "language": ""
                     },
                     {
-                        "text": "исчезать",
-                        "lang": ""
+                        "value": "исчезать",
+                        "language": ""
                     }
                 ]
             }
@@ -1084,8 +1084,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Operation",
-                    "lang": ""
+                    "value": "Operation",
+                    "language": ""
                 }
             ]
         },
@@ -1099,8 +1099,8 @@
         "label": {
             "values": [
                 {
-                    "text": "WiFiRouter",
-                    "lang": ""
+                    "value": "WiFiRouter",
+                    "language": ""
                 }
             ]
         },
@@ -1109,8 +1109,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "WiFi",
-                        "lang": ""
+                        "value": "WiFi",
+                        "language": ""
                     }
                 ]
             }
@@ -1124,8 +1124,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Service",
-                    "lang": ""
+                    "value": "Service",
+                    "language": ""
                 }
             ]
         },
@@ -1134,8 +1134,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Сервис, класс всех сущностей, ответственных за предоставление услуг клиентам.",
-                        "lang": ""
+                        "value": "Сервис, класс всех сущностей, ответственных за предоставление услуг клиентам.",
+                        "language": ""
                     }
                 ]
             }
@@ -1149,8 +1149,8 @@
         "label": {
             "values": [
                 {
-                    "text": "DigitalTVChannel",
-                    "lang": ""
+                    "value": "DigitalTVChannel",
+                    "language": ""
                 }
             ]
         },
@@ -1159,8 +1159,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Цифровой телевизионный канал.",
-                        "lang": ""
+                        "value": "Цифровой телевизионный канал.",
+                        "language": ""
                     }
                 ]
             },
@@ -1168,8 +1168,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "цифровой",
-                        "lang": ""
+                        "value": "цифровой",
+                        "language": ""
                     }
                 ]
             }
@@ -1183,8 +1183,8 @@
         "label": {
             "values": [
                 {
-                    "text": "rent",
-                    "lang": ""
+                    "value": "rent",
+                    "language": ""
                 }
             ]
         },
@@ -1193,8 +1193,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Арендовать указанное имущество",
-                        "lang": ""
+                        "value": "Арендовать указанное имущество",
+                        "language": ""
                     }
                 ]
             },
@@ -1202,8 +1202,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "арендовать",
-                        "lang": ""
+                        "value": "арендовать",
+                        "language": ""
                     }
                 ]
             }
@@ -1217,8 +1217,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ServiceDesk",
-                    "lang": ""
+                    "value": "ServiceDesk",
+                    "language": ""
                 }
             ]
         },
@@ -1227,8 +1227,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Служба поддержки.",
-                        "lang": ""
+                        "value": "Служба поддержки.",
+                        "language": ""
                     }
                 ]
             }
@@ -1242,8 +1242,8 @@
         "label": {
             "values": [
                 {
-                    "text": "filedRequest",
-                    "lang": ""
+                    "value": "filedRequest",
+                    "language": ""
                 }
             ]
         },
@@ -1252,8 +1252,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Пользователь оставил заявку",
-                        "lang": ""
+                        "value": "Пользователь оставил заявку",
+                        "language": ""
                     }
                 ]
             }
@@ -1267,8 +1267,8 @@
         "label": {
             "values": [
                 {
-                    "text": "isClientOf",
-                    "lang": ""
+                    "value": "isClientOf",
+                    "language": ""
                 }
             ]
         },
@@ -1277,8 +1277,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Являться клиентом указанного оператора",
-                        "lang": ""
+                        "value": "Являться клиентом указанного оператора",
+                        "language": ""
                     }
                 ]
             },
@@ -1286,8 +1286,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "клиент",
-                        "lang": ""
+                        "value": "клиент",
+                        "language": ""
                     }
                 ]
             }
@@ -1301,8 +1301,8 @@
         "label": {
             "values": [
                 {
-                    "text": "came",
-                    "lang": ""
+                    "value": "came",
+                    "language": ""
                 }
             ]
         },
@@ -1311,8 +1311,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Был ли мастер у клиента.",
-                        "lang": ""
+                        "value": "Был ли мастер у клиента.",
+                        "language": ""
                     }
                 ]
             },
@@ -1320,8 +1320,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "приходить",
-                        "lang": ""
+                        "value": "приходить",
+                        "language": ""
                     }
                 ]
             }
@@ -1335,8 +1335,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Observe",
-                    "lang": ""
+                    "value": "Observe",
+                    "language": ""
                 }
             ]
         },
@@ -1350,8 +1350,8 @@
         "label": {
             "values": [
                 {
-                    "text": "PropertyAsGoods",
-                    "lang": ""
+                    "value": "PropertyAsGoods",
+                    "language": ""
                 }
             ]
         },
@@ -1360,8 +1360,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Собственность пользователя в виде материальных или нематериальных объектов.",
-                        "lang": ""
+                        "value": "Собственность пользователя в виде материальных или нематериальных объектов.",
+                        "language": ""
                     }
                 ]
             }
@@ -1375,8 +1375,8 @@
         "label": {
             "values": [
                 {
-                    "text": "expressedBy",
-                    "lang": ""
+                    "value": "expressedBy",
+                    "language": ""
                 }
             ]
         },
@@ -1390,8 +1390,8 @@
         "label": {
             "values": [
                 {
-                    "text": "modified",
-                    "lang": ""
+                    "value": "modified",
+                    "language": ""
                 }
             ]
         },
@@ -1400,8 +1400,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Перенастроено ли устройство, были ли изменены настройки.",
-                        "lang": ""
+                        "value": "Перенастроено ли устройство, были ли изменены настройки.",
+                        "language": ""
                     }
                 ]
             },
@@ -1409,8 +1409,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "настраивать",
-                        "lang": ""
+                        "value": "настраивать",
+                        "language": ""
                     }
                 ]
             }
@@ -1424,8 +1424,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ChannelPack",
-                    "lang": ""
+                    "value": "ChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -1434,16 +1434,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "тариф",
-                        "lang": ""
+                        "value": "тариф",
+                        "language": ""
                     },
                     {
-                        "text": "план",
-                        "lang": ""
+                        "value": "план",
+                        "language": ""
                     },
                     {
-                        "text": "пакет",
-                        "lang": ""
+                        "value": "пакет",
+                        "language": ""
                     }
                 ]
             }
@@ -1457,8 +1457,8 @@
         "label": {
             "values": [
                 {
-                    "text": "deviceModel",
-                    "lang": ""
+                    "value": "deviceModel",
+                    "language": ""
                 }
             ]
         },
@@ -1467,8 +1467,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Название модели устройства.",
-                        "lang": ""
+                        "value": "Название модели устройства.",
+                        "language": ""
                     }
                 ]
             },
@@ -1476,8 +1476,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "модель",
-                        "lang": ""
+                        "value": "модель",
+                        "language": ""
                     }
                 ]
             }
@@ -1491,8 +1491,8 @@
         "label": {
             "values": [
                 {
-                    "text": "popularChannelPack",
-                    "lang": ""
+                    "value": "popularChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -1501,8 +1501,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "популярный",
-                        "lang": ""
+                        "value": "популярный",
+                        "language": ""
                     }
                 ]
             }
@@ -1516,8 +1516,8 @@
         "label": {
             "values": [
                 {
-                    "text": "canHangUp",
-                    "lang": ""
+                    "value": "canHangUp",
+                    "language": ""
                 }
             ]
         },
@@ -1526,8 +1526,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Можно ли клиенту повесить трубку и продложить решать проблему автономно.",
-                        "lang": ""
+                        "value": "Можно ли клиенту повесить трубку и продложить решать проблему автономно.",
+                        "language": ""
                     }
                 ]
             }
@@ -1541,8 +1541,8 @@
         "label": {
             "values": [
                 {
-                    "text": "canSolve",
-                    "lang": ""
+                    "value": "canSolve",
+                    "language": ""
                 }
             ]
         },
@@ -1551,8 +1551,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Может ли служба поддержки решить проблему пользователя. Нет - в случае неработающего телевизора, например.",
-                        "lang": ""
+                        "value": "Может ли служба поддержки решить проблему пользователя. Нет - в случае неработающего телевизора, например.",
+                        "language": ""
                     }
                 ]
             }
@@ -1566,8 +1566,8 @@
         "label": {
             "values": [
                 {
-                    "text": "userCanSwitchChannel",
-                    "lang": ""
+                    "value": "userCanSwitchChannel",
+                    "language": ""
                 }
             ]
         },
@@ -1576,12 +1576,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "переключаться",
-                        "lang": ""
+                        "value": "переключаться",
+                        "language": ""
                     },
                     {
-                        "text": "переключать",
-                        "lang": ""
+                        "value": "переключать",
+                        "language": ""
                     }
                 ]
             }
@@ -1595,8 +1595,8 @@
         "label": {
             "values": [
                 {
-                    "text": "rebooted",
-                    "lang": ""
+                    "value": "rebooted",
+                    "language": ""
                 }
             ]
         },
@@ -1605,8 +1605,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Перезагружено ли устройство",
-                        "lang": ""
+                        "value": "Перезагружено ли устройство",
+                        "language": ""
                     }
                 ]
             },
@@ -1614,8 +1614,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "перезагружать",
-                        "lang": ""
+                        "value": "перезагружать",
+                        "language": ""
                     }
                 ]
             }
@@ -1629,8 +1629,8 @@
         "label": {
             "values": [
                 {
-                    "text": "own",
-                    "lang": ""
+                    "value": "own",
+                    "language": ""
                 }
             ]
         },
@@ -1639,8 +1639,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Владеть указанным имуществом",
-                        "lang": ""
+                        "value": "Владеть указанным имуществом",
+                        "language": ""
                     }
                 ]
             },
@@ -1648,16 +1648,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "есть",
-                        "lang": ""
+                        "value": "есть",
+                        "language": ""
                     },
                     {
-                        "text": "иметь",
-                        "lang": ""
+                        "value": "иметь",
+                        "language": ""
                     },
                     {
-                        "text": "владеть",
-                        "lang": ""
+                        "value": "владеть",
+                        "language": ""
                     }
                 ]
             }
@@ -1671,8 +1671,8 @@
         "label": {
             "values": [
                 {
-                    "text": "DigitalTVService",
-                    "lang": ""
+                    "value": "DigitalTVService",
+                    "language": ""
                 }
             ]
         },
@@ -1681,8 +1681,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Услуга цифрового телевидения.",
-                        "lang": ""
+                        "value": "Услуга цифрового телевидения.",
+                        "language": ""
                     }
                 ]
             },
@@ -1690,8 +1690,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "цифровой",
-                        "lang": ""
+                        "value": "цифровой",
+                        "language": ""
                     }
                 ]
             }
@@ -1705,8 +1705,8 @@
         "label": {
             "values": [
                 {
-                    "text": "PhoneNumber",
-                    "lang": ""
+                    "value": "PhoneNumber",
+                    "language": ""
                 }
             ]
         },
@@ -1720,8 +1720,8 @@
         "label": {
             "values": [
                 {
-                    "text": "User",
-                    "lang": ""
+                    "value": "User",
+                    "language": ""
                 }
             ]
         },
@@ -1730,8 +1730,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Пользователь. Пока и клиент Ростелекома и позвонивший человек в одном лице.",
-                        "lang": ""
+                        "value": "Пользователь. Пока и клиент Ростелекома и позвонивший человек в одном лице.",
+                        "language": ""
                     }
                 ]
             },
@@ -1739,12 +1739,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "мы",
-                        "lang": ""
+                        "value": "мы",
+                        "language": ""
                     },
                     {
-                        "text": "я",
-                        "lang": ""
+                        "value": "я",
+                        "language": ""
                     }
                 ]
             }
@@ -1758,8 +1758,8 @@
         "label": {
             "values": [
                 {
-                    "text": "subscribed",
-                    "lang": ""
+                    "value": "subscribed",
+                    "language": ""
                 }
             ]
         },
@@ -1768,8 +1768,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Подписан ли пользователь на эту услугу.",
-                        "lang": ""
+                        "value": "Подписан ли пользователь на эту услугу.",
+                        "language": ""
                     }
                 ]
             },
@@ -1777,8 +1777,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Unsubscribe",
-                        "lang": ""
+                        "value": "tv:Unsubscribe",
+                        "language": ""
                     }
                 ]
             },
@@ -1786,8 +1786,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Subscribe",
-                        "lang": ""
+                        "value": "tv:Subscribe",
+                        "language": ""
                     }
                 ]
             }
@@ -1801,8 +1801,8 @@
         "label": {
             "values": [
                 {
-                    "text": "baseChannelPack",
-                    "lang": ""
+                    "value": "baseChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -1811,16 +1811,16 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "стартовый",
-                        "lang": ""
+                        "value": "стартовый",
+                        "language": ""
                     },
                     {
-                        "text": "начальный",
-                        "lang": ""
+                        "value": "начальный",
+                        "language": ""
                     },
                     {
-                        "text": "базовый",
-                        "lang": ""
+                        "value": "базовый",
+                        "language": ""
                     }
                 ]
             }
@@ -1834,8 +1834,8 @@
         "label": {
             "values": [
                 {
-                    "text": "TVSet",
-                    "lang": ""
+                    "value": "TVSet",
+                    "language": ""
                 }
             ]
         },
@@ -1844,8 +1844,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Телевизор. Может иметь возможность декодирования платных каналов услуги цифрового телевидения с использованием CAM-модуля.",
-                        "lang": ""
+                        "value": "Телевизор. Может иметь возможность декодирования платных каналов услуги цифрового телевидения с использованием CAM-модуля.",
+                        "language": ""
                     }
                 ]
             },
@@ -1853,8 +1853,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "телевизор",
-                        "lang": ""
+                        "value": "телевизор",
+                        "language": ""
                     }
                 ]
             }
@@ -1868,8 +1868,8 @@
         "label": {
             "values": [
                 {
-                    "text": "forwardedToInfoSupport",
-                    "lang": ""
+                    "value": "forwardedToInfoSupport",
+                    "language": ""
                 }
             ]
         },
@@ -1883,8 +1883,8 @@
         "label": {
             "values": [
                 {
-                    "text": "lemma",
-                    "lang": ""
+                    "value": "lemma",
+                    "language": ""
                 }
             ]
         },
@@ -1898,8 +1898,8 @@
         "label": {
             "values": [
                 {
-                    "text": "identified",
-                    "lang": ""
+                    "value": "identified",
+                    "language": ""
                 }
             ]
         },
@@ -1913,8 +1913,8 @@
         "label": {
             "values": [
                 {
-                    "text": "forwardedToSecondSupport",
-                    "lang": ""
+                    "value": "forwardedToSecondSupport",
+                    "language": ""
                 }
             ]
         },
@@ -1928,8 +1928,8 @@
         "label": {
             "values": [
                 {
-                    "text": "callsAgain",
-                    "lang": ""
+                    "value": "callsAgain",
+                    "language": ""
                 }
             ]
         },
@@ -1938,8 +1938,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Пользователь обращается повторно",
-                        "lang": ""
+                        "value": "Пользователь обращается повторно",
+                        "language": ""
                     }
                 ]
             }
@@ -1953,8 +1953,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ControlPanel",
-                    "lang": ""
+                    "value": "ControlPanel",
+                    "language": ""
                 }
             ]
         },
@@ -1963,8 +1963,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Пульт от телевизора",
-                        "lang": ""
+                        "value": "Пульт от телевизора",
+                        "language": ""
                     }
                 ]
             },
@@ -1972,8 +1972,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "пульт",
-                        "lang": ""
+                        "value": "пульт",
+                        "language": ""
                     }
                 ]
             }
@@ -1987,8 +1987,8 @@
         "label": {
             "values": [
                 {
-                    "text": "hasNetworkConnection",
-                    "lang": ""
+                    "value": "hasNetworkConnection",
+                    "language": ""
                 }
             ]
         },
@@ -1997,8 +1997,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Есть ли подключение к роутеру со стороны провайдера услуг.",
-                        "lang": ""
+                        "value": "Есть ли подключение к роутеру со стороны провайдера услуг.",
+                        "language": ""
                     }
                 ]
             }
@@ -2012,8 +2012,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Image",
-                    "lang": ""
+                    "value": "Image",
+                    "language": ""
                 }
             ]
         },
@@ -2022,20 +2022,20 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "сигнал",
-                        "lang": ""
+                        "value": "сигнал",
+                        "language": ""
                     },
                     {
-                        "text": "картинка",
-                        "lang": ""
+                        "value": "картинка",
+                        "language": ""
                     },
                     {
-                        "text": "изображение",
-                        "lang": ""
+                        "value": "изображение",
+                        "language": ""
                     },
                     {
-                        "text": "видео",
-                        "lang": ""
+                        "value": "видео",
+                        "language": ""
                     }
                 ]
             }
@@ -2049,8 +2049,8 @@
         "label": {
             "values": [
                 {
-                    "text": "phoneNumber",
-                    "lang": ""
+                    "value": "phoneNumber",
+                    "language": ""
                 }
             ]
         },
@@ -2059,8 +2059,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Номер телефона",
-                        "lang": ""
+                        "value": "Номер телефона",
+                        "language": ""
                     }
                 ]
             },
@@ -2068,8 +2068,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "номер",
-                        "lang": ""
+                        "value": "номер",
+                        "language": ""
                     }
                 ]
             }
@@ -2083,8 +2083,8 @@
         "label": {
             "values": [
                 {
-                    "text": "deviceAppearance",
-                    "lang": ""
+                    "value": "deviceAppearance",
+                    "language": ""
                 }
             ]
         },
@@ -2093,8 +2093,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Описание внешнего вида устройства.",
-                        "lang": ""
+                        "value": "Описание внешнего вида устройства.",
+                        "language": ""
                     }
                 ]
             },
@@ -2102,8 +2102,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "внешний вид",
-                        "lang": ""
+                        "value": "внешний вид",
+                        "language": ""
                     }
                 ]
             }
@@ -2117,8 +2117,8 @@
         "label": {
             "values": [
                 {
-                    "text": "TurnOn",
-                    "lang": ""
+                    "value": "TurnOn",
+                    "language": ""
                 }
             ]
         },
@@ -2127,8 +2127,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "включать",
-                        "lang": ""
+                        "value": "включать",
+                        "language": ""
                     }
                 ]
             }
@@ -2142,8 +2142,8 @@
         "label": {
             "values": [
                 {
-                    "text": "tvoeTV",
-                    "lang": ""
+                    "value": "tvoeTV",
+                    "language": ""
                 }
             ]
         },
@@ -2152,12 +2152,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "твой интернет",
-                        "lang": ""
+                        "value": "твой интернет",
+                        "language": ""
                     },
                     {
-                        "text": "твое тв",
-                        "lang": ""
+                        "value": "твое тв",
+                        "language": ""
                     }
                 ]
             }
@@ -2171,8 +2171,8 @@
         "label": {
             "values": [
                 {
-                    "text": "HomePhone",
-                    "lang": ""
+                    "value": "HomePhone",
+                    "language": ""
                 }
             ]
         },
@@ -2181,8 +2181,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Домашний телефон. Один из способов идентифицировать клиента. Другой - по номеру услуги.",
-                        "lang": ""
+                        "value": "Домашний телефон. Один из способов идентифицировать клиента. Другой - по номеру услуги.",
+                        "language": ""
                     }
                 ]
             },
@@ -2190,12 +2190,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "домашний",
-                        "lang": ""
+                        "value": "домашний",
+                        "language": ""
                     },
                     {
-                        "text": "городской",
-                        "lang": ""
+                        "value": "городской",
+                        "language": ""
                     }
                 ]
             }
@@ -2209,8 +2209,8 @@
         "label": {
             "values": [
                 {
-                    "text": "All",
-                    "lang": ""
+                    "value": "All",
+                    "language": ""
                 }
             ]
         },
@@ -2219,8 +2219,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Концепт для обработки 'а потом все отвалилось'",
-                        "lang": ""
+                        "value": "Концепт для обработки 'а потом все отвалилось'",
+                        "language": ""
                     }
                 ]
             },
@@ -2228,8 +2228,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "всё",
-                        "lang": ""
+                        "value": "всё",
+                        "language": ""
                     }
                 ]
             }
@@ -2243,8 +2243,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Home",
-                    "lang": ""
+                    "value": "Home",
+                    "language": ""
                 }
             ]
         },
@@ -2253,8 +2253,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Дом клиента в смысле места, где установлено такое оборудование, как роутер.",
-                        "lang": ""
+                        "value": "Дом клиента в смысле места, где установлено такое оборудование, как роутер.",
+                        "language": ""
                     }
                 ]
             },
@@ -2262,8 +2262,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "дом",
-                        "lang": ""
+                        "value": "дом",
+                        "language": ""
                     }
                 ]
             }
@@ -2277,8 +2277,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Appear",
-                    "lang": ""
+                    "value": "Appear",
+                    "language": ""
                 }
             ]
         },
@@ -2287,8 +2287,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "появляться",
-                        "lang": ""
+                        "value": "появляться",
+                        "language": ""
                     }
                 ]
             }
@@ -2302,8 +2302,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Cable",
-                    "lang": ""
+                    "value": "Cable",
+                    "language": ""
                 }
             ]
         },
@@ -2312,8 +2312,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Кабель - нужен для подключения кабельного телевидения.",
-                        "lang": ""
+                        "value": "Кабель - нужен для подключения кабельного телевидения.",
+                        "language": ""
                     }
                 ]
             }
@@ -2327,8 +2327,8 @@
         "label": {
             "values": [
                 {
-                    "text": "homeAddress",
-                    "lang": ""
+                    "value": "homeAddress",
+                    "language": ""
                 }
             ]
         },
@@ -2337,8 +2337,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Домашний адрес",
-                        "lang": ""
+                        "value": "Домашний адрес",
+                        "language": ""
                     }
                 ]
             },
@@ -2346,8 +2346,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "адрес",
-                        "lang": ""
+                        "value": "адрес",
+                        "language": ""
                     }
                 ]
             }
@@ -2361,8 +2361,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Flat",
-                    "lang": ""
+                    "value": "Flat",
+                    "language": ""
                 }
             ]
         },
@@ -2371,8 +2371,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Квартира (уточнение дома).",
-                        "lang": ""
+                        "value": "Квартира (уточнение дома).",
+                        "language": ""
                     }
                 ]
             },
@@ -2380,8 +2380,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "квартира",
-                        "lang": ""
+                        "value": "квартира",
+                        "language": ""
                     }
                 ]
             }
@@ -2395,8 +2395,8 @@
         "label": {
             "values": [
                 {
-                    "text": "operationalBad",
-                    "lang": ""
+                    "value": "operationalBad",
+                    "language": ""
                 }
             ]
         },
@@ -2405,8 +2405,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "tv:Disappear",
-                        "lang": ""
+                        "value": "tv:Disappear",
+                        "language": ""
                     }
                 ]
             },
@@ -2414,20 +2414,20 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "тормозить",
-                        "lang": ""
+                        "value": "тормозить",
+                        "language": ""
                     },
                     {
-                        "text": "расползаться",
-                        "lang": ""
+                        "value": "расползаться",
+                        "language": ""
                     },
                     {
-                        "text": "портиться",
-                        "lang": ""
+                        "value": "портиться",
+                        "language": ""
                     },
                     {
-                        "text": "барахлить",
-                        "lang": ""
+                        "value": "барахлить",
+                        "language": ""
                     }
                 ]
             }
@@ -2441,8 +2441,8 @@
         "label": {
             "values": [
                 {
-                    "text": "AnalogueTVChannel",
-                    "lang": ""
+                    "value": "AnalogueTVChannel",
+                    "language": ""
                 }
             ]
         },
@@ -2451,8 +2451,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Аналоговый телевизионный канал.",
-                        "lang": ""
+                        "value": "Аналоговый телевизионный канал.",
+                        "language": ""
                     }
                 ]
             },
@@ -2460,8 +2460,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "аналоговый",
-                        "lang": ""
+                        "value": "аналоговый",
+                        "language": ""
                     }
                 ]
             }
@@ -2475,8 +2475,8 @@
         "label": {
             "values": [
                 {
-                    "text": "ServiceMan",
-                    "lang": ""
+                    "value": "ServiceMan",
+                    "language": ""
                 }
             ]
         },
@@ -2485,8 +2485,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Квалифицированный работник",
-                        "lang": ""
+                        "value": "Квалифицированный работник",
+                        "language": ""
                     }
                 ]
             },
@@ -2494,8 +2494,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "мастер",
-                        "lang": ""
+                        "value": "мастер",
+                        "language": ""
                     }
                 ]
             }
@@ -2509,8 +2509,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Phone",
-                    "lang": ""
+                    "value": "Phone",
+                    "language": ""
                 }
             ]
         },
@@ -2519,8 +2519,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Телефон. Здесь пока только для образование сущности 'домашний телефон'",
-                        "lang": ""
+                        "value": "Телефон. Здесь пока только для образование сущности 'домашний телефон'",
+                        "language": ""
                     }
                 ]
             },
@@ -2528,8 +2528,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "телефон",
-                        "lang": ""
+                        "value": "телефон",
+                        "language": ""
                     }
                 ]
             }
@@ -2543,8 +2543,8 @@
         "label": {
             "values": [
                 {
-                    "text": "Speed",
-                    "lang": ""
+                    "value": "Speed",
+                    "language": ""
                 }
             ]
         },
@@ -2553,12 +2553,12 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "скорость",
-                        "lang": ""
+                        "value": "скорость",
+                        "language": ""
                     },
                     {
-                        "text": "производительность",
-                        "lang": ""
+                        "value": "производительность",
+                        "language": ""
                     }
                 ]
             }
@@ -2572,8 +2572,8 @@
         "label": {
             "values": [
                 {
-                    "text": "SubscribableService",
-                    "lang": ""
+                    "value": "SubscribableService",
+                    "language": ""
                 }
             ]
         },
@@ -2587,8 +2587,8 @@
         "label": {
             "values": [
                 {
-                    "text": "hdChannelPack",
-                    "lang": ""
+                    "value": "hdChannelPack",
+                    "language": ""
                 }
             ]
         },
@@ -2597,8 +2597,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "эйчди",
-                        "lang": ""
+                        "value": "эйчди",
+                        "language": ""
                     }
                 ]
             }
@@ -2612,8 +2612,8 @@
         "label": {
             "values": [
                 {
-                    "text": "SetTopBox",
-                    "lang": ""
+                    "value": "SetTopBox",
+                    "language": ""
                 }
             ]
         },
@@ -2622,8 +2622,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "Телеприставка, осуществляющая декодирование цифрового сигнала и подключаемая к телевизору.",
-                        "lang": ""
+                        "value": "Телеприставка, осуществляющая декодирование цифрового сигнала и подключаемая к телевизору.",
+                        "language": ""
                     }
                 ]
             },
@@ -2631,8 +2631,8 @@
                 "type": "string",
                 "values": [
                     {
-                        "text": "приставка",
-                        "lang": ""
+                        "value": "приставка",
+                        "language": ""
                     }
                 ]
             }

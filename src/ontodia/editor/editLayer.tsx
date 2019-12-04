@@ -266,10 +266,10 @@ export class EditLayer extends React.Component<Props, State> {
         const labelText = classId === PLACEHOLDER_ELEMENT_TYPE ? 'New Entity' : `New ${typeName}`;
         const types = [classId];
         const entityIri = await metadataApi.generateNewElementIri(types, Cancellation.NEVER_SIGNAL);
-        const elementModel = {
+        const elementModel: ElementModel = {
             id: entityIri,
             types,
-            label: {values: [{text: labelText, lang: ''}]},
+            label: {values: [{value: labelText, language: ''}]},
             properties: {},
         };
         return editor.createNewEntity({elementModel, temporary: true});

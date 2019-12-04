@@ -4,8 +4,8 @@ import { getUriLocalName } from '../utils';
 
 import { SparqlDataProviderSettings } from './sparqlDataProviderSettings';
 import {
-    ElementBinding, LinkBinding, BlankBinding, isRdfIri, isRdfBlank,
-    LinkCountBinding, SparqlResponse, RdfLiteral, isBlankBinding,
+    ElementBinding, LinkBinding, BlankBinding, FilterBinding, LinkCountBinding, ElementTypeBinding,
+    SparqlResponse, RdfLiteral, isRdfIri, isRdfBlank, isBlankBinding,
 } from './sparqlModels';
 
 export const MAX_RECURSION_DEEP = 3;
@@ -67,12 +67,12 @@ export class QueryExecutor {
 }
 
 export function updateFilterResults(
-    result: SparqlResponse<ElementBinding | BlankBinding>,
+    result: SparqlResponse<ElementBinding & FilterBinding>,
     queryFunction: (query: string) => Promise<SparqlResponse<BlankBinding>>,
     settings: SparqlDataProviderSettings,
-): Promise<SparqlResponse<ElementBinding | BlankBinding>> {
-    const completeBindings: ElementBinding[] = [];
-    const blankBindings: BlankBinding[] = [];
+): Promise<SparqlResponse<ElementBinding & FilterBinding>> {
+    const completeBindings: Array<ElementBinding & FilterBinding> = [];
+    const blankBindings: Array<BlankBinding & FilterBinding> = [];
 
     for (const binding of result.results.bindings) {
         if (isBlankBinding(binding)) {
@@ -392,6 +392,21 @@ export function filter(params: FilterParams): SparqlResponse<ElementBinding> {
     }
 
     return filterResponse;
+}
+
+export function getElementTypes(elementIds: ReadonlyArray<string>): SparqlResponse<ElementTypeBinding> {
+    const bindings: ElementTypeBinding[] = [];
+    for (const id of elementIds) {
+        const blankBindings = decodeId(id);
+        if (blankBindings) {
+            for (const be of blankBindings) {
+                if (isRdfIri(be.inst) && be.class) {
+                    bindings.push({inst: be.inst, class: be.class});
+                }
+            }
+        }
+    }
+    return {head: undefined, results: {bindings}};
 }
 
 function getAllRelatedByLinkTypeElements(

@@ -4,8 +4,8 @@
     "label": {
       "values": [
         {
-          "text": "own",
-          "lang": ""
+          "value": "own",
+          "language": ""
         }
       ]
     },
@@ -16,8 +16,8 @@
     "label": {
       "values": [
         {
-          "text": "disjointWith",
-          "lang": ""
+          "value": "disjointWith",
+          "language": ""
         }
       ]
     },
@@ -28,8 +28,8 @@
     "label": {
       "values": [
         {
-          "text": "type",
-          "lang": ""
+          "value": "type",
+          "language": ""
         }
       ]
     },
@@ -40,8 +40,8 @@
     "label": {
       "values": [
         {
-          "text": "isClientOf",
-          "lang": ""
+          "value": "isClientOf",
+          "language": ""
         }
       ]
     },
@@ -52,8 +52,8 @@
     "label": {
       "values": [
         {
-          "text": "domain",
-          "lang": ""
+          "value": "domain",
+          "language": ""
         }
       ]
     },
@@ -64,8 +64,8 @@
     "label": {
       "values": [
         {
-          "text": "subPropertyOf",
-          "lang": ""
+          "value": "subPropertyOf",
+          "language": ""
         }
       ]
     },
@@ -76,8 +76,8 @@
     "label": {
       "values": [
         {
-          "text": "rent",
-          "lang": ""
+          "value": "rent",
+          "language": ""
         }
       ]
     },
@@ -88,8 +88,8 @@
     "label": {
       "values": [
         {
-          "text": "subClassOf",
-          "lang": ""
+          "value": "subClassOf",
+          "language": ""
         }
       ]
     },
@@ -100,8 +100,8 @@
     "label": {
       "values": [
         {
-          "text": "range",
-          "lang": ""
+          "value": "range",
+          "language": ""
         }
       ]
     },

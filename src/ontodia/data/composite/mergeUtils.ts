@@ -169,7 +169,8 @@ export function mergeElementInfo(response: CompositeResponse<Dictionary<ElementM
         for (const em of list) {
             em.sources = [resp.dataSourceName];
             em.properties[DATA_PROVIDER_PROPERTY] = {
-                type: 'string', values: [{ text: resp.dataSourceName, lang: '' }],
+                type: 'string',
+                values: [{value: resp.dataSourceName, language: ''}],
             };
             if (!dictionary[em.id]) {
                 dictionary[em.id] = em;
@@ -293,7 +294,7 @@ export function mergeLabels(
 ): { values: LocalizedString[] } {
 
     function compareLabels(l1: LocalizedString, l2: LocalizedString): boolean {
-        return l1.lang === l2.lang && l1.text === l2.text;
+        return l1.language === l2.language && l1.value === l2.value;
     }
 
     const mergedValuesList = a.values;

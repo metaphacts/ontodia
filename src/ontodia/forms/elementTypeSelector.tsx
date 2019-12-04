@@ -115,7 +115,7 @@ export class ElementTypeSelector extends React.Component<Props, State> {
             ...elementValue.value,
             id: newId,
             types: types,
-            label: {values: [{text: `New ${typeName}`, lang: ''}]},
+            label: {values: [{value: `New ${typeName}`, language: ''}]},
         });
     }
 

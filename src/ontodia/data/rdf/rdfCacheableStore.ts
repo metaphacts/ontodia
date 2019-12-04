@@ -15,18 +15,6 @@ export function prefixFactory(prefix: string): ((id: string) => string) {
     };
 }
 
-export interface RDFStore {
-    add: (id: string, graph: RDFGraph) => void;
-    match: (
-        subject?: string,
-        predicate?: string,
-        object?: string,
-        iri?: string,
-        callback?: (result: any) => void,
-        limit?: number,
-    ) => Promise<RDFGraph>;
-}
-
 export function isLiteral(el: Node): el is Literal {
     return el.interfaceName === 'Literal';
 }

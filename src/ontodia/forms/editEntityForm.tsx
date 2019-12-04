@@ -1,7 +1,11 @@
 import * as React from 'react';
 
 import { DiagramView } from '../diagram/view';
-import { ElementModel, PropertyTypeIri, Property, isIriProperty, isLiteralProperty } from '../data/model';
+import {
+    ElementModel, LocalizedString, PropertyTypeIri,
+    Property, isIriProperty, isLiteralProperty,
+    ElementIri,
+} from '../data/model';
 
 const CLASS_NAME = 'ontodia-edit-form';
 
@@ -38,7 +42,7 @@ export class EditEntityForm extends React.Component<Props, State> {
         if (isIriProperty(property)) {
             values = property.values.map(({value}) => value);
         } else if (isLiteralProperty(property)) {
-            values = property.values.map(({text}) => text);
+            values = property.values.map(({value}) => value);
         }
         return (
             <div key={key} className={`${CLASS_NAME}__form-row`}>
@@ -78,10 +82,37 @@ export class EditEntityForm extends React.Component<Props, State> {
         );
     }
 
+    private onChangeIri = (e: React.FormEvent<HTMLInputElement>) => {
+        const target = (e.target as HTMLInputElement);
+        const iri = target.value as ElementIri;
+        this.setState(prevState => {
+            return {
+                elementModel: {
+                    ...prevState.elementModel,
+                    id: iri,
+                }
+            };
+        });
+    }
+
+    private renderIri() {
+        const {elementModel} = this.state;
+        return (
+            <label>
+                IRI
+                <input
+                    className='ontodia-form-control'
+                    defaultValue={elementModel.id}
+                    onChange={this.onChangeIri}
+                />
+            </label>
+        );
+    }
+
     private onChangeLabel = (e: React.FormEvent<HTMLInputElement>) => {
         const target = (e.target as HTMLInputElement);
 
-        const labels = target.value.length > 0 ? [{text: target.value, lang: ''}] : [];
+        const labels: LocalizedString[] = target.value.length > 0 ? [{value: target.value, language: ''}] : [];
 
         this.setState({elementModel: {
             ...this.state.elementModel,
@@ -92,7 +123,7 @@ export class EditEntityForm extends React.Component<Props, State> {
     private renderLabel() {
         const {view} = this.props;
         const label = view.selectLabel(this.state.elementModel.label.values);
-        const text = label ? label.text : '';
+        const text = label ? label.value : '';
         return (
             <label>
                 Label
@@ -105,6 +136,9 @@ export class EditEntityForm extends React.Component<Props, State> {
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__body`}>
+                    <div className={`${CLASS_NAME}__form-row`}>
+                        {this.renderIri()}
+                    </div>
                     <div className={`${CLASS_NAME}__form-row`}>
                         {this.renderType()}
                     </div>

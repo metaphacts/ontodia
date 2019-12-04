@@ -1,18 +1,21 @@
+import { LinkConfiguration, PropertyConfiguration } from './sparqlDataProviderSettings';
 import {
     RdfLiteral, isRdfLiteral,
     SparqlResponse, ClassBinding, ElementBinding,
     LinkBinding, isRdfIri, isRdfBlank, RdfIri,
     ElementImageBinding, LinkCountBinding, LinkTypeBinding,
-    PropertyBinding, Triple, RdfNode,
+    PropertyBinding, ElementTypeBinding, FilterBinding, Triple,
 } from './sparqlModels';
 import {
     Dictionary, LocalizedString, LinkType, ClassModel, ElementModel, LinkModel, Property, PropertyModel, LinkCount,
-    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, isIriProperty, isLiteralProperty,
+    ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, isIriProperty, isLiteralProperty, sameLink, hashLink
 } from '../model';
-import * as _ from 'lodash';
+import { HashMap, getOrCreateSetInMap } from '../../viewUtils/collections';
 
 const LABEL_URI = 'http://www.w3.org/2000/01/rdf-schema#label';
 const RDF_TYPE_URI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+
+const EMPTY_MAP: ReadonlyMap<any, any> = new Map();
 
 export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel[] {
     const treeNodes = createClassMap(response.results.bindings);
@@ -37,6 +40,18 @@ export function getClassTree(response: SparqlResponse<ClassBinding>): ClassModel
 
     const tree = withoutCycles.filter(node => !leafs.has(node.id));
     return tree;
+}
+
+export function flattenClassTree(classTree: ReadonlyArray<ClassModel>) {
+    const all: ClassModel[] = [];
+    const visitClasses = (classes: ReadonlyArray<ClassModel>) => {
+        for (const model of classes) {
+            all.push(model);
+            visitClasses(model.children);
+        }
+    };
+    visitClasses(classTree);
+    return all;
 }
 
 /**
@@ -166,11 +181,11 @@ export function getPropertyInfo(response: SparqlResponse<PropertyBinding>): Dict
     const models: Dictionary<PropertyModel> = {};
 
     for (const sProperty of response.results.bindings) {
-        const sPropertyTypeId = sProperty.prop.value as PropertyTypeIri;
+        const sPropertyTypeId = sProperty.property.value as PropertyTypeIri;
         if (models[sPropertyTypeId]) {
             if (sProperty.label) {
                 const label = models[sPropertyTypeId].label;
-                if (label.values.length === 1 && !label.values[0].lang) {
+                if (label.values.length === 1 && !label.values[0].language) {
                     label.values = [];
                 }
                 label.values.push(getLocalizedString(sProperty.label));
@@ -192,7 +207,7 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
         if (linkTypesMap[sInstTypeId]) {
             if (sLink.label) {
                 const label = linkTypesMap[sInstTypeId].label;
-                if (label.values.length === 1 && !label.values[0].lang) {
+                if (label.values.length === 1 && !label.values[0].language) {
                     label.values = [];
                 }
                 label.values.push(getLocalizedString(sLink.label));
@@ -207,7 +222,7 @@ export function getLinkTypes(response: SparqlResponse<LinkTypeBinding>): LinkTyp
 }
 
 export function triplesToElementBinding(
-    tripples: Triple[],
+    triples: Triple[],
 ): SparqlResponse<ElementBinding> {
     const map: Dictionary<ElementBinding> = {};
     const convertedResponse: SparqlResponse<ElementBinding> = {
@@ -218,31 +233,31 @@ export function triplesToElementBinding(
             bindings: [],
         },
     };
-    for (const tripple of tripples) {
-        const trippleId = tripple.subject.value;
+    for (const triple of triples) {
+        const trippleId = triple.subject.value;
         if (!map[trippleId]) {
-            map[trippleId] = createAndPushBinding(tripple);
+            map[trippleId] = createAndPushBinding(triple);
         }
 
-        if (tripple.predicate.value === LABEL_URI && isRdfLiteral(tripple.object)) { // Label
+        if (triple.predicate.value === LABEL_URI && isRdfLiteral(triple.object)) { // Label
             if (map[trippleId].label) {
-                map[trippleId] = createAndPushBinding(tripple);
+                map[trippleId] = createAndPushBinding(triple);
             }
-            map[trippleId].label = tripple.object;
+            map[trippleId].label = triple.object;
         } else if ( // Class
-            tripple.predicate.value === RDF_TYPE_URI &&
-            isRdfIri(tripple.object) && isRdfIri(tripple.predicate)
+            triple.predicate.value === RDF_TYPE_URI &&
+            isRdfIri(triple.object) && isRdfIri(triple.predicate)
         ) {
             if (map[trippleId].class) {
-                map[trippleId] = createAndPushBinding(tripple);
+                map[trippleId] = createAndPushBinding(triple);
             }
-            map[trippleId].class = tripple.object;
-        } else if (!isRdfBlank(tripple.object) && isRdfIri(tripple.predicate)) { // Property
+            map[trippleId].class = triple.object;
+        } else if (!isRdfBlank(triple.object) && isRdfIri(triple.predicate)) { // Property
             if (map[trippleId].propType) {
-                map[trippleId] = createAndPushBinding(tripple);
+                map[trippleId] = createAndPushBinding(triple);
             }
-            map[trippleId].propType = tripple.predicate;
-            map[trippleId].propValue = tripple.object;
+            map[trippleId].propType = triple.predicate;
+            map[trippleId].propValue = triple.object;
         }
     }
 
@@ -257,25 +272,66 @@ export function triplesToElementBinding(
     return convertedResponse;
 }
 
-export function getElementsInfo(response: SparqlResponse<ElementBinding>, ids: string[]): Dictionary<ElementModel> {
-    const sInstances = response.results.bindings;
+export function getElementsInfo(
+    response: SparqlResponse<ElementBinding>,
+    types: ReadonlyMap<ElementIri, ReadonlySet<ElementTypeIri>> = EMPTY_MAP,
+    propertyByPredicate: ReadonlyMap<string, readonly PropertyConfiguration[]> = EMPTY_MAP,
+    openWorldProperties = true,
+): Dictionary<ElementModel> {
     const instancesMap: Dictionary<ElementModel> = {};
 
-    for (const sInst of sInstances) {
-        const sInstTypeId = sInst.inst.value as ElementIri;
-        if (!instancesMap[sInstTypeId]) {
-            instancesMap[sInstTypeId] = emptyElementInfo(sInstTypeId);
+    for (const binding of response.results.bindings) {
+        if (!isRdfIri(binding.inst)) { continue; }
+        const iri = binding.inst.value as ElementIri;
+        let model = instancesMap[iri];
+        if (!model) {
+            model = emptyElementInfo(iri);
+            instancesMap[iri] = model;
         }
-        enrichElement(instancesMap[sInstTypeId], sInst);
+        enrichElement(model, binding);
+    }
+
+    if (!openWorldProperties || propertyByPredicate.size > 0) {
+        for (const iri in instancesMap) {
+            if (!Object.hasOwnProperty.call(instancesMap, iri)) { continue; }
+            const model = instancesMap[iri];
+            const modelTypes = types.get(model.id);
+            model.properties = mapPropertiesByConfig(
+                model, modelTypes, propertyByPredicate, openWorldProperties
+            );
+        }
     }
 
     return instancesMap;
 }
 
-export function getEnrichedElementsInfo(
+function mapPropertiesByConfig(
+    model: ElementModel,
+    modelTypes: ReadonlySet<ElementTypeIri> | undefined,
+    propertyByPredicate: ReadonlyMap<string, readonly PropertyConfiguration[]>,
+    openWorldProperties: boolean
+): ElementModel['properties'] {
+    const mapped: ElementModel['properties'] = {};
+    for (const propertyIri in model.properties) {
+        if (!Object.hasOwnProperty.call(model.properties, propertyIri)) { continue; }
+        const properties = propertyByPredicate.get(propertyIri);
+        if (properties && properties.length > 0) {
+            for (const property of properties) {
+                if (typeMatchesDomain(property, modelTypes)) {
+                    mapped[property.id] = model.properties[propertyIri];
+                }
+            }
+        } else if (openWorldProperties) {
+            mapped[propertyIri] = model.properties[propertyIri];
+        }
+    }
+    return mapped;
+}
+
+export function enrichElementsWithImages(
     response: SparqlResponse<ElementImageBinding>,
     elementsInfo: Dictionary<ElementModel>,
-): Dictionary<ElementModel> {
+): void {
     const respElements = response.results.bindings;
     for (const respEl of respElements) {
         const elementInfo = elementsInfo[respEl.inst.value];
@@ -283,27 +339,66 @@ export function getEnrichedElementsInfo(
             elementInfo.image = respEl.image.value;
         }
     }
-    return elementsInfo;
 }
 
-export function getLinksInfo(response: SparqlResponse<LinkBinding>): LinkModel[] {
+export function getElementTypes(
+    response: SparqlResponse<ElementTypeBinding>
+): Map<ElementIri, Set<ElementTypeIri>> {
+    const types = new Map<ElementIri, Set<ElementTypeIri>>();
+    for (const binding of response.results.bindings) {
+        if (isRdfIri(binding.inst) && isRdfIri(binding.class)) {
+            const element = binding.inst.value as ElementIri;
+            const type = binding.class.value as ElementTypeIri;
+            getOrCreateSetInMap(types, element).add(type);
+        }
+    }
+    return types;
+}
+
+export function getLinksInfo(
+    response: SparqlResponse<LinkBinding>,
+    types: ReadonlyMap<ElementIri, ReadonlySet<ElementTypeIri>> = EMPTY_MAP,
+    linkByPredicateType: ReadonlyMap<string, readonly LinkConfiguration[]> = EMPTY_MAP,
+    openWorldLinks: boolean = true
+): LinkModel[] {
     const sparqlLinks = response.results.bindings;
-    const linksMap: Dictionary<LinkModel> = {};
+    const links = new HashMap<LinkModel, LinkModel>(hashLink, sameLink);
 
-    for (const sLink of sparqlLinks) {
-        const linkKey = `${sLink.source.value} ${sLink.type.value} ${sLink.target.value}`;
-
-        if (linksMap[linkKey]) {
+    for (const binding of sparqlLinks) {
+        const model: LinkModel = {
+            sourceId: binding.source.value as ElementIri,
+            linkTypeId: binding.type.value as LinkTypeIri,
+            targetId: binding.target.value as ElementIri,
+            properties: {},
+        };
+        if (links.has(model)) {
             // this can only happen due to error in sparql or when merging properties
-            if (sLink.propType) {
-                mergeProperties(linksMap[linkKey].properties, sLink.propType, sLink.propValue);
+            if (binding.propType) {
+                const existing = links.get(model);
+                mergeProperties(existing.properties, binding.propType, binding.propValue);
             }
         } else {
-            linksMap[linkKey] = getLinkInfo(sLink);
+            if (binding.propType) {
+                mergeProperties(model.properties, binding.propType, binding.propValue);
+            }
+            const linkConfigs = linkByPredicateType.get(model.linkTypeId);
+            if (linkConfigs && linkConfigs.length > 0) {
+                for (const linkConfig of linkConfigs) {
+                    if (typeMatchesDomain(linkConfig, types.get(model.sourceId))) {
+                        const mappedModel: LinkModel = isDirectLink(linkConfig)
+                            ? {...model, linkTypeId: linkConfig.id as LinkTypeIri} : model;
+                        links.set(mappedModel, mappedModel);
+                    }
+                }
+            } else if (openWorldLinks) {
+                links.set(model, model);
+            }
         }
     }
 
-    return _.values(linksMap);
+    const linkArray: LinkModel[] = [];
+    links.forEach(value => linkArray.push(value));
+    return linkArray;
 }
 
 export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): LinkCount[] {
@@ -311,31 +406,137 @@ export function getLinksTypesOf(response: SparqlResponse<LinkCountBinding>): Lin
     return sparqlLinkTypes.map((sLink: LinkCountBinding) => getLinkCount(sLink));
 }
 
-export function getLinksTypeIds(response: SparqlResponse<LinkTypeBinding>): LinkTypeIri[] {
-    const sparqlLinkTypes = response.results.bindings.filter(b => !isRdfBlank(b.link));
-    return sparqlLinkTypes.map((sLink: LinkTypeBinding) => sLink.link.value as LinkTypeIri);
+export function getLinksTypeIds(
+    response: SparqlResponse<LinkTypeBinding>,
+    linkByPredicateType: ReadonlyMap<string, readonly LinkConfiguration[]> = EMPTY_MAP,
+    openWorldLinks: boolean = true
+): LinkTypeIri[] {
+    const linkTypes: LinkTypeIri[] = [];
+    for (const binding of response.results.bindings) {
+        if (!isRdfIri(binding.link)) { continue; }
+        const linkConfigs = linkByPredicateType.get(binding.link.value);
+        if (linkConfigs && linkConfigs.length > 0) {
+            for (const linkConfig of linkConfigs) {
+                const mappedLinkType = isDirectLink(linkConfig)
+                    ? linkConfig.id : binding.link.value;
+                linkTypes.push(mappedLinkType as LinkTypeIri);
+            }
+        } else if (openWorldLinks) {
+            linkTypes.push(binding.link.value as LinkTypeIri);
+        }
+    }
+    return linkTypes;
 }
 
-export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount {
-    const sparqlLinkCount = response.results.bindings.filter(b => !isRdfBlank(b.link))[0];
-    return  getLinkCount(sparqlLinkCount);
+export function getLinkStatistics(response: SparqlResponse<LinkCountBinding>): LinkCount | undefined {
+    for (const binding of response.results.bindings) {
+        if (isRdfIri(binding.link)) {
+            return getLinkCount(binding);
+        }
+    }
+    return undefined;
 }
 
-export function getFilteredData(response: SparqlResponse<ElementBinding>): Dictionary<ElementModel> {
-    const sInstances = response.results.bindings;
+export function getFilteredData(
+    response: SparqlResponse<ElementBinding & FilterBinding>,
+    sourceTypes?: ReadonlySet<ElementTypeIri>,
+    linkByPredicateType: ReadonlyMap<string, readonly LinkConfiguration[]> = EMPTY_MAP,
+    openWorldLinks: boolean = true
+): Dictionary<ElementModel> {
     const instancesMap: Dictionary<ElementModel> = {};
+    const resultTypes = new Map<ElementIri, Set<ElementTypeIri>>();
+    const outPredicates = new Map<ElementIri, Set<string>>();
+    const inPredicates = new Map<ElementIri, Set<string>>();
 
-    for (const sInst of sInstances) {
-        if (!isRdfIri(sInst.inst) && !isRdfBlank(sInst.inst)) {
+    for (const binding of response.results.bindings) {
+        if (!isRdfIri(binding.inst) && !isRdfBlank(binding.inst)) {
             continue;
         }
-        const iri = sInst.inst.value as ElementIri;
-        if (!instancesMap[iri]) {
-            instancesMap[iri] = emptyElementInfo(iri);
+
+        const iri = binding.inst.value as ElementIri;
+        let model = instancesMap[iri];
+        if (!model) {
+            model = emptyElementInfo(iri);
+            instancesMap[iri] = model;
         }
-        enrichElement(instancesMap[iri], sInst);
+        enrichElement(model, binding);
+
+        if (isRdfIri(binding.classAll)) {
+            getOrCreateSetInMap(resultTypes, iri).add(binding.classAll.value as ElementTypeIri);
+        }
+
+        if (!openWorldLinks && binding.link && binding.direction) {
+            const predicates = binding.direction.value === 'out' ? outPredicates : inPredicates;
+            getOrCreateSetInMap(predicates, model.id).add(binding.link.value);
+        }
     }
+
+    if (!openWorldLinks) {
+        for (const id of Object.keys(instancesMap)) {
+            const model = instancesMap[id];
+            const targetTypes = resultTypes.get(model.id);
+            const doesMatchesDomain = (
+                matchesDomainForLink(sourceTypes, outPredicates.get(model.id), linkByPredicateType) &&
+                matchesDomainForLink(targetTypes, inPredicates.get(model.id), linkByPredicateType)
+            );
+            if (!doesMatchesDomain) {
+                delete instancesMap[id];
+            }
+        }
+    }
+
     return instancesMap;
+}
+
+function matchesDomainForLink(
+    types: ReadonlySet<ElementTypeIri> | undefined,
+    predicates: Set<string> | undefined,
+    linkByPredicateType: ReadonlyMap<string, readonly LinkConfiguration[]>
+) {
+    if (!predicates) { return true; }
+
+    let hasMatch = false;
+    predicates.forEach(predicate => {
+        const matched = linkByPredicateType.get(predicate);
+        if (matched) {
+            for (const link of matched) {
+                if (typeMatchesDomain(link, types)) {
+                    hasMatch = true;
+                }
+            }
+        }
+    });
+    return hasMatch;
+}
+
+export function isDirectLink(link: LinkConfiguration) {
+    // link configuration is path-based if includes any variables
+    const pathBased = /[?$][a-zA-Z]+\b/.test(link.path);
+    return !pathBased;
+}
+
+export function isDirectProperty(property: PropertyConfiguration) {
+    // property configuration is path-based if includes any variables
+    const pathBased = /[?$][a-zA-Z]+\b/.test(property.path);
+    return !pathBased;
+}
+
+function typeMatchesDomain(
+    config: { readonly domain?: ReadonlyArray<string> },
+    types: ReadonlySet<ElementTypeIri> | undefined
+): boolean {
+    if (!config.domain || config.domain.length === 0) {
+        return true;
+    } else if (!types) {
+        return false;
+    } else {
+        for (const type of config.domain) {
+            if (types.has(type as ElementTypeIri)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 /**
@@ -369,7 +570,6 @@ export function enrichElement(element: ElementModel, sInst: ElementBinding) {
     if (!element) { return; }
     if (sInst.label) {
         const label = getLocalizedString(sInst.label);
-        const currentLabels = element.label.values;
 
         if (element.label.values.every(value => !isLocalizedEqual(value, label))) {
             element.label.values.push(label);
@@ -392,15 +592,15 @@ function appendLabel(container: { values: LocalizedString[] }, newLabel: Localiz
 }
 
 function isLocalizedEqual(left: LocalizedString, right: LocalizedString) {
-    return left.lang === right.lang && left.text === right.text;
+    return left.language === right.language && left.value === right.value;
 }
 
 export function getLocalizedString(label: RdfLiteral): LocalizedString | undefined {
     if (label) {
         return {
-            text: label.value,
-            lang: label['xml:lang'],
-            datatype: label.datatype,
+            value: label.value,
+            language: label['xml:lang'],
+            datatype: label.datatype ? {value: label.datatype} : undefined,
         };
     } else {
         return undefined;
@@ -414,7 +614,7 @@ export function getInstCount(instcount: RdfLiteral): number | undefined {
 export function getPropertyModel(node: PropertyBinding): PropertyModel {
     const label = getLocalizedString(node.label);
     return {
-        id: node.prop.value as PropertyTypeIri,
+        id: node.property.value as PropertyTypeIri,
         label: { values: label ? [label] : [] },
     };
 }
@@ -437,23 +637,6 @@ export function emptyElementInfo(id: ElementIri): ElementModel {
     return elementInfo;
 }
 
-export function getLinkInfo(sLinkInfo: LinkBinding): LinkModel {
-    if (!sLinkInfo) { return undefined; }
-    const linkModel: LinkModel = {
-        linkTypeId: sLinkInfo.type.value as LinkTypeIri,
-        sourceId: sLinkInfo.source.value as ElementIri,
-        targetId: sLinkInfo.target.value as ElementIri,
-        properties: {},
-    };
-    if (sLinkInfo.propType && sLinkInfo.propValue) {
-        linkModel.properties[sLinkInfo.propType.value] = {
-            type: 'string',
-            values: [getLocalizedString(sLinkInfo.propValue)],
-        };
-    }
-    return linkModel;
-}
-
 export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
     if (!sLinkInfo) { return undefined; }
     const label = getLocalizedString(sLinkInfo.label);
@@ -461,5 +644,20 @@ export function getLinkTypeInfo(sLinkInfo: LinkTypeBinding): LinkType {
         id: sLinkInfo.link.value as LinkTypeIri,
         label: {values: label ? [label] : []},
         count: getInstCount(sLinkInfo.instcount),
+    };
+}
+
+export function prependAdditionalBindings<Binding>(
+    base: SparqlResponse<Binding>,
+    additional: SparqlResponse<Binding> | undefined,
+): SparqlResponse<Binding> {
+    if (!additional) {
+        return base;
+    }
+    return {
+        head: {vars: base.head.vars},
+        results: {
+            bindings: [...additional.results.bindings, ...base.results.bindings]
+        },
     };
 }

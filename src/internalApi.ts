@@ -11,6 +11,7 @@ export * from './ontodia/viewUtils/keyedObserver';
 export * from './ontodia/viewUtils/spinner';
 
 export * from './ontodia/widgets/listElementView';
+export * from './ontodia/widgets/searchResults';
 
 export {
     WorkspaceContext, WorkspaceContextWrapper, WorkspaceContextTypes,

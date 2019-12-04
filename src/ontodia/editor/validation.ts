@@ -64,26 +64,26 @@ export function changedElementsToValidate(
     const currentAuthoring = editor.authoringState;
 
     const links = new HashMap<LinkModel, true>(hashLink, sameLink);
-    previousAuthoring.index.links.forEach((e, model) => links.set(model, true));
-    currentAuthoring.index.links.forEach((e, model) => links.set(model, true));
+    previousAuthoring.links.forEach((e, model) => links.set(model, true));
+    currentAuthoring.links.forEach((e, model) => links.set(model, true));
 
     const toValidate = new Set<ElementIri>();
     links.forEach((value, linkModel) => {
-        const current = currentAuthoring.index.links.get(linkModel);
-        const previous = previousAuthoring.index.links.get(linkModel);
+        const current = currentAuthoring.links.get(linkModel);
+        const previous = previousAuthoring.links.get(linkModel);
         if (current !== previous) {
             toValidate.add(linkModel.sourceId);
         }
     });
 
     for (const element of editor.model.elements) {
-        const current = currentAuthoring.index.elements.get(element.iri);
-        const previous = previousAuthoring.index.elements.get(element.iri);
+        const current = currentAuthoring.elements.get(element.iri);
+        const previous = previousAuthoring.elements.get(element.iri);
         if (current !== previous) {
             toValidate.add(element.iri);
 
             // when we remove element incoming link are removed as well so we should update their sources
-            if ((current || previous).type === AuthoringKind.DeleteElement) {
+            if ((current || previous).deleted) {
                 for (const link of element.links) {
                     if (link.data.sourceId !== element.iri) {
                         toValidate.add(link.data.sourceId);

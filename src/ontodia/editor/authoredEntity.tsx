@@ -12,7 +12,7 @@ import { Listener } from '../viewUtils/events';
 
 import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
 
-import { AuthoringState } from './authoringState';
+import { AuthoringState, AuthoringKind } from './authoringState';
 import { EditorController, EditorEvents } from './editorController';
 
 export interface AuthoredEntityProps {
@@ -22,6 +22,7 @@ export interface AuthoredEntityProps {
 
 export interface AuthoredEntityContext {
     editor: EditorController;
+    editedIri?: string;
     view: DiagramView;
     canEdit: boolean | undefined;
     canDelete: boolean | undefined;
@@ -74,7 +75,7 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
         const {source: editor, previous} = e;
         const iri = this.props.templateProps.data.id;
         const current = editor.authoringState;
-        if (current.index.elements.get(iri) !== previous.index.elements.get(iri)) {
+        if (current.elements.get(iri) !== previous.elements.get(iri)) {
             this.queryAllowedActions();
         }
     }
@@ -121,8 +122,14 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
         const {view} = this.context.ontodiaPaperArea;
         const {editor} = this.context.ontodiaWorkspace;
         const {canEdit, canDelete} = this.state;
+
+        const iri = this.props.templateProps.iri;
+        const elementEvent = editor.authoringState.elements.get(iri);
+        const editedIri = elementEvent && elementEvent.type === AuthoringKind.ChangeElement ?
+            elementEvent.newIri : undefined;
+
         return renderTemplate({
-            editor, view, canEdit, canDelete,
+            editor, view, canEdit, canDelete, editedIri,
             onEdit: this.onEdit,
             onDelete: this.onDelete,
         });

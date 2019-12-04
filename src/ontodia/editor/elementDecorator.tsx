@@ -9,7 +9,7 @@ import { DiagramView } from '../diagram/view';
 import { Vector } from '../diagram/geometry';
 
 import { EditorController } from './editorController';
-import { AuthoringKind, ElementChange, ElementDeletion } from './authoringState';
+import { AuthoringKind, ElementChange } from './authoringState';
 import { ElementValidation, LinkValidation } from './validation';
 
 const CLASS_NAME = `ontodia-authoring-state`;
@@ -22,7 +22,7 @@ export interface ElementDecoratorProps {
 }
 
 interface State {
-    state?: ElementChange | ElementDeletion;
+    state?: ElementChange;
     validation?: ElementValidation;
     isTemporary?: boolean;
 }
@@ -35,7 +35,7 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
         super(props);
         const {model, editor} = props;
         this.state = {
-            state: editor.authoringState.index.elements.get(model.iri),
+            state: editor.authoringState.elements.get(model.iri),
             validation: editor.validationState.elements.get(model.iri),
             isTemporary: editor.temporaryState.elements.has(model.iri),
         };
@@ -47,7 +47,7 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
             this.forceUpdate()
         );
         this.listener.listen(editor.events, 'changeAuthoringState', () =>
-            this.setState({state: editor.authoringState.index.elements.get(model.iri)})
+            this.setState({state: editor.authoringState.elements.get(model.iri)})
         );
         this.listener.listen(editor.events, 'changeValidationState', () =>
             this.setState({validation: editor.validationState.elements.get(model.iri)})
@@ -55,6 +55,15 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
         this.listener.listen(editor.events, 'changeTemporaryState', () =>
             this.setState({isTemporary: editor.temporaryState.elements.has(model.iri)})
         );
+        this.listener.listen(model.events, 'changeData', event => {
+            if (event.previous.id !== model.iri) {
+                this.setState({
+                    isTemporary: editor.temporaryState.elements.has(model.iri),
+                    validation: editor.validationState.elements.get(model.iri),
+                    state: editor.authoringState.elements.get(model.iri),
+                });
+            }
+        });
     }
 
     componentWillUnmount() {
@@ -83,7 +92,7 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
                     fill='url(#stripe-pattern)' />
             ];
         }
-        if (state && state.type === AuthoringKind.DeleteElement) {
+        if (state && state.deleted) {
             const right = width;
             const bottom = height;
             return (
@@ -136,15 +145,15 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
             let statusText: string;
             let title: string;
 
-            if (state.type === AuthoringKind.ChangeElement && !state.before) {
-                statusText = 'New';
-                title = 'Revert creation of the element';
-            } else if (state.type === AuthoringKind.ChangeElement && state.before) {
-                statusText = 'Change';
-                title = 'Revert all changes in properties of the element';
-            } else if (state.type === AuthoringKind.DeleteElement) {
+            if (state.deleted) {
                 statusText = 'Delete';
                 title = 'Revert deletion of the element';
+            } else if (!state.before) {
+                statusText = 'New';
+                title = 'Revert creation of the element';
+            } else {
+                statusText = 'Change';
+                title = 'Revert all changes in properties of the element';
             }
 
             if (statusText && title) {

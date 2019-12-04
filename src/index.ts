@@ -21,7 +21,7 @@ export * from './ontodia/data/sparql/graphBuilder';
 export * from './ontodia/data/sparql/sparqlGraphBuilder';
 export { DIAGRAM_CONTEXT_URL_V1 } from './ontodia/data/schema';
 
-export { RestoreGeometry } from './ontodia/diagram/commands';
+export { RestoreGeometry, setElementExpanded, setElementData, setLinkData } from './ontodia/diagram/commands';
 export {
     Element, ElementEvents, ElementTemplateState, Link, LinkEvents, LinkTemplateState, LinkVertex, Cell, LinkDirection
 } from './ontodia/diagram/elements';

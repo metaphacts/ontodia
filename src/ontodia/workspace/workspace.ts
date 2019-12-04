@@ -14,6 +14,7 @@ import { PaperArea, ZoomOptions, PointerEvent, PointerUpEvent } from '../diagram
 import { DiagramView, IriClickHandler, LabelLanguageSelector, WidgetAttachment } from '../diagram/view';
 
 import { AsyncModel, GroupBy } from '../editor/asyncModel';
+import { AuthoringState } from '../editor/authoringState';
 import { EditorController, PropertyEditor } from '../editor/editorController';
 
 import { EventObserver } from '../viewUtils/events';
@@ -432,7 +433,7 @@ class ToolbarWrapper extends Component<ToolbarWrapperProps, {}> {
         const editor = workspace.getEditor();
         const {languages, onSaveDiagram, onPersistChanges, hidePanels, toolbar} = workspace.props;
 
-        const canPersistChanges = onPersistChanges ? editor.authoringState.events.length > 0 : undefined;
+        const canPersistChanges = onPersistChanges ? !AuthoringState.isEmpty(editor.authoringState) : undefined;
         const canSaveDiagram = !canPersistChanges;
 
         const defaultToolbarProps: ToolbarProps = {

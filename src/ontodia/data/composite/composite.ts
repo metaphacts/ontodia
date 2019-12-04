@@ -237,10 +237,7 @@ export class CompositeDataProvider implements DataProvider {
     }
 }
 
-type OperationParams<K> = any;
-type OperationResult<K> = any;
-// TODO: replace on compiler update
-// type OperationParams<K extends keyof DataProvider> =
-//     DataProvider[K] extends (params: infer P) => any ? P : never;
-// type OperationResult<K extends keyof DataProvider> =
-//     ReturnType<DataProvider[K]> extends Promise<infer R> ? R : never;
+type OperationParams<K extends keyof DataProvider> =
+    DataProvider[K] extends (params: infer P) => any ? P : never;
+type OperationResult<K extends keyof DataProvider> =
+    ReturnType<DataProvider[K]> extends Promise<infer R> ? R : never;

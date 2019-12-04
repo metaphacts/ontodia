@@ -228,7 +228,7 @@ function applyRedrawRequests(
             const request = (batch.requests.get(elementId) || RedrawFlags.None) | batch.forAll;
             if (request & RedrawFlags.Render) {
                 state = {
-                    element: state.element,
+                    element,
                     templateProps:
                         (request & RedrawFlags.RecomputeTemplate) === RedrawFlags.RecomputeTemplate
                         ? computeTemplateProps(state.element, view) : state.templateProps,

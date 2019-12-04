@@ -46,3 +46,8 @@ export interface MetadataApi {
 
     generateNewElementIri(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementIri>;
 }
+
+export interface DirectedLinkType {
+    readonly linkTypeIri: LinkTypeIri;
+    readonly direction: LinkDirection;
+}

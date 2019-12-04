@@ -355,11 +355,11 @@ function defaultSelectLabel(
     let defaultValue: LocalizedString;
     let englishValue: LocalizedString;
     for (const text of texts) {
-        if (text.lang === language) {
+        if (text.language === language) {
             return text;
-        } else if (text.lang === '') {
+        } else if (text.language === '') {
             defaultValue = text;
-        } else if (text.lang === 'en') {
+        } else if (text.language === 'en') {
             englishValue = text;
         }
     }
@@ -371,6 +371,6 @@ function defaultSelectLabel(
 }
 
 function resolveLabel(label: LocalizedString | undefined, fallbackIri: string): string {
-    if (label) { return label.text; }
+    if (label) { return label.value; }
     return getUriLocalName(fallbackIri) || fallbackIri;
 }

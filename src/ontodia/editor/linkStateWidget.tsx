@@ -23,7 +23,6 @@ export interface Props extends PaperWidgetProps {
 }
 
 const CLASS_NAME = `ontodia-authoring-state`;
-
 const LINK_LABEL_MARGIN = 5;
 
 export class LinkStateWidget extends React.Component<Props, {}> {
@@ -102,22 +101,22 @@ export class LinkStateWidget extends React.Component<Props, {}> {
 
         return editor.model.links.map(link => {
             let renderedState: JSX.Element | null = null;
-            const state = editor.authoringState.index.links.get(link.data);
+            const state = editor.authoringState.links.get(link.data);
             if (state) {
                 const onCancel = () => editor.discardChange(state);
 
                 let statusText: string;
                 let title: string;
 
-                if (state.type === AuthoringKind.ChangeLink && !state.before) {
-                    statusText = 'New';
-                    title = 'Revert creation of the link';
-                } else if (state.type === AuthoringKind.ChangeLink && state.before) {
-                    statusText = 'Change';
-                    title = 'Revert all changes in properties of the link';
-                } else if (state.type === AuthoringKind.DeleteLink) {
+                if (state.deleted) {
                     statusText = 'Delete';
                     title = 'Revert deletion of the link';
+                } else if (!state.before) {
+                    statusText = 'New';
+                    title = 'Revert creation of the link';
+                } else {
+                    statusText = 'Change';
+                    title = 'Revert all changes in properties of the link';
                 }
 
                 if (statusText && title) {
@@ -164,15 +163,18 @@ export class LinkStateWidget extends React.Component<Props, {}> {
                         strokeDasharray={'8 8'} />
                 );
             }
-            const state = editor.authoringState.index.links.get(link.data);
+            const event = editor.authoringState.links.get(link.data);
             const isDeletedLink = AuthoringState.isDeletedLink(editor.authoringState, link.data);
-            if (state || isDeletedLink) {
+            const isUncertainLink = AuthoringState.isUncertainLink(editor.authoringState, link.data);
+            if (event || isDeletedLink || isUncertainLink) {
                 const path = this.calculateLinkPath(link);
                 let color: string;
                 if (isDeletedLink) {
                     color = 'red';
-                } else if (state && state.type === AuthoringKind.ChangeLink) {
-                    color = state.before ? 'blue' : 'green';
+                } else if (isUncertainLink) {
+                    color = 'blue';
+                } else if (event && event.type === AuthoringKind.ChangeLink) {
+                    color = event.before ? 'blue' : 'green';
                 }
                 return (
                     <path key={link.id} d={path} fill={'none'} stroke={color} strokeWidth={5} strokeOpacity={0.5} />

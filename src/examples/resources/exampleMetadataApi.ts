@@ -1,9 +1,7 @@
 import {
-    ElementModel, LinkModel, ElementTypeIri, LinkTypeIri, PropertyTypeIri, MetadataApi, CancellationToken,
-    AuthoringKind, LinkChange, ValidationApi, ValidationEvent, ElementError, LinkError,
-    LinkDirection, ElementIri,
+    ElementModel, LinkModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkDirection,
+    MetadataApi, ValidationApi, ValidationEvent, ElementError, LinkError, DirectedLinkType, CancellationToken,
 } from '../../index';
-import { DirectedLinkType } from '../../ontodia/diagram/elements';
 
 const OWL_PREFIX = 'http://www.w3.org/2002/07/owl#';
 const RDFS_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
@@ -126,23 +124,21 @@ export class ExampleValidationApi implements ValidationApi {
     async validate(event: ValidationEvent): Promise<Array<ElementError | LinkError>> {
         const errors: Array<ElementError | LinkError> = [];
         if (event.target.types.indexOf(owl.class) >= 0) {
-            event.state.events
-                .filter((e): e is LinkChange =>
-                    e.type === AuthoringKind.ChangeLink &&
-                    !e.before && e.after.sourceId === event.target.id
-                ).forEach(newLinkEvent => {
+            event.state.links.forEach(e => {
+                if (!e.before && e.after.sourceId === event.target.id) {
                     errors.push({
                         type: 'link',
-                        target: newLinkEvent.after,
+                        target: e.after,
                         message: 'Cannot add any new link from a Class',
                     });
-                    const linkType = event.model.createLinkType(newLinkEvent.after.linkTypeId);
+                    const linkType = event.model.createLinkType(e.after.linkTypeId);
                     errors.push({
                         type: 'element',
                         target: event.target.id,
                         message: `Cannot create <${linkType.id}> link from a Class`,
                     });
-                });
+                }
+            });
         }
 
         await delay();
