@@ -290,7 +290,11 @@ export class EditorController {
 
     private onCellsChanged() {
         if (this.selection.length === 0) { return; }
-        const newSelection = this.selection.filter(el => this.model.getElement(el.id));
+        const newSelection = this.selection.filter(item =>
+            item instanceof Element ? this.model.getElement(item.id) :
+            item instanceof Link ? this.model.getLinkById(item.id) :
+            false
+        );
         if (newSelection.length < this.selection.length) {
             this.setSelection(newSelection);
         }
@@ -327,7 +331,6 @@ export class EditorController {
             this.selection.filter(item => item instanceof Element),
             MoveDirection.ToEnd,
         ));
-        this.view.performSyncUpdate();
     }
 
     private renderDefaultHalo() {
@@ -458,45 +461,45 @@ export class EditorController {
                 }}
                 onChangeLink={(data: LinkModel) => {
                     this.removeTemporaryLink(link);
-                    const newLink = createLinkAndChangeDirection({
-                        data,
-                        originalData: link.data,
-                        sourceId: link.sourceId,
-                        targetId: link.targetId,
-                    });
+                    const newLink = makeLinkWithDirection(link, data);
                     link = this.createNewLink({link: newLink, temporary: true});
                 }}
                 onApply={(elementData: ElementModel, linkData: LinkModel) => {
                     const isNewElement = target.iri === elementData.id;
 
-                    const position = target.position;
                     this.removeTemporaryElement(target);
                     this.removeTemporaryLink(link);
 
                     const batch = this.model.history.startBatch();
 
-                    const newTarget = this.model.createElement(elementData);
-                    newTarget.setPosition(position);
-
+                    this.model.addElement(target);
                     if (isNewElement) {
-                        newTarget.setExpanded(true);
-                        this.addNewEntity(newTarget.data);
+                        target.setExpanded(true);
+                        this.addNewEntity(target.data);
                     } else {
                         this.model.requestLinksOfType();
                     }
-                    const newLink = createLinkAndChangeDirection({
-                        data: linkData,
-                        originalData: link.data,
-                        sourceId: source.id,
-                        targetId: newTarget.id,
-                    });
+
+                    const newLink = makeLinkWithDirection(
+                        new Link({
+                            typeId: link.typeId,
+                            sourceId: source.id,
+                            targetId: target.id,
+                            data: {
+                                ...link.data,
+                                sourceId: source.iri,
+                                targetId: target.iri,
+                            }
+                        }),
+                        linkData
+                    );
                     this.createNewLink({link: newLink});
 
                     batch.store();
 
                     this.hideDialog();
                     if (isNewElement) {
-                        this.showEditEntityForm(newTarget);
+                        this.showEditEntityForm(target);
                     }
                 }}
                 onCancel={onCancel}/>
@@ -524,12 +527,7 @@ export class EditorController {
                 onChange={(data: LinkModel) => {
                     if (this.temporaryState.links.has(link.data)) {
                         this.removeTemporaryLink(link);
-                        const newLink = createLinkAndChangeDirection({
-                            data,
-                            originalData: link.data,
-                            sourceId: link.sourceId,
-                            targetId: link.targetId,
-                        });
+                        const newLink = makeLinkWithDirection(link, data);
                         this.showEditLinkForm(
                             this.createNewLink({link: newLink, temporary: true})
                         );
@@ -538,12 +536,7 @@ export class EditorController {
                 onApply={(data: LinkModel) => {
                     if (this.temporaryState.links.has(link.data)) {
                         this.removeTemporaryLink(link);
-                        const newLink = createLinkAndChangeDirection({
-                            data,
-                            originalData: link.data,
-                            sourceId: link.sourceId,
-                            targetId: link.targetId,
-                        });
+                        const newLink = makeLinkWithDirection(link, data);
                         this.createNewLink({link: newLink});
                     } else {
                         this.changeLink(link.data, data);
@@ -612,7 +605,7 @@ export class EditorController {
                 offset={offset} calculatePosition={calculatePosition} onClose={onClose}>{content}</Dialog>
         );
         this.view.setPaperWidget({key: 'dialog', widget: dialog, attachment: WidgetAttachment.OverElements});
-        this.source.trigger('toggleDialog', {isOpened: false});
+        this.source.trigger('toggleDialog', {isOpened: true});
     }
 
     hideDialog() {
@@ -770,7 +763,11 @@ export class EditorController {
         batch.store();
     }
 
-    createNewLink({link: base, temporary}: { link: Link; temporary?: boolean }): Link {
+    createNewLink(params: {
+        link: Link;
+        temporary?: boolean;
+    }): Link {
+        const {link: base, temporary} = params;
         const existingLink = this.model.findLink(base.typeId, base.sourceId, base.targetId);
         if (existingLink) {
             throw Error('The link already exists');
@@ -778,7 +775,11 @@ export class EditorController {
 
         const batch = this.model.history.startBatch('Create new link');
 
-        this.model.createLinks(base.data);
+        const addedLink = this.model.addLink(base);
+        if (!temporary) {
+            this.model.createLinks(base.data);
+        }
+
         const links = this.model.links.filter(link => sameLink(link.data, base.data));
         if (links.length > 0) {
             if (temporary) {
@@ -796,7 +797,7 @@ export class EditorController {
             batch.discard();
         }
 
-        return links.find(({sourceId, targetId}) => sourceId === base.sourceId && targetId === base.targetId);
+        return addedLink;
     }
 
     changeLink(oldData: LinkModel, newData: LinkModel) {
@@ -860,6 +861,9 @@ export class EditorController {
 
     private startEditing(params: { target: Element | Link; mode: EditLayerMode; point: Vector }) {
         const {target, mode, point} = params;
+        const onFinishEditing = () => {
+            this.view.setPaperWidget({key: 'editLayer', widget: undefined, attachment: WidgetAttachment.OverElements});
+        };
         const editLayer = (
             <EditLayer view={this.view}
                 editor={this}
@@ -867,13 +871,10 @@ export class EditorController {
                 mode={mode}
                 target={target}
                 point={point}
+                onFinishEditing={onFinishEditing}
             />
         );
         this.view.setPaperWidget({key: 'editLayer', widget: editLayer, attachment: WidgetAttachment.OverElements});
-    }
-
-    finishEditing() {
-        this.view.setPaperWidget({key: 'editLayer', widget: undefined, attachment: WidgetAttachment.OverElements});
     }
 
     private addNewEntity(element: ElementModel) {
@@ -981,6 +982,11 @@ function placeElements(
     view: DiagramView, dragged: ReadonlyArray<ElementIri | ElementModel>, position: Vector
 ): Element[] {
     const elements = dragged.map(item => view.model.createElement(item));
+    for (const element of elements) {
+        // intialally anchor element at top left corner to preserve canvas scroll state,
+        // measure it and only then move to center-anchored position
+        element.setPosition(position);
+    }
     view.performSyncUpdate();
 
     let {x, y} = position;
@@ -1003,16 +1009,16 @@ function placeElements(
     return elements;
 }
 
-export function createLinkAndChangeDirection({data, originalData, sourceId, targetId}: {
-    data: LinkModel;
-    originalData: LinkModel;
-    sourceId: string;
-    targetId: string;
-}) {
-    // some of the ids can be totally different because of generating IRI so we use "OR" instead of "AND"
-    const directionHasChanged = originalData.sourceId === data.targetId || originalData.targetId === data.sourceId;
-    if (directionHasChanged) {
-        [sourceId, targetId] = [targetId, sourceId];
+function makeLinkWithDirection(original: Link, data: LinkModel): Link {
+    if (!(data.sourceId === original.data.sourceId || data.sourceId === original.data.targetId)) {
+        throw new Error('New link source IRI is unrelated to original link');
     }
+    if (!(data.targetId === original.data.sourceId || data.targetId === original.data.targetId)) {
+        throw new Error('New link target IRI is unrelated to original link');
+    }
+    const sourceId = data.sourceId === original.data.sourceId
+        ? original.sourceId : original.targetId;
+    const targetId = data.targetId === original.data.targetId
+        ? original.targetId : original.sourceId;
     return new Link({typeId: data.linkTypeId, sourceId, targetId, data});
 }

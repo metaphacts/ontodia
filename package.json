@@ -1,6 +1,6 @@
 {
   "name": "ontodia",
-  "version": "0.10.0",
+  "version": "0.12.0",
   "description": "Ontodia Library",
   "repository": {
     "type": "git",
@@ -30,8 +30,8 @@
     "test": "npm run build-all && npm run lint",
     "typings": "npm run _typings-tsc && npm run _typings-dts-bundle",
     "lint": "./node_modules/.bin/tslint -c tslint.ci.json --project tsconfig.json --exclude '**/*.d.ts' -t stylish",
-    "_typings-tsc": "./node_modules/.bin/tsc --declaration --emitDeclarationOnly --outDir dist/temp/dts",
-    "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --main dist/temp/dts/index.d.ts --name ontodia --out ../../ontodia.d.ts",
+    "_typings-tsc": "./node_modules/.bin/tsc --project tsconfig.typings.json",
+    "_typings-dts-bundle": "./node_modules/.bin/dts-bundle --configJson dts-bundle.json",
     "_webpack": "./node_modules/.bin/webpack"
   },
   "dependencies": {
@@ -57,7 +57,7 @@
     "dts-bundle": "0.7.2",
     "es6-promise": "4.2.4",
     "html-webpack-plugin": "3.2.0",
-    "node-sass": "4.9.3",
+    "node-sass": "4.13.0",
     "raw-loader": "0.5.1",
     "rdf-parser-jsonld": "0.3.3",
     "rdf-parser-n3": "0.3.0",

@@ -401,7 +401,7 @@ export class PaperArea extends React.Component<PaperAreaProps, State> {
         return {paperWidth, paperHeight, originX, originY};
     }
 
-    adjustPaper = (callback?: () => void) => {
+    private adjustPaper = (callback?: () => void) => {
         const {clientWidth, clientHeight} = this.area;
         const adjusted: Partial<State> = {
             ...this.computeAdjustedBox(),

@@ -249,8 +249,10 @@ export class ClassTree extends React.Component<ClassTreeProps, State> {
 
     private async queryCreatableTypes(typeIris: Set<ElementTypeIri>, ct: CancellationToken) {
         try {
-            const result = await this.props.editor.metadataApi.filterConstructibleTypes(typeIris, ct);
-            if (ct.aborted) { return; }
+            const result = await CancellationToken.mapCancelledToNull(
+                ct, this.props.editor.metadataApi.filterConstructibleTypes(typeIris, ct)
+            );
+            if (result === null) { return; }
             this.setState((state): State => {
                 const constructibleClasses = cloneMap(state.constructibleClasses);
                 typeIris.forEach(type => {

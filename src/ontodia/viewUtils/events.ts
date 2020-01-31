@@ -1,5 +1,3 @@
-import { createNumberMap, createStringMap, hasOwnProperty } from './collections';
-
 export type Listener<Data, Key extends keyof Data> = (data: Data[Key], key: Key) => void;
 export type AnyListener<Data> = (data: Partial<Data>, key: string) => void;
 export type Unsubscribe = () => void;
@@ -22,14 +20,14 @@ export interface Events<Data> {
 }
 
 export class EventSource<Data> implements Events<Data> {
-    private listeners = createStringMap<any>() as { [K in keyof Data]?: Array<Listener<Data, K>> };
+    private listeners = new Map<keyof Data, Array<Listener<Data, any>>>();
     private anyListeners: Array<AnyListener<Data>> | undefined;
 
     on<Key extends keyof Data>(eventKey: Key, listener: Listener<Data, Key>): void {
-        let listeners = this.listeners[eventKey];
+        let listeners = this.listeners.get(eventKey);
         if (!listeners) {
             listeners = [];
-            this.listeners[eventKey] = listeners;
+            this.listeners.set(eventKey, listeners);
         }
         listeners.push(listener);
     }
@@ -44,7 +42,7 @@ export class EventSource<Data> implements Events<Data> {
     }
 
     off<Key extends keyof Data>(eventKey: Key, listener: Listener<Data, Key>): void {
-        const listeners = this.listeners[eventKey];
+        const listeners = this.listeners.get(eventKey);
         if (!listeners) { return; }
         const index = listeners.indexOf(listener);
         if (index >= 0) {
@@ -62,7 +60,7 @@ export class EventSource<Data> implements Events<Data> {
     }
 
     trigger<Key extends keyof Data>(eventKey: Key, data: Data[Key]): void {
-        const listeners = this.listeners[eventKey];
+        const listeners = this.listeners.get(eventKey);
         if (listeners) {
             for (const listener of listeners) {
                 listener(data, eventKey);
@@ -78,7 +76,7 @@ export class EventSource<Data> implements Events<Data> {
 }
 
 export class EventObserver {
-    private unsubscribeByKey = createStringMap<Unsubscribe[]>();
+    private unsubscribeByKey = new Map<string, Unsubscribe[]>();
     private onDispose: Array<Unsubscribe> = [];
 
     listen<Data, Key extends keyof Data>(
@@ -115,13 +113,11 @@ export class EventObserver {
         }
         this.onDispose.length = 0;
 
-        for (const key in this.unsubscribeByKey) {
-            if (!hasOwnProperty(this.unsubscribeByKey, key)) { continue; }
-            const unsubscribers = this.unsubscribeByKey[key];
+        this.unsubscribeByKey.forEach(unsubscribers => {
             for (const unsubscribe of unsubscribers) {
                 unsubscribe();
             }
-        }
-        this.unsubscribeByKey = {};
+        });
+        this.unsubscribeByKey.clear();
     }
 }

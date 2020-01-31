@@ -7,12 +7,11 @@ import { Vector, boundsOf } from '../diagram/geometry';
 import { PaperWidgetProps } from '../diagram/paperArea';
 
 import { EditorController } from '../editor/editorController';
-import { AuthoringState, AuthoringKind } from '../editor/authoringState';
+import { AuthoringState } from '../editor/authoringState';
 
-import { AnyListener, Unsubscribe, EventObserver } from '../viewUtils/events';
-import { Cancellation, Debouncer } from '../viewUtils/async';
+import { AnyListener, EventObserver } from '../viewUtils/events';
+import { Cancellation, CancellationToken, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
-import { ElementIri } from '../..';
 
 export interface Props extends PaperWidgetProps {
     target: DiagramElement | undefined;
@@ -94,8 +93,11 @@ export class Halo extends React.Component<Props, State> {
         } else {
             this.setState({canLink: undefined});
             const signal = this.queryCancellation.signal;
-            metadataApi.canLinkElement(target.data, signal).then(canLink => {
-                if (signal.aborted) { return; }
+            CancellationToken.mapCancelledToNull(
+                signal,
+                metadataApi.canLinkElement(target.data, signal)
+            ).then(canLink => {
+                if (canLink === null) { return; }
                 if (this.props.target.iri === target.iri) {
                     this.setState({canLink});
                 }

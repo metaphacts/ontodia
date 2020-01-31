@@ -6,7 +6,6 @@ import {
     LinkTemplate, LinkStyle, LinkLabel as LinkLabelProperties, LinkMarkerStyle, RoutedLink, RoutedLinks,
 } from '../customization/props';
 import { Debouncer } from '../viewUtils/async';
-import { createStringMap } from '../viewUtils/collections';
 import { EventObserver } from '../viewUtils/events';
 
 import { restoreCapturedLinkGeometry } from './commands';
@@ -37,7 +36,7 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
 
     private updateState = UpdateRequest.Partial;
     /** List of link IDs to update at the next flush event */
-    private scheduledToUpdate = createStringMap<true>();
+    private scheduledToUpdate = new Set<string>();
 
     constructor(props: LinkLayerProps, context: any) {
         super(props, context);
@@ -46,6 +45,11 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     componentDidMount() {
         const {view} = this.props;
 
+        const scheduleUpdateElementLinks = (element: DiagramElement) => {
+            for (const link of element.links) {
+                this.scheduleUpdateLink(link.id);
+            }
+        };
         this.listener.listen(view.events, 'changeLanguage', this.scheduleUpdateAll);
         this.listener.listen(view.events, 'changeHighlight', this.scheduleUpdateAll);
         const updateChangedRoutes = (changed: RoutedLinks, previous: RoutedLinks) => {
@@ -60,13 +64,24 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
             updateChangedRoutes(newRoutes, previous);
             updateChangedRoutes(previous, newRoutes);
         });
-        this.listener.listen(view.model.events, 'changeCells', this.scheduleUpdateAll);
+        this.listener.listen(view.model.events, 'changeCells', e => {
+            if (e.updateAll) {
+                this.scheduleUpdateAll();
+            } else {
+                if (e.changedElement) {
+                    scheduleUpdateElementLinks(e.changedElement);
+                }
+                if (e.changedLinks) {
+                    for (const link of e.changedLinks) {
+                        this.scheduleUpdateLink(link.id);
+                    }
+                }
+            }
+        });
         this.listener.listen(view.model.events, 'elementEvent', ({data}) => {
             const elementEvent = data.changePosition || data.changeSize;
             if (!elementEvent) { return; }
-            for (const link of elementEvent.source.links) {
-                this.scheduleUpdateLink(link.id);
-            }
+            scheduleUpdateElementLinks(elementEvent.source);
         });
         this.listener.listen(view.model.events, 'linkEvent', ({data}) => {
             const linkEvent = (
@@ -105,25 +120,25 @@ export class LinkLayer extends Component<LinkLayerProps, {}> {
     private scheduleUpdateAll = () => {
         if (this.updateState !== UpdateRequest.All) {
             this.updateState = UpdateRequest.All;
-            this.scheduledToUpdate = createStringMap<true>();
+            this.scheduledToUpdate = new Set<string>();
         }
         this.delayedUpdate.call(this.performUpdate);
     }
 
     private scheduleUpdateLink(linkId: string) {
         if (this.updateState === UpdateRequest.Partial) {
-            this.scheduledToUpdate[linkId] = true;
+            this.scheduledToUpdate.add(linkId);
         }
         this.delayedUpdate.call(this.performUpdate);
     }
 
     private popShouldUpdatePredicate(): (model: DiagramLink) => boolean {
         const {updateState, scheduledToUpdate} = this;
-        this.scheduledToUpdate = createStringMap<true>();
+        this.scheduledToUpdate = new Set<string>();
         this.updateState = UpdateRequest.Partial;
         return updateState === UpdateRequest.All
             ? () => true
-            : link => Boolean(scheduledToUpdate[link.id]);
+            : link => scheduledToUpdate.has(link.id);
     }
 
     private performUpdate = () => {

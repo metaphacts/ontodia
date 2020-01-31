@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, DemoDataProvider, ToolbarProps } from '../index';
+import { Workspace, WorkspaceProps, DemoDataProvider, ToolbarProps } from '../src/ontodia/index';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
 const CLASSES = require<any>('./resources/classes.json');

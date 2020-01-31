@@ -1,11 +1,17 @@
+$toolbarHeight: 30px;
+
 .ontodia-toolbar {
   &__language-selector {
-    padding: 5px;
-    margin-top: 4px;
+    margin-left: 5px;
+    margin-right: 5px;
 
     > label {
       margin-right: 5px;
       > span { vertical-align: middle; }
+    }
+
+    > select {
+      height: $toolbarHeight;
     }
   }
 
@@ -42,13 +48,11 @@
   &__toggle-right.active:after {
     background-image: url('../images/right-panel-active.svg');
   }
-}
 
-.ontodia-toolbar {
   &__layout-group {
-    margin: 5px;
-    height: 30px;
     float: left;
+    margin-left: 5px;
+    height: $toolbarHeight;
   
     > label {
       margin-right: 5px;
@@ -58,19 +62,6 @@
       height: 100%;
     }
   }
-}
-
-.ontodia-toolbar {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.ontodia-toolbar > .ontodia-btn-group {
-  margin-left: 10px;
-}
-
-.ontodia-toolbar > .ontodia-btn-group > button {
-  margin-top: 5px;
-  margin-bottom: 5px;
 }
 
 .ontodia-toolbar .ontodia-toolbar__undo,

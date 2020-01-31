@@ -8,6 +8,16 @@ declare module "n3" {
 
     function Parser(): N3Parser;
 
+    interface WriterOptions {
+        prefixes: { [prefix: string]: string };
+    }
+
+    class Writer {
+        constructor(options: WriterOptions);
+        addTriple(triple: Triple): void;
+        end(callback: (error: Error, result: string) => void): void;
+    }
+
     interface Triple {
         subject: string;
         predicate: string;

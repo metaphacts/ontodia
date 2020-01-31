@@ -1,12 +1,12 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, LinkTemplate } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, LinkTemplate } from '../src/ontodia/index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 
-const certificateIcon = require<string>('../../images/font-awesome/certificate-solid.svg');
-const cogIcon = require<string>('../../images/font-awesome/cog-solid.svg');
+const certificateIcon = require<string>('../images/font-awesome/certificate-solid.svg');
+const cogIcon = require<string>('../images/font-awesome/cog-solid.svg');
 
 const CUSTOM_LINK_TEMPLATE: LinkTemplate = {
     markerSource: {

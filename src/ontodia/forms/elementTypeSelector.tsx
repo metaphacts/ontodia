@@ -10,7 +10,7 @@ import { MetadataApi } from '../data/metadataApi';
 import { createRequest } from '../widgets/instancesSearch';
 import { ListElementView } from '../widgets/listElementView';
 
-import { Cancellation } from '../viewUtils/async';
+import { Cancellation, CancellationToken } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-edit-form';
@@ -64,14 +64,16 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         this.newIriCancellation.abort();
     }
 
-    private fetchPossibleElementTypes() {
+    private async fetchPossibleElementTypes() {
         const {view, metadataApi, source} = this.props;
         if (!metadataApi) { return; }
-        metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal).then(elementTypes => {
-            if (this.cancellation.signal.aborted) { return; }
-            elementTypes.sort(makeElementTypeComparatorByLabel(view));
-            this.setState({elementTypes});
-        });
+        const elementTypes = await CancellationToken.mapCancelledToNull(
+            this.cancellation.signal,
+            metadataApi.typesOfElementsDraggedFrom(source, this.cancellation.signal)
+        );
+        if (elementTypes === null) { return; }
+        elementTypes.sort(makeElementTypeComparatorByLabel(view));
+        this.setState({elementTypes});
     }
 
     private searchExistingElements() {
@@ -106,10 +108,11 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         const type = this.props.editor.model.createClass(classId);
         const typeName = this.props.view.formatLabel(type.label, type.id);
         const types = [classId];
-        const newId = await metadataApi.generateNewElementIri(types, signal);
-        if (signal.aborted) {
-            return;
-        }
+        const newId = await CancellationToken.mapCancelledToNull(
+            signal,
+            metadataApi.generateNewElementIri(types, signal)
+        );
+        if (newId === null) { return; }
         this.setState({isLoading: false});
         onChange({
             ...elementValue.value,

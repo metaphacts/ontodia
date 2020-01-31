@@ -35,14 +35,14 @@
     animation: ontodia-progress-bar-stripes 2s linear infinite;
   }
 
+  &--error &__bar {
+    background-color: #E72F2F;
+  }
+
   &--loading,
   &--error {
     /* property name | duration | delay */
     transition: height 300ms 300ms;
-  }
-
-  &--error {
-    background-color: #E72F2F;
   }
 
   &--completed {

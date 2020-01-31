@@ -46,15 +46,21 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
         this.listener.listen(model.events, 'changeSize', () =>
             this.forceUpdate()
         );
-        this.listener.listen(editor.events, 'changeAuthoringState', () =>
-            this.setState({state: editor.authoringState.elements.get(model.iri)})
-        );
-        this.listener.listen(editor.events, 'changeValidationState', () =>
-            this.setState({validation: editor.validationState.elements.get(model.iri)})
-        );
-        this.listener.listen(editor.events, 'changeTemporaryState', () =>
-            this.setState({isTemporary: editor.temporaryState.elements.has(model.iri)})
-        );
+        this.listener.listen(editor.events, 'changeAuthoringState', () => {
+            const state = editor.authoringState.elements.get(model.iri);
+            if (this.state.state === state) { return; }
+            this.setState({state});
+        });
+        this.listener.listen(editor.events, 'changeValidationState', () => {
+            const validation = editor.validationState.elements.get(model.iri);
+            if (this.state.validation === validation) { return; }
+            this.setState({validation});
+        });
+        this.listener.listen(editor.events, 'changeTemporaryState', () => {
+            const isTemporary = editor.temporaryState.elements.has(model.iri);
+            if (this.state.isTemporary === isTemporary) { return; }
+            this.setState({isTemporary});
+        });
         this.listener.listen(model.events, 'changeData', event => {
             if (event.previous.id !== model.iri) {
                 this.setState({

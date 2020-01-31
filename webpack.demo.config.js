@@ -9,13 +9,13 @@ var PROP_SUGGEST = process.env.PROP_SUGGEST;
 
 var aliases = {};
 if (!SUPPORT_IE) {
-    const emptyModule = path.resolve(__dirname, 'src', 'emptyModule.ts');
+    const emptyModule = path.resolve(__dirname, 'src', 'ontodia', 'emptyModule.ts');
     aliases['canvg-fixed'] = emptyModule;
     aliases['es6-promise/auto'] = emptyModule;
 }
 
-var examplesDir = path.join(__dirname, 'src', 'examples');
-var htmlTemplatePath = path.join(__dirname, 'src', 'examples', 'template.ejs');
+var examplesDir = path.join(__dirname, 'examples');
+var htmlTemplatePath = path.join(__dirname, 'examples', 'template.ejs');
 
 module.exports = {
     mode: 'development',

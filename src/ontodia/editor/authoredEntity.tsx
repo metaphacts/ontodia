@@ -7,7 +7,7 @@ import { ElementModel } from '../data/model';
 import { DiagramView } from '../diagram/view';
 import { PaperAreaContextTypes, PaperAreaContextWrapper } from '../diagram/paperArea';
 
-import { Cancellation } from '../viewUtils/async';
+import { Cancellation, CancellationToken } from '../viewUtils/async';
 import { Listener } from '../viewUtils/events';
 
 import { WorkspaceContextTypes, WorkspaceContextWrapper } from '../workspace/workspaceContext';
@@ -101,8 +101,11 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
         const {editor} = this.context.ontodiaWorkspace;
         const signal = this.queryCancellation.signal;
         this.setState({canEdit: undefined});
-        editor.metadataApi.canEditElement(data, signal).then(canEdit => {
-            if (signal.aborted) { return; }
+        CancellationToken.mapCancelledToNull(
+            signal,
+            editor.metadataApi.canEditElement(data, signal),
+        ).then(canEdit => {
+            if (canEdit === null) { return; }
             this.setState({canEdit});
         });
     }
@@ -111,8 +114,11 @@ export class AuthoredEntity extends React.Component<AuthoredEntityProps, State> 
         const {editor} = this.context.ontodiaWorkspace;
         const signal = this.queryCancellation.signal;
         this.setState({canDelete: undefined});
-        editor.metadataApi.canDeleteElement(data, signal).then(canDelete => {
-            if (signal.aborted) { return; }
+        CancellationToken.mapCancelledToNull(
+            signal,
+            editor.metadataApi.canDeleteElement(data, signal)
+        ).then(canDelete => {
+            if (canDelete === null) { return; }
             this.setState({canDelete});
         });
     }

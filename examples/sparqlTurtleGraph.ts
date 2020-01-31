@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, RDFDataProvider, GraphBuilder } from '../index';
+import { Workspace, WorkspaceProps, RDFDataProvider, GraphBuilder } from '../src/ontodia/index';
 
 import { onPageLoad } from './common';
 

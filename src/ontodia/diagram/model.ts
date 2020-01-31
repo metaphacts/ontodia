@@ -9,11 +9,11 @@ import {
     Element, ElementEvents, Link, LinkEvents, FatLinkType, FatLinkTypeEvents,
     FatClassModel, FatClassModelEvents, RichProperty,
 } from './elements';
-import { Graph } from './graph';
+import { Graph, CellsChangedEvent } from './graph';
 import { CommandHistory, Command } from './history';
 
 export interface DiagramModelEvents {
-    changeCells: {};
+    changeCells: CellsChangedEvent;
     elementEvent: AnyEvent<ElementEvents>;
     linkEvent: AnyEvent<LinkEvents>;
     linkTypeEvent: AnyEvent<FatLinkTypeEvents>;
@@ -69,8 +69,8 @@ export class DiagramModel {
     }
 
     subscribeGraph() {
-        this.graphListener.listen(this.graph.events, 'changeCells', () => {
-            this.source.trigger('changeCells', {});
+        this.graphListener.listen(this.graph.events, 'changeCells', e => {
+            this.source.trigger('changeCells', e);
         });
         this.graphListener.listen(this.graph.events, 'elementEvent', e => {
             this.source.trigger('elementEvent', e);
@@ -85,7 +85,7 @@ export class DiagramModel {
             this.source.trigger('classEvent', e);
         });
 
-        this.source.trigger('changeCells', {source: this});
+        this.source.trigger('changeCells', {updateAll: true});
     }
 
     reorderElements(compare: (a: Element, b: Element) => number) {
@@ -107,11 +107,14 @@ export class DiagramModel {
             : elementIriOrModel as ElementModel;
         data = {...data, id: data.id};
         const element = new Element({id: GenerateID.forElement(), data, group});
+        this.addElement(element);
+        return element;
+    }
+
+    addElement(element: Element): void {
         this.history.execute(
             addElement(this.graph, element, [])
         );
-
-        return element;
     }
 
     removeElement(elementId: string) {

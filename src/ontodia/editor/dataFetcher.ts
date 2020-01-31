@@ -8,7 +8,6 @@ import { FatClassModel, FatLinkType, RichProperty } from '../diagram/elements';
 import { Graph } from '../diagram/graph';
 
 import { BufferingQueue } from '../viewUtils/async';
-import { hasOwnProperty } from '../viewUtils/collections';
 
 export class DataFetcher {
     private classQueue = new BufferingQueue<ElementTypeIri>(classIds => {
@@ -77,7 +76,7 @@ export class DataFetcher {
 
     private onPropertyTypesLoaded = (propertyModels: { [propertyId: string]: PropertyModel }) => {
         for (const propId in propertyModels) {
-            if (!hasOwnProperty(propertyModels, propId)) { continue; }
+            if (!Object.prototype.hasOwnProperty.call(propertyModels, propId)) { continue; }
             const {id, label} = propertyModels[propId];
             const targetProperty = this.graph.getProperty(id);
             if (targetProperty) {

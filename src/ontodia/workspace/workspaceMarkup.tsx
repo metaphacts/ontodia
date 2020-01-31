@@ -4,7 +4,7 @@ import { ElementIri, ElementTypeIri, ElementModel } from '../data/model';
 
 import { Element } from '../diagram/elements';
 import { Vector } from '../diagram/geometry';
-import { DiagramView, DropOnPaperEvent } from '../diagram/view';
+import { DiagramView, DropOnPaperEvent, WidgetAttachment } from '../diagram/view';
 import { PaperArea, ZoomOptions } from '../diagram/paperArea';
 
 import { ClassTree } from '../widgets/classTree';
@@ -19,7 +19,7 @@ import {
 } from './workspaceContext';
 
 import { MetadataApi } from '../data/metadataApi';
-import { Cancellation } from '../viewUtils/async';
+import { Cancellation, CancellationToken } from '../viewUtils/async';
 
 import { WorkspaceLayout, WorkspaceLayoutType, WorkspaceLayoutNode } from './layout/layout';
 
@@ -66,15 +66,18 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         }
     }
 
-    private renderToolbar = () => {
-        const {hideToolbar, toolbar} = this.props;
-
-        if (hideToolbar) { return null; }
-
-        return <div className='ontodia__header'>{toolbar}</div>;
+    private addToolbarWidgetToPaper() {
+        const {hideToolbar, view, toolbar} = this.props;
+        if (!hideToolbar) {
+            view.setPaperWidget({
+                key: 'toolbar',
+                widget: <ToolbarWidget>{toolbar}</ToolbarWidget>,
+                attachment: WidgetAttachment.Viewport,
+            });
+        }
     }
 
-    private onCreateInstance = async (classId: ElementTypeIri, position: Vector) => {
+    private onCreateInstance = async (classId: ElementTypeIri, position?: Vector) => {
         const {editor, view, model, metadataApi} = this.props;
         await forceNonReactExecutionContext();
         const batch = model.history.startBatch();
@@ -85,8 +88,11 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         const types = [classId];
         const signal = this.cancellation.signal;
 
-        const newEntityIri = await metadataApi.generateNewElementIri(types, signal);
-        if (signal.aborted) { return; }
+        const newEntityIri = await CancellationToken.mapCancelledToNull(
+            signal,
+            metadataApi.generateNewElementIri(types, signal)
+        );
+        if (newEntityIri === null) { return; }
         const elementModel: ElementModel = {
             id: newEntityIri,
             types,
@@ -94,8 +100,10 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
             properties: {},
         };
         const element = editor.createNewEntity({elementModel});
-        view.performSyncUpdate();
         const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
+        element.setPosition(targetPosition);
+
+        view.performSyncUpdate();
         centerElementToPosition(element, targetPosition);
 
         batch.store();
@@ -195,7 +203,6 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         };
         return (
             <div ref={e => this.element = e} className='ontodia'>
-                {this.renderToolbar()}
                 <div className='ontodia__workspace'>
                     <WorkspaceLayout layout={workspaceLayout} _onStartResize={direction =>
                         this.untilMouseUp({
@@ -211,6 +218,7 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
 
     componentDidMount() {
         document.addEventListener('mouseup', this.onDocumentMouseUp);
+        this.addToolbarWidgetToPaper();
     }
 
     componentWillUnmount() {
@@ -262,6 +270,16 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         if (iris.length > 0) {
             this.props.editor.onDragDrop(iris, paperPosition);
         }
+    }
+}
+
+class ToolbarWidget extends React.Component<{ children: JSX.Element }> {
+    render() {
+        return (
+            <div className='ontodia__toolbar-widget'>
+                {this.props.children}
+            </div>
+        );
     }
 }
 

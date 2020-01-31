@@ -2,7 +2,7 @@ import { ElementIri, LinkModel, hashLink, sameLink } from '../data/model';
 import { ValidationApi, ValidationEvent, ElementError, LinkError } from '../data/validationApi';
 import { CancellationToken } from '../viewUtils/async';
 import { HashMap, ReadonlyHashMap, cloneMap } from '../viewUtils/collections';
-import { AuthoringState, AuthoringKind } from './authoringState';
+import { AuthoringState } from './authoringState';
 import { EditorController } from './editorController';
 
 export interface ValidationState {
@@ -100,7 +100,7 @@ export function validateElements(
     targets: ReadonlySet<ElementIri>,
     validationApi: ValidationApi,
     editor: EditorController,
-    cancellation: CancellationToken,
+    cancellationToken: CancellationToken
 ) {
     const previousState = editor.validationState;
     const newState = ValidationState.createMutable();
@@ -123,9 +123,12 @@ export function validateElements(
                 outboundLinks,
                 state: editor.authoringState,
                 model: editor.model,
-                cancellation,
+                cancellation: cancellationToken,
             };
-            const result = validationApi.validate(event);
+            const result = CancellationToken.mapCancelledToNull(
+                cancellationToken,
+                validationApi.validate(event)
+            );
 
             const loadingElement: ElementValidation = {loading: true, errors: []};
             const loadingLink: LinkValidation = {loading: true, errors: []};
@@ -146,15 +149,19 @@ export function validateElements(
 }
 
 async function processValidationResult(
-    result: Promise<Array<ElementError | LinkError>>,
+    result: Promise<Array<ElementError | LinkError> | null>,
     previousElement: ElementValidation,
     previousLink: LinkValidation,
     e: ValidationEvent,
     editor: EditorController,
 ) {
-    let allErrors: Array<ElementError | LinkError>;
+    let allErrors: Array<ElementError | LinkError> | null;
     try {
         allErrors = await result;
+        if (allErrors === null) {
+            // validation was cancelled
+            return;
+        }
     } catch (err) {
         // tslint:disable-next-line:no-console
         console.error(`Failed to validate element`, e.target, err);

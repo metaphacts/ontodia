@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, RDFDataProvider, GroupTemplate } from '../index';
+import { Workspace, WorkspaceProps, RDFDataProvider, GroupTemplate } from '../src/ontodia/index';
 
 import { ExampleMetadataApi, ExampleValidationApi } from './resources/exampleMetadataApi';
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
@@ -10,7 +10,7 @@ const N3Parser: any = require('rdf-parser-n3');
 const RdfXmlParser: any = require('rdf-parser-rdfxml');
 const JsonLdParser: any = require('rdf-parser-jsonld');
 
-const data = require<string>('./resources/testData.ttl');
+const data = require<string>('./resources/orgOntology.ttl');
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }

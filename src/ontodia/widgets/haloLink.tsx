@@ -8,10 +8,10 @@ import { PaperWidgetProps } from '../diagram/paperArea';
 import { DiagramView } from '../diagram/view';
 
 import { EditorController } from '../editor/editorController';
-import { AuthoringState, AuthoringKind } from '../editor/authoringState';
+import { AuthoringState } from '../editor/authoringState';
 
-import { EventObserver, Unsubscribe } from '../viewUtils/events';
-import { Cancellation, Debouncer } from '../viewUtils/async';
+import { EventObserver } from '../viewUtils/events';
+import { Cancellation, CancellationToken, Debouncer } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-halo-link';
@@ -93,8 +93,11 @@ export class HaloLink extends React.Component<Props, State> {
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
             const signal = this.queryCancellation.signal;
-            metadataApi.canDeleteLink(link.data, source.data, target.data, signal).then(canDelete => {
-                if (signal.aborted) { return; }
+            CancellationToken.mapCancelledToNull(
+                signal,
+                metadataApi.canDeleteLink(link.data, source.data, target.data, signal)
+            ).then(canDelete => {
+                if (canDelete === null) { return; }
                 if (this.props.target.id === link.id) {
                     this.setState({canDelete});
                 }
@@ -115,8 +118,11 @@ export class HaloLink extends React.Component<Props, State> {
             const source = view.model.getElement(link.sourceId);
             const target = view.model.getElement(link.targetId);
             const signal = this.queryCancellation.signal;
-            metadataApi.canEditLink(link.data, source.data, target.data, signal).then(canEdit => {
-                if (signal.aborted) { return; }
+            CancellationToken.mapCancelledToNull(
+                signal,
+                metadataApi.canEditLink(link.data, source.data, target.data, signal)
+            ).then(canEdit => {
+                if (canEdit === null) { return; }
                 if (this.props.target.id === link.id) {
                     this.setState({canEdit});
                 }

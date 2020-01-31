@@ -12,10 +12,10 @@
         "strictNullChecks": false
     },
     "include": [
-        "./index.ts",
+        "./examples/**/*.ts",
+        "./examples/**/*.tsx",
         "./src/**/*.ts",
         "./src/**/*.tsx",
         "./typings/typings.d.ts"
-    ],
-    "compileOnSave": false
+    ]
 }

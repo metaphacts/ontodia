@@ -10,17 +10,17 @@ import {
     SparqlQueryMethod,
     WikidataSettings,
     LinkModel,
- } from '../index';
+ } from '../src/ontodia/index';
 
 const N3Parser: any = require('rdf-parser-n3');
 const RdfXmlParser: any = require('rdf-parser-rdfxml');
 const JsonLdParser: any = require('rdf-parser-jsonld');
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-import { LinkBinding } from '../ontodia/data/sparql/sparqlModels';
-import { getLinksInfo } from '../ontodia/data/sparql/responseHandler';
+import { LinkBinding } from '../src/ontodia/data/sparql/sparqlModels';
+import { getLinksInfo } from '../src/ontodia/data/sparql/responseHandler';
 
-const data = require<string>('./resources/testData.ttl');
+const data = require<string>('./resources/orgOntology.ttl');
 
 class TransformingDataProvider extends SparqlDataProvider {
 

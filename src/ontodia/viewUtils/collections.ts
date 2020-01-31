@@ -1,22 +1,7 @@
-export function createStringMap<V>(): { [key: string]: V } {
-    const map = Object.create(null);
-    // tslint:disable-next-line:no-string-literal
-    delete map['hint'];
-    return map;
-}
-
-export function createNumberMap<V>(): { [key: number]: V } {
-    return createStringMap() as { [key: number]: V };
-}
-
-export function hasOwnProperty(collection: object, key: string | number) {
-    return Object.prototype.hasOwnProperty.call(collection, key);
-}
-
 export function objectValues<T>(obj: { [key: string]: T }): T[] {
     const items: T[] = [];
     for (const key in obj) {
-        if (!Object.hasOwnProperty.call(obj, key)) { continue; }
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) { continue; }
         items.push(obj[key]);
     }
     return items;
@@ -24,7 +9,7 @@ export function objectValues<T>(obj: { [key: string]: T }): T[] {
 
 export function isEmptyMap(map: object) {
     for (const key in map) {
-        if (hasOwnProperty(map, key)) { return false; }
+        if (Object.prototype.hasOwnProperty.call(map, key)) { return false; }
     }
     return true;
 }
@@ -66,13 +51,8 @@ export function getOrCreateSetInMap<K, V>(map: Map<K, Set<V>>, key: K): Set<V> {
 }
 
 export class OrderedMap<V> {
-    private mapping: { [key: string]: V };
-    private ordered: V[];
-
-    constructor() {
-        this.mapping = createStringMap<V>();
-        this.ordered = [];
-    }
+    private mapping = new Map<string, V>();
+    private ordered: V[] = [];
 
     reorder(compare: (a: V, b: V) => number) {
         this.ordered.sort(compare);
@@ -83,28 +63,28 @@ export class OrderedMap<V> {
     }
 
     get(key: string): V | undefined {
-        return this.mapping[key];
+        return this.mapping.get(key);
     }
 
     push(key: string, value: V) {
-        if (key in this.mapping) {
-            const previous = this.mapping[key];
+        if (this.mapping.has(key)) {
+            const previous = this.mapping.get(key);
             if (previous === value) { return; }
             const index = this.ordered.indexOf(previous);
             this.ordered.splice(index, 1);
         }
-        this.mapping[key] = value;
+        this.mapping.set(key, value);
         this.ordered.push(value);
     }
 
     delete(key: string): V | undefined {
-        if (!(key in this.mapping)) {
+        if (!this.mapping.has(key)) {
             return undefined;
         }
-        const previous = this.mapping[key];
+        const previous = this.mapping.get(key);
         const index = this.ordered.indexOf(previous);
         this.ordered.splice(index, 1);
-        delete this.mapping[key];
+        this.mapping.delete(key);
         return previous;
     }
 }

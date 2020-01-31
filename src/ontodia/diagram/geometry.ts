@@ -1,4 +1,4 @@
-import { Element as DiagramElement, Link as DiagramLink } from './elements';
+import { Element } from './elements';
 
 export interface Vector {
     readonly x: number;
@@ -41,7 +41,7 @@ export namespace Rect {
     }
 }
 
-export function boundsOf(element: DiagramElement): Rect {
+export function boundsOf(element: Element): Rect {
     const {x, y} = element.position;
     const {width, height} = element.size;
     return {x, y, width, height};
@@ -100,8 +100,8 @@ export function isPolylineEqual(left: ReadonlyArray<Vector>, right: ReadonlyArra
 }
 
 export function computePolyline(
-    source: DiagramElement,
-    target: DiagramElement,
+    source: Element,
+    target: Element,
     vertices: ReadonlyArray<Vector>,
 ): Vector[] {
     const sourceRect = boundsOf(source);
@@ -175,8 +175,22 @@ export function findNearestSegmentIndex(polyline: ReadonlyArray<Vector>, locatio
     return foundIndex;
 }
 
-export function computeGrouping(elements: ReadonlyArray<DiagramElement>): Map<string, DiagramElement[]> {
-    const grouping = new Map<string, DiagramElement[]>();
+export function findElementAtPoint(elements: ReadonlyArray<Element>, point: Vector): Element | undefined {
+    for (let i = elements.length - 1; i >= 0; i--) {
+        const element = elements[i];
+        const {x, y, width, height} = boundsOf(element);
+
+        if (element.temporary) { continue; }
+
+        if (point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height) {
+            return element;
+        }
+    }
+    return undefined;
+}
+
+export function computeGrouping(elements: ReadonlyArray<Element>): Map<string, Element[]> {
+    const grouping = new Map<string, Element[]>();
     for (const element of elements) {
         const group = element.group;
         if (typeof group === 'string') {

@@ -14,10 +14,10 @@
     box-sizing: inherit;
   }
 
-  &__header {
-    display: flex;
-    flex-direction: column;
-    flex: 0 0 auto;
+  &__toolbar-widget {
+    position: absolute;
+    left: 10px;
+    top: 10px;
   }
 
   &__workspace {

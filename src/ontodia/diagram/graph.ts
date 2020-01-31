@@ -11,11 +11,17 @@ import {
 } from './elements';
 
 export interface GraphEvents {
-    changeCells: {};
+    changeCells: CellsChangedEvent;
     elementEvent: AnyEvent<ElementEvents>;
     linkEvent: AnyEvent<LinkEvents>;
     linkTypeEvent: AnyEvent<FatLinkTypeEvents>;
     classEvent: AnyEvent<FatClassModelEvents>;
+}
+
+export interface CellsChangedEvent {
+    readonly updateAll: boolean;
+    readonly changedElement?: DiagramElement;
+    readonly changedLinks?: ReadonlyArray<DiagramLink>;
 }
 
 export class Graph {
@@ -63,11 +69,11 @@ export class Graph {
 
     addElement(element: DiagramElement): void {
         if (this.getElement(element.id)) {
-            throw new Error(`Link type '${element.id}' already exists.`);
+            throw new Error(`Element '${element.id}' already exists.`);
         }
         element.events.onAny(this.onElementEvent);
         this.elements.push(element.id, element);
-        this.source.trigger('changeCells', {});
+        this.source.trigger('changeCells', {updateAll: false, changedElement: element});
     }
 
     private onElementEvent: AnyListener<ElementEvents> = (data, key) => {
@@ -79,12 +85,13 @@ export class Graph {
         if (element) {
             const options = {silent: true};
             // clone links to prevent modifications during iteration
-            for (const link of [...element.links]) {
+            const changedLinks = [...element.links];
+            for (const link of changedLinks) {
                 this.removeLink(link.id, options);
             }
             this.elements.delete(elementId);
             element.events.offAny(this.onElementEvent);
-            this.source.trigger('changeCells', {});
+            this.source.trigger('changeCells', {updateAll: false, changedElement: element, changedLinks});
         }
     }
 
@@ -100,8 +107,6 @@ export class Graph {
     }
 
     private registerLink(link: DiagramLink) {
-        const {typeId} = link;
-
         this.sourceOf(link).links.push(link);
         if (link.sourceId !== link.targetId) {
             this.targetOf(link).links.push(link);
@@ -109,7 +114,7 @@ export class Graph {
 
         link.events.onAny(this.onLinkEvent);
         this.links.push(link.id, link);
-        this.source.trigger('changeCells', {});
+        this.source.trigger('changeCells', {updateAll: false, changedLinks: [link]});
     }
 
     private onLinkEvent: AnyListener<LinkEvents> = (data, key) => {
@@ -123,7 +128,7 @@ export class Graph {
             link.events.offAny(this.onLinkEvent);
             this.removeLinkReferences(typeId, sourceId, targetId);
             if (!(options && options.silent)) {
-                this.source.trigger('changeCells', {});
+                this.source.trigger('changeCells', {updateAll: false, changedLinks: [link]});
             }
         }
     }

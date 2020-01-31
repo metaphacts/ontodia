@@ -8,7 +8,7 @@ import { EditorController } from '../editor/editorController';
 import { FatLinkType, LinkDirection } from '../diagram/elements';
 import { DiagramView } from '../diagram/view';
 import { EventObserver } from '../viewUtils/events';
-import { Cancellation } from '../viewUtils/async';
+import { Cancellation, CancellationToken } from '../viewUtils/async';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
 const CLASS_NAME = 'ontodia-edit-form';
@@ -74,20 +74,22 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         this.cancellation.abort();
     }
 
-    private fetchPossibleLinkTypes() {
+    private async fetchPossibleLinkTypes() {
         const {view, metadataApi, source, target} = this.props;
         if (!metadataApi) { return; }
-        metadataApi.possibleLinkTypes(source, target, this.cancellation.signal).then(linkTypes => {
-            if (this.cancellation.signal.aborted) { return; }
-            const fatLinkTypes: Array<DirectedFatLinkType> = [];
-            linkTypes.forEach(({linkTypeIri, direction}) => {
-                const fatLinkType = view.model.createLinkType(linkTypeIri);
-                fatLinkTypes.push({fatLinkType, direction});
-            });
-            fatLinkTypes.sort(makeLinkTypeComparatorByLabelAndDirection(view));
-            this.setState({fatLinkTypes});
-            this.listenToLinkLabels(fatLinkTypes);
+        const linkTypes = await CancellationToken.mapCancelledToNull(
+            this.cancellation.signal,
+            metadataApi.possibleLinkTypes(source, target, this.cancellation.signal)
+        );
+        if (linkTypes === null) { return; }
+        const fatLinkTypes: Array<DirectedFatLinkType> = [];
+        linkTypes.forEach(({linkTypeIri, direction}) => {
+            const fatLinkType = view.model.createLinkType(linkTypeIri);
+            fatLinkTypes.push({fatLinkType, direction});
         });
+        fatLinkTypes.sort(makeLinkTypeComparatorByLabelAndDirection(view));
+        this.setState({fatLinkTypes});
+        this.listenToLinkLabels(fatLinkTypes);
     }
 
     private listenToLinkLabels(fatLinkTypes: Array<{ fatLinkType: FatLinkType; direction: LinkDirection }>) {

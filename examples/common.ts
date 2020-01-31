@@ -1,4 +1,4 @@
-import { LayoutData, SerializedDiagram, convertToSerializedDiagram, makeSerializedDiagram } from '../index';
+import { SerializedDiagram, convertToSerializedDiagram } from '../src/ontodia/index';
 
 export function onPageLoad(callback: (container: HTMLDivElement) => void) {
     document.addEventListener('DOMContentLoaded', () => {

@@ -119,8 +119,14 @@ export class ElementLayer extends React.Component<Props, State> {
 
     componentDidMount() {
         const {view} = this.props;
-        this.listener.listen(view.model.events, 'changeCells', () => {
-            this.requestRedrawAll(RedrawFlags.None);
+        this.listener.listen(view.model.events, 'changeCells', e => {
+            if (e.updateAll) {
+                this.requestRedrawAll(RedrawFlags.None);
+            } else {
+                if (e.changedElement) {
+                    this.requestRedraw(e.changedElement, RedrawFlags.None);
+                }
+            }
         });
         this.listener.listen(view.events, 'changeLanguage', () => {
             this.requestRedrawAll(RedrawFlags.RecomputeTemplate);

@@ -1,14 +1,11 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, DemoDataProvider } from '../index';
+import {
+    Workspace, WorkspaceProps, SparqlDataProvider, SparqlQueryMethod, DBPediaSettings
+} from '../src/ontodia/index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
-
-const CLASSES = require<any>('./resources/classes.json');
-const LINK_TYPES = require<any>('./resources/linkTypes.json');
-const ELEMENTS = require<any>('./resources/elements.json');
-const LINKS  = require<any>('./resources/links.json');
 
 function onWorkspaceMounted(workspace: Workspace) {
     if (!workspace) { return; }
@@ -16,8 +13,15 @@ function onWorkspaceMounted(workspace: Workspace) {
     const diagram = tryLoadLayoutFromLocalStorage();
     workspace.getModel().importLayout({
         diagram,
-        dataProvider: new DemoDataProvider(CLASSES, LINK_TYPES, ELEMENTS, LINKS),
         validateLinks: true,
+        dataProvider: new SparqlDataProvider({
+            endpointUrl: 'https://dbpedia.org/sparql',
+            imagePropertyUris: [
+                'http://xmlns.com/foaf/0.1/depiction',
+                'http://xmlns.com/foaf/0.1/img',
+            ],
+            queryMethod: SparqlQueryMethod.GET,
+        }, DBPediaSettings),
     });
 }
 

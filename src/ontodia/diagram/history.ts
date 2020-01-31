@@ -1,8 +1,4 @@
-import { last } from 'lodash';
-
 import { EventSource, Events } from '../viewUtils/events';
-
-import { DiagramModel } from './model';
 
 export interface Command {
     readonly title?: string;

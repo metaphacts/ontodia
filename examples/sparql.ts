@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 
 import {
     Workspace, WorkspaceProps, SparqlDataProvider, OWLStatsSettings, SparqlQueryMethod, GroupTemplate, LinkTypeIri
-} from '../index';
+} from '../src/ontodia/index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 

@@ -1,7 +1,7 @@
 import {
     ElementModel, LinkModel, ElementIri, ElementTypeIri, LinkTypeIri, PropertyTypeIri, LinkDirection,
     MetadataApi, ValidationApi, ValidationEvent, ElementError, LinkError, DirectedLinkType, CancellationToken,
-} from '../../index';
+} from '../../src/ontodia/index';
 
 const OWL_PREFIX = 'http://www.w3.org/2002/07/owl#';
 const RDFS_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
@@ -21,29 +21,27 @@ function hasType(model: ElementModel, type: ElementTypeIri) {
     return Boolean(model.types.find(t => t === type));
 }
 
-const METADATA_DELAY: number = 500; /* ms */
-function delay(): Promise<void> {
-    if (METADATA_DELAY === 0) {
-        return Promise.resolve();
-    }
-    return new Promise(resolve => setTimeout(resolve, METADATA_DELAY));
-}
+const SIMULATED_DELAY: number = 500; /* ms */
 
 export class ExampleMetadataApi implements MetadataApi {
     async canDropOnCanvas(source: ElementModel, ct: CancellationToken): Promise<boolean> {
-        await delay();
-        return true;
+        await delay(SIMULATED_DELAY, ct);
+        const elementTypes = await this.typesOfElementsDraggedFrom(source, ct);
+        CancellationToken.throwIfAborted(ct);
+        return elementTypes.length > 0;
     }
 
     async canDropOnElement(source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean> {
-        await delay();
-        return true;
+        await delay(SIMULATED_DELAY, ct);
+        const linkTypes = await this.possibleLinkTypes(source, target, ct);
+        CancellationToken.throwIfAborted(ct);
+        return linkTypes.length > 0;
     }
 
     async possibleLinkTypes(
         source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<DirectedLinkType[]> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return (
             hasType(source, owl.class) && hasType(target, owl.class) ?
                 mapLinkTypes([rdfs.subClassOf]).concat(mapLinkTypes([rdfs.subClassOf], LinkDirection.in)) :
@@ -62,24 +60,28 @@ export class ExampleMetadataApi implements MetadataApi {
     }
 
     async typesOfElementsDraggedFrom(source: ElementModel, ct: CancellationToken): Promise<ElementTypeIri[]> {
-        await delay();
-        return [owl.class, owl.objectProperty];
+        await delay(SIMULATED_DELAY, ct);
+        return (
+            hasType(source, owl.class) ? [owl.class] :
+            hasType(source, owl.objectProperty) ? [owl.class, owl.objectProperty] :
+            []
+        );
     }
 
     async propertiesForType(type: ElementTypeIri, ct: CancellationToken): Promise<PropertyTypeIri[]> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return [];
     }
 
     async canDeleteElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return true;
     }
 
     async filterConstructibleTypes(
         types: ReadonlySet<ElementTypeIri>, ct: CancellationToken
     ): Promise<ReadonlySet<ElementTypeIri>> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         const result = new Set<ElementTypeIri>();
         types.forEach(type => {
             if (type.length % 2 === 0) {
@@ -90,31 +92,31 @@ export class ExampleMetadataApi implements MetadataApi {
     }
 
     async canEditElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return true;
     }
 
     async canLinkElement(element: ElementModel, ct: CancellationToken): Promise<boolean> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return true;
     }
 
     async canDeleteLink(
         link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<boolean> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return true;
     }
 
     async canEditLink(
         link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken
     ): Promise<boolean> {
-        await delay();
+        await delay(SIMULATED_DELAY, ct);
         return true;
     }
 
-    async generateNewElementIri(types: ReadonlyArray<ElementTypeIri>): Promise<ElementIri> {
-        await delay();
+    async generateNewElementIri(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementIri> {
+        await delay(SIMULATED_DELAY, ct);
         const random32BitDigits = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
         return `${types[0]}_${random32BitDigits}` as ElementIri;
     }
@@ -141,7 +143,20 @@ export class ExampleValidationApi implements ValidationApi {
             });
         }
 
-        await delay();
+        await delay(SIMULATED_DELAY, event.cancellation);
         return errors;
     }
+}
+
+async function delay(amountMs: number, ct: CancellationToken) {
+    CancellationToken.throwIfAborted(ct);
+    await waitTimeout(amountMs);
+    CancellationToken.throwIfAborted(ct);
+}
+
+function waitTimeout(amountMs: number): Promise<void> {
+    if (amountMs === 0) {
+        return Promise.resolve();
+    }
+    return new Promise(resolve => setTimeout(resolve, amountMs));
 }

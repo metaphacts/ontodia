@@ -1,7 +1,7 @@
 import { createElement, ClassAttributes } from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { Workspace, WorkspaceProps, SparqlDataProvider, OWLRDFSSettings } from '../index';
+import { Workspace, WorkspaceProps, SparqlDataProvider, OWLRDFSSettings } from '../src/ontodia/index';
 
 import { onPageLoad, tryLoadLayoutFromLocalStorage, saveLayoutToLocalStorage } from './common';
 

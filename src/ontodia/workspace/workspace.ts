@@ -331,7 +331,6 @@ export class Workspace extends Component<WorkspaceProps, WorkspaceState> {
     }
 
     showWaitIndicatorWhile(operation: Promise<any>) {
-        this.markup.paperArea.centerTo();
         this.editor.setSpinner({});
         if (operation) {
             operation.then(() => {

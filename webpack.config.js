@@ -7,14 +7,14 @@ const SUPPORT_IE = BUNDLE_PEERS || Boolean(process.env.SUPPORT_IE);
 
 const aliases = {};
 if (!SUPPORT_IE) {
-    const emptyModule = path.resolve(__dirname, 'src', 'emptyModule.ts');
+    const emptyModule = path.resolve(__dirname, 'src', 'ontodia', 'emptyModule.ts');
     aliases['canvg-fixed'] = emptyModule;
     aliases['es6-promise/auto'] = emptyModule;
 }
 
 module.exports = {
     mode: BUNDLE_PEERS ? 'production' : 'none',
-    entry: './src/index.ts',
+    entry: './src/ontodia/index.ts',
     resolve: {
         alias: aliases,
         extensions: ['.ts', '.tsx', '.js'],
@@ -45,7 +45,6 @@ module.exports = {
     externals: BUNDLE_PEERS ? [] : [
         'd3-color',
         'file-saverjs',
-        'intro.js',
         'lodash',
         'n3',
         'rdf-ext',
