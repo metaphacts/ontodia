@@ -294,7 +294,12 @@ export class EditLayer extends React.Component<Props, State> {
                 } else if (createdTarget && modifiedLink) {
                     editor.setSelection([createdTarget]);
                     const source = editor.model.getElement(modifiedLink.sourceId);
-                    editor.showEditElementTypeForm({link: modifiedLink, source, target: createdTarget});
+                    editor.showEditElementTypeForm({
+                        link: modifiedLink,
+                        source,
+                        target: createdTarget,
+                        targetIsNew: true,
+                    });
                 }
             }
         } finally {

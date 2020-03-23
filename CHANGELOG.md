@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Latest]
 
+## [0.12.0] - 2020-02-05
+### Changed
+- Move toolbar to paper viewport as a widget.
+- Add handling for cancelled MetadataApi or ValidationApi requests.
+- Wait and show spinner in EditLayer until metadata requests finish.
+- Optimize authoring mode performance on large diagrams.
+
+### Fixed
+- Update node-sass to work to build on newer Node runtimes (> 8.x).
+- Avoid moving the canvas in `Workspace.showWaitIndicatorWhile()`.
+- Set progress bar color to red when in the error state.
+- Fix losing links from selection on changing graph content
+(adding or removing elements or links).
+- Prevent canvas scroll jump when dropping URIs onto canvas (e.g. from class tree).
+
 ## [0.11.0] - 2019-12-04
 ### Added
 - Ability to externally fetch labels for resources in `SparqlDataProvider`
@@ -505,7 +520,8 @@ info loaded from `DataProvider`.
 ### Added
 - Ontodia published on GitHub as OSS project.
 
-[Latest]: https://github.com/metaphacts/ontodia/compare/v0.11.0...HEAD
+[Latest]: https://github.com/metaphacts/ontodia/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/metaphacts/ontodia/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/metaphacts/ontodia/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/metaphacts/ontodia/compare/v0.9.12...v0.10.0
 [0.9.12]: https://github.com/metaphacts/ontodia/compare/v0.9.11...v0.9.12

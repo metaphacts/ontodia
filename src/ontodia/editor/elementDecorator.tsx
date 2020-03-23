@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import { Debouncer } from '../viewUtils/async';
 import { EventObserver } from '../viewUtils/events';
 import { HtmlSpinner } from '../viewUtils/spinner';
 
@@ -9,7 +8,7 @@ import { DiagramView } from '../diagram/view';
 import { Vector } from '../diagram/geometry';
 
 import { EditorController } from './editorController';
-import { AuthoringKind, ElementChange } from './authoringState';
+import { ElementChange } from './authoringState';
 import { ElementValidation, LinkValidation } from './validation';
 
 const CLASS_NAME = `ontodia-authoring-state`;
@@ -29,7 +28,6 @@ interface State {
 
 export class ElementDecorator extends React.Component<ElementDecoratorProps, State> {
     private readonly listener = new EventObserver();
-    private readonly delayedUpdate = new Debouncer();
 
     constructor(props: ElementDecoratorProps) {
         super(props);
@@ -46,23 +44,23 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
         this.listener.listen(model.events, 'changeSize', () =>
             this.forceUpdate()
         );
-        this.listener.listen(editor.events, 'changeAuthoringState', () => {
+        this.listener.listen(editor.events, 'changeAuthoringState', e => {
             const state = editor.authoringState.elements.get(model.iri);
-            if (this.state.state === state) { return; }
+            if (state === e.previous.elements.get(model.iri)) { return; }
             this.setState({state});
         });
-        this.listener.listen(editor.events, 'changeValidationState', () => {
+        this.listener.listen(editor.events, 'changeValidationState', e => {
             const validation = editor.validationState.elements.get(model.iri);
-            if (this.state.validation === validation) { return; }
+            if (validation === e.previous.elements.get(model.iri)) { return; }
             this.setState({validation});
         });
-        this.listener.listen(editor.events, 'changeTemporaryState', () => {
+        this.listener.listen(editor.events, 'changeTemporaryState', e => {
             const isTemporary = editor.temporaryState.elements.has(model.iri);
-            if (this.state.isTemporary === isTemporary) { return; }
+            if (isTemporary === e.previous.elements.has(model.iri)) { return; }
             this.setState({isTemporary});
         });
-        this.listener.listen(model.events, 'changeData', event => {
-            if (event.previous.id !== model.iri) {
+        this.listener.listen(model.events, 'changeData', e => {
+            if (e.previous.id !== model.iri) {
                 this.setState({
                     isTemporary: editor.temporaryState.elements.has(model.iri),
                     validation: editor.validationState.elements.get(model.iri),
@@ -74,7 +72,6 @@ export class ElementDecorator extends React.Component<ElementDecoratorProps, Sta
 
     componentWillUnmount() {
         this.listener.stopListening();
-        this.delayedUpdate.dispose();
     }
 
     shouldComponentUpdate(nextProps: ElementDecoratorProps, nextState: State) {

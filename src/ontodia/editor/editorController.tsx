@@ -434,13 +434,12 @@ export class EditorController {
         this.showDialog({target, dialogType, content, onClose: onCancel});
     }
 
-    showEditElementTypeForm(
-        {link, source, target}: {
-            link: Link;
-            source: Element;
-            target: Element;
-        }
-    ) {
+    showEditElementTypeForm({link, source, target, targetIsNew}: {
+        link: Link;
+        source: Element;
+        target: Element;
+        targetIsNew: boolean;
+    }) {
         const dialogType = DialogTypes.EditEntityTypeForm;
         const onCancel = () => {
             this.removeTemporaryElement(target);
@@ -453,29 +452,44 @@ export class EditorController {
                 metadataApi={this.metadataApi}
                 link={link.data}
                 source={source.data}
-                target={target.data}
+                target={{value: target.data, isNew: targetIsNew}}
                 onChangeElement={(data: ElementModel) => {
-                    this.setTemporaryState(TemporaryState.deleteElement(this.temporaryState, target.data));
+                    const previous = target.data;
+                    this.setTemporaryState(TemporaryState.deleteElement(this.temporaryState, previous));
                     target.setData(data);
-                    this.setTemporaryState(TemporaryState.addElement(this.temporaryState, target.data));
+                    this.setTemporaryState(TemporaryState.addElement(this.temporaryState, data));
                 }}
                 onChangeLink={(data: LinkModel) => {
                     this.removeTemporaryLink(link);
-                    const newLink = makeLinkWithDirection(link, data);
+                    const newLink = makeLinkWithDirection(
+                        new Link({
+                            typeId: data.linkTypeId,
+                            sourceId: source.id,
+                            targetId: target.id,
+                            data: {
+                                ...data,
+                                sourceId: source.iri,
+                                targetId: target.iri,
+                            }
+                        }),
+                        data
+                    );
                     link = this.createNewLink({link: newLink, temporary: true});
                 }}
-                onApply={(elementData: ElementModel, linkData: LinkModel) => {
-                    const isNewElement = target.iri === elementData.id;
-
+                onApply={(elementData: ElementModel, isNewElement: boolean, linkData: LinkModel) => {
                     this.removeTemporaryElement(target);
                     this.removeTemporaryLink(link);
 
-                    const batch = this.model.history.startBatch();
+                    const batch = this.model.history.startBatch(
+                        isNewElement ? 'Create new entity' : 'Link to entity'
+                    );
 
                     this.model.addElement(target);
                     if (isNewElement) {
                         target.setExpanded(true);
-                        this.addNewEntity(target.data);
+                        this.setAuthoringState(
+                            AuthoringState.addElement(this._authoringState, target.data)
+                        );
                     } else {
                         this.model.requestLinksOfType();
                     }
@@ -502,7 +516,8 @@ export class EditorController {
                         this.showEditEntityForm(target);
                     }
                 }}
-                onCancel={onCancel}/>
+                onCancel={onCancel}
+            />
         );
         this.showDialog({target, dialogType, content, caption: 'Establish New Connection', onClose: onCancel});
     }
@@ -875,14 +890,6 @@ export class EditorController {
             />
         );
         this.view.setPaperWidget({key: 'editLayer', widget: editLayer, attachment: WidgetAttachment.OverElements});
-    }
-
-    private addNewEntity(element: ElementModel) {
-        const batch = this.model.history.startBatch('Create new entity');
-        this.setAuthoringState(
-            AuthoringState.addElement(this._authoringState, element)
-        );
-        batch.store();
     }
 
     private resetTemporaryState() {

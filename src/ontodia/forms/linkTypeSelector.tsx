@@ -22,6 +22,7 @@ export interface LinkValue {
     value: Value;
     error?: string;
     validated: boolean;
+    allowChange: boolean;
 }
 
 interface DirectedFatLinkType {
@@ -119,7 +120,7 @@ export class LinkTypeSelector extends React.Component<Props, State> {
         let [sourceLabel, targetLabel] = [source, target].map(element =>
             view.formatLabel(element.label.values, element.id)
         );
-        if (direction !== linkValue.value.direction) {
+        if (direction === LinkDirection.in) {
             [sourceLabel, targetLabel] = [targetLabel, sourceLabel];
         }
         return <option key={index} value={index}>{label} [{sourceLabel} &rarr; {targetLabel}]</option>;
@@ -173,12 +174,12 @@ function makeLinkTypeComparatorByLabelAndDirection(view: DiagramView) {
 
 export function validateLinkType(
     editor: EditorController, currentLink: LinkModel, originalLink: LinkModel
-): Promise<string | undefined> {
+): Promise<Pick<LinkValue, 'error' | 'allowChange'>> {
     if (currentLink.linkTypeId === PLACEHOLDER_LINK_TYPE) {
-        return Promise.resolve('Required!');
+        return Promise.resolve({error: 'Required.', allowChange: true});
     }
     if (sameLink(currentLink, originalLink)) {
-        return Promise.resolve(undefined);
+        return Promise.resolve({error: undefined, allowChange: true});
     }
     const alreadyOnDiagram = editor.model.links.find(({data: {linkTypeId, sourceId, targetId}}) =>
         linkTypeId === currentLink.linkTypeId &&
@@ -187,13 +188,15 @@ export function validateLinkType(
         !editor.temporaryState.links.has(currentLink)
     );
     if (alreadyOnDiagram) {
-        return Promise.resolve('The link already exists!');
+        return Promise.resolve({error: 'The link already exists.', allowChange: false});
     }
     return editor.model.dataProvider.linksInfo({
         elementIds: [currentLink.sourceId, currentLink.targetId],
         linkTypeIds: [currentLink.linkTypeId],
-    }).then(links => {
+    }).then((links): Pick<LinkValue, 'error' | 'allowChange'> => {
         const alreadyExists = links.some(link => sameLink(link, currentLink));
-        return alreadyExists ? 'The link already exists!' : undefined;
+        return alreadyExists
+            ? {error: 'The link already exists.', allowChange: false}
+            : {error: undefined, allowChange: true};
     });
 }

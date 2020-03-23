@@ -29,7 +29,6 @@ export interface Props {
 
 export interface State {
     linkValue?: LinkValue;
-    isValid?: boolean;
     isValidating?: boolean;
 }
 
@@ -42,8 +41,8 @@ export class EditLinkForm extends React.Component<Props, State> {
             linkValue: {
                 value: {link: props.link, direction: LinkDirection.out},
                 validated: true,
+                allowChange: true,
             },
-            isValid: true,
         };
     }
 
@@ -56,7 +55,7 @@ export class EditLinkForm extends React.Component<Props, State> {
         if (!sameLink(linkValue.value.link, prevState.linkValue.value.link)) {
             this.validate();
         }
-        if (linkValue !== prevState.linkValue && linkValue.validated && !linkValue.error) {
+        if (linkValue !== prevState.linkValue && linkValue.validated && linkValue.allowChange) {
             this.props.onChange(linkValue.value.link);
         }
     }
@@ -77,8 +76,7 @@ export class EditLinkForm extends React.Component<Props, State> {
         validateLinkType(editor, value.link, originalLink).then(error => {
             if (signal.aborted) { return; }
             this.setState(({linkValue}) => ({
-                linkValue: {...linkValue, error, validated: true},
-                isValid: !error,
+                linkValue: {...linkValue, ...error, validated: true},
                 isValidating: false,
             }));
         });
@@ -86,7 +84,8 @@ export class EditLinkForm extends React.Component<Props, State> {
 
     render() {
         const {editor, view, metadataApi, source, target} = this.props;
-        const {linkValue, isValid, isValidating} = this.state;
+        const {linkValue, isValidating} = this.state;
+        const isValid = !linkValue.error;
         return (
             <div className={CLASS_NAME}>
                 <div className={`${CLASS_NAME}__body`}>
@@ -96,7 +95,10 @@ export class EditLinkForm extends React.Component<Props, State> {
                         linkValue={linkValue}
                         source={source}
                         target={target}
-                        onChange={value => this.setState({linkValue: {value, error: undefined, validated: false}})} />
+                        onChange={value => this.setState({
+                            linkValue: {value, error: undefined, validated: false, allowChange: false},
+                        })}
+                    />
                     {isValidating ? (
                         <div className={`${CLASS_NAME}__progress`}>
                             <ProgressBar state={ProgressState.loading} height={10} />

@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { PLACEHOLDER_ELEMENT_TYPE } from '../data/schema';
-import { ElementModel, ElementTypeIri } from '../data/model';
+import { ElementModel, ElementIri, ElementTypeIri } from '../data/model';
 
 import { EditorController } from '../editor/editorController';
 import { DiagramView } from '../diagram/view';
@@ -17,8 +17,11 @@ const CLASS_NAME = 'ontodia-edit-form';
 
 export interface ElementValue {
     value: ElementModel;
+    isNew: boolean;
+    loading: boolean;
     error?: string;
     validated: boolean;
+    allowChange: boolean;
 }
 
 export interface Props {
@@ -27,7 +30,7 @@ export interface Props {
     metadataApi: MetadataApi | undefined;
     source: ElementModel;
     elementValue: ElementValue;
-    onChange: (value: ElementModel) => void;
+    onChange: (state: Pick<ElementValue, 'value' | 'isNew' | 'loading'>) => void;
 }
 
 export interface State {
@@ -40,7 +43,7 @@ export interface State {
 export class ElementTypeSelector extends React.Component<Props, State> {
     private readonly cancellation = new Cancellation();
     private filterCancellation = new Cancellation();
-    private newIriCancellation = new Cancellation();
+    private loadingItemCancellation = new Cancellation();
 
     constructor(props: Props) {
         super(props);
@@ -61,7 +64,7 @@ export class ElementTypeSelector extends React.Component<Props, State> {
     componentWillUnmount() {
         this.cancellation.abort();
         this.filterCancellation.abort();
-        this.newIriCancellation.abort();
+        this.loadingItemCancellation.abort();
     }
 
     private async fetchPossibleElementTypes() {
@@ -99,9 +102,9 @@ export class ElementTypeSelector extends React.Component<Props, State> {
     private onElementTypeChange = async (e: React.FormEvent<HTMLSelectElement>) => {
         this.setState({isLoading: true});
 
-        this.newIriCancellation.abort();
-        this.newIriCancellation = new Cancellation();
-        const signal = this.newIriCancellation.signal;
+        this.loadingItemCancellation.abort();
+        this.loadingItemCancellation = new Cancellation();
+        const signal = this.loadingItemCancellation.signal;
 
         const {elementValue, onChange, metadataApi} = this.props;
         const classId = (e.target as HTMLSelectElement).value as ElementTypeIri;
@@ -115,10 +118,14 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         if (newId === null) { return; }
         this.setState({isLoading: false});
         onChange({
-            ...elementValue.value,
-            id: newId,
-            types: types,
-            label: {values: [{value: `New ${typeName}`, language: ''}]},
+            value: {
+                ...elementValue.value,
+                id: newId,
+                types: types,
+                label: {values: [{value: `New ${typeName}`, language: ''}]},
+            },
+            isNew: true,
+            loading: false,
         });
     }
 
@@ -155,15 +162,15 @@ export class ElementTypeSelector extends React.Component<Props, State> {
     }
 
     private renderExistingElementsList() {
-        const {view, elementValue, onChange} = this.props;
+        const {view, editor, elementValue} = this.props;
         const {elementTypes, isLoading, existingElements} = this.state;
         if (isLoading) {
             return <HtmlSpinner width={20} height={20} />;
         }
         if (existingElements.length > 0) {
             return existingElements.map(element => {
-                const isAlreadyOnDiagram = Boolean(
-                    view.model.elements.find(({iri, group}) => iri === element.id && group === undefined)
+                const isAlreadyOnDiagram = !editor.temporaryState.elements.has(element.id) && Boolean(
+                    editor.model.elements.find(({iri, group}) => iri === element.id && group === undefined)
                 );
                 const hasAppropriateType = Boolean(elementTypes.find(type => element.types.indexOf(type) >= 0));
                 return (
@@ -172,11 +179,26 @@ export class ElementTypeSelector extends React.Component<Props, State> {
                         model={element}
                         disabled={isAlreadyOnDiagram || !hasAppropriateType}
                         selected={element.id === elementValue.value.id}
-                        onClick={(e, model) => onChange(model)} />
+                        onClick={(e, model) => this.onSelectExistingItem(model)} />
                 );
             });
         }
         return <span>No results</span>;
+    }
+
+    private async onSelectExistingItem(model: ElementModel) {
+        const {editor, onChange} = this.props;
+
+        this.loadingItemCancellation.abort();
+        this.loadingItemCancellation = new Cancellation();
+        const signal = this.loadingItemCancellation.signal;
+
+        onChange({value: model, isNew: false, loading: true});
+        const result = await editor.model.dataProvider.elementInfo({elementIds: [model.id]});
+        if (signal.aborted) { return; }
+
+        const loadedModel = result[model.id];
+        onChange({value: loadedModel, isNew: false, loading: false});
     }
 
     render() {
@@ -220,8 +242,10 @@ function makeElementTypeComparatorByLabel(view: DiagramView) {
     };
 }
 
-export function validateElementType(element: ElementModel): Promise<string | undefined> {
+export function validateElementType(
+    element: ElementModel
+): Promise<Pick<ElementValue, 'error' | 'allowChange'>> {
     const isElementTypeSelected = element.types.indexOf(PLACEHOLDER_ELEMENT_TYPE) < 0;
-    const error = !isElementTypeSelected ? 'Required!' : undefined;
-    return Promise.resolve(error);
+    const error = !isElementTypeSelected ? 'Required.' : undefined;
+    return Promise.resolve({error, allowChange: true});
 }
