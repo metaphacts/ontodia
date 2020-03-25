@@ -106,24 +106,16 @@ export class ElementTypeSelector extends React.Component<Props, State> {
         this.loadingItemCancellation = new Cancellation();
         const signal = this.loadingItemCancellation.signal;
 
-        const {elementValue, onChange, metadataApi} = this.props;
+        const {onChange, metadataApi} = this.props;
         const classId = (e.target as HTMLSelectElement).value as ElementTypeIri;
-        const type = this.props.editor.model.createClass(classId);
-        const typeName = this.props.view.formatLabel(type.label, type.id);
-        const types = [classId];
-        const newId = await CancellationToken.mapCancelledToNull(
+        const elementModel = await CancellationToken.mapCancelledToNull(
             signal,
-            metadataApi.generateNewElementIri(types, signal)
+            metadataApi.generateNewElement([classId], signal)
         );
-        if (newId === null) { return; }
+        if (elementModel === null) { return; }
         this.setState({isLoading: false});
         onChange({
-            value: {
-                ...elementValue.value,
-                id: newId,
-                types: types,
-                label: {values: [{value: `New ${typeName}`, language: ''}]},
-            },
+            value: elementModel,
             isNew: true,
             loading: false,
         });

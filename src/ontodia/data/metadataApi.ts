@@ -42,7 +42,7 @@ export interface MetadataApi {
 
     canEditLink(link: LinkModel, source: ElementModel, target: ElementModel, ct: CancellationToken): Promise<boolean>;
 
-    generateNewElementIri(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementIri>;
+    generateNewElement(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementModel>;
 }
 
 export interface DirectedLinkType {

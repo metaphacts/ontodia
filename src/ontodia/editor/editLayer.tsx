@@ -318,21 +318,11 @@ export class EditLayer extends React.Component<Props, State> {
         );
         if (elementTypes === null) { return; }
         const classId = elementTypes.length === 1 ? elementTypes[0] : PLACEHOLDER_ELEMENT_TYPE;
-        const type = this.props.editor.model.createClass(classId);
-        const typeName = this.props.view.formatLabel(type.label, type.id);
-        const labelText = classId === PLACEHOLDER_ELEMENT_TYPE ? 'New Entity' : `New ${typeName}`;
-        const types = [classId];
-        const entityIri = await CancellationToken.mapCancelledToNull(
+        const elementModel = await CancellationToken.mapCancelledToNull(
             this.cancellation.signal,
-            metadataApi.generateNewElementIri(types, this.cancellation.signal)
+            metadataApi.generateNewElement([classId], this.cancellation.signal)
         );
-        if (entityIri === null) { return; }
-        const elementModel: ElementModel = {
-            id: entityIri,
-            types,
-            label: {values: [{value: labelText, language: ''}]},
-            properties: {},
-        };
+        if (elementModel === null) { return; }
         return editor.createNewEntity({elementModel, temporary: true});
     }
 

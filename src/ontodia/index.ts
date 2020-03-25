@@ -11,6 +11,7 @@ export * from './data/model';
 export * from './data/metadataApi';
 export * from './data/validationApi';
 export * from './data/provider';
+export { PLACEHOLDER_ELEMENT_TYPE, PLACEHOLDER_LINK_TYPE } from './data/schema';
 export * from './data/demo/provider';
 export { RdfNode, RdfIri, RdfLiteral, Triple } from './data/sparql/sparqlModels';
 export * from './data/rdf/rdfDataProvider';

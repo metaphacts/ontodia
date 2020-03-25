@@ -115,10 +115,15 @@ export class ExampleMetadataApi implements MetadataApi {
         return true;
     }
 
-    async generateNewElementIri(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementIri> {
+    async generateNewElement(types: ReadonlyArray<ElementTypeIri>, ct: CancellationToken): Promise<ElementModel> {
         await delay(SIMULATED_DELAY, ct);
         const random32BitDigits = Math.floor((1 + Math.random()) * 0x100000000).toString(16).substring(1);
-        return `${types[0]}_${random32BitDigits}` as ElementIri;
+        return {
+            id: `${types[0]}_${random32BitDigits}` as ElementIri,
+            types: [...types],
+            label: {values: [{value: 'New Entity', language: ''}]},
+            properties: {},
+        };
     }
 }
 

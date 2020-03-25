@@ -82,23 +82,13 @@ export class WorkspaceMarkup extends React.Component<WorkspaceMarkupProps, {}> {
         await forceNonReactExecutionContext();
         const batch = model.history.startBatch();
 
-        const type = editor.model.getClass(classId);
-        const typeName = view.formatLabel(type.label, type.id);
-
-        const types = [classId];
         const signal = this.cancellation.signal;
-
-        const newEntityIri = await CancellationToken.mapCancelledToNull(
+        const elementModel = await CancellationToken.mapCancelledToNull(
             signal,
-            metadataApi.generateNewElementIri(types, signal)
+            metadataApi.generateNewElement([classId], signal)
         );
-        if (newEntityIri === null) { return; }
-        const elementModel: ElementModel = {
-            id: newEntityIri,
-            types,
-            label: {values: [{value: `New ${typeName}`, language: ''}]},
-            properties: {},
-        };
+        if (elementModel === null) { return; }
+
         const element = editor.createNewEntity({elementModel});
         const targetPosition = position || getViewportCenterInPaperCoords(this.paperArea);
         element.setPosition(targetPosition);
