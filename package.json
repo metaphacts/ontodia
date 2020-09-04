@@ -57,7 +57,7 @@
     "dts-bundle": "0.7.2",
     "es6-promise": "4.2.4",
     "html-webpack-plugin": "3.2.0",
-    "node-sass": "4.13.0",
+    "node-sass": "4.13.1",
     "raw-loader": "0.5.1",
     "rdf-parser-jsonld": "0.3.3",
     "rdf-parser-n3": "0.3.0",
