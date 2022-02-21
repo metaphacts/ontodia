@@ -696,7 +696,7 @@ export class SparqlDataProvider implements DataProvider {
             .filter(iri => !BlankNodes.isEncodedBlank(iri))
             .map(iri => `(${escapeIri(iri)})`).join(' ');
 
-        const queryTemplate = `SELECT ?inst ?class { VALUES(?inst) { \${ids} } \${filterTypePattern} }`;
+        const queryTemplate = this.settings.defaultPrefix +`SELECT ?inst ?class { VALUES(?inst) { \${ids} } \${filterTypePattern} }`;
         const query = resolveTemplate(queryTemplate, {ids, filterTypePattern});
         let response = await this.executeSparqlQuery<ElementTypeBinding>(query);
 
